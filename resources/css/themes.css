@@ -1,0 +1,177 @@
+/* ============================================================
+   KalanNet — Système de Thèmes Dynamiques (Version Uniforme + Rose)
+   ============================================================ */
+
+*,*::before,*::after {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Base Utility for all themes except Full Dark */
+:root {
+    --bg-main: #f1f5f9;
+    --bg-card: #ffffff;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --text-heading: #0f172a;
+    --border-color: #e2e8f0;
+    --bg-input: #ffffff;
+    --bg-dropdown: #ffffff;
+    --bg-modal: #ffffff;
+    --shadow-card: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+/* ========== DÉFAUT : Bleu Sombre (Uniforme) ========== */
+[data-theme="bleu-sombre"] {
+    --theme-primary: #001529;
+    --theme-accent: #001529;
+    --text-navbar: #ffffff; --text-sidebar: #91d5ff; --text-on-accent: #ffffff;
+    --accent-light: rgba(255,255,255,0.1);
+    --border-sidebar: rgba(255,255,255,0.1); --brand-color: #ffffff;
+    --sidebar-text-active: #ffffff; --notif-badge-bg: #f5222d;
+}
+
+/* ========== VERT (Uniforme) ========== */
+[data-theme="vert"] {
+    --theme-primary: #14532d;
+    --theme-accent: #14532d;
+    --text-navbar: #ffffff; --text-sidebar: #bbf7d0; --text-on-accent: #ffffff;
+    --accent-light: rgba(255,255,255,0.1);
+    --border-sidebar: rgba(255,255,255,0.1); --brand-color: #ffffff;
+    --sidebar-text-active: #ffffff;
+}
+
+/* ========== ROSE SOMBRE (Uniforme) ========== */
+[data-theme="dark"] {
+    --theme-primary: #831843;
+    --theme-accent: #831843;
+    --text-navbar: #ffffff; --text-sidebar: #fbcfe8; --text-on-accent: #ffffff;
+    --accent-light: rgba(255,255,255,0.1);
+    --border-sidebar: rgba(255,255,255,0.1); --brand-color: #ffffff;
+    --sidebar-text-active: #ffffff;
+}
+
+/* ========== ROUGE / BORDEAUX (Uniforme) ========== */
+[data-theme="rouge"] {
+    --theme-primary: #450a0a;
+    --theme-accent: #450a0a;
+    --text-navbar: #ffffff; --text-sidebar: #fecaca; --text-on-accent: #ffffff;
+    --accent-light: rgba(255,255,255,0.1);
+    --border-sidebar: rgba(255,255,255,0.1); --brand-color: #ffffff;
+}
+
+/* ========== VIOLET (Uniforme) ========== */
+[data-theme="violet"] {
+    --theme-primary: #2e1065;
+    --theme-accent: #2e1065;
+    --text-navbar: #ffffff; --text-sidebar: #ddd6fe; --text-on-accent: #ffffff;
+    --accent-light: rgba(255,255,255,0.1);
+    --border-sidebar: rgba(255,255,255,0.1); --brand-color: #ffffff;
+}
+
+/* ========== ORANGE (Uniforme) ========== */
+[data-theme="orange"] {
+    --theme-primary: #431407;
+    --theme-accent: #431407;
+    --text-navbar: #ffffff; --text-sidebar: #fed7aa; --text-on-accent: #ffffff;
+    --accent-light: rgba(255,255,255,0.1);
+    --border-sidebar: rgba(255,255,255,0.1); --brand-color: #ffffff;
+}
+
+/* ========== LIGHT (Uniforme Clair - FIXED VISIBILITY) ========== */
+[data-theme="light"] {
+    --theme-primary: #ffffff;
+    --theme-accent: #475569;
+    --text-navbar: #1e293b; --text-sidebar: #334155; --text-on-accent: #1e293b;
+    --accent-light: rgba(71,85,105,0.08);
+    --border-sidebar: #e2e8f0; --brand-color: #475569;
+}
+
+/* ========== APPLICATION UNIFORME ========== */
+html[data-theme] body,
+html[data-theme] .wrapper,
+html[data-theme] .page-wrapper,
+html[data-theme] .page-content { background-color: var(--bg-main) !important; color: var(--text-main) !important; font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; }
+
+/* Navbar, Sidebar, Footer & Headers — TOUS UNIFORMES */
+html[data-theme] .top-header, 
+html[data-theme] .top-header .navbar,
+html[data-theme] .footer,
+html[data-theme] .sidebar-wrapper,
+html[data-theme] .sidebar-header,
+html[data-theme] .card-header,
+html[data-theme] .table thead th,
+html[data-theme] .table-light,
+html[data-theme] .bg-light { 
+    background-color: var(--theme-primary) !important; 
+    color: var(--text-on-accent) !important; 
+}
+html[data-theme] .top-header .nav-link,
+html[data-theme] .top-header .theme-switcher-btn,
+html[data-theme] .top-header .user-name { color: var(--text-on-accent) !important; }
+
+/* Buttons — UNIFORMES AU THÈME */
+html[data-theme] .btn-primary, 
+html[data-theme] .btn-success,
+html[data-theme] .btn-info,
+html[data-theme] .btn-primary-soft { 
+    background-color: var(--theme-accent) !important; 
+    border-color: var(--theme-accent) !important; 
+    color: #ffffff !important; 
+}
+html[data-theme="light"] .btn-primary,
+html[data-theme="light"] .btn-success { color: #ffffff !important; }
+
+/* Elements restants en blanc pour lisibilité */
+html[data-theme] .card { background-color: var(--bg-card) !important; border: 1px solid var(--border-color) !important; color: var(--text-main) !important; }
+html[data-theme] .bg-white { background-color: #ffffff !important; }
+html[data-theme] .table { color: var(--text-main) !important; }
+
+/* Autres réglages */
+html[data-theme] .btn { border-radius: 8px !important; font-weight: 600; }
+html[data-theme] .form-control, html[data-theme] .form-select { background-color: var(--bg-input) !important; border: 1px solid var(--border-color) !important; color: var(--text-main) !important; }
+html[data-theme] .text-primary { color: var(--theme-accent) !important; }
+html[data-theme] .sidebar-wrapper .metismenu a { color: var(--text-sidebar) !important; }
+html[data-theme] .sidebar-wrapper .metismenu a:hover { color: var(--sidebar-text-active) !important; background: rgba(255,255,255,0.05); }
+
+/* Theme Switcher UI */
+.theme-switcher-btn { background: transparent; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 5px 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+html[data-theme="light"] .theme-switcher-btn { border-color: #e2e8f0; }
+.theme-swatch { width: 14px; height: 14px; border-radius: 50%; display: inline-block; border: 2px solid rgba(255,255,255,0.25); }
+.swatch-bleu-sombre { background: #001529; } .swatch-light { background: #f1f5f9; }
+.swatch-dark { background: #831843; } .swatch-vert { background: #14532d; }
+.swatch-violet { background: #2e1065; } .swatch-rouge { background: #450a0a; }
+.swatch-orange { background: #431407; }
+
+/* Responsive Footer */
+.footer { position: fixed; left: 250px; right: 0; bottom: 0; height: 50px; display: flex; align-items: center; justify-content: center; z-index: 10; transition: left 0.3s ease; }
+.wrapper.toggled .footer { left: 70px; }
+@media screen and (max-width: 1024px) { .footer { left: 0 !important; } }
+
+/* ========== HARMONISATION DES ICONES D'ACTION ET THÉMATISATION ========== */
+/* Force all action icons in tables and their dropdowns to match the theme color */
+html[data-theme] table td i,
+html[data-theme] table td a i,
+html[data-theme] table td button i,
+html[data-theme] .dropdown-menu .dropdown-item i,
+html[data-theme] .dropdown-menu .dropdown-item.text-danger i,
+html[data-theme] .dropdown-menu .dropdown-item.text-warning i {
+    color: var(--theme-accent) !important;
+}
+
+/* Add hover effects for actions to make them feel alive and premium */
+html[data-theme] .dropdown-menu .dropdown-item:hover i {
+    transform: scale(1.15);
+    transition: transform 0.2s ease;
+}
+
+/* Ensure buttons in table headers and action forms use theme accents */
+html[data-theme] .theme-pill-active,
+html[data-theme] .btn-outline-primary {
+    background-color: var(--theme-accent) !important;
+    border-color: var(--theme-accent) !important;
+    color: #ffffff !important;
+}
+
+html[data-theme] .btn-outline-primary:hover {
+    filter: brightness(0.9);
+}

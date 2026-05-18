@@ -1,0 +1,9 @@
+/* colors.css fallback - imports existing header colors and base styles to avoid 404/MIME issues */
+@import url('header-colors.css');
+@import url('style.css');
+
+/* Minimal fallback variables (if header-colors doesn't define them) */
+:root {
+  --bs-primary: #0d6efd;
+  --bs-body-bg: #ffffff;
+}

@@ -1,0 +1,191 @@
+.main-container {
+  display: flex;
+  height: 100vh;
+}
+
+.left-panel {
+  flex: 1;
+  background-color: rgba(255, 255, 255, 0.88);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  text-align: center;
+  position: relative;
+}
+
+.right-panel {
+  flex: 1;
+  background-color: #003366;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  position: relative;
+}
+
+.logo-big {
+  max-width: 80%;
+  height: auto;
+}
+
+.typing-container {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 1.2rem;
+  color: #003366;
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  max-width: 100%; /* Empêche le dépassement horizontal */
+  min-height: 3em;
+  padding: 10px;
+  word-wrap: break-word;
+  white-space: normal; /* Permet les retours à la ligne */
+  line-height: 1.6;
+  flex-wrap: wrap;
+}
+
+.typed-text {
+  border-right: 2px solid #003366;
+  animation: blink 0.8s steps(1) infinite;
+  flex: 1;
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    border-color: #003366;
+  }
+  50% {
+    border-color: transparent;
+  }
+}
+
+.pen {
+  animation: movePen 0.4s infinite;
+  color: #003366;
+}
+
+@keyframes movePen {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+.phrase-fixe {
+  font-weight: bold; /* Gras */
+  font-style: italic; /* Italique */
+  font-size: 1.1rem;
+  color: #003366;
+  margin-top: 10px;
+  text-align: center;
+}
+
+.form-container {
+  background-color: rgba(255, 255, 255, 0.12);
+  padding: 30px;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 420px;
+}
+
+.form-container label {
+  color: white;
+}
+
+.form-control {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid #ccc;
+  color: white;
+  padding: 12px;
+}
+
+.form-control::placeholder {
+  color: #ccc;
+}
+
+.form-title {
+  color: white;
+  font-weight: bold;
+  font-size: 1.6rem;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.footer-blue {
+  position: absolute;
+  bottom: 15px;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #ccc;
+}
+
+.footer-blue img {
+  width: 24px;
+  height: 24px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.forgot-link {
+  text-align: right;
+  margin-top: -10px;
+}
+
+.forgot-link a {
+  font-size: 0.85rem;
+  color: #ccc;
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .main-container {
+    flex-direction: column;
+  }
+
+  .left-panel,
+  .right-panel {
+    flex: none;
+    width: 80%;
+    height: auto;
+  }
+
+  .logo-big {
+    max-width: 60%;
+  }
+
+  .footer-blue {
+    position: static;
+    margin-top: 20px;
+  }
+}
+.footer-blue img {
+  width: 50px; /* ⬅️ Agrandi ici */
+  height: auto;
+  margin-left: 8px;
+  vertical-align: middle;
+  filter: brightness(0) invert(1); /* ⬅️ Rend l’image blanche */
+}
+.logo-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 3px solid #003366;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.15);
+
+  /* Centrer et ajuster l'image */
+  object-fit: contain;
+  padding: 8px; /* espace entre l'image et le bord du cercle */
+  box-sizing: border-box; /* inclut le padding dans la taille totale */
+
+  filter: brightness(0) invert(1);
+  background-color: transparent; /* optionnel */
+  display: block; /* pour éviter espace sous l'image */
+  margin: auto; /* centrer horizontalement si besoin */
+}

@@ -1,0 +1,542 @@
+/* Custom overrides for global dark theme (loaded after semi-dark) */
+
+/* Topbar and sidebar */
+.top-header .navbar,
+.sidebar-wrapper {
+  background-color: #111 !important;
+  border-color: #222 !important;
+}
+
+/* Text and icons */
+.top-header .navbar .nav-link,
+.top-header .navbar .user-name,
+.mobile-toggle-icon,
+.search-toggle-icon,
+.projects,
+.notifications,
+.messages,
+.sidebar-wrapper .sidebar-header .logo-text,
+.sidebar-wrapper .metismenu a,
+.sidebar-wrapper .metismenu .parent-icon {
+  color: #fff !important;
+}
+
+/* Sidebar header */
+.sidebar-wrapper .sidebar-header {
+  background: #000 !important;
+  border-right: 1px solid #111 !important;
+  border-bottom: 1px solid #111 !important;
+}
+
+/* Hover / active states - use secondary color */
+.sidebar-wrapper .metismenu .mm-active>a,
+.sidebar-wrapper .metismenu a:hover,
+.sidebar-wrapper .metismenu li a:hover,
+.sidebar-wrapper .metismenu ul a:hover {
+  color: #fff !important;
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
+} 
+
+/* Page content */
+.page-content {
+  background-color: #fff !important;
+  color: #000 !important;
+}
+
+/* Submit buttons */
+button[type="submit"],
+input[type="submit"],
+.btn.btn-primary {
+  background-color: #000 !important;
+  border-color: #000 !important;
+  color: #fff !important;
+}
+
+/* Table headers */
+table thead th,
+.table thead th {
+  background-color: #000 !important;
+  color: #fff !important;
+}
+
+/* User setting box adaptation */
+.top-header .navbar .user-setting {
+  background-color: rgba(255,255,255,0.06) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+  box-shadow: none !important;
+}
+
+/* Button contrast and special cases */
+/* Keep submit buttons dark in content area */
+.page-content button[type="submit"],
+.page-content input[type="submit"],
+.page-content .btn.btn-primary {
+  background-color: #111 !important;
+  border-color: #111 !important;
+  color: #fff !important;
+}
+
+/* In dark areas (topbar / sidebar) use ghost buttons with white text */
+.top-header .navbar .btn,
+.sidebar-wrapper .btn {
+  background-color: transparent !important;
+  border-color: rgba(255,255,255,0.12) !important;
+  color: #fff !important;
+}
+
+/* Outline buttons default */
+.btn-outline-primary,
+.btn-outline-dark {
+  border-color: #111 !important;
+  color: #111 !important;
+}
+
+/* Ensure contrast when outline buttons are inside dark areas */
+.top-header .navbar .btn-outline-primary,
+.top-header .navbar .btn-outline-dark,
+.sidebar-wrapper .btn-outline-primary,
+.sidebar-wrapper .btn-outline-dark {
+  color: #fff !important;
+  border-color: rgba(255,255,255,0.12) !important;
+}
+
+/* --- Additional UI overrides to fully restyle the template --- */
+
+/* Cards */
+.card {
+  background-color: #fff !important;
+  border: 1px solid #e6e6e6 !important;
+  color: #000 !important;
+}
+.card .card-header {
+  background-color: #111 !important;
+  color: #fff !important;
+  border-bottom: 1px solid #222 !important;
+}
+.card .card-body {
+  background-color: #fff !important;
+  color: #000 !important;
+}
+
+/* Modals */
+.modal-content {
+  background-color: #fff !important;
+  color: #000 !important;
+}
+.modal-header {
+  background-color: #000 !important;
+  color: #fff !important;
+  border-bottom: 1px solid #111 !important;
+}
+.modal-footer {
+  background-color: #fff !important;
+  color: #000 !important;
+  border-top: 1px solid #e6e6e6 !important;
+}
+
+/* Buttons - unified styles to ensure contrast and dark hovers */
+.btn {
+  background-color: #111 !important;
+  color: #fff !important;
+  border-color: #111 !important;
+}
+.btn:hover,
+.btn:focus,
+.btn:active {
+  background-color: #000 !important;
+  color: #fff !important;
+  border-color: #000 !important;
+  box-shadow: none !important;
+}
+
+/* Light variant stays readable */
+.btn-light {
+  background-color: #fff !important;
+  color: #000 !important;
+  border-color: #e6e6e6 !important;
+}
+
+/* Outline buttons behave as dark on hover */
+.btn-outline-primary,
+.btn-outline-secondary,
+.btn-outline-dark {
+  color: #111 !important;
+  border-color: #111 !important;
+  background-color: transparent !important;
+}
+.btn-outline-primary:hover,
+.btn-outline-secondary:hover,
+.btn-outline-dark:hover {
+  background-color: #111 !important;
+  color: #fff !important;
+  border-color: #111 !important;
+}
+
+/* Variant colors keep readable text and dark hover */
+.btn-success,
+.btn-danger,
+.btn-warning,
+.btn-info {
+  color: #fff !important;
+}
+.btn-success:hover { background-color: #0f5132 !important; border-color: #0f5132 !important; }
+.btn-danger:hover { background-color: #721c24 !important; border-color: #721c24 !important; }
+.btn-warning:hover { background-color: #7a4f01 !important; border-color: #7a4f01 !important; }
+.btn-info:hover { background-color: #0b7285 !important; border-color: #0b7285 !important; }
+
+/* Buttons inside dark topbar / sidebar remain ghost with white text */
+.top-header .navbar .btn,
+.sidebar-wrapper .btn {
+  background-color: transparent !important;
+  border-color: rgba(255,255,255,0.12) !important;
+  color: #fff !important;
+}
+.top-header .navbar .btn:hover,
+.sidebar-wrapper .btn:hover {
+  background-color: rgba(255,255,255,0.06) !important;
+  color: #fff !important;
+  border-color: rgba(255,255,255,0.22) !important;
+}
+
+/* Ensure icon colors inside buttons inherit correctly */
+.btn .bi,
+.btn .fa {
+  color: inherit !important;
+}
+
+/* Badges */
+.badge {
+  background-color: #000 !important;
+  color: #fff !important;
+}
+
+/* Pagination */
+.pagination .page-link {
+  background-color: #fff !important;
+  color: #000 !important;
+  border: 1px solid #e6e6e6 !important;
+}
+.pagination .page-item.active .page-link {
+  background-color: #000 !important;
+  color: #fff !important;
+  border-color: #000 !important;
+}
+
+/* Form controls */
+.form-control,
+.input-group .form-control {
+  background-color: #fff !important;
+  color: #000 !important;
+  border: 1px solid #e6e6e6 !important;
+}
+.form-control:focus,
+.input-group .form-control:focus {
+  box-shadow: 0 0 0 .15rem rgba(0,0,0,.05) !important;
+  border-color: #cfcfcf !important;
+}
+
+/* Select2 */
+.select2-container--default .select2-selection--single {
+  background-color: #fff !important;
+  border: 1px solid #e6e6e6 !important;
+  color: #000 !important;
+}
+.select2-container--default .select2-results__option--highlighted {
+  background-color: rgba(0,0,0,0.06) !important;
+  color: #000 !important;
+}
+
+/* DataTables */
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+  background-color: #fff !important;
+  color: #000 !important;
+  border: 1px solid #e6e6e6 !important;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button.current,
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+  background-color: #000 !important;
+  color: #fff !important;
+}
+
+/* Dropdowns */
+.dropdown-menu {
+  background-color: #fff !important;
+  color: #000 !important;
+  border: 1px solid #e6e6e6 !important;
+}
+.dropdown-item {
+  color: #000 !important;
+}
+.dropdown-item:hover {
+  background-color: rgba(0,0,0,0.04) !important;
+}
+
+/* Utility: replace primary colors used across template (reduce blue accents) */
+/* Use secondary color instead of blue for primary backgrounds; keep text color controlled by text-* classes */
+.text-primary,
+.link-primary {
+  color: #6c757d !important;
+}
+.bg-primary,
+.btn-primary {
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
+}
+.btn-primary {
+  color: #fff !important;
+}
+
+/* Images that need inversion inside dark areas (sidebar/logo) */
+.sidebar-wrapper .sidebar-header img,
+.top-header .logo img {
+  filter: invert(1) grayscale(100%) brightness(200%) !important;
+}
+
+/* Ensure logo variants (logo-msis, logo-circle) inside header/sidebar are inverted when in dark areas */
+.sidebar-wrapper .logo-msis,
+.sidebar-wrapper img.logo-msis,
+.top-header .logo-msis,
+.sidebar-wrapper .logo-circle,
+.top-header .logo-circle {
+  filter: invert(1) grayscale(100%) brightness(200%) !important;
+}
+
+/* Neutralize inline-colored icons inside content so theme stays consistent */
+.page-content i[style*="color:"],
+.page-content .fa[style*="color:"],
+.page-content .bi[style*="color:"] {
+  color: inherit !important;
+}
+
+/* Ensure table header stickiness retains color */
+.table thead th.sticky,
+.table thead th {
+  background-color: #000 !important;
+  color: #fff !important;
+}
+
+/* Body background to match white content */
+body{
+  background-color: #fff !important;
+}
+
+/* Force icons in content to inherit color (let container decide) */
+.page-content .fa,
+.page-content .fas,
+.page-content .bi,
+.page-content .fa-solid,
+.page-content .fa-regular {
+  color: inherit !important;
+}
+
+/* Dashboard widget icons: ensure visibility (white on colored backgrounds) */
+.widget-icon i,
+.widget-icon .bi,
+.widget-icon .fa {
+  color: #fff !important;
+}
+
+/* Keep icons in header, sidebar and other dark areas white and visible */
+.top-header .navbar .fa,
+.top-header .navbar .fas,
+.top-header .navbar .far,
+.top-header .navbar .bi,
+.top-header .navbar .svg-inline--fa,
+.sidebar-wrapper .fa,
+.sidebar-wrapper .fas,
+.sidebar-wrapper .far,
+.sidebar-wrapper .bi,
+.sidebar-wrapper .fa-solid,
+.sidebar-wrapper .fa-regular,
+.sidebar-wrapper .parent-icon,
+.sidebar-wrapper .metismenu a .parent-icon i,
+.mobile-toggle-icon,
+.search-toggle-icon,
+.projects,
+.notifications,
+.messages,
+.top-header .user-setting .notification-box i,
+.dropdown-menu .notification-box i,
+.navbar .user-img + .user-name i,
+.sidebar-wrapper .metismenu a i,
+.top-header .navbar .nav-link i {
+  color: #fff !important;
+  fill: #fff !important; /* SVG icons */
+  stroke: #fff !important;
+}
+
+/* Ensure icons inside colored badges/spans are visible */
+.bg-primary.text-white i,
+.bg-info.text-white i,
+.bg-success.text-white i,
+.bg-danger.text-white i,
+.bg-warning.text-white i,
+.bg-orange.text-white i,
+.widget-icon i {
+  color: #fff !important;
+  fill: #fff !important;
+}
+
+/* Ensure icon elements inside buttons inherit white in dark areas */
+.top-header .navbar .btn .bi,
+.top-header .navbar .btn .fa,
+.sidebar-wrapper .btn .bi,
+.sidebar-wrapper .btn .fa {
+  color: #fff !important;
+}
+
+/* Reduce blue/purple accent insertions from inline templates */
+[style*="#7367F0"],
+[style*="#7367f0"],
+[style*="#4e73df"],
+[style*="#EA5455"],
+[style*="#ea5455"] {
+  color: inherit !important;
+}
+
+/* Small utility: ensure buttons that used outline-primary get readable text */
+.btn-outline-primary,
+.btn-outline-dark {
+  color: #000 !important;
+}
+
+/* Menu hover fixes: ensure no blue hover in sidebar and configuration menus */
+/* Top-level menu items: always white for better visibility */
+.sidebar-wrapper .metismenu > li > a {
+  color: #fff !important;
+}
+.sidebar-wrapper .metismenu > li > a .parent-icon,
+.sidebar-wrapper .metismenu > li > a .menu-title {
+  color: #fff !important;
+}
+.sidebar-wrapper .metismenu > li > a .parent-icon i,
+.sidebar-wrapper .metismenu > li > a .parent-icon .bi {
+  color: #fff !important;
+  fill: #fff !important;
+}
+
+/* Default submenu items are muted */
+.sidebar-wrapper .metismenu ul a {
+  color: #cfcfcf !important;
+  background-color: transparent !important;
+}
+
+/* Highlight only the hovered or active submenu item */
+.sidebar-wrapper .metismenu ul li > a:hover,
+.sidebar-wrapper .metismenu ul li > a.active,
+.sidebar-wrapper .metismenu ul li > a[aria-expanded="true"] {
+  color: #fff !important;
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
+}
+
+/* Parent item active styles (only direct child links) */
+.sidebar-wrapper .metismenu li.active > a,
+.sidebar-wrapper .metismenu li.mm-active > a,
+.sidebar-wrapper .metismenu li.mm-show > a,
+.sidebar-wrapper .metismenu a.has-arrow.mm-active,
+.sidebar-wrapper .metismenu a.has-arrow[aria-expanded="true"] {
+  color: #fff !important;
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
+}
+
+/* For expanded submenu (.mm-show) do not highlight every item; only hovered/active ones */
+.sidebar-wrapper .metismenu .mm-show li > a {
+  color: #cfcfcf !important;
+  background: transparent !important;
+}
+.sidebar-wrapper .metismenu .mm-show li.active > a,
+.sidebar-wrapper .metismenu .mm-show li > a:hover {
+  color: #fff !important;
+  background-color: rgba(108,117,125,0.12) !important;
+  border-color: rgba(108,117,125,0.12) !important;
+}
+
+/* Also override pill/tab active states that may appear in dashboard controls */
+.nav-pills .nav-link.active,
+.nav-tabs .nav-link.active,
+.nav-link.active {
+  color: #fff !important;
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
+}
+
+/* Neutralize inline blue background variants explicitly (covers RGB and rgba variants) */
+[style*="52 97 255"],
+[style*="#3461ff"],
+[style*="#3461FF"],
+[style*="rgb(52, 97, 255"],
+[style*="rgba(52, 97, 255"],
+[style*="rgb(52 97 255"] {
+  background-color: transparent !important;
+  color: inherit !important;
+}
+
+/* End of menu hover fixes */
+
+/* Small configuration submenu items */
+.sidebar-wrapper .metismenu li ul li a {
+  color: #cfcfcf !important;
+}
+.sidebar-wrapper .metismenu li ul li a:hover {
+  color: #fff !important;
+  background: rgba(108,117,125,0.12) !important;
+  border-color: rgba(108,117,125,0.12) !important;
+}
+
+/* Ensure buttons always have readable text and dark hover (no blue) */
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-success,
+.btn-danger,
+.btn-warning,
+.btn-info,
+.dataTables_wrapper .btn,
+.table .btn {
+  color: #fff !important;
+  background-color: #111 !important;
+  border-color: #111 !important;
+}
+.btn:hover,
+.btn:focus,
+.btn:active {
+  background-color: #000 !important;
+  color: #fff !important;
+  border-color: #000 !important;
+}
+
+/* Keep light buttons readable */
+.btn-light {
+  background-color: #fff !important;
+  color: #000 !important;
+  border-color: #e6e6e6 !important;
+}
+
+/* Small/icon buttons */
+.btn .bi,
+.btn .fa {
+  color: inherit !important;
+}
+
+/* Force link hover in relevant areas (dashboard controls) to dark instead of blue */
+.page-content a:hover,
+.card .card-header a:hover,
+.table a:hover {
+  color: #111 !important;
+  background-color: rgba(0,0,0,0.04) !important;
+}
+
+/* Special case: neutralize any remaining blue hover rules applied by theme JS */
+[style*="background-color: rgb(52 97 255"],
+[style*="background-color: rgba(52, 97, 255"],
+[style*="#3461ff"],
+[style*="#3461FF"] {
+  background-color: transparent !important;
+  color: inherit !important;
+}
+
+/* End of overrides */
