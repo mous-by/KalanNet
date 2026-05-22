@@ -101,7 +101,8 @@
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Mot de passe</label>
-                                <input type="password" name="pwd" class="form-control" placeholder="Laisser vide pour générer">
+                                <input type="password" name="pwd" class="form-control" minlength="4" placeholder="Laisser vide pour générer">
+                                <small class="text-muted">4 caractères minimum.</small>
                             </div>
 
                             <div class="col-md-6 js-field js-dae d-none">

@@ -20,7 +20,7 @@
     <div class="card theme-card shadow-sm mb-4">
         <div class="card-body">
             <h5 class="fw-bold mb-3">Rechercher une évaluation</h5>
-            <form method="GET" action="{{ route('evaluations.index') }}" class="row g-3" id="evaluation-filter-form">
+            <form method="GET" action="{{ route('evaluations.index') }}" class="row g-3" id="evaluation-filter-form" data-auto-filter="true">
                 <div class="col-md-3">
                     <label class="form-label">Classe</label>
                     <select class="form-select" id="id_classe" name="id_classe">

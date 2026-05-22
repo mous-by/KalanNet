@@ -45,6 +45,7 @@ class EnseignantController extends Controller
 
     public function create()
     {
+        $this->authorizeTeacherManagement('create');
         $ecole = Auth::user()->ecole;
         return view('enseignants.form', [
             'enseignant' => new Enseignant(),
@@ -56,6 +57,7 @@ class EnseignantController extends Controller
 
     public function store(Request $request)
     {
+        $this->authorizeTeacherManagement('create');
         $data = $this->validateEnseignant($request);
         $data['avatar_enseignant'] = $this->storeAvatar($request);
         $data['pwd'] = Hash::make('123456');
@@ -123,6 +125,7 @@ class EnseignantController extends Controller
 
     public function edit($id)
     {
+        $this->authorizeTeacherManagement('update');
         $enseignant = Enseignant::findOrFail($id);
         $this->authorizeEnseignant($enseignant);
 
@@ -136,6 +139,7 @@ class EnseignantController extends Controller
 
     public function update(Request $request, $id)
     {
+        $this->authorizeTeacherManagement('update');
         $enseignant = Enseignant::findOrFail($id);
         $this->authorizeEnseignant($enseignant);
 
@@ -155,6 +159,7 @@ class EnseignantController extends Controller
 
     public function archive($id)
     {
+        $this->authorizeTeacherManagement('archive');
         $enseignant = Enseignant::findOrFail($id);
         $this->authorizeEnseignant($enseignant);
 
@@ -168,6 +173,7 @@ class EnseignantController extends Controller
 
     public function reactivate($id)
     {
+        $this->authorizeTeacherManagement('archive');
         $enseignant = Enseignant::findOrFail($id);
         $this->authorizeEnseignant($enseignant);
 
@@ -316,5 +322,26 @@ class EnseignantController extends Controller
         }
 
         abort(403, 'Accès non autorisé');
+    }
+
+    private function authorizeTeacherManagement(string $action): void
+    {
+        $user = Auth::user();
+
+        if ($user->droit === 'SupAdmin') {
+            return;
+        }
+
+        $permissions = [
+            'create' => ['enseignants_creation', 'enseignants_création'],
+            'update' => ['enseignants_modification'],
+            'archive' => ['enseignants_archiver_ou_reactiver', 'enseignants_archiver ou réactiver'],
+        ][$action] ?? [];
+
+        if ($user->userHasAnyPermission($permissions)) {
+            return;
+        }
+
+        abort(403, 'Permission insuffisante.');
     }
 }

@@ -71,7 +71,7 @@
                 <div class="card-header theme-header d-flex align-items-center justify-content-between flex-wrap gap-2">
                     <h5 class="mb-0 fw-bold"><i class="bx bx-group me-2"></i>Liste des utilisateurs</h5>
                     <div class="d-flex align-items-center gap-2 flex-wrap">
-                        <form action="{{ route('configuration.utilisateurs') }}" method="GET">
+                        <form action="{{ route('configuration.utilisateurs') }}" method="GET" data-auto-filter="true">
                             <input type="text" name="search" class="form-control" placeholder="Nom, email, fonction..." value="{{ request('search') }}">
                         </form>
                         @if(in_array($connectedUser->droit, ['SupAdmin', 'Admin'], true))

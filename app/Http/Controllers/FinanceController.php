@@ -159,7 +159,7 @@ class FinanceController extends Controller
     public function listeLegacyPlanifications(Request $request)
     {
         $idEcole = (int) session('idEcole');
-        $this->ensureAnyPermission(['Planification de paiements_apercu', 'planifications_apercu']);
+        $this->ensurePermission('finances_planifications_apercu');
 
         $classes = Classe::where('idEcole', $idEcole)->orderBy('nom_classe')->get();
         $annees = AnneeScolaire::orderByDesc('id_anneeScolaire')->get();
@@ -180,7 +180,7 @@ class FinanceController extends Controller
     public function createLegacyPlanification()
     {
         $idEcole = (int) session('idEcole');
-        $this->ensureAnyPermission(['Planification de paiements_création', 'paiements_faire']);
+        $this->ensureAnyPermission(['finances_planifications_creation', 'paiements_faire']);
 
         $classes = Classe::where('idEcole', $idEcole)->orderBy('nom_classe')->get();
         $annees = AnneeScolaire::whereDate('date_debut', '<=', now())
@@ -196,10 +196,11 @@ class FinanceController extends Controller
 
     public function storeLegacyPlanification(Request $request)
     {
-        $this->ensureAnyPermission(['Planification de paiements_création', 'paiements_faire']);
+        $this->ensureAnyPermission(['finances_planifications_creation', 'paiements_faire']);
 
         $data = $request->validate([
-            'id_classe' => 'required|exists:classe,id_classe',
+            'id_classes' => 'required|array|min:1',
+            'id_classes.*' => 'required|integer|exists:classe,id_classe',
             'id_annee' => 'required|exists:anneescolaire,id_anneeScolaire',
             'motif' => 'required|array|min:1',
             'motif.*' => 'required|string|max:255',
@@ -212,51 +213,66 @@ class FinanceController extends Controller
         ]);
 
         $idEcole = (int) session('idEcole');
-        Classe::where('idEcole', $idEcole)->findOrFail($data['id_classe']);
+        $classeIds = collect($data['id_classes'])->map(fn ($id) => (int) $id)->unique()->values();
+        $allowedClasseIds = Classe::where('idEcole', $idEcole)
+            ->whereIn('id_classe', $classeIds)
+            ->pluck('id_classe')
+            ->map(fn ($id) => (int) $id);
+
+        if ($allowedClasseIds->count() !== $classeIds->count()) {
+            throw ValidationException::withMessages([
+                'id_classes' => 'Une ou plusieurs classes sélectionnées n’appartiennent pas à votre école.',
+            ]);
+        }
+
         $errors = [];
         $created = 0;
 
         try {
-            DB::transaction(function () use ($data, &$errors, &$created) {
-                $existing = Planification::where('id_classe', $data['id_classe'])
-                    ->where('id_annee', $data['id_annee'])
-                    ->pluck('motif')
-                    ->map(fn ($motif) => strtolower(trim((string) $motif)))
-                    ->all();
-                $requiredTypes = ['annuelle', 'mensuelle', 'trimestrielle'];
+            DB::transaction(function () use ($data, $allowedClasseIds, &$errors, &$created) {
+                $classNames = Classe::whereIn('id_classe', $allowedClasseIds)
+                    ->pluck('nom_classe', 'id_classe');
 
-                if (empty(array_diff($requiredTypes, $existing))) {
-                    throw ValidationException::withMessages([
-                        'motif' => 'Cette classe est déjà planifiée avec les trois types : annuelle, mensuelle et trimestrielle.',
-                    ]);
-                }
+                foreach ($allowedClasseIds as $classeId) {
+                    $existing = Planification::where('id_classe', $classeId)
+                        ->where('id_annee', $data['id_annee'])
+                        ->pluck('motif')
+                        ->map(fn ($motif) => strtolower(trim((string) $motif)))
+                        ->all();
+                    $requiredTypes = ['annuelle', 'mensuelle', 'trimestrielle'];
 
-                foreach ($data['motif'] as $index => $motif) {
-                    $motif = strtolower(trim((string) $motif));
-                    $dateDebut = $data['date_debut'][$index] ?? null;
-                    $dateFin = $data['date_fin'][$index] ?? null;
-                    $montant = $data['montant'][$index] ?? null;
-
-                    if (strtotime((string) $dateFin) <= strtotime((string) $dateDebut)) {
-                        $errors[] = 'La date de fin doit être strictement postérieure à la date de début à la ligne ' . ($index + 1) . '.';
-                        continue;
-                    }
-                    if (in_array($motif, $existing, true)) {
-                        $errors[] = "Le type de planification '{$motif}' est déjà défini pour cette classe à la ligne " . ($index + 1) . '.';
+                    if (empty(array_diff($requiredTypes, $existing))) {
+                        $errors[] = "La classe {$classNames[$classeId]} est déjà planifiée avec les trois types.";
                         continue;
                     }
 
-                    Planification::create([
-                        'motif' => $motif,
-                        'id_classe' => $data['id_classe'],
-                        'id_annee' => $data['id_annee'],
-                        'date_debut' => $dateDebut,
-                        'date_fin' => $dateFin,
-                        'montant_planification' => $montant,
-                    ]);
+                    foreach ($data['motif'] as $index => $motif) {
+                        $motif = strtolower(trim((string) $motif));
+                        $dateDebut = $data['date_debut'][$index] ?? null;
+                        $dateFin = $data['date_fin'][$index] ?? null;
+                        $montant = $data['montant'][$index] ?? null;
 
-                    $existing[] = $motif;
-                    $created++;
+                        if (strtotime((string) $dateFin) <= strtotime((string) $dateDebut)) {
+                            $errors[] = 'La date de fin doit être strictement postérieure à la date de début à la ligne ' . ($index + 1) . '.';
+                            continue;
+                        }
+                        if (in_array($motif, $existing, true)) {
+                            $errors[] = "Le type de planification '{$motif}' existe déjà pour {$classNames[$classeId]} à la ligne " . ($index + 1) . '.';
+                            continue;
+                        }
+
+                        Planification::create([
+                            'motif' => $motif,
+                            'id_classe' => $classeId,
+                            'id_annee' => $data['id_annee'],
+                            'date_debut' => $dateDebut,
+                            'date_fin' => $dateFin,
+                            'montant_planification' => $montant,
+                        ]);
+
+                        $existing[] = $motif;
+                        $created++;
+                    }
                 }
             });
         } catch (ValidationException $exception) {
@@ -267,7 +283,7 @@ class FinanceController extends Controller
                 ->with('error', 'Impossible d’enregistrer la planification du paiement.');
         }
 
-        $message = $created > 0 ? 'Insertion faite avec succès.' : 'Aucune planification insérée.';
+        $message = $created > 0 ? "{$created} planification(s) insérée(s) avec succès." : 'Aucune planification insérée.';
         return redirect()->route('finances.planifications.create')
             ->with($created > 0 ? 'success' : 'error', $message)
             ->with('planification_errors', $errors);
@@ -275,7 +291,7 @@ class FinanceController extends Controller
 
     public function updateLegacyPlanification(Request $request, $id)
     {
-        $this->ensureAnyPermission(['Planification de paiements_modification', 'paiements_faire']);
+        $this->ensureAnyPermission(['finances_planifications_modification', 'paiements_faire']);
         $idEcole = (int) session('idEcole');
 
         $data = $request->validate([
@@ -317,7 +333,7 @@ class FinanceController extends Controller
 
     public function deleteLegacyPlanification($id)
     {
-        $this->ensureAnyPermission(['Planification de paiements_suppression', 'paiements_faire']);
+        $this->ensureAnyPermission(['finances_planifications_supprimer', 'paiements_faire']);
 
         $planification = Planification::findOrFail($id);
         Classe::where('idEcole', session('idEcole'))->findOrFail($planification->id_classe);

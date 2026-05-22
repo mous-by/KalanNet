@@ -6,6 +6,7 @@
     $selectedMatiere = old('id_matiere', $emargement->id_matiere ?? null);
     $selectedLecon = old('id_lecon', $emargement->id_lecon ?? null);
     $selectedAnnee = old('id_anneeScolaire', $emargement->id_anneeScolaire ?? $currentAcademicYearId);
+    $isCreate = empty($emargement);
 @endphp
 
 <div class="modal fade" id="{{ $modalId }}" tabindex="-1" aria-hidden="true">
@@ -16,7 +17,8 @@
                   data-selected-teacher="{{ $selectedTeacher }}"
                   data-selected-class="{{ $selectedClass }}"
                   data-selected-matiere="{{ $selectedMatiere }}"
-                  data-selected-lecon="{{ $selectedLecon }}">
+                  data-selected-lecon="{{ $selectedLecon }}"
+                  data-smart-suggestion='@json($isCreate ? ($smartSuggestion ?? []) : [])'>
                 @csrf
                 @if($method !== 'POST')
                     @method($method)
@@ -38,6 +40,13 @@
                     @endif
 
                     <div class="row g-3">
+                        @if($isCreate && !empty($smartSuggestion))
+                            <div class="col-12">
+                                <div class="alert alert-info border-0 border-start border-info border-4 mb-0">
+                                    Une proposition a été préparée depuis l'emploi du temps du jour. Vous pouvez la modifier avant validation.
+                                </div>
+                            </div>
+                        @endif
                         <div class="col-md-6">
                             <label class="form-label">Enseignant <span class="text-danger">*</span></label>
                             <select name="id_enseignant" class="form-select js-enseignant-select" required @disabled($isTeacher)>
@@ -74,6 +83,14 @@
                             <select name="id_lecon" class="form-select js-lecon-select" required>
                                 <option value="">Sélectionnez une leçon</option>
                             </select>
+                            <div class="small text-muted mt-2 js-progression-text"></div>
+                            <div class="alert alert-warning border-0 border-start border-warning border-4 mt-3 mb-0 js-lecon-fallback d-none">
+                                Aucun programme officiel n'est disponible pour cette classe et cette matière. Saisissez la leçon effectuée ci-dessous; elle sera ajoutée au programme officiel sans doublon.
+                            </div>
+                        </div>
+                        <div class="col-12 js-new-lecon-wrapper d-none">
+                            <label class="form-label">Leçon effectuée</label>
+                            <input type="text" name="new_lecon_titre" class="form-control js-new-lecon-input" value="{{ old('new_lecon_titre') }}" placeholder="Ex: Les équations du premier degré">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Trimestre <span class="text-danger">*</span></label>
@@ -122,16 +139,22 @@
         document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('.emargement-dynamic-form').forEach((form) => {
                 const formData = JSON.parse(form.dataset.formData || '{}');
+                const smartSuggestion = JSON.parse(form.dataset.smartSuggestion || '{}');
                 const teacherSelect = form.querySelector('.js-enseignant-select');
                 const classSelect = form.querySelector('.js-classe-select');
                 const matiereSelect = form.querySelector('.js-matiere-select');
                 const leconSelect = form.querySelector('.js-lecon-select');
+                const hoursInput = form.querySelector('input[name="nombre_heure"]');
+                const progressionText = form.querySelector('.js-progression-text');
+                const fallbackBox = form.querySelector('.js-lecon-fallback');
+                const newLeconWrapper = form.querySelector('.js-new-lecon-wrapper');
+                const newLeconInput = form.querySelector('.js-new-lecon-input');
                 const contractRadios = Array.from(form.querySelectorAll('.js-contract-filter'));
                 const allTeacherOptions = Array.from(teacherSelect.querySelectorAll('option[data-contrat]')).map((option) => option.cloneNode(true));
                 const selected = {
-                    teacher: form.dataset.selectedTeacher || '',
-                    classe: form.dataset.selectedClass || '',
-                    matiere: form.dataset.selectedMatiere || '',
+                    teacher: form.dataset.selectedTeacher || smartSuggestion.teacher || '',
+                    classe: form.dataset.selectedClass || smartSuggestion.classe || '',
+                    matiere: form.dataset.selectedMatiere || smartSuggestion.matiere || '',
                     lecon: form.dataset.selectedLecon || '',
                 };
 
@@ -140,7 +163,7 @@
                     items.forEach((item) => {
                         const option = document.createElement('option');
                         option.value = item.id;
-                        option.textContent = item.label;
+                        option.textContent = item.done ? `${item.label} ✓` : item.label;
                         option.selected = String(item.id) === String(selectedValue);
                         select.appendChild(option);
                     });
@@ -176,7 +199,22 @@
 
                 function loadLecons() {
                     const key = `${classSelect.value}_${matiereSelect.value}`;
-                    setOptions(leconSelect, formData.leconsByClasseMatiere?.[key] || [], 'Sélectionnez une leçon', selected.lecon);
+                    const lecons = formData.leconsByClasseMatiere?.[key] || [];
+                    const progress = formData.progressByClasseMatiere?.[key] || null;
+                    const selectedLecon = selected.lecon || progress?.next_lecon_id || '';
+
+                    setOptions(leconSelect, lecons, 'Sélectionnez une leçon', selectedLecon);
+                    leconSelect.required = lecons.length > 0;
+                    newLeconWrapper.classList.toggle('d-none', lecons.length > 0);
+                    fallbackBox.classList.toggle('d-none', lecons.length > 0);
+                    newLeconInput.required = lecons.length === 0;
+
+                    if (progress && lecons.length > 0) {
+                        progressionText.textContent = `Progression: ${progress.completed}/${progress.total} leçon(s), ${progress.percent}% du programme.`;
+                    } else {
+                        progressionText.textContent = '';
+                    }
+
                     selected.lecon = '';
                 }
 
@@ -191,6 +229,9 @@
                 filterTeachers();
                 if (selected.teacher) {
                     teacherSelect.value = selected.teacher;
+                }
+                if (smartSuggestion.nombre_heure && !hoursInput.value) {
+                    hoursInput.value = smartSuggestion.nombre_heure;
                 }
                 loadClasses();
             });

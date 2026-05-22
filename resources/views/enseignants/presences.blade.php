@@ -37,7 +37,7 @@
             <h5 class="mb-0 fw-bold"><i class="bx bx-filter-alt me-2"></i>Filtrer les présences</h5>
         </div>
         <div class="card-body p-4">
-            <form action="{{ route('enseignants.presences.filter') }}" method="POST" class="row g-3">
+            <form action="{{ route('enseignants.presences.filter') }}" method="POST" class="row g-3" data-auto-filter="true">
                 @csrf
                 <div class="col-md-3">
                     <label class="form-label small fw-bold text-muted text-uppercase">Enseignant</label>

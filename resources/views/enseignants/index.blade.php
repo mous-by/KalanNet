@@ -1,6 +1,12 @@
 @extends('layouts.app')
 
 @section('content')
+    @php
+        $user = auth()->user();
+        $canCreateTeacher = $user->droit === 'SupAdmin' || $user->userHasAnyPermission(['enseignants_creation', 'enseignants_création']);
+        $canUpdateTeacher = $user->droit === 'SupAdmin' || $user->userHasPermission('enseignants_modification');
+        $canArchiveTeacher = $user->droit === 'SupAdmin' || $user->userHasAnyPermission(['enseignants_archiver_ou_reactiver', 'enseignants_archiver ou réactiver']);
+    @endphp
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
         <div class="breadcrumb-title pe-3">Enseignants</div>
         <div class="ps-3">
@@ -18,7 +24,7 @@
         <div class="card theme-card shadow-sm">
             <div class="card-body p-4">
                 <p class="mb-2 fw-bold text-muted">Filtrer par</p>
-                <form action="{{ route('enseignants.search') }}" method="POST" class="row g-3">
+                <form action="{{ route('enseignants.search') }}" method="POST" class="row g-3" data-auto-filter="true">
                     @csrf
                     <div class="col-md-12">
                         <label class="form-label" for="search">Recherche rapide</label>
@@ -52,14 +58,15 @@
             @if(session('error'))
                 <div class="alert alert-danger border-0 border-start border-danger border-4">{{ session('error') }}</div>
             @endif
-            <div class="d-flex align-items-center mb-3">
-                <div class="ms-auto">
-                    <a href="{{ route('enseignants.create') }}" class="btn px-4 theme-pill-active">
-                        <i class="bi bi-plus-lg me-2"></i>Ajouter
-
-                    </a>
+            @if($canCreateTeacher)
+                <div class="d-flex align-items-center mb-3">
+                    <div class="ms-auto">
+                        <a href="{{ route('enseignants.create') }}" class="btn px-4 theme-pill-active">
+                            <i class="bi bi-plus-lg me-2"></i>Ajouter
+                        </a>
+                    </div>
                 </div>
-            </div>
+            @endif
 
             <div class="d-flex justify-content-between align-items-center flex-wrap mb-3 gap-3">
                 <ul class="nav nav-pills" role="tablist">
@@ -118,22 +125,47 @@
                                     @endif
                                 </td>
                                 <td class="text-center">
-                                    <div class="btn-group">
-                                        <a href="{{ route('enseignants.show', $enseignant->id_enseignant) }}" class="btn btn-light btn-sm p-2 me-1" title="Voir Profil"><i class="bi bi-eye text-info"></i></a>
-                                        @if($enseignant->is_deleted == 0)
-                                            <a href="{{ route('enseignants.edit', $enseignant->id_enseignant) }}" class="btn btn-light btn-sm p-2 me-1" title="Modifier"><i class="bi bi-pencil text-warning"></i></a>
-                                            <form action="{{ route('enseignants.archive', $enseignant->id_enseignant) }}" method="POST" onsubmit="return confirm('Archiver cet enseignant ?');">
-                                                @csrf
-                                                @method('PATCH')
-                                                <button type="submit" class="btn btn-light btn-sm p-2" title="Archiver"><i class="bi bi-archive text-danger"></i></button>
-                                            </form>
-                                        @else
-                                            <form action="{{ route('enseignants.reactivate', $enseignant->id_enseignant) }}" method="POST" onsubmit="return confirm('Réactiver cet enseignant ?');">
-                                                @csrf
-                                                @method('PATCH')
-                                                <button type="submit" class="btn btn-light btn-sm p-2" title="Réactiver"><i class="bi bi-arrow-clockwise text-success"></i></button>
-                                            </form>
-                                        @endif
+                                    <div class="dropdown">
+                                        <button class="action-dropdown-trigger" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Actions">
+                                            <i class="bx bx-dots-horizontal-rounded"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li>
+                                                <a href="{{ route('enseignants.show', $enseignant->id_enseignant) }}" class="dropdown-item">
+                                                    <i class="bi bi-eye text-info"></i>Voir Profil
+                                                </a>
+                                            </li>
+                                            @if($enseignant->is_deleted == 0)
+                                                @if($canUpdateTeacher)
+                                                    <li>
+                                                        <a href="{{ route('enseignants.edit', $enseignant->id_enseignant) }}" class="dropdown-item">
+                                                            <i class="bi bi-pencil text-warning"></i>Modifier
+                                                        </a>
+                                                    </li>
+                                                @endif
+                                                @if($canArchiveTeacher)
+                                                    <li>
+                                                        <form action="{{ route('enseignants.archive', $enseignant->id_enseignant) }}" method="POST" onsubmit="return confirm('Archiver cet enseignant ?');">
+                                                            @csrf
+                                                            @method('PATCH')
+                                                            <button type="submit" class="dropdown-item text-danger">
+                                                                <i class="bi bi-archive"></i>Archiver
+                                                            </button>
+                                                        </form>
+                                                    </li>
+                                                @endif
+                                            @elseif($canArchiveTeacher)
+                                                <li>
+                                                <form action="{{ route('enseignants.reactivate', $enseignant->id_enseignant) }}" method="POST" onsubmit="return confirm('Réactiver cet enseignant ?');">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <button type="submit" class="dropdown-item">
+                                                        <i class="bi bi-arrow-clockwise text-success"></i>Réactiver
+                                                    </button>
+                                                </form>
+                                                </li>
+                                            @endif
+                                        </ul>
                                     </div>
                                 </td>
                             </tr>

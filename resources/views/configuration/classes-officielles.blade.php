@@ -17,7 +17,7 @@
         <div class="card theme-card shadow-sm">
             <div class="card-body p-4">
                 <p class="mb-2 fw-bold text-muted">Filtrer par</p>
-                <form action="{{ route('configuration.classes-officielles') }}" method="GET" class="row g-3">
+                <form action="{{ route('configuration.classes-officielles') }}" method="GET" class="row g-3" data-auto-filter="true">
                     <div class="col-md-12">
                         <label class="form-label" for="search">Recherche rapide</label>
                         <div class="input-group">

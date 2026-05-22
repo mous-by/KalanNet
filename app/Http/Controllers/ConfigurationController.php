@@ -448,7 +448,7 @@ class ConfigurationController extends Controller
         $userPermissionIds = $utilisateur->permissions->pluck('id')->map(fn ($id) => (int) $id)->all();
         $userPermissionNames = $utilisateur->permissions
             ->pluck('name')
-            ->map(fn ($name) => Permission::normalizeName($name))
+            ->map(fn ($name) => Permission::canonicalName($name))
             ->all();
 
         $availableUsers = $this->permissionAssignableUsers($authUser, $idEcole);
@@ -487,7 +487,7 @@ class ConfigurationController extends Controller
             $userPermissionIds = $utilisateur->permissions->pluck('id')->map(fn ($id) => (int) $id)->all();
             $userPermissionNames = $utilisateur->permissions
                 ->pluck('name')
-                ->map(fn ($name) => Permission::normalizeName($name))
+                ->map(fn ($name) => Permission::canonicalName($name))
                 ->all();
         }
 
@@ -536,12 +536,31 @@ class ConfigurationController extends Controller
 
         $search = $request->get('search');
 
-        $permissions = Permission::query()
+        $canonicalPermissions = Permission::query()
             ->withCount('users')
-            ->when($search, fn ($query) => $query->where('name', 'like', "%{$search}%"))
             ->orderBy('name')
-            ->paginate(20)
-            ->withQueryString();
+            ->get()
+            ->groupBy(fn ($permission) => Permission::canonicalName($permission->name))
+            ->map(function ($duplicates, $canonicalName) {
+                $permission = $duplicates->sortBy('id')->first();
+                $permission->name = $canonicalName;
+                $permission->users_count = $duplicates->sum('users_count');
+
+                return $permission;
+            })
+            ->filter(fn ($permission) => !$search || str_contains(Permission::normalizeName($permission->name), Permission::normalizeName($search)))
+            ->sortBy('name')
+            ->values();
+
+        $page = $request->integer('page', 1);
+        $perPage = 20;
+        $permissions = new \Illuminate\Pagination\LengthAwarePaginator(
+            $canonicalPermissions->forPage($page, $perPage)->values(),
+            $canonicalPermissions->count(),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
 
         return view('configuration.permissions', compact('permissions'));
     }
@@ -554,7 +573,15 @@ class ConfigurationController extends Controller
             'name' => 'required|string|max:100|unique:permissions,name',
         ]);
 
-        Permission::create($data);
+        $canonicalName = Permission::canonicalName($data['name']);
+
+        if (Permission::query()->get()->contains(fn ($permission) => Permission::canonicalName($permission->name) === $canonicalName)) {
+            return back()
+                ->withInput()
+                ->withErrors(['name' => 'Cette permission existe déjà dans le référentiel sous un nom équivalent.']);
+        }
+
+        Permission::create(['name' => $canonicalName]);
 
         return redirect()->route('configuration.permissions')->with('success', 'Permission ajoutée avec succès.');
     }
@@ -765,7 +792,10 @@ class ConfigurationController extends Controller
         }
 
         if ($authUser->droit !== 'SupAdmin') {
-            if ($type !== 1 || ($data['droit'] ?? null) !== 'Gestionnaire') {
+            $canCreateSchoolUser = in_array($type, [0, 2], true);
+            $canCreateGestionnaire = $type === 1 && ($data['droit'] ?? null) === 'Gestionnaire';
+
+            if (!$canCreateSchoolUser && !$canCreateGestionnaire) {
                 abort(403);
             }
         }
@@ -791,7 +821,7 @@ class ConfigurationController extends Controller
     {
         $base = [
             'type_utilisateur' => 'required|integer|in:0,1,2,3,4',
-            'pwd' => 'nullable|string|min:6',
+            'pwd' => 'nullable|string|min:4',
         ];
 
         if ($type === 0) {
@@ -884,6 +914,21 @@ class ConfigurationController extends Controller
                     'dcap_activer',
                     'dcap_modifier',
                     'dcap_permission',
+                    'programmes_pdf',
+                    'programme_pdf',
+                    'programmes_creation',
+                    'programme_creation',
+                    'programme_création',
+                    'programmes_modification',
+                    'programme_modification',
+                    'programmes_supprimer',
+                    'programme_supprimer',
+                    'programmes_suppression',
+                    'programme_suppression',
+                    'finances_planifications_apercu',
+                    'finances_planifications_creation',
+                    'finances_planifications_modification',
+                    'finances_planifications_supprimer',
                 ])
                 ->distinct()
                 ->pluck('name')
@@ -903,13 +948,10 @@ class ConfigurationController extends Controller
                 'controle_modification',
                 'emargement_faire',
                 'enseignants_emploi',
-                'planifications_apercu',
                 'presence_apercu',
             ],
             'parent' => [
                 'eleves_dossier',
-                'parents_apercu',
-                'parents_modification',
             ],
             'DAE' => [
                 'dae_apercu',

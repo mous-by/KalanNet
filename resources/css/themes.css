@@ -175,3 +175,74 @@ html[data-theme] .btn-outline-primary {
 html[data-theme] .btn-outline-primary:hover {
     filter: brightness(0.9);
 }
+
+/* Alliance-style action dropdowns: readable on every theme */
+html[data-theme] table .dropdown {
+    position: relative;
+}
+
+html[data-theme] table .action-dropdown-trigger,
+html[data-theme] table [data-bs-toggle="dropdown"].action-dropdown-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent !important;
+    color: var(--theme-accent) !important;
+    cursor: pointer;
+}
+
+html[data-theme] table .action-dropdown-trigger:hover {
+    background: var(--accent-light) !important;
+}
+
+html[data-theme] table .action-dropdown-trigger i {
+    color: var(--theme-accent) !important;
+    font-size: 1.45rem;
+    line-height: 1;
+}
+
+html[data-theme] table .dropdown-menu {
+    min-width: 12rem;
+    padding: .35rem 0;
+    background: #ffffff !important;
+    color: #1f2937 !important;
+    border: 1px solid rgba(15, 23, 42, .08) !important;
+    border-radius: 10px !important;
+    box-shadow: 0 14px 34px rgba(15, 23, 42, .18) !important;
+    z-index: 1085;
+}
+
+html[data-theme] table .dropdown-menu .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+    padding: .55rem 1rem;
+    font-size: .85rem;
+    font-weight: 500;
+    color: #1f2937 !important;
+    background: transparent !important;
+    white-space: nowrap;
+}
+
+html[data-theme] table .dropdown-menu .dropdown-item:hover,
+html[data-theme] table .dropdown-menu .dropdown-item:focus {
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+}
+
+html[data-theme] table .dropdown-menu .dropdown-item.text-danger {
+    color: #dc2626 !important;
+}
+
+html[data-theme] table .dropdown-menu .dropdown-item i {
+    width: 1rem;
+    color: var(--theme-accent) !important;
+}
+
+html[data-theme] table .dropdown-menu .dropdown-item.text-danger i {
+    color: #dc2626 !important;
+}

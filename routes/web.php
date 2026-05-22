@@ -33,6 +33,14 @@ Route::middleware(['auth'])->group(function () {
 
     // Élèves
     Route::match(['get', 'post'], '/eleves', [EleveController::class, 'index'])->name('eleves.index');
+    Route::match(['get', 'post'], '/eleves/cartes-scolaires', [EleveController::class, 'cartes'])->name('eleves.cartes');
+    Route::post('/eleves/cartes-scolaires/pdf', [EleveController::class, 'downloadCartesPdf'])->name('eleves.cartes.pdf');
+    Route::post('/eleves/liste/pdf', [EleveController::class, 'downloadListPdf'])->name('eleves.list.pdf');
+    Route::post('/eleves/liste/excel', [EleveController::class, 'downloadListExcel'])->name('eleves.list.excel');
+    Route::get('/eleves/{id}/edit', [EleveController::class, 'edit'])->name('eleves.edit');
+    Route::put('/eleves/{id}', [EleveController::class, 'update'])->name('eleves.update');
+    Route::post('/eleves/{id}/transfert', [EleveController::class, 'transfer'])->name('eleves.transfer');
+    Route::delete('/eleves/{id}', [EleveController::class, 'destroy'])->name('eleves.destroy');
     Route::get('/eleves/{id}', [EleveController::class, 'show'])->name('eleves.show');
 
     // Enseignants
@@ -73,6 +81,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/programmes', [ProgrammeController::class, 'index'])->name('programmes.index');
     Route::get('/programmes/create', [ProgrammeController::class, 'create'])->name('programmes.create');
     Route::post('/programmes', [ProgrammeController::class, 'store'])->name('programmes.store');
+    Route::get('/programmes/pdf/download', [ProgrammeController::class, 'downloadPDF'])->name('programmes.pdf.download');
     Route::get('/programmes/{id}/edit', [ProgrammeController::class, 'edit'])->name('programmes.edit');
     Route::put('/programmes/{id}', [ProgrammeController::class, 'update'])->name('programmes.update');
     Route::delete('/programmes/{id}', [ProgrammeController::class, 'destroy'])->name('programmes.destroy');
@@ -152,6 +161,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/pedagogie/inscriptions/groupe/import', [InscriptionController::class, 'importGroup'])->name('inscriptions.group.import');
     Route::get('/pedagogie/inscriptions/groupe/template', [InscriptionController::class, 'downloadGroupTemplate'])->name('inscriptions.group.template');
     Route::get('/pedagogie/inscriptions/reinscription', [InscriptionController::class, 'createReinscription'])->name('inscriptions.reinscription');
+    Route::post('/pedagogie/inscriptions/reinscription/apercu', [InscriptionController::class, 'previewReinscription'])->name('inscriptions.reinscription.preview');
     Route::post('/pedagogie/inscriptions/reinscription', [InscriptionController::class, 'storeReinscription'])->name('inscriptions.reinscription.store');
 
     // Configuration

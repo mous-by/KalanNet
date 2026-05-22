@@ -11,7 +11,7 @@
     </a>
 </div>
 
-<form method="POST" action="{{ route('finances.paiements.historique') }}" class="card theme-card mb-4" id="historyFilterForm">
+<form method="POST" action="{{ route('finances.paiements.historique') }}" class="card theme-card mb-4" id="historyFilterForm" data-auto-filter="true">
     @csrf
     <div class="card-body row g-3 align-items-end">
         <div class="col-md-3">

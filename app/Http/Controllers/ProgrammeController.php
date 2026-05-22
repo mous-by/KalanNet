@@ -5,12 +5,15 @@ namespace App\Http\Controllers;
 use App\Models\ClasseOfficielle;
 use App\Models\Classe;
 use App\Models\Matiere;
+use App\Models\Ecole;
 use App\Models\ProgrammeClasse;
 use App\Models\ProgrammeLecon;
 use App\Models\ProgrammeOfficiel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ProgrammeController extends Controller
 {
@@ -19,30 +22,20 @@ class ProgrammeController extends Controller
         $this->authorizeProgrammesView();
         $idClasseOfficielle = $request->integer('id_classe_officielle');
         $user = Auth::user();
-        $allowedClasseOfficielleIds = $this->allowedClasseOfficielleIds();
+        $data = $this->programmesData($idClasseOfficielle);
+        $programmes = $data['programmes'];
+        $classesOfficielles = $data['classesOfficielles'];
+        $canDownloadProgrammePdf = $this->canDownloadProgrammePdf($user);
+        $canCreateProgramme = $this->canCreateProgramme($user);
+        $canUpdateProgramme = $this->canUpdateProgramme($user);
+        $canDeleteProgramme = $this->canDeleteProgramme($user);
 
-        $classesOfficielles = ClasseOfficielle::orderBy('ordre_enseignement')->orderBy('nom_classe_officielle')->get();
-        if ($user->droit !== 'SupAdmin') {
-            $classesOfficielles = $classesOfficielles->whereIn('id_classe_officielle', $allowedClasseOfficielleIds)->values();
-            if ($idClasseOfficielle && !in_array($idClasseOfficielle, $allowedClasseOfficielleIds, true)) {
-                abort(403);
-            }
-        }
-
-        $programmes = ProgrammeClasse::with(['programme', 'classeOfficielle', 'matiere', 'lecons'])
-            ->when($user->droit !== 'SupAdmin', fn ($query) => $query->whereIn('id_classe', $allowedClasseOfficielleIds))
-            ->when($idClasseOfficielle, fn ($query) => $query->where('id_classe', $idClasseOfficielle))
-            ->orderBy('id_classe')
-            ->orderBy('id_matiere')
-            ->get()
-            ->groupBy('id_classe');
-
-        return view('programmes.index', compact('classesOfficielles', 'programmes', 'idClasseOfficielle'));
+        return view('programmes.index', compact('classesOfficielles', 'programmes', 'idClasseOfficielle', 'canDownloadProgrammePdf', 'canCreateProgramme', 'canUpdateProgramme', 'canDeleteProgramme'));
     }
 
     public function create()
     {
-        $this->authorizeProgrammesMutation();
+        $this->authorizeProgrammesCreation();
         return view('programmes.form', [
             'programme' => new ProgrammeOfficiel(),
             'programmeClasses' => collect(),
@@ -54,7 +47,7 @@ class ProgrammeController extends Controller
 
     public function store(Request $request)
     {
-        $this->authorizeProgrammesMutation();
+        $this->authorizeProgrammesCreation();
         $data = $this->validateProgramme($request);
 
         DB::transaction(function () use ($data) {
@@ -72,7 +65,7 @@ class ProgrammeController extends Controller
 
     public function edit(int $id)
     {
-        $this->authorizeProgrammesMutation();
+        $this->authorizeProgrammesUpdate();
         $programme = ProgrammeOfficiel::with(['classes.matiere', 'classes.lecons', 'classes.classeOfficielle'])->findOrFail($id);
 
         return view('programmes.form', [
@@ -86,7 +79,7 @@ class ProgrammeController extends Controller
 
     public function update(Request $request, int $id)
     {
-        $this->authorizeProgrammesMutation();
+        $this->authorizeProgrammesUpdate();
         $programme = ProgrammeOfficiel::findOrFail($id);
         $data = $this->validateProgramme($request);
 
@@ -103,7 +96,7 @@ class ProgrammeController extends Controller
 
     public function destroy(int $id)
     {
-        $this->authorizeProgrammesMutation();
+        $this->authorizeProgrammesDelete();
         $programme = ProgrammeOfficiel::findOrFail($id);
 
         DB::transaction(function () use ($programme) {
@@ -115,6 +108,33 @@ class ProgrammeController extends Controller
         });
 
         return redirect()->route('programmes.index')->with('success', 'Programme officiel supprimé avec succès.');
+    }
+
+    public function downloadPDF(Request $request)
+    {
+        $this->authorizeProgrammesPdf();
+
+        $idClasseOfficielle = $request->integer('id_classe_officielle');
+        $data = $this->programmesData($idClasseOfficielle);
+        $programmes = $data['programmes'];
+
+        if ($programmes->isEmpty()) {
+            return back()->with('error', 'Aucun programme officiel disponible pour le PDF.');
+        }
+
+        $user = Auth::user();
+        $idEcole = session('idEcole') ?: $user->idEcole;
+        $ecole = $idEcole ? Ecole::withoutGlobalScopes()->find($idEcole) : null;
+        $enseignant = $user->enseignant;
+        $specialite = $enseignant?->specialite;
+        $isTeacherPdf = $this->isTeacher($user);
+
+        $pdf = Pdf::loadView('pdf.programme_officiel', compact('programmes', 'ecole', 'specialite', 'isTeacherPdf'));
+        $pdf->setPaper('a4', 'portrait');
+
+        $suffix = $idClasseOfficielle ? '_classe_' . $idClasseOfficielle : '';
+
+        return $pdf->download('Programme_officiel' . $suffix . '.pdf');
     }
 
     private function validateProgramme(Request $request): array
@@ -151,30 +171,257 @@ class ProgrammeController extends Controller
     private function authorizeProgrammesView(): void
     {
         $user = Auth::user();
-        if ($user->droit !== 'SupAdmin' && !$user->userHasPermission('programmes_apercu') && !$user->userHasPermission('programme_apercu')) {
+        if ($user->droit !== 'SupAdmin' && !$user->userHasAnyPermission($this->programmesViewPermissions())) {
             abort(403);
         }
     }
 
-    private function authorizeProgrammesMutation(): void
+    private function authorizeProgrammesPdf(): void
     {
-        if (Auth::user()->droit !== 'SupAdmin') {
-            abort(403, 'Seul le SuperAdmin peut modifier les programmes officiels.');
+        if (!$this->canDownloadProgrammePdf(Auth::user())) {
+            abort(403, 'Vous n’avez pas la permission de télécharger le programme officiel en PDF.');
         }
     }
 
-    private function allowedClasseOfficielleIds(): array
+    private function canDownloadProgrammePdf($user): bool
+    {
+        return $user->droit === 'SupAdmin' || $user->userHasAnyPermission(['programmes_pdf', 'programme_pdf', 'voir_pdf_programme']);
+    }
+
+    private function authorizeProgrammesCreation(): void
+    {
+        if (!$this->canCreateProgramme(Auth::user())) {
+            abort(403, 'Vous n’avez pas la permission de créer un programme officiel.');
+        }
+    }
+
+    private function authorizeProgrammesUpdate(): void
+    {
+        if (!$this->canUpdateProgramme(Auth::user())) {
+            abort(403, 'Vous n’avez pas la permission de modifier un programme officiel.');
+        }
+    }
+
+    private function authorizeProgrammesDelete(): void
+    {
+        if (!$this->canDeleteProgramme(Auth::user())) {
+            abort(403, 'Vous n’avez pas la permission de supprimer un programme officiel.');
+        }
+    }
+
+    private function canCreateProgramme($user): bool
+    {
+        return $user->droit === 'SupAdmin' || $user->userHasAnyPermission(['programmes_creation', 'programme_creation', 'programme_création']);
+    }
+
+    private function canUpdateProgramme($user): bool
+    {
+        return $user->droit === 'SupAdmin' || $user->userHasAnyPermission(['programmes_modification', 'programme_modification', 'programme_modifier']);
+    }
+
+    private function canDeleteProgramme($user): bool
+    {
+        return $user->droit === 'SupAdmin' || $user->userHasAnyPermission(['programmes_supprimer', 'programme_supprimer', 'programmes_suppression', 'programme_suppression']);
+    }
+
+    private function programmesViewPermissions(): array
+    {
+        return [
+            'programmes_apercu',
+            'programme_apercu',
+            'appercu_programm',
+            'programmes_pdf',
+            'voir_pdf_programme',
+            'programmes_creation',
+            'programme_creation',
+            'programme_création',
+            'programmes_modification',
+            'programme_modification',
+            'programmes_supprimer',
+            'programme_supprimer',
+        ];
+    }
+
+    private function allowedClasses()
     {
         $user = Auth::user();
         $idEcole = session('idEcole') ?: $user->idEcole;
 
         return Classe::query()
-            ->where('idEcole', $idEcole)
+            ->with(['classeOfficielle', 'ligneClasses:id_ligneclasse,id_classe,id_matiere'])
+            ->when($user->droit !== 'SupAdmin', fn ($query) => $query->where('idEcole', $idEcole))
             ->whereNotNull('id_classe_officielle')
-            ->pluck('id_classe_officielle')
-            ->unique()
+            ->get(['id_classe', 'nom_classe', 'id_classe_officielle']);
+    }
+
+    private function programmesData(?int $idClasseOfficielle = null): array
+    {
+        $user = Auth::user();
+        $allowedClasses = $this->allowedClasses();
+        $allowedClasseIds = $allowedClasses->pluck('id_classe')->all();
+        $allowedClasseOfficielleIds = $allowedClasses->pluck('id_classe_officielle')->filter()->unique()->values()->all();
+
+        $visibleClasseOfficielleIds = $user->droit === 'SupAdmin'
+            ? ClasseOfficielle::query()->pluck('id_classe_officielle')->all()
+            : $allowedClasseOfficielleIds;
+
+        if ($idClasseOfficielle && $user->droit !== 'SupAdmin' && !in_array($idClasseOfficielle, $allowedClasseOfficielleIds, true)) {
+            abort(403);
+        }
+
+        $programmeQuery = ProgrammeClasse::with(['programme', 'classeOfficielle', 'matiere', 'lecons']);
+
+        if ($user->droit !== 'SupAdmin') {
+            $programmeQuery->where(function ($query) use ($allowedClasseIds, $allowedClasseOfficielleIds) {
+                $query->whereIn('id_classe', $allowedClasseIds);
+
+                if (!empty($allowedClasseOfficielleIds)) {
+                    $query->orWhereIn('id_classe', $allowedClasseOfficielleIds);
+                }
+
+                $query->orWhereNull('id_classe');
+            });
+        }
+
+        $programmeRows = $programmeQuery
+            ->orderBy('id_classe')
+            ->orderBy('id_matiere')
+            ->get();
+
+        $inferredOfficialIds = $this->inferUnassignedProgrammeClasses($programmeRows, $allowedClasses);
+        $officialClassesById = $allowedClasses
+            ->pluck('classeOfficielle')
+            ->filter()
+            ->keyBy('id_classe_officielle');
+
+        $resolvedProgrammes = $programmeRows
+            ->map(function ($programmeClasse) use ($allowedClasses) {
+                $localClasse = $allowedClasses->firstWhere('id_classe', (int) $programmeClasse->id_classe);
+
+                if ($localClasse && $localClasse->classeOfficielle) {
+                    $programmeClasse->setRelation('classeOfficielle', $localClasse->classeOfficielle);
+                    $programmeClasse->id_classe_officielle_resolved = $localClasse->id_classe_officielle;
+                } else {
+                    $programmeClasse->id_classe_officielle_resolved = $programmeClasse->id_classe;
+                }
+
+                return $programmeClasse;
+            })
+            ->map(function ($programmeClasse) use ($inferredOfficialIds, $officialClassesById) {
+                if ($programmeClasse->id_classe !== null) {
+                    return $programmeClasse;
+                }
+
+                $officialId = $inferredOfficialIds[(int) $programmeClasse->id_programme] ?? null;
+                if ($officialId && $officialClassesById->has($officialId)) {
+                    $programmeClasse->setRelation('classeOfficielle', $officialClassesById->get($officialId));
+                    $programmeClasse->id_classe_officielle_resolved = $officialId;
+                }
+
+                return $programmeClasse;
+            })
+            ->filter(fn ($programmeClasse) => !empty($programmeClasse->id_classe_officielle_resolved))
+            ->when($this->isTeacher($user), fn ($items) => $this->filterProgrammesForTeacherSpecialite($items, $user->enseignant?->specialite));
+
+        $programmesClasseOfficielleIds = $resolvedProgrammes
+            ->pluck('id_classe_officielle_resolved')
             ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->unique()
             ->values()
             ->all();
+
+        $classesOfficielles = ClasseOfficielle::query()
+            ->whereIn('id_classe_officielle', array_values(array_intersect($visibleClasseOfficielleIds, $programmesClasseOfficielleIds)))
+            ->orderBy('ordre_enseignement')
+            ->orderBy('nom_classe_officielle')
+            ->get();
+
+        $programmes = $resolvedProgrammes
+            ->when($idClasseOfficielle, fn ($items) => $items->filter(fn ($item) => (int) ($item->id_classe_officielle_resolved ?? 0) === $idClasseOfficielle))
+            ->groupBy('id_classe_officielle_resolved');
+
+        return compact('programmes', 'classesOfficielles');
+    }
+
+    private function isTeacher($user): bool
+    {
+        return !empty($user->id_enseignant);
+    }
+
+    private function filterProgrammesForTeacherSpecialite($programmeRows, ?string $specialite)
+    {
+        $normalizedSpecialite = $this->normalizeSpecialite($specialite);
+
+        if ($normalizedSpecialite === '') {
+            return collect();
+        }
+
+        return $programmeRows->filter(function ($programmeClasse) use ($normalizedSpecialite) {
+            $matiere = $this->normalizeSpecialite($programmeClasse->matiere->nom_matiere ?? '');
+
+            return $matiere !== '' && (
+                $matiere === $normalizedSpecialite ||
+                Str::contains($matiere, $normalizedSpecialite) ||
+                Str::contains($normalizedSpecialite, $matiere)
+            );
+        });
+    }
+
+    private function normalizeSpecialite(?string $value): string
+    {
+        return Str::of($value ?? '')
+            ->ascii()
+            ->lower()
+            ->replace(['-', '_', '/', ','], ' ')
+            ->squish()
+            ->toString();
+    }
+
+    private function inferUnassignedProgrammeClasses($programmeRows, $allowedClasses): array
+    {
+        $resolvedOfficialIds = $programmeRows
+            ->filter(fn ($row) => $row->id_classe !== null)
+            ->map(function ($row) use ($allowedClasses) {
+                $localClasse = $allowedClasses->firstWhere('id_classe', (int) $row->id_classe);
+
+                return $localClasse?->id_classe_officielle ?: (int) $row->id_classe;
+            })
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $availableClasses = $allowedClasses
+            ->filter(fn ($classe) => !in_array((int) $classe->id_classe_officielle, $resolvedOfficialIds, true))
+            ->values();
+
+        $inferred = [];
+
+        foreach ($programmeRows->whereNull('id_classe')->groupBy('id_programme') as $programmeId => $rows) {
+            if ($availableClasses->isEmpty()) {
+                break;
+            }
+
+            $programmeMatiereIds = $rows->pluck('id_matiere')->map(fn ($id) => (int) $id)->unique();
+            $bestClasse = $availableClasses
+                ->sortByDesc(function ($classe) use ($programmeMatiereIds) {
+                    $classeMatiereIds = $classe->ligneClasses->pluck('id_matiere')->map(fn ($id) => (int) $id)->unique();
+
+                    return $programmeMatiereIds->intersect($classeMatiereIds)->count();
+                })
+                ->first();
+
+            if (!$bestClasse) {
+                continue;
+            }
+
+            $inferred[(int) $programmeId] = (int) $bestClasse->id_classe_officielle;
+            $availableClasses = $availableClasses
+                ->reject(fn ($classe) => (int) $classe->id_classe_officielle === (int) $bestClasse->id_classe_officielle)
+                ->values();
+        }
+
+        return $inferred;
     }
 }

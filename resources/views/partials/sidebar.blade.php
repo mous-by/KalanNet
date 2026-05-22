@@ -1,6 +1,43 @@
 @php
     $user = Auth::user();
     if (!$user) return;
+    $canOpenConfiguration = $user->droit === 'SupAdmin' || $user->userHasAnyPermission([
+        'ecoles_apercu',
+        'academies_apercu',
+        'dcap_apercu',
+        'annees_scolaires_apercu',
+        'types_notes_apercu',
+        'classes_officielles_apercu',
+        'status_controles_apercu',
+        'administrateur_tabsConfig',
+        'enseignants_tabsConfig',
+        'parents_tabsConfig',
+        'dae_permission',
+        'dcap_permission',
+        'permissions_apercu',
+    ]);
+    $financeMenuPermissions = [
+        'finances_planifications_apercu',
+        'paiements_apercu',
+        'paiements_faire',
+        'historique_paiement_apercu',
+        'caisses_apercu',
+        'banques_apercu',
+        'versements_apercu',
+        'retraits_apercu',
+    ];
+    $canOpenFinance = $user->droit === 'SupAdmin' || $user->userHasAnyPermission($financeMenuPermissions);
+    $studentsParentsMenuPermissions = [
+        'eleves_apercu',
+        'eleves_dossier',
+        'dossiers_eleves_apercu',
+        'parents_apercu',
+        'inscriptions_apercu',
+        'inscriptions_inscrire',
+        'reinscriptions_apercu',
+        'inscriptions_reinscrire',
+    ];
+    $canOpenStudentsParents = $user->droit !== 'parent' && ($user->droit === 'SupAdmin' || $user->userHasAnyPermission($studentsParentsMenuPermissions));
 @endphp
 
 <!--start sidebar -->
@@ -25,17 +62,29 @@
         
         <li class="menu-label">Pédagogie</li>
         
-        @if ($user->userHasPermission('eleves_apercu'))
+        @if ($canOpenStudentsParents)
         <li>
             <a href="javascript:;" class="has-arrow">
                 <div class="parent-icon"><i class="bi bi-people-fill"></i></div>
                 <div class="menu-title">Élèves & Parents</div>
             </a>
             <ul>
+                @if ($user->droit === 'SupAdmin' || $user->userHasPermission('eleves_apercu'))
                 <li><a href="{{ route('eleves.index') }}"><i class="bi bi-circle"></i>Liste des Élèves</a></li>
+                @endif
+                @if ($user->droit === 'SupAdmin' || $user->userHasAnyPermission(['eleves_dossier', 'dossiers_eleves_apercu']))
+                <li><a href="{{ route('eleves.cartes') }}"><i class="bi bi-circle"></i>Cartes scolaires</a></li>
+                @endif
+                @if ($user->droit === 'SupAdmin' || $user->userHasPermission('parents_apercu'))
                 <li><a href="{{ route('pedagogie.parents') }}"><i class="bi bi-circle"></i>Parents d'élèves</a></li>
+                @endif
+                @if ($user->droit === 'SupAdmin' || $user->userHasAnyPermission(['inscriptions_apercu', 'inscriptions_inscrire']))
                 <li><a href="{{ route('inscriptions.create') }}"><i class="bi bi-circle"></i>Inscriptions</a></li>
                 <li><a href="{{ route('inscriptions.group.create') }}"><i class="bi bi-circle"></i>Inscription par groupe</a></li>
+                @endif
+                @if ($user->droit === 'SupAdmin' || $user->userHasAnyPermission(['reinscriptions_apercu', 'inscriptions_reinscrire']))
+                <li><a href="{{ route('inscriptions.reinscription') }}"><i class="bi bi-circle"></i>Réinscription</a></li>
+                @endif
             </ul>
         </li>
         @endif
@@ -58,24 +107,28 @@
         </li>
         @endif
 
-        @if ($user->userHasPermission('classes_apercu'))
+        @if ($user->userHasPermission('classes_apercu') || $user->userHasAnyPermission(['programmes_apercu', 'programme_apercu', 'appercu_programm', 'programmes_pdf', 'voir_pdf_programme', 'programmes_creation', 'programme_création', 'programmes_modification', 'programme_modification', 'programmes_supprimer', 'programme_supprimer']))
         <li>
             <a href="javascript:;" class="has-arrow">
                 <div class="parent-icon"><i class="bi bi-building"></i></div>
                 <div class="menu-title">Classes & Cours</div>
             </a>
             <ul>
+                @if ($user->userHasPermission('classes_apercu'))
                 <li><a href="{{ route('classes.index') }}"><i class="bi bi-circle"></i>Classes</a></li>
                 @if ($user->droit === 'SupAdmin')
                 <li><a href="{{ route('classes.associations') }}"><i class="bi bi-circle"></i>Associer classes</a></li>
                 @endif
+                @endif
                 @if ($user->userHasPermission('matieres_apercu'))
                 <li><a href="{{ route('pedagogie.matieres') }}"><i class="bi bi-circle"></i>Matières</a></li>
                 @endif
-                @if ($user->userHasPermission('programmes_apercu') || $user->droit === 'SupAdmin')
+                @if ($user->userHasAnyPermission(['programmes_apercu', 'programme_apercu', 'appercu_programm', 'programmes_pdf', 'voir_pdf_programme', 'programmes_creation', 'programme_création', 'programmes_modification', 'programme_modification', 'programmes_supprimer', 'programme_supprimer']) || $user->droit === 'SupAdmin')
                 <li><a href="{{ route('programmes.index') }}"><i class="bi bi-circle"></i>Programmes officiels</a></li>
                 @endif
+                @if ($user->userHasPermission('classes_apercu'))
                 <li><a href="{{ route('pedagogie.timetable') }}"><i class="bi bi-circle"></i>Emploi du temps</a></li>
+                @endif
             </ul>
         </li>
         @endif
@@ -95,17 +148,19 @@
 
         <li class="menu-label">Gestion</li>
         
-        @if ($user->userHasPermission('caisses_apercu') || $user->userHasPermission('banques_apercu') || $user->userHasPermission('paiements_apercu') || $user->userHasPermission('Planification de paiements_apercu') || $user->userHasPermission('planifications_apercu'))
+        @if ($canOpenFinance)
         <li>
             <a href="javascript:;" class="has-arrow">
                 <div class="parent-icon"><i class="bi bi-wallet2"></i></div>
                 <div class="menu-title">Finances</div>
             </a>
             <ul>
-                @if ($user->userHasPermission('Planification de paiements_apercu') || $user->userHasPermission('planifications_apercu'))
+                @if ($user->droit === 'SupAdmin' || $user->userHasPermission('finances_planifications_apercu'))
                 <li><a href="{{ route('finances.planifications') }}"><i class="bi bi-circle"></i>Planification</a></li>
                 @endif
+                @if ($user->droit === 'SupAdmin' || $user->userHasAnyPermission(['paiements_apercu', 'paiements_faire']))
                 <li><a href="{{ route('finances.paiements') }}"><i class="bi bi-circle"></i>Paiements Élèves</a></li>
+                @endif
                 @if ($user->userHasPermission('historique_paiement_apercu'))
                 <li><a href="{{ route('finances.paiements.historique') }}"><i class="bi bi-circle"></i>Historique paiements</a></li>
                 @endif
@@ -125,12 +180,14 @@
         </li>
         @endif
 
-        <li>
-            <a href="{{ route('configuration.index') }}">
-                <div class="parent-icon"><i class="bi bi-gear-fill"></i></div>
-                <div class="menu-title">Configuration</div>
-            </a>
-        </li>
+        @if($canOpenConfiguration)
+            <li>
+                <a href="{{ route('configuration.index') }}">
+                    <div class="parent-icon"><i class="bi bi-gear-fill"></i></div>
+                    <div class="menu-title">Configuration</div>
+                </a>
+            </li>
+        @endif
 
     </ul>
     <!--end navigation-->

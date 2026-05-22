@@ -20,10 +20,10 @@
     <div class="card theme-card shadow-sm mb-3">
         <div class="card-body p-4">
             <p class="mb-2 fw-bold text-muted">Filtrer les programmes officiels</p>
-            <form method="GET" action="{{ route('programmes.index') }}" class="row g-3">
+            <form method="GET" action="{{ route('programmes.index') }}" class="row g-3 align-items-end">
                 <div class="col-md-8">
                     <label class="form-label">Programme officiel</label>
-                    <select name="id_classe_officielle" class="form-select" onchange="this.form.submit()">
+                    <select name="id_classe_officielle" class="form-select" onchange="this.form.submit()" @disabled($classesOfficielles->isEmpty())>
                         <option value="">Tous les programmes officiels</option>
                         @foreach($classesOfficielles as $classeOfficielle)
                             <option value="{{ $classeOfficielle->id_classe_officielle }}" @selected($idClasseOfficielle == $classeOfficielle->id_classe_officielle)>
@@ -32,11 +32,29 @@
                         @endforeach
                     </select>
                 </div>
+                <div class="col-md-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary px-4" @disabled($classesOfficielles->isEmpty())>
+                        <i class="bi bi-funnel me-1"></i>Filtrer
+                    </button>
+                    <a href="{{ route('programmes.index') }}" class="btn btn-light px-4">Réinitialiser</a>
+                    @if($canDownloadProgrammePdf)
+                        <a href="{{ route('programmes.pdf.download', ['id_classe_officielle' => $idClasseOfficielle]) }}" class="btn btn-danger px-4 @if($programmes->isEmpty()) disabled @endif">
+                            <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+                        </a>
+                    @endif
+                </div>
+                @if($classesOfficielles->isEmpty())
+                    <div class="col-12">
+                        <div class="alert alert-info mb-0 border-0 border-start border-info border-4">
+                            Aucun programme officiel n'est encore disponible pour le filtre.
+                        </div>
+                    </div>
+                @endif
             </form>
         </div>
     </div>
 
-    @if(auth()->user()->droit === 'SupAdmin')
+    @if($canCreateProgramme)
         <div class="text-end mb-3">
             <a href="{{ route('programmes.create') }}" class="btn px-4 theme-pill-active">
                 <i class="bi bi-plus-lg me-1"></i>Nouveau programme officiel
@@ -76,27 +94,33 @@
                                 <td>{{ $items->count() }}</td>
                                 <td>{{ $items->sum(fn ($item) => $item->lecons->count()) }}</td>
                                 <td class="text-center">
-                                    @if(auth()->user()->droit === 'SupAdmin')
+                                    @if($canUpdateProgramme || $canDeleteProgramme)
                                         <div class="dropdown">
                                             <a class="text-muted fs-5" href="#" data-bs-toggle="dropdown">
                                                 <i class="bi bi-three-dots"></i>
                                             </a>
                                             <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3">
-                                                <li>
-                                                    <a class="dropdown-item py-2" href="{{ route('programmes.edit', $first->id_programme) }}">
-                                                        <i class="bi bi-pencil text-warning me-2"></i>Modifier
-                                                    </a>
-                                                </li>
-                                                <li><hr class="dropdown-divider"></li>
-                                                <li>
-                                                    <form method="POST" action="{{ route('programmes.destroy', $first->id_programme) }}" onsubmit="return confirm('Supprimer ce programme ?');">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button class="dropdown-item py-2 text-danger">
-                                                            <i class="bi bi-trash me-2"></i>Supprimer
-                                                        </button>
-                                                    </form>
-                                                </li>
+                                                @if($canUpdateProgramme)
+                                                    <li>
+                                                        <a class="dropdown-item py-2" href="{{ route('programmes.edit', $first->id_programme) }}">
+                                                            <i class="bi bi-pencil text-warning me-2"></i>Modifier
+                                                        </a>
+                                                    </li>
+                                                @endif
+                                                @if($canUpdateProgramme && $canDeleteProgramme)
+                                                    <li><hr class="dropdown-divider"></li>
+                                                @endif
+                                                @if($canDeleteProgramme)
+                                                    <li>
+                                                        <form method="POST" action="{{ route('programmes.destroy', $first->id_programme) }}" onsubmit="return confirm('Supprimer ce programme ?');">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button class="dropdown-item py-2 text-danger">
+                                                                <i class="bi bi-trash me-2"></i>Supprimer
+                                                            </button>
+                                                        </form>
+                                                    </li>
+                                                @endif
                                             </ul>
                                         </div>
                                     @else

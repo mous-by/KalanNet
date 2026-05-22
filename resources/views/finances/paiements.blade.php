@@ -147,7 +147,7 @@
                 Paiements scolaires
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ route('finances.paiements.filter') }}" class="row g-3" id="paymentFilterForm">
+                <form method="POST" action="{{ route('finances.paiements.filter') }}" class="row g-3" id="paymentFilterForm" data-auto-filter="true">
                     @csrf
                     <div class="col-12">
                         <p class="mb-1">Filtré par</p>

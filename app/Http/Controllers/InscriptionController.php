@@ -8,8 +8,11 @@ use App\Models\AnneeScolaire;
 use App\Models\ParentModel;
 use App\Models\Planification;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
 
@@ -18,9 +21,10 @@ class InscriptionController extends Controller
     public function index(Request $request)
     {
         $classes = Classe::where('idEcole', session('idEcole'))->orderBy('nom_classe')->get();
+        $classeIds = $classes->pluck('id_classe');
         $annees = AnneeScolaire::orderByDesc('id_anneeScolaire')->get();
         $parents = ParentModel::where('idEcole', session('idEcole'))->orderBy('nom_prenom_parent')->get();
-        $planifications = Planification::orderBy('motif')->get();
+        $planifications = Planification::whereIn('id_classe', $classeIds)->orderBy('motif')->get();
         $eleves = Eleve::where('id_ecole', session('idEcole'))
             ->where('etat_dossier', 0)
             ->with('classe')
@@ -28,8 +32,10 @@ class InscriptionController extends Controller
             ->orderBy('prenom_eleve')
             ->get();
         $activeTab = in_array($request->query('tab'), ['group', 'reinscription'], true) ? $request->query('tab') : 'individual';
+        $reinscriptionFilters = $activeTab === 'reinscription' ? $this->defaultReinscriptionFilters($annees) : [];
+        $reinscriptionPreview = null;
 
-        return view('pedagogie.inscriptions.index', compact('classes', 'annees', 'parents', 'planifications', 'eleves', 'activeTab'));
+        return view('pedagogie.inscriptions.index', compact('classes', 'annees', 'parents', 'planifications', 'eleves', 'activeTab', 'reinscriptionFilters', 'reinscriptionPreview'));
     }
 
     public function create()
@@ -47,6 +53,13 @@ class InscriptionController extends Controller
         return redirect()->route('inscriptions.index', ['tab' => 'reinscription']);
     }
 
+    public function previewReinscription(Request $request)
+    {
+        $context = $this->reinscriptionContext($request);
+
+        return view('pedagogie.inscriptions.index', $context);
+    }
+
     public function importGroup(Request $request)
     {
         $data = $request->validate([
@@ -58,10 +71,21 @@ class InscriptionController extends Controller
         ]);
 
         $idEcole = session('idEcole');
-        Classe::where('idEcole', $idEcole)->findOrFail($data['id_classe']);
-        Planification::where('id_classe', $data['id_classe'])
+        $classe = Classe::where('idEcole', $idEcole)->find($data['id_classe']);
+        if (!$classe) {
+            throw ValidationException::withMessages([
+                'id_classe' => 'La classe choisie n’appartient pas à votre école.',
+            ]);
+        }
+
+        $planification = Planification::where('id_classe', $data['id_classe'])
             ->where('id_annee', $data['id_annee'])
-            ->findOrFail($data['id_planification']);
+            ->find($data['id_planification']);
+        if (!$planification) {
+            throw ValidationException::withMessages([
+                'id_planification' => 'La planification choisie ne correspond pas à cette classe et cette année scolaire.',
+            ]);
+        }
 
         if (!class_exists(IOFactory::class)) {
             return back()->with('error', 'La bibliothèque PhpSpreadsheet n’est pas disponible.');
@@ -101,7 +125,7 @@ class InscriptionController extends Controller
                 } else {
                     $casSocial = 'normal';
                 }
-                $matricule = trim((string) $worksheet->getCell('H' . $row)->getValue()) ?: null;
+                $matricule = $this->normalizeMatricule((string) $worksheet->getCell('H' . $row)->getValue());
 
                 $eleve = new Eleve();
                 $eleve->prenom_eleve = $prenom;
@@ -236,7 +260,7 @@ class InscriptionController extends Controller
             $eleve->id_classe = $data['id_classe'];
             $eleve->id_annee = $data['id_annee'];
             $eleve->genre_eleve = $data['genre_eleve'];
-            $eleve->matricule = $data['matricule'] ?: $this->generateMatricule($data);
+            $eleve->matricule = $this->normalizeMatricule($data['matricule'] ?? null) ?: $this->generateMatricule($data);
             $eleve->date_inscription = $data['date_inscription'] ?? now()->toDateString();
             $eleve->image = $this->storeImage($request);
             $eleve->cas_social = $data['cas_social'] ?: 'normal';
@@ -299,7 +323,7 @@ class InscriptionController extends Controller
                     'id_classe' => $data['id_classe'],
                     'id_annee' => $data['id_annee'],
                     'genre_eleve' => $row['genre_eleve'],
-                    'matricule' => $row['matricule'] ?: $this->generateMatricule($row),
+                    'matricule' => $this->normalizeMatricule($row['matricule'] ?? null) ?: $this->generateMatricule($row),
                     'date_inscription' => $dateInscription,
                     'image' => 'assets/images/avatars/avatar-1.png',
                     'cas_social' => 'normal',
@@ -324,11 +348,19 @@ class InscriptionController extends Controller
 
     public function storeReinscription(Request $request)
     {
+        if ($request->has('preview_reinscription')) {
+            return $this->previewReinscription($request);
+        }
+
+        if ($request->has('eleves')) {
+            return $this->storeReinscriptionsIntelligentes($request);
+        }
+
         $data = $request->validate([
             'id_eleve' => 'required|exists:eleve,id_eleve',
             'id_classe' => 'required|exists:classe,id_classe',
             'id_annee' => 'required|exists:anneescolaire,id_anneeScolaire',
-            'statut' => 'required|in:passant,redoublant,non défini',
+            'statut' => 'required|in:passant,redoublant,non défini,non_defini,ajourne,abandon,exclu',
             'date_reinscription' => 'nullable|date',
         ]);
 
@@ -375,11 +407,417 @@ class InscriptionController extends Controller
             ->with('success', 'Réinscription enregistrée avec succès.');
     }
 
+    private function reinscriptionContext(Request $request): array
+    {
+        $classes = Classe::where('idEcole', session('idEcole'))->orderBy('nom_classe')->get();
+        $classeIds = $classes->pluck('id_classe');
+        $annees = AnneeScolaire::orderByDesc('id_anneeScolaire')->get();
+        $parents = ParentModel::where('idEcole', session('idEcole'))->orderBy('nom_prenom_parent')->get();
+        $planifications = Planification::whereIn('id_classe', $classeIds)->orderBy('motif')->get();
+        $eleves = Eleve::where('id_ecole', session('idEcole'))
+            ->where('etat_dossier', 0)
+            ->with('classe')
+            ->orderBy('nom_eleve')
+            ->orderBy('prenom_eleve')
+            ->get();
+
+        $activeTab = 'reinscription';
+        $reinscriptionPreview = $this->buildReinscriptionPreview($request, $classes);
+        $reinscriptionFilters = array_merge(
+            $this->defaultReinscriptionFilters($annees),
+            array_filter($request->only(['source_classe_id', 'source_annee_id', 'target_annee_id', 'target_classe_id', 'date_reinscription']), fn ($value) => $value !== null && $value !== '')
+        );
+
+        return compact(
+            'classes',
+            'annees',
+            'parents',
+            'planifications',
+            'eleves',
+            'activeTab',
+            'reinscriptionPreview',
+            'reinscriptionFilters'
+        );
+    }
+
+    private function buildReinscriptionPreview(Request $request, $classes): array
+    {
+        $data = $request->validate([
+            'source_classe_id' => 'required|integer|exists:classe,id_classe',
+            'source_annee_id' => 'required|integer|exists:anneescolaire,id_anneeScolaire',
+            'target_annee_id' => 'required|integer|exists:anneescolaire,id_anneeScolaire',
+            'target_classe_id' => 'nullable|integer|exists:classe,id_classe',
+            'date_reinscription' => 'nullable|date',
+        ]);
+
+        $idEcole = session('idEcole');
+        $sourceClasse = $classes->firstWhere('id_classe', (int) $data['source_classe_id']);
+        if (!$sourceClasse) {
+            throw ValidationException::withMessages(['source_classe_id' => 'La classe source n’appartient pas à votre école.']);
+        }
+
+        $sourceAnnee = AnneeScolaire::find((int) $data['source_annee_id']);
+        $targetAnnee = AnneeScolaire::find((int) $data['target_annee_id']);
+        $this->ensureTargetYearAfterSource($sourceAnnee, $targetAnnee);
+
+        $defaultTargetClasse = !empty($data['target_classe_id'])
+            ? $classes->firstWhere('id_classe', (int) $data['target_classe_id'])
+            : $this->suggestNextClasse($sourceClasse, $classes);
+
+        if (!$defaultTargetClasse) {
+            $defaultTargetClasse = $sourceClasse;
+        }
+
+        if ((int) $defaultTargetClasse->idEcole !== (int) $idEcole) {
+            throw ValidationException::withMessages(['target_classe_id' => 'La classe cible n’appartient pas à votre école.']);
+        }
+
+        $students = Eleve::where('id_ecole', $idEcole)
+            ->where('etat_dossier', 0)
+            ->where('id_classe', $sourceClasse->id_classe)
+            ->where('id_annee', (int) $data['source_annee_id'])
+            ->with('classe')
+            ->orderBy('nom_eleve')
+            ->orderBy('prenom_eleve')
+            ->get();
+
+        $existingIds = DB::table('ligne_reinscription')
+            ->whereIn('id_eleve', $students->pluck('id_eleve'))
+            ->where('id_annee', (int) $data['target_annee_id'])
+            ->pluck('id_eleve')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $threshold = $this->passageThreshold($sourceClasse);
+        $rows = $students->map(function ($student) use ($sourceClasse, $defaultTargetClasse, $data, $existingIds, $threshold) {
+            $moyenne = $this->moyenneAnnuelle($student->id_eleve, $sourceClasse->id_classe, (int) $data['source_annee_id']);
+            $proposal = $this->proposeDecision($moyenne, $threshold);
+
+            return [
+                'eleve' => $student,
+                'moyenne' => $moyenne,
+                'seuil' => $threshold,
+                'decision_proposee' => $proposal,
+                'classe_cible_id' => $proposal === 'redoublant' ? $sourceClasse->id_classe : $defaultTargetClasse->id_classe,
+                'deja_reinscrit' => in_array((int) $student->id_eleve, $existingIds, true),
+            ];
+        });
+
+        return [
+            'sourceClasse' => $sourceClasse,
+            'targetClasse' => $defaultTargetClasse,
+            'sourceAnnee' => $sourceAnnee,
+            'targetAnnee' => $targetAnnee,
+            'date' => $data['date_reinscription'] ?? now()->toDateString(),
+            'rows' => $rows,
+            'seuil' => $threshold,
+            'stats' => [
+                'total' => $rows->count(),
+                'passants' => $rows->where('decision_proposee', 'passant')->count(),
+                'redoublants' => $rows->where('decision_proposee', 'redoublant')->count(),
+                'sans_moyenne' => $rows->where('decision_proposee', 'non_defini')->count(),
+                'deja_reinscrits' => $rows->where('deja_reinscrit', true)->count(),
+            ],
+        ];
+    }
+
+    private function storeReinscriptionsIntelligentes(Request $request)
+    {
+        $data = $request->validate([
+            'source_classe_id' => 'required|integer|exists:classe,id_classe',
+            'source_annee_id' => 'required|integer|exists:anneescolaire,id_anneeScolaire',
+            'target_annee_id' => 'required|integer|exists:anneescolaire,id_anneeScolaire',
+            'date_reinscription' => 'nullable|date',
+            'eleves' => 'required|array|min:1',
+            'eleves.*.selected' => 'nullable',
+            'eleves.*.id_eleve' => 'required|integer|exists:eleve,id_eleve',
+            'eleves.*.decision' => 'nullable|string|in:passant,redoublant,ajourne,abandon,exclu',
+            'eleves.*.id_classe' => 'nullable|integer|exists:classe,id_classe',
+            'eleves.*.motif_decision' => 'nullable|string|max:1000',
+        ]);
+
+        $idEcole = session('idEcole');
+        $sourceClasse = Classe::where('idEcole', $idEcole)->findOrFail((int) $data['source_classe_id']);
+        $sourceAnnee = AnneeScolaire::findOrFail((int) $data['source_annee_id']);
+        $targetAnnee = AnneeScolaire::findOrFail((int) $data['target_annee_id']);
+        $this->ensureTargetYearAfterSource($sourceAnnee, $targetAnnee);
+        $dateReinscription = $data['date_reinscription'] ?? now()->toDateString();
+        $selectedRows = collect($data['eleves'])->filter(fn ($row) => !empty($row['selected']));
+
+        if ($selectedRows->isEmpty()) {
+            return redirect()->route('inscriptions.index', ['tab' => 'reinscription'])
+                ->with('error', 'Veuillez cocher au moins un élève à réinscrire.');
+        }
+
+        $missingMotif = $selectedRows->first(function ($row) {
+            return in_array($row['decision'] ?? null, ['ajourne', 'abandon', 'exclu'], true)
+                && trim((string) ($row['motif_decision'] ?? '')) === '';
+        });
+        if ($missingMotif) {
+            throw ValidationException::withMessages([
+                'motif_decision' => 'Le motif est obligatoire pour les décisions Ajourné, Abandon et Exclu.',
+            ]);
+        }
+
+        $classes = Classe::where('idEcole', $idEcole)->get()->keyBy('id_classe');
+        $threshold = $this->passageThreshold($sourceClasse);
+        $created = 0;
+        $skipped = 0;
+        $forced = 0;
+        $sorties = 0;
+        $ajournes = 0;
+
+        DB::transaction(function () use ($selectedRows, $data, $idEcole, $sourceClasse, $classes, $threshold, $dateReinscription, &$created, &$skipped, &$forced, &$sorties, &$ajournes) {
+            foreach ($selectedRows as $row) {
+                $eleve = Eleve::where('id_ecole', $idEcole)
+                    ->where('id_classe', $sourceClasse->id_classe)
+                    ->where('id_annee', (int) $data['source_annee_id'])
+                    ->find((int) $row['id_eleve']);
+
+                if (!$eleve || DB::table('ligne_reinscription')
+                    ->where('id_eleve', (int) $row['id_eleve'])
+                    ->where('id_annee', (int) $data['target_annee_id'])
+                    ->exists()) {
+                    $skipped++;
+                    continue;
+                }
+
+                $decision = $row['decision'] ?? null;
+                if (!$decision) {
+                    $skipped++;
+                    continue;
+                }
+                $moyenne = $this->moyenneAnnuelle($eleve->id_eleve, $sourceClasse->id_classe, (int) $data['source_annee_id']);
+                $statut = $decision;
+
+                if ($decision === 'passant' && $moyenne !== null && $moyenne < $threshold) {
+                    $statut = 'passage_force';
+                    $forced++;
+                }
+
+                $targetClasseId = (int) ($row['id_classe'] ?: $sourceClasse->id_classe);
+                if (in_array($decision, ['redoublant', 'ajourne', 'abandon', 'exclu'], true)) {
+                    $targetClasseId = $sourceClasse->id_classe;
+                }
+
+                if (!$classes->has($targetClasseId)) {
+                    $skipped++;
+                    continue;
+                }
+
+                $insert = [
+                    'statut' => $statut,
+                    'date_reinscription' => $dateReinscription,
+                    'enrolement' => in_array($decision, ['passant', 'redoublant'], true) ? 1 : 0,
+                    'moyenneGeneral' => $moyenne,
+                ];
+                if (Schema::hasColumn('reinscription', 'statut_propose')) {
+                    $insert['statut_propose'] = $this->proposeDecision($moyenne, $threshold);
+                }
+                if (Schema::hasColumn('reinscription', 'motif_decision')) {
+                    $insert['motif_decision'] = $row['motif_decision'] ?? null;
+                }
+
+                $reinscriptionId = DB::table('reinscription')->insertGetId($insert);
+
+                DB::table('ligne_reinscription')->insert([
+                    'id_eleve' => $eleve->id_eleve,
+                    'id_classe' => $targetClasseId,
+                    'id_annee' => (int) $data['target_annee_id'],
+                    'id_reinscription' => $reinscriptionId,
+                ]);
+
+                if (in_array($decision, ['passant', 'redoublant'], true)) {
+                    $eleve->id_classe = $targetClasseId;
+                    $eleve->id_annee = (int) $data['target_annee_id'];
+                    $eleve->date_inscription = $dateReinscription;
+                    $eleve->etat_dossier = 0;
+                    $eleve->save();
+                } elseif ($decision === 'ajourne') {
+                    $ajournes++;
+                } else {
+                    $eleve->id_classe = $targetClasseId;
+                    $eleve->id_annee = (int) $data['target_annee_id'];
+                    $eleve->etat_dossier = 2;
+                    $eleve->save();
+                    $sorties++;
+                }
+
+                $created++;
+            }
+        });
+
+        $message = "{$created} décision(s) de réinscription enregistrée(s).";
+        if ($forced > 0) {
+            $message .= " {$forced} passage(s) forcé(s).";
+        }
+        if ($ajournes > 0) {
+            $message .= " {$ajournes} ajourné(s).";
+        }
+        if ($sorties > 0) {
+            $message .= " {$sorties} sortie(s) pour abandon/exclusion.";
+        }
+        if ($skipped > 0) {
+            $message .= " {$skipped} élève(s) ignoré(s) car déjà traité(s) ou invalide(s).";
+        }
+
+        return redirect()->route('inscriptions.index', ['tab' => 'reinscription'])
+            ->with('success', $message);
+    }
+
+    private function passageThreshold(Classe $classe): float
+    {
+        $ordre = Str::lower(Str::ascii((string) $classe->ordreEnseignement));
+
+        return str_contains($ordre, 'fondamentale1') || str_contains($ordre, 'fondamentale i') ? 5.0 : 10.0;
+    }
+
+    private function proposeDecision(?float $moyenne, float $threshold): string
+    {
+        if ($moyenne === null) {
+            return 'non_defini';
+        }
+
+        return $moyenne >= $threshold ? 'passant' : 'redoublant';
+    }
+
+    private function moyenneAnnuelle(int $idEleve, int $idClasse, int $idAnnee): ?float
+    {
+        if (!Schema::hasTable('moyenne_eleve')) {
+            return null;
+        }
+
+        $query = DB::table('moyenne_eleve')
+            ->where('id_eleve', $idEleve)
+            ->where('id_classe', $idClasse)
+            ->where('id_anneeScolaire', $idAnnee)
+            ->where('moyenne', '>', 0);
+
+        if (Schema::hasColumn('moyenne_eleve', 'valide')) {
+            $query->where('valide', 1);
+        }
+
+        $average = $query->avg('moyenne');
+
+        return $average !== null ? round((float) $average, 2) : null;
+    }
+
+    private function suggestNextClasse(Classe $sourceClasse, $classes): ?Classe
+    {
+        $currentLevel = $this->extractClasseLevel($sourceClasse->nom_classe);
+        if ($currentLevel === null) {
+            return null;
+        }
+
+        return $classes->first(function ($classe) use ($currentLevel, $sourceClasse) {
+            return (int) $classe->id_classe !== (int) $sourceClasse->id_classe
+                && $this->extractClasseLevel($classe->nom_classe) === $currentLevel + 1;
+        });
+    }
+
+    private function extractClasseLevel(?string $name): ?int
+    {
+        if (!$name) {
+            return null;
+        }
+
+        return preg_match('/\d+/', Str::ascii($name), $matches) ? (int) $matches[0] : null;
+    }
+
+    private function defaultReinscriptionFilters($annees): array
+    {
+        $current = $this->currentSchoolYear($annees);
+        $next = $current ? $this->nextSchoolYear($current, $annees) : null;
+
+        return [
+            'source_annee_id' => $current?->id_anneeScolaire,
+            'target_annee_id' => $next?->id_anneeScolaire,
+            'date_reinscription' => now()->toDateString(),
+        ];
+    }
+
+    private function currentSchoolYear($annees)
+    {
+        $today = now()->toDateString();
+
+        $current = $annees->first(function ($annee) use ($today) {
+            return !empty($annee->date_debut)
+                && !empty($annee->date_fin)
+                && $annee->date_debut <= $today
+                && $annee->date_fin >= $today;
+        });
+
+        return $current ?: $annees->first();
+    }
+
+    private function nextSchoolYear($current, $annees)
+    {
+        $currentStart = $this->schoolYearStart($current);
+        if ($currentStart === null) {
+            return null;
+        }
+
+        return $annees->first(fn ($annee) => $this->schoolYearStart($annee) === $currentStart + 1);
+    }
+
+    private function schoolYearStart($annee): ?int
+    {
+        if (!$annee) {
+            return null;
+        }
+
+        if (preg_match('/(20\d{2}|19\d{2})/', (string) $annee->annee, $matches)) {
+            return (int) $matches[1];
+        }
+
+        if (!empty($annee->date_debut) && preg_match('/^(20\d{2}|19\d{2})/', (string) $annee->date_debut, $matches)) {
+            return (int) $matches[1];
+        }
+
+        return null;
+    }
+
+    private function ensureTargetYearAfterSource($sourceAnnee, $targetAnnee): void
+    {
+        $sourceStart = $this->schoolYearStart($sourceAnnee);
+        $targetStart = $this->schoolYearStart($targetAnnee);
+
+        if ($sourceStart !== null && $targetStart !== null && $targetStart <= $sourceStart) {
+            throw ValidationException::withMessages([
+                'target_annee_id' => 'L’année cible doit obligatoirement être après l’année actuelle.',
+            ]);
+        }
+    }
+
     private function generateMatricule(array $data): string
     {
         $year = now()->format('y');
-        $seed = strtoupper(substr($data['nom_eleve'], 0, 2) . substr($data['prenom_eleve'], 0, 2));
+        $nom = $this->asciiLetters($data['nom_eleve'] ?? '');
+        $prenom = $this->asciiLetters($data['prenom_eleve'] ?? '');
+        $seed = strtoupper(str_pad(substr($nom, 0, 2) . substr($prenom, 0, 2), 4, 'X'));
+
         return 'ELV-' . $year . '-' . $seed . random_int(100, 999);
+    }
+
+    private function normalizeMatricule(?string $matricule): ?string
+    {
+        $matricule = trim((string) $matricule);
+        if ($matricule === '') {
+            return null;
+        }
+
+        $matricule = Str::ascii($matricule);
+        $matricule = preg_replace('/[^A-Za-z0-9_-]/', '', $matricule);
+
+        return $matricule !== '' ? substr($matricule, 0, 50) : null;
+    }
+
+    private function asciiLetters(string $value): string
+    {
+        $value = Str::ascii($value);
+        $value = preg_replace('/[^A-Za-z]/', '', $value);
+
+        return strtoupper($value ?: 'XXXX');
     }
 
     private function storeImage(Request $request): string

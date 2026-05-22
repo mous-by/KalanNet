@@ -96,7 +96,7 @@
                 Liste des planifications
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ route('finances.planifications.filter') }}" class="row g-3" id="planificationFilterForm">
+                <form method="POST" action="{{ route('finances.planifications.filter') }}" class="row g-3" id="planificationFilterForm" data-auto-filter="true">
                     @csrf
                     <div class="col-md-6">
                         <label class="form-label" for="id_classe">Classe</label>

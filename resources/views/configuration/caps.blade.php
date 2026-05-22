@@ -31,7 +31,7 @@
                 </div>
                 <div class="card-body">
                     <div class="d-flex justify-content-end align-items-center flex-wrap mb-3 gap-3">
-                        <form action="{{ route('configuration.caps') }}" method="GET" class="col-md-5">
+                        <form action="{{ route('configuration.caps') }}" method="GET" class="col-md-5" data-auto-filter="true">
                             <input type="text" name="search" class="form-control" placeholder="Nom, code ou localité..." value="{{ request('search') }}">
                         </form>
                     </div>

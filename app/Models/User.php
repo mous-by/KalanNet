@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use App\Traits\BelongsToSchool;
 use Illuminate\Notifications\Notifiable;
+use App\Models\Permission;
 
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
@@ -57,6 +58,8 @@ class User extends Authenticatable
         'remember_token',
     ];
 
+    protected ?array $permissionCanonicalCache = null;
+
     /**
      * Get the password for the user.
      *
@@ -85,7 +88,44 @@ class User extends Authenticatable
      */
     public function userHasPermission($permissionName)
     {
-        return $this->permissions()->where('name', $permissionName)->exists();
+        if ($this->droit === 'SupAdmin') {
+            return true;
+        }
+
+        $canonical = Permission::canonicalName($permissionName);
+
+        return in_array($canonical, $this->permissionCanonicalNames(), true);
+    }
+
+    public function userHasAnyPermission(array $permissionNames): bool
+    {
+        foreach ($permissionNames as $permissionName) {
+            if ($this->userHasPermission($permissionName)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function permissionCanonicalNames(): array
+    {
+        if ($this->permissionCanonicalCache !== null) {
+            return $this->permissionCanonicalCache;
+        }
+
+        $permissions = $this->relationLoaded('permissions')
+            ? $this->permissions
+            : $this->permissions()->get(['permissions.name']);
+
+        $this->permissionCanonicalCache = $permissions
+            ->pluck('name')
+            ->map(fn ($name) => Permission::canonicalName($name))
+            ->unique()
+            ->values()
+            ->all();
+
+        return $this->permissionCanonicalCache;
     }
 
     /**

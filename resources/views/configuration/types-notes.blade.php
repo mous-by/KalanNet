@@ -43,7 +43,7 @@
                 </div>
                 <div class="card-body">
                     <div class="d-flex justify-content-end align-items-center flex-wrap mb-3 gap-3">
-                        <form action="{{ route('configuration.types-notes') }}" method="GET" class="col-md-5">
+                        <form action="{{ route('configuration.types-notes') }}" method="GET" class="col-md-5" data-auto-filter="true">
                             <div class="input-group">
                                 <span class="input-group-text bg-transparent"><i class="bi bi-search"></i></span>
                                 <input type="text" name="search" class="form-control border-start-0" placeholder="Rechercher un type ou code..." value="{{ request('search') }}">

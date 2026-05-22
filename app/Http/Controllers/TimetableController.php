@@ -8,6 +8,7 @@ use App\Models\Enseignant;
 use App\Models\Matiere;
 use App\Models\AnneeScolaire;
 use App\Models\Ecole;
+use App\Models\LigneClasse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -55,6 +56,29 @@ class TimetableController extends Controller
         $timetable = [];
         $selectedClasse = $id_classe ? $classes->firstWhere('id_classe', (int) $id_classe) : null;
         $selectedAnnee = $id_annee ? $annees->firstWhere('id_anneeScolaire', (int) $id_annee) : null;
+        $lignesClasse = collect();
+        $matieresForGrid = $matieres;
+        $teacherSuggestionMap = [];
+
+        if ($selectedClasse) {
+            $lignesClasse = LigneClasse::with(['matiere', 'enseignant'])
+                ->where('id_classe', $selectedClasse->id_classe)
+                ->orderBy('id_ligneclasse')
+                ->get();
+
+            if ($lignesClasse->isNotEmpty()) {
+                $matieresForGrid = $lignesClasse
+                    ->pluck('matiere')
+                    ->filter()
+                    ->unique('id_matiere')
+                    ->values();
+
+                $teacherSuggestionMap = $lignesClasse
+                    ->filter(fn ($ligne) => $ligne->id_matiere && $ligne->id_enseignants)
+                    ->mapWithKeys(fn ($ligne) => [(string) $ligne->id_matiere => (string) $ligne->id_enseignants])
+                    ->all();
+            }
+        }
 
         if ($id_classe && $id_annee) {
             $timetable = EmploiDuTemps::with(['matiere', 'enseignant'])
@@ -78,7 +102,7 @@ class TimetableController extends Controller
             $recesses = session('timetable_recesses_' . $id_classe, []);
         }
 
-        return view('pedagogie.timetable', compact('classes', 'annees', 'timetable', 'coursesList', 'matieres', 'enseignants', 'selectedClasse', 'selectedAnnee', 'ecole', 'recesses'));
+        return view('pedagogie.timetable', compact('classes', 'annees', 'timetable', 'coursesList', 'matieres', 'matieresForGrid', 'enseignants', 'selectedClasse', 'selectedAnnee', 'ecole', 'recesses', 'lignesClasse', 'teacherSuggestionMap'));
     }
 
     public function store(Request $request)
@@ -157,6 +181,8 @@ class TimetableController extends Controller
 
         $slots = $request->input('slots', []);
 
+        $hourRows = [];
+
         foreach ($slots as $jour => $heuresData) {
             foreach ($heuresData as $heureKey => $data) {
                 $id = $data['id'] ?? null;
@@ -164,6 +190,13 @@ class TimetableController extends Controller
                 $id_enseignant = $data['id_enseignant'] ?? null;
                 $heure_debut = $data['heure_debut'] ?? null;
                 $heure_fin = $data['heure_fin'] ?? null;
+
+                if (!empty($id_matiere) && $heure_debut && $heure_fin && !isset($hourRows[$heureKey])) {
+                    $hourRows[$heureKey] = [
+                        'debut' => $heure_debut,
+                        'fin' => $heure_fin,
+                    ];
+                }
 
                 if ($id) {
                     if (empty($id_matiere)) {
@@ -200,6 +233,7 @@ class TimetableController extends Controller
 
         $recesses = $request->input('recesses', []);
         session(['timetable_recesses_' . $id_classe => $recesses]);
+        session([$this->hoursSessionKey($id_classe, $id_annee) => $hourRows]);
 
         return back()->with('success', 'Emploi du temps enregistré avec succès.');
     }
@@ -220,20 +254,47 @@ class TimetableController extends Controller
         $selectedAnnee = AnneeScolaire::findOrFail($id_annee);
         $ecole = $idEcole ? Ecole::withoutGlobalScopes()->find($idEcole) : null;
 
-        $timetable = EmploiDuTemps::with(['matiere', 'enseignant'])
+        $courses = EmploiDuTemps::with(['matiere', 'enseignant'])
             ->where('id_classe', $id_classe)
             ->where('id_annee_scolaire', $id_annee)
-            ->get()
-            ->groupBy('jour');
+            ->orderBy('heure_debut')
+            ->get();
+
+        $timetable = $courses->groupBy('jour');
 
         $recesses = session('timetable_recesses_' . $id_classe, []);
+        $storedHours = session($this->hoursSessionKey($id_classe, $id_annee), []);
 
         $jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
-        $heures = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
+        $heures = $this->pdfHours($storedHours, $courses);
 
         $pdf = Pdf::loadView('pdf.timetable', compact('selectedClasse', 'selectedAnnee', 'ecole', 'timetable', 'recesses', 'jours', 'heures'));
         $pdf->setPaper('a4', 'landscape');
         
         return $pdf->download('Emploi_du_temps_' . str_replace(' ', '_', $selectedClasse->nom_classe) . '.pdf');
+    }
+
+    private function hoursSessionKey(int|string $idClasse, int|string $idAnnee): string
+    {
+        return 'timetable_hours_' . $idClasse . '_' . $idAnnee;
+    }
+
+    private function pdfHours($storedHours, $courses): array
+    {
+        if (is_array($storedHours) && !empty($storedHours)) {
+            return collect($storedHours)
+                ->filter(fn ($hour) => !empty($hour['debut']) && !empty($hour['fin']))
+                ->sortBy('debut')
+                ->all();
+        }
+
+        return $courses
+            ->groupBy(fn ($course) => substr($course->heure_debut, 0, 5))
+            ->map(fn ($items, $start) => [
+                'debut' => $start,
+                'fin' => substr($items->max('heure_fin'), 0, 5),
+            ])
+            ->sortBy('debut')
+            ->all();
     }
 }

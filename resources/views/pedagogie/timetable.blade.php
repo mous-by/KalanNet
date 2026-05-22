@@ -29,11 +29,11 @@
         <div class="card theme-card shadow-sm">
             <div class="card-body p-4">
                 <p class="mb-2 fw-bold text-muted">Filtrer par</p>
-                <form action="{{ route('pedagogie.timetable.filter') }}" method="POST" class="row g-3">
+                <form action="{{ route('pedagogie.timetable.filter') }}" method="POST" class="row g-3" data-auto-filter="true">
                     @csrf
                     <div class="col-md-5">
                         <label class="form-label" for="id_classe">Classe</label>
-                        <select name="id_classe" id="id_classe" class="form-select" onchange="this.form.submit()">
+                        <select name="id_classe" id="id_classe" class="form-select">
                             <option value="">Sélectionner une classe</option>
                             @foreach($classes as $classe)
                                 <option value="{{ $classe->id_classe }}" @selected(session('timetable_id_classe') == $classe->id_classe)>
@@ -44,7 +44,7 @@
                     </div>
                     <div class="col-md-5">
                         <label class="form-label" for="id_annee">Année scolaire</label>
-                        <select name="id_annee" id="id_annee" class="form-select" onchange="this.form.submit()">
+                        <select name="id_annee" id="id_annee" class="form-select">
                             <option value="">Sélectionner une année</option>
                             @foreach($annees as $annee)
                                 <option value="{{ $annee->id_anneeScolaire }}" @selected(session('timetable_id_annee') == $annee->id_anneeScolaire)>
@@ -112,7 +112,10 @@
                 <form action="{{ route('pedagogie.timetable.save_grid') }}" method="POST" id="timetableGridForm">
                     @csrf
                     @foreach($heures as $hr)
-                        <input type="hidden" name="recesses[{{ $hr }}]" id="recess_after_{{ str_replace(':', '_', $hr) }}" value="{{ isset($recesses[$hr]) && $recesses[$hr] == '1' ? '1' : '0' }}">
+                        @php
+                            $recessValue = isset($recesses[$hr]) && (int) $recesses[$hr] > 0 ? (int) $recesses[$hr] : 0;
+                        @endphp
+                        <input type="hidden" name="recesses[{{ $hr }}]" id="recess_after_{{ str_replace(':', '_', $hr) }}" value="{{ $recessValue }}">
                     @endforeach
 
                     <div id="emploi" class="p-3 bg-white">
@@ -166,7 +169,10 @@
                                         @endphp
                                         <tr data-hour="{{ $heure }}">
                                             <td class="text-center fw-bold bg-white align-middle text-primary" style="white-space: nowrap; font-size: 13px; padding: 12px 6px;">
-                                                {{ $heure }} - {{ $endHourFormatted }}
+                                                <span class="hour-range">{{ $heure }} - {{ $endHourFormatted }}</span>
+                                                <button type="button" class="btn btn-outline-warning btn-sm mt-2 px-2 py-1 no-print timetable-edit-block d-none" style="font-size: 10px; border-radius: 6px;" onclick="openRecessProposal('{{ $heure }}')">
+                                                    <i class="bi bi-clock me-1"></i>Récréation
+                                                </button>
                                             </td>
                                             @foreach($jours as $jour)
                                                 <td class="p-2 align-middle text-center position-relative" style="min-width: 165px; height: 110px;">
@@ -206,8 +212,8 @@
                                                         <div class="mb-2">
                                                             <select name="slots[{{ $jour }}][{{ $heure }}][id_matiere]" class="form-select quick-select-matiere border-primary-subtle fw-semibold" style="font-size: 12px; font-weight: 600; padding: 6px 10px; border-radius: 6px; border: 2px solid var(--theme-primary) !important;" onchange="onMatiereChange(this)">
                                                                 <option value="" class="fw-bold">+ Cours (Libre)</option>
-                                                                @foreach($matieres as $matiere)
-                                                                    <option value="{{ $matiere->id_matiere }}" @selected($matiereId == $matiere->id_matiere)>
+                                                                @foreach($matieresForGrid as $matiere)
+                                                                    <option value="{{ $matiere->id_matiere }}" data-preferred-teacher="{{ $teacherSuggestionMap[(string) $matiere->id_matiere] ?? '' }}" @selected($matiereId == $matiere->id_matiere)>
                                                                         {{ $matiere->nom_matiere }}
                                                                     </option>
                                                                 @endforeach
@@ -263,7 +269,7 @@
 
                                                     <div class="flex-grow-1 text-center">
                                                         <h5 class="m-0 fw-extrabold text-warning-emphasis text-uppercase tracking-wider" style="font-size: 14px; font-weight: 800; letter-spacing: 3px;">
-                                                            ☕ &nbsp; RÉCRÉATION &nbsp; ☕
+                                                            RÉCRÉATION
                                                         </h5>
                                                     </div>
                                                     
@@ -289,14 +295,14 @@
                     </div>
                 </form>
 
-                {{-- Magic Recess Proposer Card (Intelligent slide-in from random directions) --}}
+                {{-- Intelligent recess proposer --}}
                 <div id="magic_recess_proposer_card" class="d-none no-print">
                     <div class="d-flex align-items-start gap-3">
                         <div class="bg-warning-subtle text-warning p-2.5 rounded-circle d-flex align-items-center justify-content-center animate-pulse" style="width: 42px; height: 42px; background-color: #fffbeb; border: 2px solid #fbbf24;">
                             <i class="bi bi-clock-fill fs-4 text-warning-emphasis"></i>
                         </div>
                         <div class="flex-grow-1 text-start">
-                            <h6 class="m-0 fw-bold text-dark" style="font-size: 13px; font-weight: 700;">☕ Proposition de Récréation</h6>
+                            <h6 class="m-0 fw-bold text-dark" style="font-size: 13px; font-weight: 700;">Proposition de récréation</h6>
                             <p class="text-muted my-1" style="font-size: 11px; line-height: 1.3;">
                                 Voulez-vous planifier une récréation après le cours de <strong class="text-primary" id="proposal_hour_display">--:--</strong> ?
                             </p>
@@ -311,7 +317,7 @@
                             </div>
                             <div class="d-flex justify-content-end gap-2 mt-3">
                                 <button type="button" class="btn btn-light btn-sm fw-bold py-1 px-2.5" style="font-size: 11px; border-radius: 6px;" onclick="closeRecessProposal()">Non</button>
-                                <button type="button" class="btn btn-warning btn-sm text-warning-emphasis fw-bold py-1 px-3" style="font-size: 11px; border-radius: 6px;" onclick="acceptRecessProposal()">Insérer ☕</button>
+                                <button type="button" class="btn btn-warning btn-sm text-warning-emphasis fw-bold py-1 px-3" style="font-size: 11px; border-radius: 6px;" onclick="acceptRecessProposal()">Insérer</button>
                             </div>
                         </div>
                     </div>
@@ -320,6 +326,7 @@
                 <script>
                     window.selectedClasseId = {{ $selectedClasse->id_classe ?? 'null' }};
                     window.selectedAnneeId = {{ $selectedAnnee->id_anneeScolaire ?? 'null' }};
+                    window.teacherSuggestionMap = @json($teacherSuggestionMap ?? []);
                 </script>
             @else
                 <div class="text-center py-5 text-muted">
@@ -524,13 +531,18 @@
             timeWrapper.classList.remove('d-none');
             btnClear.classList.remove('d-none');
             
-            // Intelligent recess proposer triggers after every two hours (indices 1, 3, 5, 7 in heures)
+            const preferredTeacher = select.selectedOptions[0]?.dataset?.preferredTeacher || window.teacherSuggestionMap?.[select.value] || "";
+            if (preferredTeacher && !selectEnseignant.value) {
+                selectEnseignant.value = preferredTeacher;
+            }
+
+            // Propose a recess only at the natural morning break points and only once per hour.
             const tr = select.closest('tr');
             const hr = tr ? tr.getAttribute('data-hour') : null;
             if (hr) {
                 const hours = @json($heures);
                 const idx = hours.indexOf(hr);
-                if (idx !== -1 && (idx + 1) % 2 === 0) {
+                if (idx !== -1 && [1, 3].includes(idx)) {
                     setTimeout(() => {
                         triggerRecessProposal(hr);
                     }, 500);
@@ -568,33 +580,42 @@
 
     /* Intelligent sliding Recess proposal */
     let currentProposalHour = '';
+    const proposedRecessHours = new Set();
     
-    function triggerRecessProposal(heure) {
+    function openRecessProposal(heure) {
+        triggerRecessProposal(heure, true);
+    }
+
+    function triggerRecessProposal(heure, manual = false) {
         const key = heure.replace(':', '_');
+        const card = document.getElementById('magic_recess_proposer_card');
+        if (!card || (!card.classList.contains('d-none') && currentProposalHour)) {
+            return;
+        }
+
+        if (!manual && proposedRecessHours.has(heure)) {
+            return;
+        }
         
-        // If recess is already scheduled after this hour, don't propose it!
         const recessInput = document.getElementById('recess_after_' + key);
         if (recessInput && parseInt(recessInput.value, 10) > 0) {
+            showToast("Une récréation existe déjà après cet horaire.", "info");
             return;
         }
         
         currentProposalHour = heure;
         
-        const card = document.getElementById('magic_recess_proposer_card');
         const hourDisplay = document.getElementById('proposal_hour_display');
-        if (!card || !hourDisplay) return;
+        if (!hourDisplay) return;
         
         hourDisplay.textContent = heure;
+        proposedRecessHours.add(heure);
         
         // Reset classes
         card.className = 'no-print';
         card.classList.remove('d-none');
         
-        // Randomly select a slide direction animation!
-        const animations = ['recess-slide-left', 'recess-slide-right', 'recess-slide-top', 'recess-slide-bottom'];
-        const randomAnimation = animations[Math.floor(Math.random() * animations.length)];
-        
-        card.classList.add(randomAnimation);
+        card.classList.add('recess-slide-right');
     }
     
     function closeRecessProposal() {
@@ -642,7 +663,7 @@
         // Recalculate
         recalculateAllTimes();
         
-        showToast(`Récréation de ${duration} minutes insérée avec succès !`, "success");
+        showToast(`Récréation de ${duration} minutes insérée.`, "success");
         
         closeRecessProposal();
     }

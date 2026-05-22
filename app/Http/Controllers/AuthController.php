@@ -78,8 +78,11 @@ class AuthController extends Controller
     {
         Auth::login($user);
 
+        $user->loadMissing(['enseignant', 'parent']);
+        $idEcole = $user->idEcole ?: $user->enseignant?->id_ecole ?: $user->parent?->idEcole;
+
         // Retrieve school details bypassing global scopes
-        $ecole = $user->ecole()->withoutGlobalScopes()->first();
+        $ecole = $idEcole ? \App\Models\Ecole::withoutGlobalScopes()->find($idEcole) : null;
 
         // Put necessary info in session like legacy did
         $request->session()->put([
@@ -87,11 +90,17 @@ class AuthController extends Controller
             'nomPrenom' => $user->nomPrenom,
             'email' => $user->email,
             'droit' => $user->droit,
-            'idEcole' => $user->idEcole,
+            'idEcole' => $idEcole,
             'nomEcole' => $ecole->nomEcole ?? null,
             'typeEcole' => $ecole->typeEcole ?? null,
             'logoEcole' => $ecole->logoEcole ?? null,
         ]);
+
+        if (in_array($user->droit, ['enseignant', 'parent'], true)) {
+            $request->session()->forget('url.intended');
+
+            return redirect()->route('dashboard');
+        }
 
         return redirect()->intended(route('dashboard'));
     }
