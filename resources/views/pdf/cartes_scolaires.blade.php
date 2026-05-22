@@ -234,7 +234,6 @@
                                 <div class="photo">@if($hasPhoto)<img src="{{ $photoPath }}" alt="">@else PHOTO @endif</div>
                             </td>
                             <td class="student-info-cell info">
-                                <div class="name">{{ $fullName }}</div>
                                 <div class="line"><span class="label">Nom :</span> {{ strtoupper($eleve->nom_eleve) }}</div>
                                 <div class="line"><span class="label">Prénom :</span> {{ $eleve->prenom_eleve }}</div>
                                 <div class="line"><span class="label">Né(e) le :</span> {{ $eleve->date_naissance ? \Carbon\Carbon::parse($eleve->date_naissance)->format('d/m/Y') : 'Non renseigné' }} à {{ $eleve->lieu_naiss ?: 'Non renseigné' }}</div>

@@ -22,6 +22,7 @@
                     </div>
                 </div>
                 <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-light px-4" data-bs-toggle="modal" data-bs-target="#teacherBadgeModal"><i class="bi bi-person-vcard me-2"></i>Badge</button>
                     <a href="{{ route('enseignants.edit', $enseignant->id_enseignant) }}" class="btn btn-light px-4"><i class="bi bi-pencil me-2"></i>Modifier</a>
                     <button type="button" class="btn btn-primary px-4" onclick="window.print()"><i class="bi bi-printer me-2"></i>Imprimer Fiche</button>
                 </div>
@@ -49,7 +50,11 @@
                         <span class="position-absolute bottom-0 end-0 bg-success border border-white border-3 rounded-circle p-2" title="Actif"></span>
                     </div>
                     <h4 class="fw-bold mb-1">{{ $enseignant->nom_prenom_enseignant }}</h4>
-                    <p class="text-muted mb-4">{{ $enseignant->diplome_enseignant }}</p>
+                    <p class="text-muted mb-2">{{ $enseignant->diplome_enseignant }}</p>
+                    <div class="mb-4">
+                        <span class="badge bg-light text-primary border border-primary-subtle px-3 py-2">{{ $enseignant->specialite ?: 'Polyvalent' }}</span>
+                        <span class="badge bg-light text-dark border px-3 py-2">{{ $enseignant->matricule ?: 'Matricule non défini' }}</span>
+                    </div>
                     
                     <div class="row g-2 mb-4">
                         <div class="col-6">
@@ -107,6 +112,9 @@
                         </li>
                         <li class="nav-item">
                             <button class="nav-link px-4" data-bs-toggle="pill" data-bs-target="#emargements">Émargements</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link px-4" data-bs-toggle="pill" data-bs-target="#programme">Programme</button>
                         </li>
                         <li class="nav-item">
                             <button class="nav-link px-4" data-bs-toggle="pill" data-bs-target="#presences">Présences</button>
@@ -194,11 +202,23 @@
                                 </div>
                                 <div class="col-md-4">
                                     <div class="theme-icon-soft rounded-3 p-3">
-                                        <small class="text-muted text-uppercase fw-bold">Heures</small>
+                                        <small class="text-muted text-uppercase fw-bold">Heures totales</small>
                                         <h4 class="mb-0 fw-bold">{{ number_format($emargementStats['heures'], 2) }}</h4>
                                     </div>
                                 </div>
                             </div>
+
+                            @if($vctPayment['eligible'])
+                                <div class="alert alert-info border-0 border-start border-info border-4">
+                                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                                        <div>
+                                            <div class="fw-bold">Base de paiement VCT</div>
+                                            <div class="small text-muted">{{ number_format($vctPayment['heures_validees'], 2, ',', ' ') }} heure(s) validée(s) x {{ number_format($vctPayment['prix_heure'], 0, ',', ' ') }} FCFA</div>
+                                        </div>
+                                        <div class="h5 fw-bold mb-0">{{ number_format($vctPayment['montant'], 0, ',', ' ') }} FCFA</div>
+                                    </div>
+                                </div>
+                            @endif
 
                             <div class="table-responsive">
                                 <table class="table table-striped table-bordered align-middle mb-0">
@@ -207,6 +227,7 @@
                                             <th>Date</th>
                                             <th>Classe</th>
                                             <th>Matière</th>
+                                            <th>Leçon</th>
                                             <th>Heures</th>
                                             <th>Statut</th>
                                         </tr>
@@ -217,6 +238,7 @@
                                                 <td>{{ optional($emargement->date_emargement)->format('d/m/Y H:i') ?: 'N/A' }}</td>
                                                 <td>{{ $emargement->classe->nom_classe ?? 'N/A' }}</td>
                                                 <td>{{ $emargement->matiere->nom_matiere ?? 'N/A' }}</td>
+                                                <td>{{ $emargement->lecon->titre ?? 'N/A' }}</td>
                                                 <td>{{ $emargement->nombre_heure }}</td>
                                                 <td>
                                                     <span class="badge theme-icon-soft">
@@ -226,7 +248,7 @@
                                             </tr>
                                         @empty
                                             <tr>
-                                                <td colspan="5" class="text-center py-4 text-muted">Aucun émargement trouvé.</td>
+                                                <td colspan="6" class="text-center py-4 text-muted">Aucun émargement trouvé.</td>
                                             </tr>
                                         @endforelse
                                     </tbody>
@@ -236,6 +258,69 @@
                                 <a href="{{ route('enseignants.emargements', ['id_enseignant' => $enseignant->id_enseignant]) }}" class="btn theme-pill-active px-4">
                                     Voir tous les émargements
                                 </a>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="programme">
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-4">
+                                    <div class="theme-icon-soft rounded-3 p-3">
+                                        <small class="text-muted text-uppercase fw-bold">Affectations</small>
+                                        <h4 class="mb-0 fw-bold">{{ $programmeProgress->count() }}</h4>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="theme-icon-soft rounded-3 p-3">
+                                        <small class="text-muted text-uppercase fw-bold">Leçons validées</small>
+                                        <h4 class="mb-0 fw-bold">{{ $programmeProgress->sum('completed') }}</h4>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="theme-icon-soft rounded-3 p-3">
+                                        <small class="text-muted text-uppercase fw-bold">Leçons prévues</small>
+                                        <h4 class="mb-0 fw-bold">{{ $programmeProgress->sum('total') }}</h4>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="table table-striped table-bordered align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Classe</th>
+                                            <th>Matière</th>
+                                            <th>Progression</th>
+                                            <th>Prochaine leçon</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @forelse($programmeProgress as $row)
+                                            <tr>
+                                                <td class="fw-bold">{{ $row['classe']->nom_classe ?? 'N/A' }}</td>
+                                                <td>{{ $row['matiere']->nom_matiere ?? 'N/A' }}</td>
+                                                <td style="min-width: 210px;">
+                                                    <div class="d-flex justify-content-between small mb-1">
+                                                        <span>{{ $row['completed'] }}/{{ $row['total'] }} leçon(s)</span>
+                                                        <span class="fw-bold">{{ $row['percent'] }}%</span>
+                                                    </div>
+                                                    <div class="progress" style="height: 8px;">
+                                                        <div class="progress-bar" style="width: {{ $row['percent'] }}%;"></div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    @if($row['next'])
+                                                        {{ trim(($row['next']->numero ? $row['next']->numero.' - ' : '').$row['next']->titre) }}
+                                                    @else
+                                                        <span class="text-success fw-bold">Programme terminé</span>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="4" class="text-center py-4 text-muted">Aucune progression disponible.</td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                         <div class="tab-pane fade" id="presences">
@@ -310,4 +395,77 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="teacherBadgeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4 shadow">
+            <div class="modal-header theme-header">
+                <h5 class="modal-title fw-bold">Badge professionnelle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body bg-light">
+                <div class="teacher-badge bg-white mx-auto overflow-hidden">
+                    <div class="teacher-badge-header text-center py-3">
+                        <div class="small text-uppercase fw-bold">{{ session('nomEcole') ?: ($enseignant->ecole->nomEcole ?? 'École') }}</div>
+                        <div class="fw-bold">BADGE ENSEIGNANT</div>
+                    </div>
+                    <div class="p-4 text-center">
+                        <div class="mx-auto mb-3 rounded-circle overflow-hidden border border-3 border-white shadow" style="width: 110px; height: 110px;">
+                            @if($enseignant->avatar_enseignant)
+                                <img src="{{ asset($enseignant->avatar_enseignant) }}" alt="" class="w-100 h-100 object-fit-cover">
+                            @else
+                                <div class="w-100 h-100 d-flex align-items-center justify-content-center bg-light fs-1 fw-bold">
+                                    {{ strtoupper(substr($enseignant->nom_prenom_enseignant, 0, 1)) }}
+                                </div>
+                            @endif
+                        </div>
+                        <h5 class="fw-bold mb-1">{{ $enseignant->nom_prenom_enseignant }}</h5>
+                        <div class="text-muted mb-3">{{ $enseignant->specialite ?: 'Enseignant polyvalent' }}</div>
+                        <div class="row g-2 text-start small">
+                            <div class="col-6">
+                                <div class="border rounded-3 p-2">
+                                    <span class="text-muted d-block">Matricule</span>
+                                    <strong>{{ $enseignant->matricule ?: 'N/A' }}</strong>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="border rounded-3 p-2">
+                                    <span class="text-muted d-block">Contrat</span>
+                                    <strong>{{ $enseignant->type_contrat_enseignant }}</strong>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="border rounded-3 p-2">
+                                    <span class="text-muted d-block">Contact</span>
+                                    <strong>{{ $enseignant->telephone_enseignant ?: 'N/A' }}</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="teacher-badge-footer px-4 py-2 small d-flex justify-content-between">
+                        <span>Statut : {{ $enseignant->is_deleted ? 'Archivé' : 'Actif' }}</span>
+                        <span>{{ now()->format('Y') }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Fermer</button>
+                <button type="button" class="btn btn-primary px-4" onclick="window.print()">Imprimer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .teacher-badge {
+        width: min(100%, 340px);
+        border-radius: 8px;
+        border: 1px solid var(--bs-border-color);
+    }
+    .teacher-badge-header,
+    .teacher-badge-footer {
+        background: var(--theme-accent);
+        color: var(--text-on-accent);
+    }
+</style>
 @endsection

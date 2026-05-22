@@ -57,8 +57,19 @@
                                 @forelse($ecoles as $ecole)
                                     <tr>
                                         <td>
-                                            <div class="fw-bold">{{ $ecole->nomEcole }}</div>
-                                            <small class="text-muted">{{ $ecole->adresse ?? 'Adresse non renseignée' }}</small>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="rounded border d-flex align-items-center justify-content-center overflow-hidden" style="width: 42px; height: 42px; background: #fff !important;">
+                                                    @if($ecole->logoEcole)
+                                                        <img src="{{ asset($ecole->logoEcole) }}" alt="" class="w-100 h-100 object-fit-contain p-1">
+                                                    @else
+                                                        <i class="bx bx-building text-muted"></i>
+                                                    @endif
+                                                </div>
+                                                <div>
+                                                    <div class="fw-bold">{{ $ecole->nomEcole }}</div>
+                                                    <small class="text-muted">{{ $ecole->adresse ?? 'Adresse non renseignée' }}</small>
+                                                </div>
+                                            </div>
                                         </td>
                                         <td>{{ $ecole->typeEcole }}</td>
                                         <td>{{ $ecole->academieRef->nom_academie ?? $ecole->academie ?? 'N/A' }}</td>

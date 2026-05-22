@@ -77,6 +77,7 @@
                             <label class="form-label">Nombre d'heures <span class="text-danger">*</span></label>
                             <input type="number" name="nombre_heure" class="form-control" min="0.25" max="24" step="0.25"
                                    value="{{ old('nombre_heure', $emargement->nombre_heure ?? '') }}" required>
+                            <small class="text-muted">À renseigner selon les heures réellement dispensées. Le plafond hebdomadaire VCT reste contrôlé.</small>
                         </div>
                         <div class="col-12">
                             <label class="form-label">Leçon <span class="text-danger">*</span></label>

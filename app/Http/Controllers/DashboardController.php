@@ -96,6 +96,9 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
+        $teacherProgressRows = $this->schoolTeacherProgress($schoolId, $idAnnee);
+        $presenceProgressRows = $this->schoolPresenceProgress($schoolId, $idAnnee);
+
         return view('dashboard', compact(
             'totalEleves', 
             'totalGarcons', 
@@ -108,7 +111,9 @@ class DashboardController extends Controller
             'anneeEnCours',
             'tauxAbandon',
             'totalAbandons',
-            'classesData'
+            'classesData',
+            'teacherProgressRows',
+            'presenceProgressRows'
         ));
     }
 
@@ -163,13 +168,14 @@ class DashboardController extends Controller
             ->get()
             ->unique('id_evaluation')
             ->values();
+        $teacherPresenceProgressRows = $this->schoolPresenceProgress($schoolId, null, $teacherId);
 
         $teacherPermissions = [
             'emargement' => $user->userHasPermission('emargement_faire'),
-            'presence' => $user->userHasPermission('presence_apercu'),
+            'presence' => $user->droit === 'enseignant' || $user->userHasPermission('presence_apercu'),
             'evaluations' => $user->userHasPermission('evaluation_apercu'),
             'programmes' => $user->userHasAnyPermission(['programmes_apercu', 'programmes_pdf', 'voir_pdf_programme']),
-            'timetable' => $user->userHasPermission('enseignants_emploi') || $user->userHasPermission('classes_apercu'),
+            'timetable' => $user->droit === 'enseignant' || $user->userHasPermission('enseignants_emploi') || $user->userHasPermission('classes_apercu'),
         ];
 
         return view('dashboards.teacher', compact(
@@ -185,6 +191,7 @@ class DashboardController extends Controller
             'recentEmargements',
             'recentPresences',
             'recentEvaluations',
+            'teacherPresenceProgressRows',
             'teacherPermissions'
         ));
     }
@@ -211,56 +218,39 @@ class DashboardController extends Controller
 
         $childIds = $children->pluck('id_eleve')->filter()->values();
 
-        $payments = Paiement::with(['eleve', 'classe'])
+        $allPayments = Paiement::with(['eleve', 'classe'])
             ->whereIn('id_eleve', $childIds)
             ->when($schoolId, fn ($query, $id) => $query->where('idEcole', $id))
             ->where(function ($query) {
                 $query->whereNull('statut')->orWhere('statut', 'valide');
             })
-            ->orderByDesc('date_paiement')
-            ->limit(8)
             ->get();
 
-        $plans = PlanPaiement::with(['eleve', 'classe', 'anneeScolaire', 'echeances.paiements'])
-            ->whereIn('eleve_id', $childIds)
-            ->when($schoolId, fn ($query, $id) => $query->where('ecole_id', $id))
-            ->when($anneeEnCours, fn ($query, $annee) => $query->where('annee_scolaire_id', $annee->id_anneeScolaire))
-            ->get();
+        $payments = $allPayments
+            ->sortByDesc('date_paiement')
+            ->take(8)
+            ->values();
 
-        $financialRows = $plans->map(function (PlanPaiement $plan) {
-            $echeanceIds = $plan->echeances->pluck('id')->filter();
-            $paid = Paiement::whereIn('echeance_id', $echeanceIds)
-                ->where(function ($query) {
-                    $query->whereNull('statut')->orWhere('statut', 'valide');
-                })
-                ->sum('montant_paye');
-            $expected = (float) ($plan->montant_final ?: $plan->montant_total);
-            $remaining = max($expected - (float) $paid, 0);
-            $lateCount = $plan->echeances->filter(fn ($echeance) => $echeance->date_limite && $echeance->date_limite->isPast() && $echeance->statut !== 'paye')->count();
-
-            return [
-                'eleve' => $plan->eleve,
-                'classe' => $plan->classe,
-                'annee' => $plan->anneeScolaire,
-                'attendu' => $expected,
-                'paye' => (float) $paid,
-                'reste' => $remaining,
-                'retards' => $lateCount,
-                'statut' => $remaining <= 0 ? 'À jour' : ($lateCount > 0 ? 'Retard' : 'En cours'),
-            ];
-        });
+        $financialRows = $children
+            ->map(fn (Eleve $child) => $this->parentFinancialRow($child, $allPayments->where('id_eleve', $child->id_eleve)->values()))
+            ->filter(fn (array $row) => $row['attendu'] > 0 || $row['paye'] > 0)
+            ->values();
 
         $totalExpected = $financialRows->sum('attendu');
         $totalPaid = $financialRows->sum('paye');
         $totalRemaining = $financialRows->sum('reste');
         $latePlans = $financialRows->where('retards', '>', 0)->count();
         $annonces = $this->parentAnnouncements($parent, $schoolId);
+        $childrenProgressRows = $this->parentChildrenProgress($children, $anneeEnCours?->id_anneeScolaire);
+        $childrenPresenceProgressRows = $this->parentChildrenPresenceProgress($children, $anneeEnCours?->id_anneeScolaire);
 
         return view('dashboards.parent', compact(
             'parent',
             'children',
             'payments',
             'financialRows',
+            'childrenProgressRows',
+            'childrenPresenceProgressRows',
             'annonces',
             'anneeEnCours',
             'totalExpected',
@@ -268,6 +258,198 @@ class DashboardController extends Controller
             'totalRemaining',
             'latePlans'
         ));
+    }
+
+    private function schoolTeacherProgress(?int $schoolId, ?int $idAnnee)
+    {
+        $assignments = LigneClasse::with(['enseignant', 'classe', 'matiere'])
+            ->when($schoolId, fn ($query, $id) => $query->whereHas('classe', fn ($classe) => $classe->where('idEcole', $id)))
+            ->get()
+            ->filter(fn ($line) => $line->enseignant && $line->classe && $line->matiere);
+
+        if ($assignments->isEmpty()) {
+            return collect();
+        }
+
+        $classIds = $assignments->pluck('id_classe')->filter()->unique()->values();
+        $matterIds = $assignments->pluck('id_matiere')->filter()->unique()->values();
+
+        $totalLessons = DB::table('classe as c')
+            ->join('programme_classes as pc', 'c.id_classe_officielle', '=', 'pc.id_classe')
+            ->join('programme_lecons as pl', 'pc.id_programme_classe', '=', 'pl.id_programme_classe')
+            ->whereIn('c.id_classe', $classIds)
+            ->whereIn('pc.id_matiere', $matterIds)
+            ->select('c.id_classe', 'pc.id_matiere', DB::raw('COUNT(DISTINCT pl.id_lecon) as total'))
+            ->groupBy('c.id_classe', 'pc.id_matiere')
+            ->get()
+            ->keyBy(fn ($row) => $row->id_classe . '_' . $row->id_matiere);
+
+        $completedLessons = Emargement::query()
+            ->where('valide', 1)
+            ->whereIn('id_enseignant', $assignments->pluck('id_enseignants')->filter()->unique())
+            ->whereIn('id_classe', $classIds)
+            ->whereIn('id_matiere', $matterIds)
+            ->when($idAnnee, fn ($query, $id) => $query->where('id_anneeScolaire', $id))
+            ->select(
+                'id_enseignant',
+                'id_classe',
+                'id_matiere',
+                DB::raw('COUNT(DISTINCT id_lecon) as completed'),
+                DB::raw('SUM(CAST(nombre_heure AS DECIMAL(10,2))) as hours')
+            )
+            ->groupBy('id_enseignant', 'id_classe', 'id_matiere')
+            ->get()
+            ->keyBy(fn ($row) => $row->id_enseignant . '_' . $row->id_classe . '_' . $row->id_matiere);
+
+        return $assignments
+            ->map(function ($line) use ($totalLessons, $completedLessons) {
+                $total = (int) ($totalLessons[$line->id_classe . '_' . $line->id_matiere]->total ?? 0);
+                $done = $completedLessons[$line->id_enseignants . '_' . $line->id_classe . '_' . $line->id_matiere] ?? null;
+                $completed = min((int) ($done->completed ?? 0), $total);
+                $percent = $total > 0 ? round(($completed / $total) * 100) : 0;
+
+                return [
+                    'teacher' => $line->enseignant->nom_prenom_enseignant,
+                    'classe' => $line->classe->nom_classe,
+                    'matiere' => $line->matiere->nom_matiere,
+                    'completed' => $completed,
+                    'total' => $total,
+                    'hours' => (float) ($done->hours ?? 0),
+                    'percent' => $percent,
+                ];
+            })
+            ->sortBy('percent')
+            ->values()
+            ->take(10);
+    }
+
+    private function schoolPresenceProgress(?int $schoolId, ?int $idAnnee = null, ?int $teacherId = null)
+    {
+        return Presence::with(['enseignant', 'classe', 'lecons'])
+            ->where('valide', 1)
+            ->when($schoolId, fn ($query, $id) => $query->where('id_ecole', $id))
+            ->when($idAnnee, fn ($query, $id) => $query->where('id_anneeScolaire', $id))
+            ->when($teacherId, fn ($query, $id) => $query->where('id_enseignant', $id))
+            ->orderByDesc('date_presence')
+            ->limit(20)
+            ->get()
+            ->flatMap(function (Presence $presence) {
+                return $presence->lecons->map(function ($lecon) use ($presence) {
+                    return [
+                        'teacher' => $presence->enseignant?->nom_prenom_enseignant ?? 'Enseignant',
+                        'classe' => $presence->classe?->nom_classe ?? 'Classe',
+                        'date' => $presence->date_presence,
+                        'titre' => $lecon->titre,
+                        'hours' => (float) $lecon->nombre_heure,
+                        'percent' => round((float) $lecon->progression, 2),
+                    ];
+                });
+            })
+            ->take(30)
+            ->values();
+    }
+
+    private function parentChildrenProgress($children, ?int $idAnnee)
+    {
+        $classIds = $children->pluck('id_classe')->filter()->unique()->values();
+
+        if ($classIds->isEmpty()) {
+            return collect();
+        }
+
+        $assignments = LigneClasse::with(['enseignant', 'classe', 'matiere'])
+            ->whereIn('id_classe', $classIds)
+            ->get()
+            ->filter(fn ($line) => $line->classe && $line->matiere);
+
+        if ($assignments->isEmpty()) {
+            return collect();
+        }
+
+        $matterIds = $assignments->pluck('id_matiere')->filter()->unique()->values();
+
+        $totalLessons = DB::table('classe as c')
+            ->join('programme_classes as pc', 'c.id_classe_officielle', '=', 'pc.id_classe')
+            ->join('programme_lecons as pl', 'pc.id_programme_classe', '=', 'pl.id_programme_classe')
+            ->whereIn('c.id_classe', $classIds)
+            ->whereIn('pc.id_matiere', $matterIds)
+            ->select('c.id_classe', 'pc.id_matiere', DB::raw('COUNT(DISTINCT pl.id_lecon) as total'))
+            ->groupBy('c.id_classe', 'pc.id_matiere')
+            ->get()
+            ->keyBy(fn ($row) => $row->id_classe . '_' . $row->id_matiere);
+
+        $completedLessons = Emargement::query()
+            ->where('valide', 1)
+            ->whereIn('id_classe', $classIds)
+            ->whereIn('id_matiere', $matterIds)
+            ->when($idAnnee, fn ($query, $id) => $query->where('id_anneeScolaire', $id))
+            ->select('id_classe', 'id_matiere', DB::raw('COUNT(DISTINCT id_lecon) as completed'))
+            ->groupBy('id_classe', 'id_matiere')
+            ->get()
+            ->keyBy(fn ($row) => $row->id_classe . '_' . $row->id_matiere);
+
+        return $children
+            ->flatMap(function (Eleve $child) use ($assignments, $totalLessons, $completedLessons) {
+                return $assignments
+                    ->where('id_classe', $child->id_classe)
+                    ->map(function ($line) use ($child, $totalLessons, $completedLessons) {
+                        $key = $line->id_classe . '_' . $line->id_matiere;
+                        $total = (int) ($totalLessons[$key]->total ?? 0);
+                        $completed = min((int) ($completedLessons[$key]->completed ?? 0), $total);
+                        $percent = $total > 0 ? round(($completed / $total) * 100) : 0;
+
+                        return [
+                            'child' => $child,
+                            'classe' => $child->classe,
+                            'teacher' => $line->enseignant?->nom_prenom_enseignant ?? 'Non assigné',
+                            'teacher_phone' => $line->enseignant?->telephone_enseignant,
+                            'matiere' => $line->matiere->nom_matiere,
+                            'completed' => $completed,
+                            'total' => $total,
+                            'percent' => $percent,
+                        ];
+                    });
+            })
+            ->sortBy(fn ($row) => ($row['child']->prenom_eleve ?? '') . ' ' . ($row['child']->nom_eleve ?? '') . ' ' . $row['matiere'])
+            ->values();
+    }
+
+    private function parentChildrenPresenceProgress($children, ?int $idAnnee)
+    {
+        $classIds = $children->pluck('id_classe')->filter()->unique()->values();
+
+        if ($classIds->isEmpty()) {
+            return collect();
+        }
+
+        $presencesByClass = Presence::with(['enseignant', 'classe', 'lecons'])
+            ->where('valide', 1)
+            ->whereIn('id_classe', $classIds)
+            ->when($idAnnee, fn ($query, $id) => $query->where('id_anneeScolaire', $id))
+            ->orderByDesc('date_presence')
+            ->get()
+            ->groupBy('id_classe');
+
+        return $children
+            ->flatMap(function (Eleve $child) use ($presencesByClass) {
+                return ($presencesByClass[$child->id_classe] ?? collect())
+                    ->flatMap(function (Presence $presence) use ($child) {
+                        return $presence->lecons->map(function ($lecon) use ($child, $presence) {
+                            return [
+                                'child' => $child,
+                                'classe' => $child->classe,
+                                'teacher' => $presence->enseignant?->nom_prenom_enseignant ?? 'Enseignant',
+                                'teacher_phone' => $presence->enseignant?->telephone_enseignant,
+                                'date' => $presence->date_presence,
+                                'titre' => $lecon->titre,
+                                'hours' => (float) $lecon->nombre_heure,
+                                'percent' => round((float) $lecon->progression, 2),
+                            ];
+                        });
+                    });
+            })
+            ->take(40)
+            ->values();
     }
 
     private function parentAnnouncements(ParentModel $parent, ?int $schoolId)
@@ -292,6 +474,87 @@ class DashboardController extends Controller
             ])
             ->orderByDesc('annonces.date_publication')
             ->limit(5)
+            ->get();
+    }
+
+    private function parentFinancialRow(Eleve $child, $payments): array
+    {
+        $payments = $payments->filter(function ($payment) use ($child) {
+            return empty($payment->id_annee) || empty($child->id_annee) || (int) $payment->id_annee === (int) $child->id_annee;
+        });
+
+        $plan = $child->plansPaiement
+            ->when($child->id_annee, fn ($plans) => $plans->where('annee_scolaire_id', $child->id_annee))
+            ->sortByDesc('id')
+            ->first();
+
+        $legacyPlanifications = $this->parentLegacyPlanifications($child);
+        $legacyExpected = $legacyPlanifications->sum(fn ($planification) => (float) $planification->montant_planification);
+        $expected = (float) ($plan?->montant_final ?: $plan?->montant_total ?: 0);
+        if ($expected <= 0 && $legacyExpected > 0) {
+            $expected = $legacyExpected;
+        }
+
+        $paid = $payments->sum(fn ($payment) => (float) ($payment->montant_paye ?? $payment->montant ?? 0));
+        $remaining = max($expected - $paid, 0);
+        $lateCount = $this->parentLatePaymentsCount($plan, $legacyPlanifications, $payments);
+
+        return [
+            'eleve' => $child,
+            'classe' => $child->classe,
+            'annee' => null,
+            'attendu' => $expected,
+            'paye' => $paid,
+            'reste' => $remaining,
+            'retards' => $lateCount,
+            'statut' => $remaining <= 0 && $expected > 0 ? 'À jour' : ($lateCount > 0 ? 'Retard' : 'En cours'),
+        ];
+    }
+
+    private function parentLatePaymentsCount(?PlanPaiement $plan, $legacyPlanifications, $payments): int
+    {
+        if ($plan) {
+            return $plan->echeances->filter(function ($echeance) use ($payments) {
+                $paid = $payments
+                    ->where('echeance_id', $echeance->id)
+                    ->sum(fn ($payment) => (float) ($payment->montant_paye ?? $payment->montant ?? 0));
+
+                return $echeance->date_limite
+                    && $echeance->date_limite->isPast()
+                    && max((float) $echeance->montant_prevu - $paid, 0) > 0;
+            })->count();
+        }
+
+        return $legacyPlanifications->filter(function ($planification) use ($payments) {
+            if (!$planification->date_fin) {
+                return false;
+            }
+
+            $paid = $payments
+                ->where('id_planification', $planification->id_planification)
+                ->sum(fn ($payment) => (float) ($payment->montant_paye ?? $payment->montant ?? 0));
+
+            return \Illuminate\Support\Carbon::parse($planification->date_fin)->endOfDay()->isPast()
+                && max((float) $planification->montant_planification - $paid, 0) > 0;
+        })->count();
+    }
+
+    private function parentLegacyPlanifications(Eleve $child)
+    {
+        if (!Schema::hasTable('ligne_inscription') || !Schema::hasTable('planification')) {
+            return collect();
+        }
+
+        return DB::table('ligne_inscription as li')
+            ->join('planification as p', 'li.id_planification', '=', 'p.id_planification')
+            ->where('li.id_eleve', $child->id_eleve)
+            ->when($child->id_annee, fn ($query) => $query->where('li.id_annee', $child->id_annee))
+            ->select([
+                'p.id_planification',
+                'p.motif',
+                'p.date_fin',
+                'p.montant_planification',
+            ])
             ->get();
     }
 }

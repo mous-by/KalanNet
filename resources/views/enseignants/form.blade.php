@@ -80,6 +80,10 @@
                                 <input name="diplome" type="text" class="form-control" value="{{ old('diplome', $enseignant->diplome_enseignant) }}" required>
                             </div>
                             <div class="col-md-4">
+                                <label class="form-label">Spécialité</label>
+                                <input name="specialite" type="text" class="form-control" value="{{ old('specialite', $enseignant->specialite) }}" placeholder="Ex: Mathématiques, Français, Sciences...">
+                            </div>
+                            <div class="col-md-4">
                                 <label class="form-label">Type de contrat <span class="text-danger">*</span></label>
                                 <select name="type_contrat" id="type_contrat" class="form-select" required>
                                     @foreach($contratsAutorises as $value => $label)
@@ -96,7 +100,7 @@
                                 <input name="duree_contrat" type="text" class="form-control" value="{{ old('duree_contrat', $enseignant->duree_contrat) }}">
                             </div>
                             <div class="col-md-4 vct-field">
-                                <label class="form-label">Nombre d'heures</label>
+                                <label class="form-label">Nombre d'heures/semaine</label>
                                 <input name="nombre_heure" type="number" class="form-control" min="0" value="{{ old('nombre_heure', $enseignant->nombre_heure) }}">
                             </div>
                             <div class="col-md-4 vct-field">
@@ -120,10 +124,6 @@
                                 <div class="col-md-4">
                                     <label class="form-label">Nombre d'enfants</label>
                                     <input name="nombre_enfants" type="number" class="form-control" min="0" value="{{ old('nombre_enfants', $enseignant->nombre_enfants ?? 0) }}">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Spécialité</label>
-                                    <input name="specialite" type="text" class="form-control" value="{{ old('specialite', $enseignant->specialite) }}">
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">Service employeur</label>

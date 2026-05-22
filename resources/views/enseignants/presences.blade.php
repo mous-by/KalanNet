@@ -23,6 +23,7 @@
     @if($errors->any())
         <div class="alert alert-danger border-0 shadow-sm">{{ $errors->first() }}</div>
     @endif
+    @php($isTeacher = Auth::user()->droit === 'enseignant')
 
     @if($presencePermissions['create'])
         <div class="mb-3 d-flex justify-content-end">
@@ -31,6 +32,45 @@
             </button>
         </div>
     @endif
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-6 col-lg-3">
+            <div class="card theme-card shadow-sm h-100">
+                <div class="card-body p-3">
+                    <small class="text-muted text-uppercase fw-bold">Présences</small>
+                    <h4 class="fw-bold mb-0">{{ number_format($presenceSummary['total'], 0, ',', ' ') }}</h4>
+                    <span class="small text-muted">{{ $presenceSummary['pending'] }} en attente</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="card theme-card shadow-sm h-100">
+                <div class="card-body p-3">
+                    <small class="text-muted text-uppercase fw-bold">Validées</small>
+                    <h4 class="fw-bold mb-0">{{ number_format($presenceSummary['validated'], 0, ',', ' ') }}</h4>
+                    <span class="small text-muted">Cahiers confirmés</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="card theme-card shadow-sm h-100">
+                <div class="card-body p-3">
+                    <small class="text-muted text-uppercase fw-bold">Heures</small>
+                    <h4 class="fw-bold mb-0">{{ number_format($presenceSummary['hours'], 2, ',', ' ') }}</h4>
+                    <span class="small text-muted">Total déclaré</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="card theme-card shadow-sm h-100">
+                <div class="card-body p-3">
+                    <small class="text-muted text-uppercase fw-bold">Leçons</small>
+                    <h4 class="fw-bold mb-0">{{ number_format($presenceSummary['lessons'], 0, ',', ' ') }}</h4>
+                    <span class="small text-muted">Lignes renseignées</span>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="card theme-card shadow-sm mb-4">
         <div class="card-header theme-header d-flex align-items-center justify-content-between flex-wrap gap-2">
@@ -41,7 +81,7 @@
                 @csrf
                 <div class="col-md-3">
                     <label class="form-label small fw-bold text-muted text-uppercase">Enseignant</label>
-                    <select name="id_enseignant" class="form-select">
+                    <select name="id_enseignant" class="form-select" @disabled($isTeacher)>
                         <option value="">Tous</option>
                         @foreach($enseignants as $enseignant)
                             <option value="{{ $enseignant->id_enseignant }}" @selected(request('id_enseignant') == $enseignant->id_enseignant)>
@@ -49,6 +89,9 @@
                             </option>
                         @endforeach
                     </select>
+                    @if($isTeacher)
+                        <input type="hidden" name="id_enseignant" value="{{ Auth::user()->id_enseignant }}">
+                    @endif
                 </div>
                 <div class="col-md-3">
                     <label class="form-label small fw-bold text-muted text-uppercase">Classe</label>
@@ -77,9 +120,6 @@
                     <label class="form-label small fw-bold text-muted text-uppercase">Au</label>
                     <input type="date" name="date_fin" class="form-control" value="{{ request('date_fin') }}">
                 </div>
-                <div class="col-12 d-flex justify-content-end">
-                    <button type="submit" class="btn btn-primary px-4">Filtrer</button>
-                </div>
             </form>
         </div>
     </div>
@@ -91,16 +131,16 @@
         </div>
         <div class="table-responsive">
             <table class="table table-striped table-bordered align-middle mb-0">
-                <thead>
+                <thead class="presence-table-head" style="--bs-table-bg: #fff; --bs-table-color: #212529; background-color: #fff !important;">
                     <tr>
-                        <th class="px-4 py-3 small fw-bold text-uppercase">Date</th>
-                        <th class="py-3 small fw-bold text-uppercase">Enseignant</th>
-                        <th class="py-3 small fw-bold text-uppercase">Classe</th>
-                        <th class="py-3 small fw-bold text-uppercase">Leçons</th>
-                        <th class="py-3 small fw-bold text-uppercase">Heures</th>
-                        <th class="py-3 small fw-bold text-uppercase">Période</th>
-                        <th class="py-3 small fw-bold text-uppercase">Statut</th>
-                        <th class="px-4 py-3 text-end small fw-bold text-uppercase">Actions</th>
+                        <th class="px-4 py-3 small fw-bold text-uppercase bg-white" style="color: #212529 !important;">Date</th>
+                        <th class="py-3 small fw-bold text-uppercase bg-white" style="color: #212529 !important;">Enseignant</th>
+                        <th class="py-3 small fw-bold text-uppercase bg-white" style="color: #212529 !important;">Classe</th>
+                        <th class="py-3 small fw-bold text-uppercase bg-white" style="color: #212529 !important;">Leçons</th>
+                        <th class="py-3 small fw-bold text-uppercase bg-white" style="color: #212529 !important;">Heures</th>
+                        <th class="py-3 small fw-bold text-uppercase bg-white" style="color: #212529 !important;">Période</th>
+                        <th class="py-3 small fw-bold text-uppercase bg-white" style="color: #212529 !important;">Statut</th>
+                        <th class="px-4 py-3 text-end small fw-bold text-uppercase bg-white" style="color: #212529 !important;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -148,7 +188,7 @@
                                         </button>
                                     @endif
                                     @if($presencePermissions['delete'])
-                                        <form action="{{ route('enseignants.presences.destroy', $presence->id_presence) }}" method="POST" class="d-inline" onsubmit="return confirm('Supprimer cette présence ?');">
+                                        <form action="{{ route('enseignants.presences.destroy', $presence->id_presence) }}" method="POST" class="d-inline" data-confirm-delete data-confirm-title="Supprimer cette présence ?" data-confirm-text="Les leçons liées à cette présence seront aussi supprimées.">
                                             @csrf
                                             @method('DELETE')
                                             <button class="btn btn-light btn-sm p-2" title="Supprimer">
@@ -215,5 +255,48 @@
         html[data-theme] .theme-status-pending::before {
             content: "• ";
         }
+        .presence-table-head th {
+            background: #fff !important;
+            background-color: #fff !important;
+            --bs-table-bg: #fff !important;
+            box-shadow: none !important;
+            color: #212529 !important;
+        }
     </style>
+
+    @push('scripts')
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                document.querySelectorAll('[data-confirm-delete]').forEach(function (form) {
+                    form.addEventListener('submit', function (event) {
+                        event.preventDefault();
+
+                        if (!window.Swal) {
+                            if (confirm(form.dataset.confirmTitle || 'Confirmer la suppression ?')) {
+                                HTMLFormElement.prototype.submit.call(form);
+                            }
+
+                            return;
+                        }
+
+                        Swal.fire({
+                            title: form.dataset.confirmTitle || 'Confirmer la suppression ?',
+                            text: form.dataset.confirmText || 'Cette action est définitive.',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#dc3545',
+                            cancelButtonColor: '#6c757d',
+                            confirmButtonText: 'Oui, supprimer',
+                            cancelButtonText: 'Annuler',
+                            reverseButtons: true,
+                        }).then(function (result) {
+                            if (result.isConfirmed) {
+                                HTMLFormElement.prototype.submit.call(form);
+                            }
+                        });
+                    });
+                });
+            });
+        </script>
+    @endpush
 @endsection

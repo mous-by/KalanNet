@@ -1033,11 +1033,11 @@ class FinanceController extends Controller
 
     public function downloadRecu($id)
     {
-        $this->ensurePermission('paiements_apercu');
         $idEcole = session('idEcole');
         $paiement = Paiement::with(['eleve', 'classe', 'echeance'])
             ->where('idEcole', $idEcole)
             ->findOrFail($id);
+        $this->authorizePaymentReceipt($paiement);
 
         return $this->reportService
             ->receiptPdf($paiement)
@@ -1046,11 +1046,11 @@ class FinanceController extends Controller
 
     public function downloadRecuThermique($id)
     {
-        $this->ensurePermission('paiements_apercu');
         $idEcole = session('idEcole');
         $paiement = Paiement::with(['eleve', 'classe'])
             ->where('idEcole', $idEcole)
             ->findOrFail($id);
+        $this->authorizePaymentReceipt($paiement);
 
         return $this->reportService
             ->thermalReceiptPdf($paiement)
@@ -1274,6 +1274,27 @@ class FinanceController extends Controller
         if ($user->droit !== 'SupAdmin' && !$user->userHasPermission($permission)) {
             abort(403, 'Permission insuffisante.');
         }
+    }
+
+    private function authorizePaymentReceipt(Paiement $paiement): void
+    {
+        $user = Auth::user();
+        if (!$user) {
+            abort(401);
+        }
+
+        if ($user->droit === 'SupAdmin' || $user->userHasPermission('paiements_apercu')) {
+            return;
+        }
+
+        if ($user->droit === 'parent') {
+            $parentId = $user->id_parent ?: $user->parent?->id_parent;
+            if ($parentId && $paiement->eleve?->parents()->where('parents.id_parent', $parentId)->exists()) {
+                return;
+            }
+        }
+
+        abort(403, 'Permission insuffisante.');
     }
 
     private function ensureAnyPermission(array $permissions): void

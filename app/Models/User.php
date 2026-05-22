@@ -163,4 +163,9 @@ class User extends Authenticatable
     {
         return $this->belongsTo(ParentModel::class, 'id_parent', 'id_parent');
     }
+
+    public function appNotifications()
+    {
+        return $this->hasMany(AppNotification::class, 'user_id', 'idUtilisateur');
+    }
 }

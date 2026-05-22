@@ -207,11 +207,6 @@
                                                 <i class="bx bx-dots-horizontal-rounded"></i>
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-end">
-                                                <li>
-                                                    <a href="{{ route('eleves.show', $eleve->id_eleve) }}" class="dropdown-item">
-                                                        <i class="bi bi-person-lines-fill text-info me-2"></i>Dossier élève
-                                                    </a>
-                                                </li>
                                                 @if($canEditEleve)
                                                     <li>
                                                         <a href="{{ route('eleves.edit', $eleve->id_eleve) }}" class="dropdown-item">
@@ -219,18 +214,6 @@
                                                         </a>
                                                     </li>
                                                 @endif
-                                                <li>
-                                                    <form action="{{ route('eleves.cartes.pdf') }}" method="POST" target="_blank">
-                                                        @csrf
-                                                        <input type="hidden" name="id_classe" value="{{ request('id_classe') }}">
-                                                        <input type="hidden" name="id_annee" value="{{ request('id_annee') }}">
-                                                        <input type="hidden" name="selected_eleves" value="{{ $eleve->id_eleve }}">
-                                                        <input type="hidden" name="template" value="moderne">
-                                                        <button type="submit" class="dropdown-item">
-                                                            <i class="bi bi-card-text text-primary me-2"></i>Carte scolaire
-                                                        </button>
-                                                    </form>
-                                                </li>
                                                 @if($canTransferEleve)
                                                     <li>
                                                         <form action="{{ route('eleves.transfer', $eleve->id_eleve) }}" method="POST" data-transfer-form>

@@ -75,6 +75,53 @@
     </div>
 </div>
 
+<div class="row g-4 mb-4">
+    <div class="col-12">
+        <div class="card theme-card shadow-sm">
+            <div class="card-header bg-transparent border-0 p-4 pb-0">
+                <h5 class="fw-bold mb-0">Progression du cahier de présence</h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Classe</th>
+                                <th>Leçon</th>
+                                <th>Date</th>
+                                <th style="min-width: 240px;">Progression</th>
+                                <th class="text-end">Durée</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($teacherPresenceProgressRows as $row)
+                                <tr>
+                                    <td class="fw-bold">{{ $row['classe'] }}</td>
+                                    <td>{{ $row['titre'] }}</td>
+                                    <td>{{ optional($row['date'])->format('d/m/Y') }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="progress flex-grow-1" style="height: 8px;">
+                                                <div class="progress-bar bg-success" style="width: {{ $row['percent'] }}%"></div>
+                                            </div>
+                                            <span class="fw-bold text-primary text-nowrap">{{ number_format($row['percent'], 0, ',', ' ') }}%</span>
+                                        </div>
+                                    </td>
+                                    <td class="text-end">{{ number_format($row['hours'], 2, ',', ' ') }} h</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-muted">Aucune progression de présence validée pour le moment.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="row g-4">
     <div class="col-lg-8">
         <div class="card theme-card shadow-sm mb-4">
@@ -183,6 +230,11 @@
                     @if($teacherPermissions['programmes'])
                         <a href="{{ route('programmes.index') }}" class="btn btn-outline-success text-start p-3 rounded-3">
                             <i class="bi bi-file-earmark-text me-2"></i>Programmes officiels
+                        </a>
+                    @endif
+                    @if($teacherPermissions['timetable'])
+                        <a href="{{ route('pedagogie.timetable') }}" class="btn btn-outline-secondary text-start p-3 rounded-3">
+                            <i class="bi bi-calendar-week me-2"></i>Mon emploi du temps
                         </a>
                     @endif
                 </div>

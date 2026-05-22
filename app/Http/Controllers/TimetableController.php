@@ -19,6 +19,8 @@ class TimetableController extends Controller
     {
         $user = Auth::user();
         $idEcole = session('idEcole') ?: $user->idEcole;
+        $isTeacher = $user->droit === 'enseignant';
+        $canEditTimetable = !$isTeacher && ($user->droit === 'SupAdmin' || $user->userHasPermission('planning_creation'));
 
         // Reset filter if requested
         if ($request->has('reset')) {
@@ -41,6 +43,9 @@ class TimetableController extends Controller
         $id_annee = session('timetable_id_annee');
 
         $classes = Classe::query()
+            ->when($isTeacher, function ($query) use ($user) {
+                $query->whereIn('id_classe', LigneClasse::where('id_enseignants', $user->id_enseignant)->pluck('id_classe'));
+            })
             ->when($user->droit !== 'SupAdmin', fn ($query) => $query->where('idEcole', $idEcole))
             ->orderBy('nom_classe')
             ->get();
@@ -53,8 +58,24 @@ class TimetableController extends Controller
             ->get();
         $ecole = $idEcole ? Ecole::withoutGlobalScopes()->find($idEcole) : null;
 
+        if ($isTeacher) {
+            if (!$id_classe && $classes->isNotEmpty()) {
+                $id_classe = $classes->first()->id_classe;
+                session(['timetable_id_classe' => $id_classe]);
+            }
+            if (!$id_annee && $annees->isNotEmpty()) {
+                $id_annee = $annees->first()->id_anneeScolaire;
+                session(['timetable_id_annee' => $id_annee]);
+            }
+        }
+
         $timetable = [];
         $selectedClasse = $id_classe ? $classes->firstWhere('id_classe', (int) $id_classe) : null;
+        if ($isTeacher && !$selectedClasse && $classes->isNotEmpty()) {
+            $id_classe = $classes->first()->id_classe;
+            session(['timetable_id_classe' => $id_classe]);
+            $selectedClasse = $classes->first();
+        }
         $selectedAnnee = $id_annee ? $annees->firstWhere('id_anneeScolaire', (int) $id_annee) : null;
         $lignesClasse = collect();
         $matieresForGrid = $matieres;
@@ -63,6 +84,7 @@ class TimetableController extends Controller
         if ($selectedClasse) {
             $lignesClasse = LigneClasse::with(['matiere', 'enseignant'])
                 ->where('id_classe', $selectedClasse->id_classe)
+                ->when($isTeacher, fn ($query) => $query->where('id_enseignants', $user->id_enseignant))
                 ->orderBy('id_ligneclasse')
                 ->get();
 
@@ -84,6 +106,7 @@ class TimetableController extends Controller
             $timetable = EmploiDuTemps::with(['matiere', 'enseignant'])
                 ->where('id_classe', $id_classe)
                 ->where('id_annee_scolaire', $id_annee)
+                ->when($isTeacher, fn ($query) => $query->where('id_enseignant', $user->id_enseignant))
                 ->get()
                 ->groupBy('jour');
         }
@@ -94,6 +117,7 @@ class TimetableController extends Controller
             $coursesList = EmploiDuTemps::with(['matiere', 'enseignant'])
                 ->where('id_classe', $id_classe)
                 ->where('id_annee_scolaire', $id_annee)
+                ->when($isTeacher, fn ($query) => $query->where('id_enseignant', $user->id_enseignant))
                 ->get();
         }
 
@@ -102,11 +126,13 @@ class TimetableController extends Controller
             $recesses = session('timetable_recesses_' . $id_classe, []);
         }
 
-        return view('pedagogie.timetable', compact('classes', 'annees', 'timetable', 'coursesList', 'matieres', 'matieresForGrid', 'enseignants', 'selectedClasse', 'selectedAnnee', 'ecole', 'recesses', 'lignesClasse', 'teacherSuggestionMap'));
+        return view('pedagogie.timetable', compact('classes', 'annees', 'timetable', 'coursesList', 'matieres', 'matieresForGrid', 'enseignants', 'selectedClasse', 'selectedAnnee', 'ecole', 'recesses', 'lignesClasse', 'teacherSuggestionMap', 'canEditTimetable', 'isTeacher'));
     }
 
     public function store(Request $request)
     {
+        $this->ensureCanManageTimetable();
+
         $request->validate([
             'id_classe' => 'required',
             'id_matiere' => 'required',
@@ -132,6 +158,8 @@ class TimetableController extends Controller
 
     public function update(Request $request, $id)
     {
+        $this->ensureCanManageTimetable();
+
         $request->validate([
             'id_classe' => 'required',
             'id_matiere' => 'required',
@@ -158,6 +186,8 @@ class TimetableController extends Controller
 
     public function destroy(Request $request, $id)
     {
+        $this->ensureCanManageTimetable();
+
         EmploiDuTemps::destroy($id);
 
         if ($request->ajax()) {
@@ -172,6 +202,8 @@ class TimetableController extends Controller
 
     public function saveGrid(Request $request)
     {
+        $this->ensureCanManageTimetable();
+
         $id_classe = session('timetable_id_classe');
         $id_annee = session('timetable_id_annee');
 
@@ -257,6 +289,7 @@ class TimetableController extends Controller
         $courses = EmploiDuTemps::with(['matiere', 'enseignant'])
             ->where('id_classe', $id_classe)
             ->where('id_annee_scolaire', $id_annee)
+            ->when($user->droit === 'enseignant', fn ($query) => $query->where('id_enseignant', $user->id_enseignant))
             ->orderBy('heure_debut')
             ->get();
 
@@ -277,6 +310,14 @@ class TimetableController extends Controller
     private function hoursSessionKey(int|string $idClasse, int|string $idAnnee): string
     {
         return 'timetable_hours_' . $idClasse . '_' . $idAnnee;
+    }
+
+    private function ensureCanManageTimetable(): void
+    {
+        $user = Auth::user();
+        if (!$user || $user->droit === 'enseignant' || ($user->droit !== 'SupAdmin' && !$user->userHasPermission('planning_creation'))) {
+            abort(403, 'Permission insuffisante.');
+        }
     }
 
     private function pdfHours($storedHours, $courses): array

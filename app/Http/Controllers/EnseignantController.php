@@ -6,6 +6,7 @@ use App\Models\Enseignant;
 use App\Models\LigneClasse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\File;
 use Illuminate\Validation\Rule;
@@ -90,7 +91,7 @@ class EnseignantController extends Controller
             ->get();
 
         $recentEmargements = $enseignant->emargements()
-            ->with(['classe', 'matiere', 'trimestre'])
+            ->with(['classe', 'matiere', 'trimestre', 'lecon'])
             ->orderByDesc('date_emargement')
             ->limit(8)
             ->get();
@@ -112,6 +113,14 @@ class EnseignantController extends Controller
             'valides' => $enseignant->presences()->where('valide', 1)->count(),
             'heures' => $enseignant->presences()->sum('nombre_heure'),
         ];
+        $programmeProgress = $this->teacherProgrammeProgress($enseignant, $lignesClasses);
+        $validatedHours = (float) $enseignant->emargements()->where('valide', 1)->sum('nombre_heure');
+        $vctPayment = [
+            'eligible' => $enseignant->type_contrat_enseignant === 'VCT',
+            'heures_validees' => $validatedHours,
+            'prix_heure' => (float) ($enseignant->prix_heure ?? 0),
+            'montant' => $enseignant->type_contrat_enseignant === 'VCT' ? $validatedHours * (float) ($enseignant->prix_heure ?? 0) : 0,
+        ];
 
         return view('enseignants.show', compact(
             'enseignant',
@@ -119,7 +128,9 @@ class EnseignantController extends Controller
             'recentEmargements',
             'emargementStats',
             'recentPresences',
-            'presenceStats'
+            'presenceStats',
+            'programmeProgress',
+            'vctPayment'
         ));
     }
 
@@ -227,6 +238,45 @@ class EnseignantController extends Controller
         return ['CDI' => 'CDI', 'CDD' => 'CDD', 'VCT' => 'VCT'];
     }
 
+    private function teacherProgrammeProgress(Enseignant $enseignant, $lignesClasses)
+    {
+        return $lignesClasses->map(function ($ligne) use ($enseignant) {
+            $lessons = DB::table('classe as c')
+                ->join('programme_classes as pc', function ($join) use ($ligne) {
+                    $join->on('c.id_classe_officielle', '=', 'pc.id_classe')
+                        ->where('pc.id_matiere', '=', $ligne->id_matiere);
+                })
+                ->join('programme_lecons as pl', 'pc.id_programme_classe', '=', 'pl.id_programme_classe')
+                ->where('c.id_classe', $ligne->id_classe)
+                ->select('pl.id_lecon', 'pl.numero', 'pl.titre')
+                ->orderBy('pl.numero')
+                ->get();
+
+            $completedIds = $enseignant->emargements()
+                ->where('id_classe', $ligne->id_classe)
+                ->where('id_matiere', $ligne->id_matiere)
+                ->where('valide', 1)
+                ->pluck('id_lecon')
+                ->filter()
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->values();
+
+            $total = $lessons->count();
+            $completed = $lessons->whereIn('id_lecon', $completedIds)->count();
+            $next = $lessons->first(fn ($lesson) => !$completedIds->contains((int) $lesson->id_lecon));
+
+            return [
+                'classe' => $ligne->classe,
+                'matiere' => $ligne->matiere,
+                'total' => $total,
+                'completed' => $completed,
+                'percent' => $total > 0 ? round(($completed / $total) * 100, 1) : 0,
+                'next' => $next,
+            ];
+        });
+    }
+
     private function mapFields(array $data): array
     {
         $isPublic = $data['type_contrat'] === 'FONCTIONNAIRE';
@@ -246,11 +296,11 @@ class EnseignantController extends Controller
             'duree_contrat' => (!$isPublic && $data['type_contrat'] === 'CDD') ? ($data['duree_contrat'] ?? null) : null,
             'nombre_heure' => (!$isPublic && $data['type_contrat'] === 'VCT') ? ($data['nombre_heure'] ?? null) : null,
             'prix_heure' => (!$isPublic && $data['type_contrat'] === 'VCT') ? ($data['prix_heure'] ?? null) : null,
+            'specialite' => $data['specialite'] ?? null,
             'statut_matrimonial' => $isPublic ? ($data['statut_matrimonial'] ?? null) : null,
             'nombre_enfants' => $isPublic ? ($data['nombre_enfants'] ?? 0) : null,
             'pere_nom_prenom' => $isPublic ? ($data['pere_nom_prenom'] ?? null) : null,
             'mere_nom_prenom' => $isPublic ? ($data['mere_nom_prenom'] ?? null) : null,
-            'specialite' => $isPublic ? ($data['specialite'] ?? null) : null,
             'service_employeur' => $isPublic ? ($data['service_employeur'] ?? null) : null,
             'anciennete_annees' => $isPublic ? ($data['anciennete_annees'] ?? 0) : null,
         ];

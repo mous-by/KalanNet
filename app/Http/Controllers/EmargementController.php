@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AnneeScolaire;
+use App\Models\AppNotification;
 use App\Models\Classe;
 use App\Models\Emargement;
 use App\Models\EmploiDuTemps;
@@ -14,9 +15,11 @@ use App\Models\ProgrammeClasse;
 use App\Models\ProgrammeLecon;
 use App\Models\ProgrammeOfficiel;
 use App\Models\Trimestre;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -43,6 +46,18 @@ class EmargementController extends Controller
             ->when($request->filled('date_debut'), fn ($q) => $q->whereDate('date_emargement', '>=', $request->date_debut))
             ->when($request->filled('date_fin'), fn ($q) => $q->whereDate('date_emargement', '<=', $request->date_fin));
 
+        $summaryRows = (clone $query)->with('enseignant')->get();
+        $emargementSummary = [
+            'total' => $summaryRows->count(),
+            'pending' => $summaryRows->where('valide', false)->count(),
+            'validated_hours' => $summaryRows->where('valide', true)->sum('nombre_heure'),
+            'lessons' => $summaryRows->pluck('id_lecon')->filter()->unique()->count(),
+            'vct_amount' => $summaryRows
+                ->where('valide', true)
+                ->filter(fn ($emargement) => $emargement->enseignant?->type_contrat_enseignant === 'VCT')
+                ->sum(fn ($emargement) => (float) $emargement->nombre_heure * (float) ($emargement->enseignant?->prix_heure ?? 0)),
+        ];
+
         $emargements = $query
             ->orderByDesc('date_emargement')
             ->paginate(20)
@@ -52,12 +67,13 @@ class EmargementController extends Controller
             'emargements' => $emargements,
             'enseignants' => $this->enseignantsForUser($user, $idEcole)->orderBy('nom_prenom_enseignant')->get(),
             'classes' => $this->classesForUser($user, $idEcole)->orderBy('nom_classe')->get(),
-            'matieres' => Matiere::orderBy('nom_matiere')->get(),
+            'matieres' => $this->matieresForUser($user, $idEcole)->orderBy('nom_matiere')->get(),
             'trimestres' => Trimestre::orderBy('id_trimestre')->get(),
             'annees' => AnneeScolaire::orderByDesc('id_anneeScolaire')->get(),
             'lecons' => ProgrammeLecon::orderBy('numero')->orderBy('titre')->get(),
             'emargementFormData' => $this->emargementFormData($user, $idEcole),
             'emargementPermissions' => $this->emargementPermissions($user),
+            'emargementSummary' => $emargementSummary,
             'currentAcademicYearId' => $this->currentAcademicYearId(),
             'smartSuggestion' => $this->smartSuggestion($user, $idEcole),
         ]);
@@ -72,7 +88,8 @@ class EmargementController extends Controller
             $data['id_ecole'] = session('idEcole') ?: Auth::user()->idEcole;
             $data['valide'] = 0;
 
-            Emargement::create($data);
+            $emargement = Emargement::create($data);
+            $this->notifyEmargementValidators($emargement);
         });
 
         return redirect()->route('enseignants.emargements')->with('success', 'Émargement enregistré avec succès.');
@@ -89,7 +106,7 @@ class EmargementController extends Controller
         }
 
         DB::transaction(function () use ($request, $emargement) {
-            $emargement->update($this->validatedData($request));
+            $emargement->update($this->validatedData($request, $emargement->id_emargement));
         });
 
         return redirect()->route('enseignants.emargements')->with('success', 'Émargement modifié avec succès.');
@@ -116,12 +133,19 @@ class EmargementController extends Controller
             return redirect()->route('enseignants.emargements')->with('error', 'Impossible de supprimer un émargement validé.');
         }
 
-        $emargement->delete();
+        $deleted = Emargement::query()
+            ->whereKey($emargement->getKey())
+            ->where('valide', 0)
+            ->delete();
+
+        if (!$deleted) {
+            return redirect()->route('enseignants.emargements')->with('error', 'Impossible de supprimer un émargement déjà validé.');
+        }
 
         return redirect()->route('enseignants.emargements')->with('success', 'Émargement supprimé avec succès.');
     }
 
-    private function validatedData(Request $request): array
+    private function validatedData(Request $request, ?int $ignoreId = null): array
     {
         $data = $request->validate([
             'id_enseignant' => 'required|integer|exists:enseignants,id_enseignant',
@@ -154,10 +178,35 @@ class EmargementController extends Controller
         }
 
         $data['id_lecon'] = $this->resolveLessonId($data);
+        $this->ensureWeeklyVctLimit($data, $ignoreId);
 
         unset($data['new_lecon_titre']);
 
         return $data;
+    }
+
+    private function ensureWeeklyVctLimit(array $data, ?int $ignoreId = null): void
+    {
+        $enseignant = Enseignant::find($data['id_enseignant']);
+        if (!$enseignant || $enseignant->type_contrat_enseignant !== 'VCT' || (float) ($enseignant->nombre_heure ?? 0) <= 0) {
+            return;
+        }
+
+        $date = \Carbon\Carbon::parse($data['date_emargement']);
+        $weekStart = $date->copy()->startOfWeek();
+        $weekEnd = $date->copy()->endOfWeek();
+        $weeklyLimit = (float) $enseignant->nombre_heure;
+        $currentHours = Emargement::where('id_enseignant', $enseignant->id_enseignant)
+            ->whereBetween('date_emargement', [$weekStart, $weekEnd])
+            ->when($ignoreId, fn ($query) => $query->where('id_emargement', '!=', $ignoreId))
+            ->sum('nombre_heure');
+        $newTotal = (float) $currentHours + (float) $data['nombre_heure'];
+
+        if ($newTotal > $weeklyLimit) {
+            throw ValidationException::withMessages([
+                'nombre_heure' => 'Volume hebdomadaire VCT dépassé : ' . number_format($newTotal, 2, ',', ' ') . ' h demandées pour une limite de ' . number_format($weeklyLimit, 2, ',', ' ') . ' h/semaine.',
+            ]);
+        }
     }
 
     private function scopeForUser($query, $user, ?int $idEcole)
@@ -199,6 +248,21 @@ class EmargementController extends Controller
         return $query->where('idEcole', $idEcole);
     }
 
+    private function matieresForUser($user, ?int $idEcole)
+    {
+        $query = Matiere::query();
+
+        if ($user->droit === 'enseignant') {
+            return $query->whereIn('id_matiere', LigneClasse::where('id_enseignants', $user->id_enseignant)->pluck('id_matiere'));
+        }
+
+        if ($user->droit === 'SupAdmin') {
+            return $query;
+        }
+
+        return $query->whereIn('id_matiere', LigneClasse::whereHas('classe', fn ($classe) => $classe->where('idEcole', $idEcole))->pluck('id_matiere'));
+    }
+
     private function authorizeEmargement(Emargement $emargement, bool $validation = false): void
     {
         $user = Auth::user();
@@ -228,7 +292,11 @@ class EmargementController extends Controller
             ->with(['enseignant', 'classe', 'matiere'])
             ->get()
             ->filter(fn ($line) => $line->enseignant && $line->classe && $line->matiere);
-
+        $currentAcademicYearId = $this->currentAcademicYearId();
+        $timetableCourses = EmploiDuTemps::query()
+            ->when($currentAcademicYearId, fn ($query) => $query->where('id_annee_scolaire', $currentAcademicYearId))
+            ->whereIn('id_enseignant', $assignments->pluck('id_enseignants')->unique()->filter())
+            ->get();
         $classesByTeacher = [];
         $matieresByTeacherClasse = [];
 
@@ -303,6 +371,8 @@ class EmargementController extends Controller
             'matieresByTeacherClasse' => collect($matieresByTeacherClasse)->map(fn ($items) => array_values($items))->toArray(),
             'leconsByClasseMatiere' => $leconsByClasseMatiere,
             'progressByClasseMatiere' => $progressByClasseMatiere,
+            'hasTimetableCourses' => $timetableCourses->isNotEmpty(),
+            'hasAssignments' => $assignments->isNotEmpty(),
         ];
     }
 
@@ -492,6 +562,40 @@ class EmargementController extends Controller
         ];
     }
 
+    private function notifyEmargementValidators(Emargement $emargement): void
+    {
+        if (!Schema::hasTable('app_notifications')) {
+            return;
+        }
+
+        $emargement->loadMissing(['enseignant', 'classe', 'matiere']);
+        $schoolId = $emargement->id_ecole ?: (session('idEcole') ?: Auth::user()?->idEcole);
+        $validators = User::with('permissions')
+            ->where('idEcole', $schoolId)
+            ->whereIn('droit', ['Admin', 'Gestionnaire'])
+            ->get()
+            ->filter(fn ($user) => $user->userHasAnyPermission(['emargement_validation_admin', 'valider_emargement']));
+
+        foreach ($validators as $validator) {
+            AppNotification::create([
+                'user_id' => $validator->idUtilisateur,
+                'type' => 'emargement_validation',
+                'title' => 'Émargement à valider',
+                'message' => trim(($emargement->enseignant?->nom_prenom_enseignant ?? 'Un enseignant')
+                    . ' a émargé'
+                    . ' - ' . ($emargement->classe?->nom_classe ?? 'Classe')
+                    . ' / ' . ($emargement->matiere?->nom_matiere ?? 'Matière')),
+                'link' => route('enseignants.emargements', ['valide' => 0]),
+                'data' => [
+                    'id_emargement' => $emargement->id_emargement,
+                    'id_enseignant' => $emargement->id_enseignant,
+                    'id_classe' => $emargement->id_classe,
+                    'id_matiere' => $emargement->id_matiere,
+                ],
+            ]);
+        }
+    }
+
     private function emargementActionPermission(string $action): string
     {
         $permission = [
@@ -508,6 +612,10 @@ class EmargementController extends Controller
 
     private function hasPermission($user, string $permission): bool
     {
+        if ($user->droit === 'enseignant' && $permission === 'emargement_faire') {
+            return true;
+        }
+
         return $user->droit === 'SupAdmin' || $user->userHasPermission($permission);
     }
 

@@ -1,7 +1,7 @@
 <div class="modal fade" id="{{ $modalId }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content border-0 rounded-4 shadow">
-            <form action="{{ $action }}" method="POST" class="ecole-dynamic-form">
+            <form action="{{ $action }}" method="POST" class="ecole-dynamic-form" enctype="multipart/form-data">
                 @csrf
                 @if($method !== 'POST')
                     @method($method)
@@ -69,6 +69,19 @@
                                 <option value="1" @selected(old('notification_sms', $ecole->notification_sms ?? 0) == 1)>Oui</option>
                             </select>
                         </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Logo de l'école</label>
+                            <input type="file" name="logoEcole" class="form-control js-logo-input" accept="image/png,image/jpeg,image/webp">
+                            <small class="text-muted d-block mt-1">Formats acceptés : JPG, PNG, WebP. Taille max : 2 Mo.</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Aperçu du logo</label>
+                            @php($logoPreview = !empty($ecole?->logoEcole) ? asset($ecole->logoEcole) : '')
+                            <div class="ecole-logo-preview d-flex align-items-center justify-content-center">
+                                <img src="{{ $logoPreview }}" alt="Aperçu du logo" class="js-logo-preview {{ $logoPreview ? '' : 'd-none' }}">
+                                <span class="js-logo-placeholder text-muted small {{ $logoPreview ? 'd-none' : '' }}">Aucun logo sélectionné</span>
+                            </div>
+                        </div>
                         <div class="col-12">
                             <label class="form-label">Adresse</label>
                             <textarea name="adresse" class="form-control" rows="2">{{ old('adresse', $ecole->adresse ?? '') }}</textarea>
@@ -77,9 +90,9 @@
                             <label class="form-label">Nom du Complexe Scolaire</label>
                             <input type="text" name="nomComplexe" class="form-control js-dynamic-input" value="{{ old('nomComplexe', $ecole->nomComplexe ?? '') }}" placeholder="Entrez le nom du complexe">
                         </div>
-                        <div class="col-md-6 js-type-field js-fondamentale js-complexe">
-                            <label class="form-label">Nom école fondamentale</label>
-                            <input type="text" name="nomFondamental" class="form-control js-dynamic-input js-nom-fondamental" value="{{ old('nomFondamental', $ecole->nomFondamental ?? '') }}" placeholder="Entrez le nom de l'école fondamentale">
+                        <div class="col-md-6 js-type-field js-complexe">
+                            <label class="form-label">Nom école fondamentale du complexe</label>
+                            <input type="text" name="nomFondamental" class="form-control js-dynamic-input js-nom-fondamental" value="{{ old('nomFondamental', $ecole->nomFondamental ?? '') }}" placeholder="Renseigner seulement si le complexe contient une fondamentale">
                         </div>
                         <div class="col-md-6 js-type-field js-secondaire-generale js-complexe">
                             <label class="form-label">Nom Lycée</label>
@@ -101,6 +114,21 @@
 </div>
 
 @once
+    <style>
+        .ecole-logo-preview {
+            min-height: 92px;
+            border: 1px dashed var(--bs-border-color);
+            border-radius: 8px;
+            background: #fff;
+            overflow: hidden;
+        }
+        .ecole-logo-preview img {
+            max-width: 100%;
+            max-height: 84px;
+            object-fit: contain;
+            padding: 8px;
+        }
+    </style>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('.ecole-dynamic-form').forEach((form) => {
@@ -111,6 +139,9 @@
                 const nomFondamental = form.querySelector('.js-nom-fondamental');
                 const typeFields = Array.from(form.querySelectorAll('.js-type-field'));
                 const capOptions = Array.from(capSelect?.querySelectorAll('option[data-academie]') || []);
+                const logoInput = form.querySelector('.js-logo-input');
+                const logoPreview = form.querySelector('.js-logo-preview');
+                const logoPlaceholder = form.querySelector('.js-logo-placeholder');
 
                 function selectedType() {
                     return typeSelect?.value || '';
@@ -125,7 +156,7 @@
 
                 function fieldMatches(field, type) {
                     if (type === 'Complexe Scolaire') return field.classList.contains('js-complexe');
-                    if (type === 'Fondamentale I' || type === 'Fondamentale II') return field.classList.contains('js-fondamentale');
+                    if (type === 'Fondamentale I' || type === 'Fondamentale II') return false;
                     if (type === 'Secondaire Generale') return field.classList.contains('js-secondaire-generale');
                     if (type === 'Secondaire Technique et Professionnel') return field.classList.contains('js-secondaire-technique');
                     return false;
@@ -166,6 +197,14 @@
                 typeSelect?.addEventListener('change', updateFields);
                 academieSelect?.addEventListener('change', filterCaps);
                 nomFondamental?.addEventListener('input', updateFields);
+                logoInput?.addEventListener('change', () => {
+                    const file = logoInput.files?.[0];
+                    if (!file || !logoPreview) return;
+
+                    logoPreview.src = URL.createObjectURL(file);
+                    logoPreview.classList.remove('d-none');
+                    logoPlaceholder?.classList.add('d-none');
+                });
                 updateFields();
             });
         });

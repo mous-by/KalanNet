@@ -38,6 +38,19 @@
         'inscriptions_reinscrire',
     ];
     $canOpenStudentsParents = $user->droit !== 'parent' && ($user->droit === 'SupAdmin' || $user->userHasAnyPermission($studentsParentsMenuPermissions));
+    $teacherMenuPermissions = [
+        'enseignants_apercu',
+        'enseignants_creation',
+        'enseignants_création',
+        'emargement_faire',
+        'presence_apercu',
+        'emargement_paiement enseignant',
+        'presence_paiement enseignant',
+        'emargement_etat de payement',
+        'presence_etat de payement',
+        'paiements_faire',
+    ];
+    $canOpenTeachers = $user->droit === 'SupAdmin' || $user->userHasAnyPermission($teacherMenuPermissions);
 @endphp
 
 <!--start sidebar -->
@@ -73,6 +86,9 @@
                 <li><a href="{{ route('eleves.index') }}"><i class="bi bi-circle"></i>Liste des Élèves</a></li>
                 @endif
                 @if ($user->droit === 'SupAdmin' || $user->userHasAnyPermission(['eleves_dossier', 'dossiers_eleves_apercu']))
+                <li><a href="{{ route('eleves.dossiers') }}"><i class="bi bi-circle"></i>Dossiers élèves</a></li>
+                @endif
+                @if ($user->droit === 'SupAdmin' || $user->userHasAnyPermission(['eleves_dossier', 'dossiers_eleves_apercu']))
                 <li><a href="{{ route('eleves.cartes') }}"><i class="bi bi-circle"></i>Cartes scolaires</a></li>
                 @endif
                 @if ($user->droit === 'SupAdmin' || $user->userHasPermission('parents_apercu'))
@@ -89,25 +105,36 @@
         </li>
         @endif
 
-        @if ($user->userHasPermission('enseignants_apercu'))
+        @if ($canOpenTeachers)
         <li>
             <a href="javascript:;" class="has-arrow">
                 <div class="parent-icon"><i class="bi bi-person-badge-fill"></i></div>
                 <div class="menu-title">Enseignants</div>
             </a>
             <ul>
-                <li><a href="{{ route('enseignants.index') }}"><i class="bi bi-circle"></i>Liste des Enseignants</a></li>
+                @if ($user->droit === 'SupAdmin' || $user->userHasPermission('enseignants_apercu'))
+                    <li><a href="{{ route('enseignants.index') }}"><i class="bi bi-circle"></i>Liste des Enseignants</a></li>
+                @endif
+                @if ($user->droit === 'SupAdmin' || $user->userHasAnyPermission(['enseignants_creation', 'enseignants_création']))
+                    <li><a href="{{ route('enseignants.create') }}"><i class="bi bi-circle"></i>Ajouter Enseignant</a></li>
+                @endif
                 @if ($user->droit === 'SupAdmin' || $user->userHasPermission('emargement_faire'))
                     <li><a href="{{ route('enseignants.emargements') }}"><i class="bi bi-circle"></i>Émargements</a></li>
                 @endif
                 @if ($user->droit === 'SupAdmin' || $user->userHasPermission('presence_apercu'))
                     <li><a href="{{ route('enseignants.presences') }}"><i class="bi bi-circle"></i>Cahier de présence</a></li>
                 @endif
+                @if ($user->droit === 'SupAdmin' || $user->userHasAnyPermission(['emargement_paiement enseignant', 'presence_paiement enseignant', 'paiements_faire']))
+                    <li><a href="{{ route('enseignants.salaires') }}"><i class="bi bi-circle"></i>Salaires</a></li>
+                @endif
+                @if ($user->droit === 'SupAdmin' || $user->userHasAnyPermission(['emargement_etat de payement', 'presence_etat de payement', 'emargement_etat_de_payement', 'presence_etat_de_payement', 'paiements_faire']))
+                    <li><a href="{{ route('enseignants.salaires.etat') }}"><i class="bi bi-circle"></i>État de paiement</a></li>
+                @endif
             </ul>
         </li>
         @endif
 
-        @if ($user->userHasPermission('classes_apercu') || $user->userHasAnyPermission(['programmes_apercu', 'programme_apercu', 'appercu_programm', 'programmes_pdf', 'voir_pdf_programme', 'programmes_creation', 'programme_création', 'programmes_modification', 'programme_modification', 'programmes_supprimer', 'programme_supprimer']))
+        @if ($user->droit === 'enseignant' || $user->userHasPermission('classes_apercu') || $user->userHasPermission('enseignants_emploi') || $user->userHasPermission('planning_apercu') || $user->userHasAnyPermission(['programmes_apercu', 'programme_apercu', 'appercu_programm', 'programmes_pdf', 'voir_pdf_programme', 'programmes_creation', 'programme_création', 'programmes_modification', 'programme_modification', 'programmes_supprimer', 'programme_supprimer']))
         <li>
             <a href="javascript:;" class="has-arrow">
                 <div class="parent-icon"><i class="bi bi-building"></i></div>
@@ -126,7 +153,7 @@
                 @if ($user->userHasAnyPermission(['programmes_apercu', 'programme_apercu', 'appercu_programm', 'programmes_pdf', 'voir_pdf_programme', 'programmes_creation', 'programme_création', 'programmes_modification', 'programme_modification', 'programmes_supprimer', 'programme_supprimer']) || $user->droit === 'SupAdmin')
                 <li><a href="{{ route('programmes.index') }}"><i class="bi bi-circle"></i>Programmes officiels</a></li>
                 @endif
-                @if ($user->userHasPermission('classes_apercu'))
+                @if ($user->droit === 'enseignant' || $user->userHasPermission('classes_apercu') || $user->userHasPermission('enseignants_emploi') || $user->userHasPermission('planning_apercu'))
                 <li><a href="{{ route('pedagogie.timetable') }}"><i class="bi bi-circle"></i>Emploi du temps</a></li>
                 @endif
             </ul>

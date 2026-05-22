@@ -16,6 +16,7 @@ use App\Models\Controle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -86,6 +87,7 @@ class ConfigurationController extends Controller
         $this->authorizeSupAdminOnly();
 
         $data = $this->validateEcole($request);
+        $data['logoEcole'] = $this->storeEcoleLogo($request);
         $this->hydrateEcoleLegacyLabels($data);
 
         Ecole::create($data);
@@ -101,6 +103,7 @@ class ConfigurationController extends Controller
         $this->authorizeEcoleMutation($ecole);
 
         $data = $this->validateEcole($request);
+        $data['logoEcole'] = $this->storeEcoleLogo($request, $ecole->logoEcole);
         $this->hydrateEcoleLegacyLabels($data);
 
         $ecole->update($data);
@@ -1034,6 +1037,7 @@ class ConfigurationController extends Controller
             'nomProfessionnel' => 'nullable|string|max:255',
             'nomComplexe' => 'nullable|string|max:255',
             'notification_sms' => 'nullable|boolean',
+            'logoEcole' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
         $needsCap = in_array($data['typeEcole'], ['Fondamentale I', 'Fondamentale II'], true)
@@ -1046,6 +1050,7 @@ class ConfigurationController extends Controller
         }
 
         if ($data['typeEcole'] === 'Fondamentale I' || $data['typeEcole'] === 'Fondamentale II') {
+            $data['nomFondamental'] = $data['nomEcole'];
             $data['nomLycee'] = null;
             $data['nomProfessionnel'] = null;
             $data['nomComplexe'] = null;
@@ -1062,6 +1067,31 @@ class ConfigurationController extends Controller
         }
 
         return $data;
+    }
+
+    private function storeEcoleLogo(Request $request, ?string $currentLogo = null): ?string
+    {
+        if (!$request->hasFile('logoEcole')) {
+            return $currentLogo;
+        }
+
+        $directory = public_path('images_ecoles');
+        if (!File::exists($directory)) {
+            File::makeDirectory($directory, 0755, true);
+        }
+
+        $file = $request->file('logoEcole');
+        $name = uniqid('ecole_', true) . '.' . $file->getClientOriginalExtension();
+        $file->move($directory, $name);
+
+        if ($currentLogo) {
+            $currentPath = public_path(ltrim($currentLogo, '/'));
+            if (str_starts_with($currentPath, $directory . DIRECTORY_SEPARATOR) && File::exists($currentPath)) {
+                File::delete($currentPath);
+            }
+        }
+
+        return 'images_ecoles/' . $name;
     }
 
     private function hydrateEcoleLegacyLabels(array &$data): void

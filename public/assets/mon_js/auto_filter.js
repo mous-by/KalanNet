@@ -23,7 +23,7 @@ function initAutoFilters() {
             ? fieldNames.map(function (name) {
                 return '[name="' + escapeSelector(name) + '"]';
             }).join(',')
-            : 'select, input[type="date"], input[type="month"]';
+            : 'select, input[type="date"], input[type="month"], input[type="number"]';
         const searchSelector = fieldNames.length
             ? fieldNames.map(function (name) {
                 return '[name="' + escapeSelector(name) + '"]';
@@ -40,7 +40,26 @@ function initAutoFilters() {
             }
 
             form.dataset.submitting = 'true';
+            showFilterSpinner();
             form.requestSubmit ? form.requestSubmit() : form.submit();
+        }
+
+        function showFilterSpinner() {
+            const submitButtons = form.querySelectorAll('button[type="submit"], button:not([type])');
+            submitButtons.forEach(function (button) {
+                button.disabled = true;
+                button.dataset.originalHtml = button.innerHTML;
+                button.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>' + (button.textContent.trim() || '');
+            });
+
+            if (form.querySelector('.auto-filter-loading')) {
+                return;
+            }
+
+            const indicator = document.createElement('span');
+            indicator.className = 'auto-filter-loading d-inline-flex align-items-center gap-2 small text-muted ms-2';
+            indicator.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span><span>Chargement...</span>';
+            form.appendChild(indicator);
         }
 
         form.addEventListener('submit', function () {
@@ -56,11 +75,14 @@ function initAutoFilters() {
         });
 
         form.querySelectorAll(fieldSelector).forEach(function (field) {
-            if (!field.matches('select, input[type="date"], input[type="month"]')) {
+            if (!field.matches('select, input[type="date"], input[type="month"], input[type="number"]')) {
                 return;
             }
 
-            field.addEventListener('change', submitForm);
+            field.addEventListener(field.matches('input[type="number"]') ? 'input' : 'change', function () {
+                clearTimeout(timer);
+                timer = setTimeout(submitForm, field.matches('input[type="number"]') ? 550 : 0);
+            });
         });
 
         form.querySelectorAll(searchSelector).forEach(function (field) {

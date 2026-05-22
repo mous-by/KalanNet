@@ -60,4 +60,9 @@ class Enseignant extends Model
     {
         return $this->hasMany(Presence::class, 'id_enseignant', 'id_enseignant');
     }
+
+    public function salaires()
+    {
+        return $this->hasMany(Salaire::class, 'id_enseignant', 'id_enseignant');
+    }
 }

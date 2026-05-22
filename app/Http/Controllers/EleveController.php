@@ -6,11 +6,13 @@ use App\Models\Eleve;
 use App\Models\Classe;
 use App\Models\AnneeScolaire;
 use App\Models\Ecole;
+use App\Models\Paiement;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Writer\PngWriter;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
@@ -55,8 +57,102 @@ class EleveController extends Controller
 
     public function show($id)
     {
-        $eleve = Eleve::with(['classe', 'ecole'])->where('id_ecole', session('idEcole'))->findOrFail($id);
-        return view('eleves.show', compact('eleve'));
+        $user = Auth::user();
+        $query = Eleve::with(['classe', 'ecole', 'parents', 'plansPaiement.echeances'])
+            ->where('id_ecole', session('idEcole'));
+
+        if ($user?->droit === 'parent') {
+            $parentId = $user->id_parent ?: $user->parent?->id_parent;
+            if (!$parentId) {
+                abort(403, 'Aucun profil parent n’est lié à ce compte.');
+            }
+            $query->whereHas('parents', fn ($parentQuery) => $parentQuery->where('parents.id_parent', $parentId));
+        } elseif (!$this->canOpenStudentDossiers($user)) {
+            abort(403, 'Permission insuffisante.');
+        }
+
+        $eleve = $query->findOrFail($id);
+        $annee = AnneeScolaire::where('id_anneeScolaire', $eleve->id_annee)->first();
+        $paiements = Paiement::where('idEcole', session('idEcole'))
+            ->where('id_eleve', $eleve->id_eleve)
+            ->latest('date_paiement')
+            ->get();
+        $paiementsRecents = $paiements->take(8);
+        $paymentSummary = $this->studentPaymentSummary($eleve, $paiements);
+        $echeancesResume = $this->studentEcheancesResume($eleve, $paiements);
+        $evaluationsRecentes = $this->studentRecentEvaluations($eleve);
+        $moyennes = $this->studentMoyennes($eleve);
+        $transferts = $this->studentTransfers($eleve);
+        $dossierAlerts = $this->studentDossierAlerts($eleve, $paymentSummary, $echeancesResume);
+
+        return view('eleves.show', compact(
+            'eleve',
+            'annee',
+            'paiementsRecents',
+            'paymentSummary',
+            'echeancesResume',
+            'evaluationsRecentes',
+            'moyennes',
+            'transferts',
+            'dossierAlerts'
+        ));
+    }
+
+    public function dossiers(Request $request)
+    {
+        $user = Auth::user();
+        if ($user?->droit === 'parent') {
+            return redirect()->route('dashboard');
+        }
+        if (!$this->canOpenStudentDossiers($user)) {
+            abort(403, 'Permission insuffisante.');
+        }
+
+        $idEcole = session('idEcole');
+        $classes = Classe::where('idEcole', $idEcole)->orderBy('nom_classe')->get();
+        $annees = AnneeScolaire::orderByDesc('id_anneeScolaire')->get();
+        $status = $request->get('status', 'actifs');
+        $showList = $request->filled('id_classe') && $request->filled('id_annee');
+        $eleves = collect();
+
+        if (!$showList) {
+            return view('eleves.dossiers', compact('eleves', 'classes', 'annees', 'status', 'showList'));
+        }
+
+        $query = Eleve::with(['classe', 'parents'])
+            ->where('id_ecole', $idEcole);
+
+        if ($status === 'transferes') {
+            $query->where('etat_dossier', 1);
+        } elseif ($status === 'retires') {
+            $query->where('etat_dossier', 2);
+        } else {
+            $query->where('etat_dossier', 0);
+        }
+
+        if ($request->filled('id_classe')) {
+            $query->where('id_classe', $request->id_classe);
+        }
+
+        if ($request->filled('id_annee')) {
+            $query->where('id_annee', $request->id_annee);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('nom_eleve', 'LIKE', "%{$search}%")
+                    ->orWhere('prenom_eleve', 'LIKE', "%{$search}%")
+                    ->orWhere('matricule', 'LIKE', "%{$search}%");
+            });
+        }
+
+        $eleves = $query->orderBy('nom_eleve')
+            ->orderBy('prenom_eleve')
+            ->paginate(20)
+            ->withQueryString();
+
+        return view('eleves.dossiers', compact('eleves', 'classes', 'annees', 'status', 'showList'));
     }
 
     public function edit($id)
@@ -392,6 +488,202 @@ class EleveController extends Controller
         $path = public_path(ltrim($ecole->logoEcole, '/'));
 
         return file_exists($path) ? $path : null;
+    }
+
+    private function studentPaymentSummary(Eleve $eleve, $paiements): array
+    {
+        $plan = $eleve->plansPaiement->sortByDesc('id')->first();
+        $legacyPlanifications = $this->studentLegacyPlanifications($eleve);
+        $legacyMontant = $legacyPlanifications->sum(fn ($item) => (float) $item->montant_planification);
+        $montantFinal = (float) ($plan?->montant_final ?? 0);
+        if ($montantFinal <= 0 && $legacyMontant > 0) {
+            $montantFinal = $legacyMontant;
+        }
+        $montantTotal = (float) ($plan?->montant_total ?? 0);
+        if ($montantTotal <= 0 && $legacyMontant > 0) {
+            $montantTotal = $legacyMontant;
+        }
+        $reduction = (float) ($plan?->reduction ?? 0);
+        $montantPaye = $paiements
+            ->filter(fn ($paiement) => ($paiement->statut ?? '') !== 'annule')
+            ->sum(fn ($paiement) => (float) ($paiement->montant_paye ?? $paiement->montant ?? 0));
+        $reste = max(0, $montantFinal - $montantPaye);
+        $progress = $montantFinal > 0 ? min(100, round(($montantPaye / $montantFinal) * 100)) : 0;
+
+        return [
+            'plan' => $plan,
+            'legacy_planifications' => $legacyPlanifications,
+            'montant_total' => $montantTotal,
+            'reduction' => $reduction,
+            'montant_final' => $montantFinal,
+            'montant_paye' => $montantPaye,
+            'reste' => $reste,
+            'progress' => $progress,
+            'statut' => $reste <= 0 && $montantFinal > 0 ? 'Soldé' : ($montantPaye > 0 ? 'En cours' : 'Non démarré'),
+        ];
+    }
+
+    private function studentEcheancesResume(Eleve $eleve, $paiements): array
+    {
+        $plan = $eleve->plansPaiement->sortByDesc('id')->first();
+        if (!$plan) {
+            return $this->studentLegacyPlanifications($eleve)
+                ->map(function ($planification) use ($paiements) {
+                    $paid = $paiements
+                        ->where('id_planification', $planification->id_planification)
+                        ->filter(fn ($paiement) => ($paiement->statut ?? '') !== 'annule')
+                        ->sum(fn ($paiement) => (float) ($paiement->montant_paye ?? $paiement->montant ?? 0));
+                    $remaining = max(0, (float) $planification->montant_planification - $paid);
+                    $dateLimite = $planification->date_fin ? \Illuminate\Support\Carbon::parse($planification->date_fin) : null;
+
+                    return [
+                        'libelle' => $planification->motif,
+                        'montant_prevu' => (float) $planification->montant_planification,
+                        'paye' => $paid,
+                        'reste' => $remaining,
+                        'date_limite' => $dateLimite,
+                        'statut' => $remaining <= 0 ? 'paye' : ($dateLimite && $dateLimite->isPast() ? 'retard' : 'attente'),
+                    ];
+                })
+                ->values()
+                ->all();
+        }
+
+        return $plan->echeances
+            ->sortBy('date_limite')
+            ->map(function ($echeance) use ($paiements) {
+                $paid = $paiements
+                    ->where('echeance_id', $echeance->id)
+                    ->filter(fn ($paiement) => ($paiement->statut ?? '') !== 'annule')
+                    ->sum(fn ($paiement) => (float) ($paiement->montant_paye ?? $paiement->montant ?? 0));
+                $remaining = max(0, (float) $echeance->montant_prevu - $paid);
+
+                return [
+                    'libelle' => $echeance->libelle,
+                    'montant_prevu' => (float) $echeance->montant_prevu,
+                    'paye' => $paid,
+                    'reste' => $remaining,
+                    'date_limite' => $echeance->date_limite,
+                    'statut' => $remaining <= 0 ? 'paye' : ($echeance->date_limite && $echeance->date_limite->isPast() ? 'retard' : ($echeance->statut ?: 'attente')),
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    private function studentRecentEvaluations(Eleve $eleve)
+    {
+        if (!Schema::hasTable('ligne_evaluation')) {
+            return collect();
+        }
+
+        $query = DB::table('ligne_evaluation as le')
+            ->where('le.id_eleve', $eleve->id_eleve)
+            ->leftJoin('matiere as m', 'le.id_matiere', '=', 'm.id_matiere')
+            ->leftJoin('note as n', 'le.id_note', '=', 'n.id_note')
+            ->leftJoin('trimestre as t', 'le.id_trimestre', '=', 't.id_trimestre')
+            ->select([
+                'le.note',
+                'le.mois',
+                'm.nom_matiere',
+                'n.typeNote',
+                'n.codeNote',
+                't.nom_trimestre',
+            ]);
+
+        if (Schema::hasColumn('ligne_evaluation', 'id_annee_scolaire')) {
+            $query->where('le.id_annee_scolaire', $eleve->id_annee);
+        }
+
+        return $query->orderByDesc('le.id_ligneEvaluation')
+            ->limit(8)
+            ->get();
+    }
+
+    private function studentMoyennes(Eleve $eleve)
+    {
+        if (!Schema::hasTable('moyenne_eleve')) {
+            return collect();
+        }
+
+        return DB::table('moyenne_eleve as me')
+            ->leftJoin('trimestre as t', 'me.id_trimestre', '=', 't.id_trimestre')
+            ->where('me.id_eleve', $eleve->id_eleve)
+            ->when(Schema::hasColumn('moyenne_eleve', 'id_anneeScolaire'), fn ($query) => $query->where('me.id_anneeScolaire', $eleve->id_annee))
+            ->select(['me.moyenne', 'me.rang', 'me.mois', 'me.valide', 't.nom_trimestre'])
+            ->orderByRaw('COALESCE(me.id_trimestre, 0) desc')
+            ->limit(6)
+            ->get();
+    }
+
+    private function studentTransfers(Eleve $eleve)
+    {
+        if (!Schema::hasTable('transfert')) {
+            return collect();
+        }
+
+        return DB::table('transfert')
+            ->where('id_eleve', $eleve->id_eleve)
+            ->where('id_ecole', session('idEcole'))
+            ->orderByDesc('id_transfert')
+            ->get();
+    }
+
+    private function studentDossierAlerts(Eleve $eleve, array $paymentSummary, array $echeancesResume): array
+    {
+        $alerts = [];
+
+        if ($eleve->parents->isEmpty()) {
+            $alerts[] = ['type' => 'warning', 'text' => 'Aucun parent n’est rattaché à ce dossier.'];
+        }
+
+        if (empty($eleve->matricule)) {
+            $alerts[] = ['type' => 'warning', 'text' => 'Le matricule n’est pas renseigné.'];
+        }
+
+        if (!$paymentSummary['plan'] && $paymentSummary['legacy_planifications']->isEmpty()) {
+            $alerts[] = ['type' => 'info', 'text' => 'Aucun plan de paiement n’est encore attaché à cet élève.'];
+        }
+
+        $lateCount = collect($echeancesResume)->where('statut', 'retard')->count();
+        if ($lateCount > 0) {
+            $alerts[] = ['type' => 'danger', 'text' => $lateCount . ' échéance(s) de paiement sont en retard.'];
+        }
+
+        if ((int) $eleve->etat_dossier === 1) {
+            $alerts[] = ['type' => 'info', 'text' => 'Ce dossier est marqué comme transféré.'];
+        } elseif ((int) $eleve->etat_dossier === 2) {
+            $alerts[] = ['type' => 'secondary', 'text' => 'Ce dossier est retiré de la liste active.'];
+        }
+
+        return $alerts;
+    }
+
+    private function studentLegacyPlanifications(Eleve $eleve)
+    {
+        if (!Schema::hasTable('ligne_inscription') || !Schema::hasTable('planification')) {
+            return collect();
+        }
+
+        return DB::table('ligne_inscription as li')
+            ->join('planification as p', 'li.id_planification', '=', 'p.id_planification')
+            ->where('li.id_eleve', $eleve->id_eleve)
+            ->where('li.id_annee', $eleve->id_annee)
+            ->select([
+                'p.id_planification',
+                'p.motif',
+                'p.date_debut',
+                'p.date_fin',
+                'p.montant_planification',
+            ])
+            ->get();
+    }
+
+    private function canOpenStudentDossiers($user): bool
+    {
+        return $user
+            && ($user->droit === 'SupAdmin'
+                || $user->userHasAnyPermission(['eleves_dossier', 'dossiers_eleves_apercu']));
     }
 
     private function schoolAdminPhone(?Ecole $ecole): ?string

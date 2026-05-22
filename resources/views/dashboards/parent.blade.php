@@ -86,6 +86,130 @@
     </div>
 </div>
 
+<div class="row g-4 mb-4">
+    <div class="col-12">
+        <div class="card theme-card shadow-sm">
+            <div class="card-header bg-transparent border-0 p-4 pb-0">
+                <h5 class="fw-bold mb-0">Progression pédagogique par matière</h5>
+            </div>
+            <div class="card-body p-4">
+                @php($progressByChild = $childrenProgressRows->groupBy(fn ($row) => $row['child']->id_eleve))
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Élève</th>
+                                <th>Classe</th>
+                                <th class="text-center">Matière</th>
+                                <th>Enseignant</th>
+                                <th style="min-width: 240px;">Progression</th>
+                                <th class="text-center">Leçons</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($progressByChild as $childRows)
+                                @foreach($childRows as $index => $row)
+                                    <tr>
+                                        @if($index === 0)
+                                            <td class="fw-bold text-center align-middle" rowspan="{{ $childRows->count() }}">
+                                                {{ $row['child']->prenom_eleve }} {{ $row['child']->nom_eleve }}
+                                            </td>
+                                            <td class="text-center align-middle" rowspan="{{ $childRows->count() }}">
+                                                {{ $row['classe']->nom_classe ?? 'Classe non définie' }}
+                                            </td>
+                                        @endif
+                                        <td class="text-center fw-semibold">{{ $row['matiere'] }}</td>
+                                        <td>
+                                            <div class="fw-semibold">{{ $row['teacher'] }}</div>
+                                            <small class="text-muted">{{ $row['teacher_phone'] ?: 'Téléphone non renseigné' }}</small>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="progress flex-grow-1" style="height: 8px;">
+                                                    <div class="progress-bar bg-success" style="width: {{ $row['percent'] }}%"></div>
+                                                </div>
+                                                <span class="fw-bold text-primary text-nowrap">{{ $row['percent'] }}%</span>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">{{ $row['completed'] }}/{{ $row['total'] }}</td>
+                                    </tr>
+                                @endforeach
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-muted">Aucune progression pédagogique disponible pour le moment.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-12">
+        <div class="card theme-card shadow-sm">
+            <div class="card-header bg-transparent border-0 p-4 pb-0">
+                <h5 class="fw-bold mb-0">Progression du cahier de présence</h5>
+            </div>
+            <div class="card-body p-4">
+                @php($presenceByChild = $childrenPresenceProgressRows->groupBy(fn ($row) => $row['child']->id_eleve))
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Élève</th>
+                                <th>Classe</th>
+                                <th>Leçon</th>
+                                <th>Enseignant</th>
+                                <th>Date</th>
+                                <th style="min-width: 240px;">Progression</th>
+                                <th class="text-end">Durée</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($presenceByChild as $childRows)
+                                @foreach($childRows as $index => $row)
+                                    <tr>
+                                        @if($index === 0)
+                                            <td class="fw-bold text-center align-middle" rowspan="{{ $childRows->count() }}">
+                                                {{ $row['child']->prenom_eleve }} {{ $row['child']->nom_eleve }}
+                                            </td>
+                                            <td class="text-center align-middle" rowspan="{{ $childRows->count() }}">
+                                                {{ $row['classe']->nom_classe ?? 'Classe non définie' }}
+                                            </td>
+                                        @endif
+                                        <td>{{ $row['titre'] }}</td>
+                                        <td>
+                                            <div class="fw-semibold">{{ $row['teacher'] }}</div>
+                                            <small class="text-muted">{{ $row['teacher_phone'] ?: 'Téléphone non renseigné' }}</small>
+                                        </td>
+                                        <td>{{ optional($row['date'])->format('d/m/Y') }}</td>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="progress flex-grow-1" style="height: 8px;">
+                                                    <div class="progress-bar bg-success" style="width: {{ $row['percent'] }}%"></div>
+                                                </div>
+                                                <span class="fw-bold text-primary text-nowrap">{{ number_format($row['percent'], 0, ',', ' ') }}%</span>
+                                            </div>
+                                        </td>
+                                        <td class="text-end">{{ number_format($row['hours'], 2, ',', ' ') }} h</td>
+                                    </tr>
+                                @endforeach
+                            @empty
+                                <tr>
+                                    <td colspan="7" class="text-center py-4 text-muted">Aucune progression de présence validée pour le moment.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="row g-4">
     <div class="col-lg-8">
         <div class="card theme-card shadow-sm mb-4">
@@ -101,6 +225,7 @@
                                 <th>Classe</th>
                                 <th>Lien</th>
                                 <th>Informer</th>
+                                <th class="text-end">Dossier</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -119,10 +244,15 @@
                                             <span class="badge bg-secondary">Non</span>
                                         @endif
                                     </td>
+                                    <td class="text-end">
+                                        <a href="{{ route('eleves.show', $child->id_eleve) }}" class="btn btn-sm btn-primary">
+                                            <i class="bi bi-folder2-open me-1"></i>Ouvrir
+                                        </a>
+                                    </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4" class="text-center py-4 text-muted">Aucun élève n’est encore rattaché à ce compte parent.</td>
+                                    <td colspan="5" class="text-center py-4 text-muted">Aucun élève n’est encore rattaché à ce compte parent.</td>
                                 </tr>
                             @endforelse
                         </tbody>

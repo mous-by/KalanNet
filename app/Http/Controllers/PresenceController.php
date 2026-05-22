@@ -49,6 +49,7 @@ class PresenceController extends Controller
             'annees' => AnneeScolaire::orderByDesc('id_anneeScolaire')->get(),
             'presenceFormData' => $this->presenceFormData($user, $idEcole),
             'presencePermissions' => $this->presencePermissions($user),
+            'presenceSummary' => $this->presenceSummary(clone $query),
             'currentAcademicYearId' => $this->currentAcademicYearId(),
         ]);
     }
@@ -109,8 +110,19 @@ class PresenceController extends Controller
         }
 
         DB::transaction(function () use ($presence) {
-            $presence->lecons()->delete();
-            $presence->delete();
+            $lockedPresence = Presence::query()
+                ->whereKey($presence->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($lockedPresence->valide) {
+                throw ValidationException::withMessages([
+                    'presence' => 'Impossible de supprimer une présence déjà validée.',
+                ]);
+            }
+
+            $lockedPresence->lecons()->delete();
+            $lockedPresence->delete();
         });
 
         return redirect()->route('enseignants.presences')->with('success', 'Présence supprimée avec succès.');
@@ -122,12 +134,12 @@ class PresenceController extends Controller
             'id_enseignant' => 'required|integer|exists:enseignants,id_enseignant',
             'id_classe' => 'required|integer|exists:classe,id_classe',
             'date_presence' => 'required|date',
-            'nombre_heure' => 'required|numeric|min:0.25|max:24',
+            'nombre_heure' => 'required|numeric|min:0.1667|max:24',
             'id_trimestre' => 'required|integer|exists:trimestre,id_trimestre',
             'id_anneeScolaire' => 'required|integer|exists:anneescolaire,id_anneeScolaire',
             'lecons' => 'required|array|min:1',
             'lecons.*.titre' => 'required|string|max:255',
-            'lecons.*.nombre_heure' => 'required|numeric|min:0.25|max:24',
+            'lecons.*.nombre_heure' => 'required|numeric|min:0.1667|max:24',
             'lecons.*.progression' => 'nullable|numeric|min:0|max:100',
         ]);
 
@@ -152,12 +164,19 @@ class PresenceController extends Controller
 
     private function syncLecons(Presence $presence, Request $request): void
     {
+        $totalHours = 0;
+
         foreach ($request->input('lecons', []) as $lecon) {
+            $totalHours += (float) $lecon['nombre_heure'];
             $presence->lecons()->create([
                 'titre' => $lecon['titre'],
                 'nombre_heure' => $lecon['nombre_heure'],
                 'progression' => $lecon['progression'] ?? 0,
             ]);
+        }
+
+        if (abs((float) $presence->nombre_heure - $totalHours) > 0.01) {
+            $presence->update(['nombre_heure' => $totalHours]);
         }
     }
 
@@ -246,6 +265,19 @@ class PresenceController extends Controller
         ];
     }
 
+    private function presenceSummary($query): array
+    {
+        $rows = $query->with('lecons')->get();
+
+        return [
+            'total' => $rows->count(),
+            'pending' => $rows->where('valide', false)->count(),
+            'validated' => $rows->where('valide', true)->count(),
+            'hours' => (float) $rows->sum('nombre_heure'),
+            'lessons' => $rows->sum(fn ($presence) => $presence->lecons->count()),
+        ];
+    }
+
     private function currentAcademicYearId(): ?int
     {
         $today = now()->toDateString();
@@ -279,6 +311,10 @@ class PresenceController extends Controller
 
     private function hasPermission($user, string $permission): bool
     {
+        if ($user->droit === 'enseignant' && $permission === 'presence_apercu') {
+            return true;
+        }
+
         return $user->droit === 'SupAdmin' || $user->userHasPermission($permission);
     }
 

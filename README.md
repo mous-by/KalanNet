@@ -71,7 +71,6 @@ Actions disponibles :
 
 - Voir le profil de l'élève
 - Modifier les informations de l'élève
-- Imprimer une carte scolaire individuelle depuis l'action de l'élève
 - Enregistrer un transfert avec destination, motif, travail et conduite
 - Retirer l'élève des listes actives avec confirmation
 - Sélectionner un ou plusieurs élèves avec les cases à cocher
@@ -82,6 +81,8 @@ Actions disponibles :
 La suppression utilise une confirmation SweetAlert. L'élève retiré n'est plus visible dans les listes actives, mais son historique reste conservé.
 
 Le transfert est séparé de l'abandon. L'abandon, l'exclusion et l'année blanche sont gérés dans le module de réinscription intelligente.
+
+La carte scolaire et le dossier élève ne sont pas affichés dans les actions de la liste, car ils disposent chacun d'un accès dédié dans le menu `Élèves & Parents`.
 
 ### Impression PDF de la liste des élèves
 
@@ -157,7 +158,6 @@ Fonctionnement :
 - L'utilisateur peut cocher tous les élèves ou seulement quelques-uns.
 - Si aucun élève n'est coché, le PDF contient toutes les cartes de la liste filtrée.
 - Si des élèves sont cochés, le PDF contient uniquement les cartes sélectionnées.
-- Une carte individuelle peut aussi être imprimée depuis l'action de l'élève dans la liste.
 - Les modèles disponibles sont : institutionnel, moderne, badge vertical, Alliance amélioré, horizon et compact.
 
 Atelier de configuration :
@@ -200,6 +200,57 @@ Routes utilisées :
 ```text
 GET|POST /eleves/cartes-scolaires
 POST     /eleves/cartes-scolaires/pdf
+```
+
+### Dossiers élèves
+
+Chemin : `Élèves & Parents > Dossiers élèves`
+
+Le module dossiers élèves centralise les informations essentielles d'un élève dans une page unique, pensée pour être lisible par un utilisateur non informaticien.
+
+Fonctionnement de la liste :
+
+- Par défaut, aucun dossier n'est affiché.
+- L'utilisateur doit sélectionner une classe et une année scolaire.
+- Un indicateur de chargement s'affiche pendant l'application des filtres.
+- La liste peut être filtrée par statut : actifs, transférés ou retirés.
+- La recherche peut filtrer par nom, prénom ou matricule.
+- Chaque ligne ouvre directement le dossier de l'élève.
+
+Contenu du dossier :
+
+- Identité, matricule, classe, année scolaire et école.
+- Photo et informations de naissance.
+- Responsables rattachés au dossier.
+- Synthèse financière : montant prévu, montant payé, reste à payer et statut.
+- Échéances ou anciennes planifications selon le système utilisé.
+- Paiements récents avec accès au reçu normal et au reçu thermique.
+- Résultats récents, moyennes et historique du dossier si les tables existent.
+- Alertes utiles : parent manquant, matricule absent, plan de paiement manquant, échéance en retard, dossier transféré ou retiré.
+
+Paiements :
+
+- Le dossier utilise les plans de paiement modernes quand ils existent.
+- Si aucun plan moderne n'est disponible, il utilise les anciennes planifications liées à l'inscription.
+- Le reste à payer est calculé depuis les paiements réellement enregistrés.
+- L'alerte `Aucun plan de paiement n'est encore attaché à cet élève` n'apparaît que si aucun plan moderne et aucune ancienne planification ne sont trouvés.
+
+Navigation :
+
+- Les boutons de section restent sur la même page et utilisent des ancres internes.
+- Le bouton de modification n'est pas affiché dans le dossier.
+
+Accès parent :
+
+- Un parent connecté accède au dossier de ses enfants depuis son tableau de bord.
+- Il ne peut ouvrir que les dossiers des élèves qui lui sont rattachés.
+- Il peut télécharger les reçus de paiement de ses propres enfants, y compris le reçu thermique.
+
+Routes utilisées :
+
+```text
+GET /eleves/dossiers
+GET /eleves/{id}
 ```
 
 ### Inscriptions
@@ -348,7 +399,21 @@ Le module finances permet de gérer :
 - Paiements élèves
 - Historique
 - Reçus PDF
+- Reçus thermiques PDF
 - Exports PDF et Excel selon les écrans concernés
+
+Reçus :
+
+- Le reçu normal est disponible via la route de téléchargement standard.
+- Le reçu thermique est disponible pour les paiements élèves et dans le dossier élève.
+- Un parent peut télécharger uniquement les reçus des enfants qui lui sont rattachés.
+
+Routes utilisées :
+
+```text
+GET /finances/paiements/{id}/download
+GET /finances/paiements/{id}/thermique
+```
 
 ### Bulletins
 
@@ -383,6 +448,18 @@ Le module parents permet :
 - Définir le lien parental
 - Définir si le parent doit être informé
 
+Espace parent :
+
+- Le tableau de bord parent affiche les enfants rattachés au compte.
+- Un bouton `Ouvrir` permet d'accéder au dossier de chaque enfant.
+- Les cartes financières du tableau de bord sont dynamiques :
+  - montant prévu ;
+  - déjà payé ;
+  - reste à payer ;
+  - nombre de dossiers en retard.
+- Les montants sont calculés depuis les plans de paiement modernes ou, si nécessaire, depuis les anciennes planifications.
+- Les derniers paiements affichés correspondent uniquement aux enfants du parent connecté.
+
 ### Configuration
 
 Le module configuration regroupe :
@@ -396,6 +473,14 @@ Le module configuration regroupe :
 - Classes officielles
 - Types de notes
 - Statuts de contrôle
+
+Logo de l'école :
+
+- Le logo peut être ajouté ou remplacé lors de la création ou de la modification d'une école.
+- Les formats acceptés sont `jpg`, `jpeg`, `png` et `webp`.
+- La taille maximale acceptée est de 2 Mo.
+- Un aperçu du fichier sélectionné s'affiche avant l'enregistrement.
+- Le logo enregistré peut être utilisé sur les cartes scolaires quand l'option d'affichage du logo est activée.
 
 ## Gestion des droits
 
@@ -421,6 +506,7 @@ routes/web.php
 Contrôleurs principaux :
 
 ```text
+app/Http/Controllers/DashboardController.php
 app/Http/Controllers/EleveController.php
 app/Http/Controllers/InscriptionController.php
 app/Http/Controllers/FinanceController.php
@@ -432,10 +518,15 @@ Vues principales :
 
 ```text
 resources/views/eleves/index.blade.php
+resources/views/eleves/dossiers.blade.php
+resources/views/eleves/show.blade.php
+resources/views/dashboards/parent.blade.php
 resources/views/pedagogie/inscriptions/index.blade.php
 resources/views/finances/planifications/create.blade.php
 resources/views/pdf/eleves_liste.blade.php
 resources/views/pdf/bulletin.blade.php
+resources/views/pdf/cartes_scolaires.blade.php
+resources/views/pdf/finances/recu_paiement_thermique.blade.php
 ```
 
 ## Notes pour le futur manuel d'utilisation
@@ -452,6 +543,8 @@ resources/views/pdf/bulletin.blade.php
 - Réinscription intelligente par classe
 - Gestion des décisions passant, redoublant, passage forcé, ajourné, abandon et exclusion
 - Consultation de la liste des élèves
+- Consultation des dossiers élèves
+- Accès parent au dossier de l'enfant
 - Modification et retrait d'un élève actif
 - Génération des cartes scolaires
 - Impression PDF de toute une liste
@@ -459,6 +552,7 @@ resources/views/pdf/bulletin.blade.php
 - Export Excel d'une liste
 - Gestion des parents
 - Paiement et reçu
+- Reçu thermique
 - Bulletin et export PDF
 - Emploi du temps
 - Gestion des utilisateurs et permissions

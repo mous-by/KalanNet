@@ -18,6 +18,7 @@ use App\Http\Controllers\EvaluationController;
 use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\ConfigurationController;
 use App\Http\Controllers\ProgrammeController;
+use App\Http\Controllers\TeacherSalaryController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -33,6 +34,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Élèves
     Route::match(['get', 'post'], '/eleves', [EleveController::class, 'index'])->name('eleves.index');
+    Route::get('/eleves/dossiers', [EleveController::class, 'dossiers'])->name('eleves.dossiers');
     Route::match(['get', 'post'], '/eleves/cartes-scolaires', [EleveController::class, 'cartes'])->name('eleves.cartes');
     Route::post('/eleves/cartes-scolaires/pdf', [EleveController::class, 'downloadCartesPdf'])->name('eleves.cartes.pdf');
     Route::post('/eleves/liste/pdf', [EleveController::class, 'downloadListPdf'])->name('eleves.list.pdf');
@@ -60,6 +62,10 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/enseignants/presences/{id}', [PresenceController::class, 'update'])->name('enseignants.presences.update');
     Route::patch('/enseignants/presences/{id}/validate', [PresenceController::class, 'validatePresence'])->name('enseignants.presences.validate');
     Route::delete('/enseignants/presences/{id}', [PresenceController::class, 'destroy'])->name('enseignants.presences.destroy');
+    Route::get('/enseignants/salaires', [TeacherSalaryController::class, 'index'])->name('enseignants.salaires');
+    Route::get('/enseignants/salaires/etat', [TeacherSalaryController::class, 'etat'])->name('enseignants.salaires.etat');
+    Route::get('/enseignants/salaires/bulletin', [TeacherSalaryController::class, 'bulletin'])->name('enseignants.salaires.bulletin');
+    Route::post('/enseignants/salaires/paiement', [TeacherSalaryController::class, 'storePayment'])->name('enseignants.salaires.pay');
     Route::get('/enseignants/{id}', [EnseignantController::class, 'show'])->name('enseignants.show');
     Route::get('/enseignants/{id}/edit', [EnseignantController::class, 'edit'])->name('enseignants.edit');
     Route::put('/enseignants/{id}', [EnseignantController::class, 'update'])->name('enseignants.update');

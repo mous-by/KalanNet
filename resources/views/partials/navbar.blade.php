@@ -2,6 +2,17 @@
     $user = Auth::user();
     $idEcole = session('idEcole');
     $anneeEnCours = \App\Models\AnneeScolaire::orderBy('id_anneeScolaire', 'desc')->first();
+    $notifications = collect();
+    $unreadNotificationsCount = 0;
+    if ($user && \Illuminate\Support\Facades\Schema::hasTable('app_notifications')) {
+        $notifications = $user->appNotifications()
+            ->latest()
+            ->limit(6)
+            ->get();
+        $unreadNotificationsCount = $user->appNotifications()
+            ->whereNull('read_at')
+            ->count();
+    }
 @endphp
 
 
@@ -56,7 +67,7 @@
                 <li class="nav-item dropdown dropdown-large">
                     <a class="nav-link dropdown-toggle dropdown-toggle-nocaret" href="#" data-bs-toggle="dropdown">
                         <div class="notifications">
-                            <span class="notify-badge">0</span>
+                            <span class="notify-badge">{{ $unreadNotificationsCount }}</span>
                             <i class="bi bi-bell-fill"></i>
                         </div>
                     </a>
@@ -65,7 +76,20 @@
                             <h5 class="h5 mb-0">Notifications</h5>
                         </div>
                         <div class="header-notifications-list p-2">
-                            <div class="dropdown-item text-center text-secondary">Aucune notification</div>
+                            @forelse($notifications as $notification)
+                                <a href="{{ $notification->link ?: '#' }}" class="dropdown-item d-flex align-items-start gap-3 rounded-2 py-2">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 {{ $notification->read_at ? 'bg-light text-muted' : 'bg-primary bg-opacity-10 text-primary' }}" style="width: 36px; height: 36px;">
+                                        <i class="bi bi-bell"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold small">{{ $notification->title }}</div>
+                                        <div class="text-muted small">{{ \Illuminate\Support\Str::limit($notification->message, 90) }}</div>
+                                        <div class="text-muted" style="font-size: 11px;">{{ optional($notification->created_at)->diffForHumans() }}</div>
+                                    </div>
+                                </a>
+                            @empty
+                                <div class="dropdown-item text-center text-secondary">Aucune notification</div>
+                            @endforelse
                         </div>
                     </div>
                 </li>

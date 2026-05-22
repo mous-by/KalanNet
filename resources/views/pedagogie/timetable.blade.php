@@ -4,6 +4,10 @@
     @php
         $jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
         $heures = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
+        $storedHourRows = [];
+        if (!empty($selectedClasse) && !empty($selectedAnnee)) {
+            $storedHourRows = session('timetable_hours_' . $selectedClasse->id_classe . '_' . $selectedAnnee->id_anneeScolaire, []);
+        }
     @endphp
 
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
@@ -86,7 +90,7 @@
                     </li>
                 </ul>
                 
-                @if($selectedClasse && $selectedAnnee)
+                @if($selectedClasse && $selectedAnnee && $canEditTimetable)
                     <div class="d-flex align-items-center gap-3">
                         {{-- Mode Toggle --}}
                         <div class="btn-group shadow-sm" role="group" aria-label="Mode affichage">
@@ -133,9 +137,14 @@
                                             {{ $ecole->nomEcole ?? config('app.name', 'KalanNet') }}
                                         </h4>
                                         <div style="font-weight: bold; text-transform: uppercase; font-size: 13px; margin-top: 5px; color: #475569; letter-spacing: 0.5px;">
-                                            EMPLOI DU TEMPS DE CLASSE
+                                            {{ $isTeacher ? 'EMPLOI DU TEMPS ENSEIGNANT' : 'EMPLOI DU TEMPS DE CLASSE' }}
                                         </div>
-                                        <div class="small fw-semibold text-muted mt-1">Classe : {{ $selectedClasse->nom_classe }} - Année scolaire : {{ $selectedAnnee->annee }}</div>
+                                        <div class="small fw-semibold text-muted mt-1">
+                                            @if($isTeacher)
+                                                Enseignant : {{ auth()->user()->enseignant->nom_prenom_enseignant ?? auth()->user()->nomPrenom }} -
+                                            @endif
+                                            Classe : {{ $selectedClasse->nom_classe }} - Année scolaire : {{ $selectedAnnee->annee }}
+                                        </div>
                                     </td>
                                 </tr>
                             </table>
@@ -162,29 +171,36 @@
                                             $recessDuration = isset($recesses[$heure]) && (int)$recesses[$heure] > 0 ? (int)$recesses[$heure] : 0;
                                             $hasRecessAfter = $recessDuration > 0;
                                             
-                                            $heureParts = explode(':', $heure);
-                                            $startHour = (int) $heureParts[0];
-                                            $endHour = ($startHour + 1) % 24;
-                                            $endHourFormatted = str_pad($endHour, 2, '0', STR_PAD_LEFT) . ':00';
+                                            $storedHour = $storedHourRows[$heure] ?? [];
+                                            $heureDebutLigne = $storedHour['debut'] ?? $heure;
+                                            $heureFinLigne = $storedHour['fin'] ?? null;
+                                            if (!$heureFinLigne) {
+                                                $heureParts = explode(':', $heureDebutLigne);
+                                                $startHour = (int) $heureParts[0];
+                                                $endHour = ($startHour + 1) % 24;
+                                                $heureFinLigne = str_pad($endHour, 2, '0', STR_PAD_LEFT) . ':' . ($heureParts[1] ?? '00');
+                                            }
                                         @endphp
                                         <tr data-hour="{{ $heure }}">
                                             <td class="text-center fw-bold bg-white align-middle text-primary" style="white-space: nowrap; font-size: 13px; padding: 12px 6px;">
-                                                <span class="hour-range">{{ $heure }} - {{ $endHourFormatted }}</span>
-                                                <button type="button" class="btn btn-outline-warning btn-sm mt-2 px-2 py-1 no-print timetable-edit-block d-none" style="font-size: 10px; border-radius: 6px;" onclick="openRecessProposal('{{ $heure }}')">
-                                                    <i class="bi bi-clock me-1"></i>Récréation
-                                                </button>
+                                                <span class="hour-range">{{ $heureDebutLigne }} - {{ $heureFinLigne }}</span>
+                                                    @if($canEditTimetable)
+                                                        <button type="button" class="btn btn-outline-warning btn-sm mt-2 px-2 py-1 no-print timetable-edit-block d-none" style="font-size: 10px; border-radius: 6px;" onclick="openRecessProposal('{{ $heure }}')">
+                                                            <i class="bi bi-clock me-1"></i>Récréation
+                                                        </button>
+                                                    @endif
                                             </td>
                                             @foreach($jours as $jour)
                                                 <td class="p-2 align-middle text-center position-relative" style="min-width: 165px; height: 110px;">
                                                     @php
                                                         $courses = $timetable[$jour] ?? collect();
-                                                        // Find the course at this hour slot
-                                                        $course = $courses->first(fn ($c) => substr($c->heure_debut, 0, 5) <= $heure && substr($c->heure_fin, 0, 5) > $heure);
+                                                        // Find the course at this recalculated hour slot.
+                                                        $course = $courses->first(fn ($c) => substr($c->heure_debut, 0, 5) >= $heureDebutLigne && substr($c->heure_debut, 0, 5) < $heureFinLigne);
                                                         $courseId = $course ? $course->id : '';
                                                         $matiereId = $course ? $course->id_matiere : '';
                                                         $enseignantId = $course ? $course->id_enseignant : '';
-                                                        $heureDebutVal = $course ? substr($course->heure_debut, 0, 5) : $heure;
-                                                        $heureFinVal = $course ? substr($course->heure_fin, 0, 5) : $endHourFormatted;
+                                                        $heureDebutVal = $course ? substr($course->heure_debut, 0, 5) : $heureDebutLigne;
+                                                        $heureFinVal = $course ? substr($course->heure_fin, 0, 5) : $heureFinLigne;
                                                     @endphp
                                                     
                                                     {{-- Clean View Mode (GESCO Alliance Style with dynamic croix-case for empty cells) --}}
@@ -200,6 +216,7 @@
                                                     </div>
                                                     
                                                     {{-- Edit Mode Container (Hidden by default, not printable) --}}
+                                                    @if($canEditTimetable)
                                                     <div class="timetable-edit-block d-none no-print quick-add-cell-container p-2 border rounded shadow-xs bg-white text-start" style="border: 1px solid #cbd5e1; transition: all 0.2s;">
                                                         <input type="hidden" name="slots[{{ $jour }}][{{ $heure }}][id]" value="{{ $courseId }}">
                                                         
@@ -236,14 +253,15 @@
                                                         <div class="row g-1 mt-1 quick-time-wrapper {{ $matiereId ? '' : 'd-none' }}">
                                                             <div class="col-6">
                                                                 <label style="font-size: 9px;" class="text-muted mb-0 d-block">Début</label>
-                                                                <input type="time" name="slots[{{ $jour }}][{{ $heure }}][heure_debut]" class="form-control form-control-sm quick-input-debut" style="font-size: 10px; padding: 2px 4px; height: 23px;" value="{{ $heureDebutVal }}" onchange="recalculateAllTimes()">
+                                                                <input type="time" name="slots[{{ $jour }}][{{ $heure }}][heure_debut]" class="form-control form-control-sm quick-input-debut" style="font-size: 10px; padding: 2px 4px; height: 23px;" value="{{ $heureDebutVal }}" @if(!empty($storedHourRows[$heure])) data-manual-time="1" @endif onchange="markManualTime(this); recalculateAllTimes()">
                                                             </div>
                                                             <div class="col-6">
                                                                 <label style="font-size: 9px;" class="text-muted mb-0 d-block">Fin</label>
-                                                                <input type="time" name="slots[{{ $jour }}][{{ $heure }}][heure_fin]" class="form-control form-control-sm quick-input-fin" style="font-size: 10px; padding: 2px 4px; height: 23px;" value="{{ $heureFinVal }}" onchange="recalculateAllTimes()">
+                                                                <input type="time" name="slots[{{ $jour }}][{{ $heure }}][heure_fin]" class="form-control form-control-sm quick-input-fin" style="font-size: 10px; padding: 2px 4px; height: 23px;" value="{{ $heureFinVal }}" @if(!empty($storedHourRows[$heure])) data-manual-time="1" @endif onchange="markManualTime(this); recalculateAllTimes()">
                                                             </div>
                                                         </div>
                                                     </div>
+                                                    @endif
                                                 </td>
                                             @endforeach
                                         </tr>
@@ -257,6 +275,7 @@
                                             <td colspan="6" class="align-middle text-center" style="border: 1px solid #fde68a; padding: 15px 0;">
                                                 <div class="d-flex justify-content-between align-items-center px-4">
                                                     {{-- Duration Dropdown inside Recess Row (Only in Edit Mode) --}}
+                                                    @if($canEditTimetable)
                                                     <div class="d-flex align-items-center gap-2 timetable-edit-block d-none" id="recess_duration_container_{{ str_replace(':', '_', $heure) }}">
                                                         <span class="fw-semibold text-dark small" style="font-size: 11px;">Durée :</span>
                                                         <select class="form-select form-select-sm border-warning-subtle fw-bold text-warning-emphasis" style="width: 105px; font-size: 12px; height: 30px; padding: 2px 8px;" onchange="updateRecessDuration('{{ $heure }}', this.value)">
@@ -266,6 +285,7 @@
                                                             <option value="30" @selected($recessDuration == 30)>30 Min</option>
                                                         </select>
                                                     </div>
+                                                    @endif
 
                                                     <div class="flex-grow-1 text-center">
                                                         <h5 class="m-0 fw-extrabold text-warning-emphasis text-uppercase tracking-wider" style="font-size: 14px; font-weight: 800; letter-spacing: 3px;">
@@ -273,11 +293,13 @@
                                                         </h5>
                                                     </div>
                                                     
+                                                    @if($canEditTimetable)
                                                     <div class="no-print timetable-edit-block d-none" id="recess_delete_btn_{{ str_replace(':', '_', $heure) }}">
                                                         <button type="button" class="btn btn-outline-danger btn-sm rounded-pill fw-bold" onclick="removeMagicRecess('{{ $heure }}')" style="padding: 2px 10px; font-size: 11px;">
                                                             <i class="bi bi-trash3 me-1"></i> Supprimer
                                                         </button>
                                                     </div>
+                                                    @endif
                                                 </div>
                                             </td>
                                         </tr>
@@ -288,14 +310,17 @@
                         </div>
                     </div>
 
+                    @if($canEditTimetable)
                     <div class="d-flex justify-content-end mt-4 no-print d-none btn-enregistre-bottom">
                         <button type="submit" class="btn btn-success px-5 py-2.5 fw-bold shadow-sm">
                             <i class="bi bi-check2-circle me-2"></i>Enregistrer l'Emploi du Temps
                         </button>
                     </div>
+                    @endif
                 </form>
 
                 {{-- Intelligent recess proposer --}}
+                @if($canEditTimetable)
                 <div id="magic_recess_proposer_card" class="d-none no-print">
                     <div class="d-flex align-items-start gap-3">
                         <div class="bg-warning-subtle text-warning p-2.5 rounded-circle d-flex align-items-center justify-content-center animate-pulse" style="width: 42px; height: 42px; background-color: #fffbeb; border: 2px solid #fbbf24;">
@@ -322,6 +347,7 @@
                         </div>
                     </div>
                 </div>
+                @endif
 
                 <script>
                     window.selectedClasseId = {{ $selectedClasse->id_classe ?? 'null' }};
@@ -704,6 +730,10 @@
         showToast(`Durée de la récréation mise à jour à ${duration} minutes. Les horaires suivants ont été recalculés.`, "success");
     }
 
+    function markManualTime(input) {
+        input.dataset.manualTime = '1';
+    }
+
     function recalculateAllTimes() {
         const hours = @json($heures);
         const jours = @json($jours);
@@ -726,27 +756,38 @@
         
         for (let i = 0; i < hours.length; i++) {
             const hr = hours[i];
-            
-            // The start time of this row is currentEndTime
-            const rowStartTime = currentEndTime;
-            
-            // Calculate row end time by adding 1 hour (60 minutes)
-            const rowEndTime = addMinutesToTime(rowStartTime, 60);
-            
-            // Update all cells in this row with the new start/end times
+            const rowTimeInputs = [];
             for (let j of jours) {
                 const startInput = document.querySelector(`input[name="slots[${j}][${hr}][heure_debut]"]`);
                 const endInput = document.querySelector(`input[name="slots[${j}][${hr}][heure_fin]"]`);
-                if (startInput) startInput.value = rowStartTime;
-                if (endInput) endInput.value = rowEndTime;
+                const matiereSelect = document.querySelector(`select[name="slots[${j}][${hr}][id_matiere]"]`);
+                if (startInput && endInput && matiereSelect && matiereSelect.value) {
+                    rowTimeInputs.push({ startInput, endInput });
+                }
+            }
+            
+            const manualStart = rowTimeInputs.find((item) => item.startInput.dataset.manualTime === '1' && item.startInput.value)?.startInput.value;
+            const manualEnd = rowTimeInputs.find((item) => item.endInput.dataset.manualTime === '1' && item.endInput.value)?.endInput.value;
+            const rowStartTime = manualStart || currentEndTime;
+            
+            // Calculate row end time by adding 1 hour unless the row was explicitly adjusted.
+            const rowEndTime = manualEnd || addMinutesToTime(rowStartTime, 60);
+            
+            // Update all cells in this row, while respecting manual overrides.
+            for (let j of jours) {
+                const startInput = document.querySelector(`input[name="slots[${j}][${hr}][heure_debut]"]`);
+                const endInput = document.querySelector(`input[name="slots[${j}][${hr}][heure_fin]"]`);
+                if (startInput && startInput.dataset.manualTime !== '1') startInput.value = rowStartTime;
+                if (endInput && endInput.dataset.manualTime !== '1') endInput.value = rowEndTime;
             }
             
             // Update the hour column (first column) display in this row!
             const hourTd = document.querySelector(`tr[data-hour="${hr}"] td:first-child`);
             if (hourTd) {
-                hourTd.innerHTML = `
-                    <span class="text-primary">${rowStartTime} - ${rowEndTime}</span>
-                `;
+                const hourRange = hourTd.querySelector('.hour-range');
+                if (hourRange) {
+                    hourRange.textContent = `${rowStartTime} - ${rowEndTime}`;
+                }
             }
             
             // Update currentEndTime to rowEndTime
