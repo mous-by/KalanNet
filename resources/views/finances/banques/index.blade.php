@@ -1,12 +1,21 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="d-flex justify-content-between align-items-center bg-card p-4 rounded-4 shadow-sm mb-4">
-    <div>
-        <h2 class="mb-1 fw-bold">Banques</h2>
-        <div class="text-muted">Gestion des comptes bancaires de l’école.</div>
+<div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+    <div class="breadcrumb-title pe-3">Finances</div>
+    <div class="ps-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0 p-0">
+                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bi bi-house-door"></i></a></li>
+                <li class="breadcrumb-item active" aria-current="page">Banques</li>
+            </ol>
+        </nav>
     </div>
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#banqueModal">Ajouter</button>
+    <div class="ms-auto">
+        <button class="btn theme-action-btn" data-bs-toggle="modal" data-bs-target="#banqueModal">
+            <i class="bi bi-plus-lg me-1"></i>Ajouter
+        </button>
+    </div>
 </div>
 
 @include('finances.paiements.partials.alerts')

@@ -7,28 +7,19 @@
         $maxNote = $maxNote > 0 ? $maxNote : 20;
         $passMark = $maxNote / 2;
     @endphp
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex align-items-center justify-content-between bg-card p-4 rounded-4 shadow-sm">
-                <div class="d-flex align-items-center">
-                    <a href="{{ route('evaluations.index') }}" class="btn btn-light rounded-circle p-2 me-3">
-                        <i class="bi bi-arrow-left"></i>
-                    </a>
-                    <div>
-                        <h2 class="mb-1 fw-bold">{{ $evaluation->libeller }}</h2>
-                        <nav aria-label="breadcrumb">
-                            <ol class="breadcrumb mb-0">
-                                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Accueil</a></li>
-                                <li class="breadcrumb-item"><a href="{{ route('evaluations.index') }}">Évaluations</a></li>
-                                <li class="breadcrumb-item active">Notes</li>
-                            </ol>
-                        </nav>
-                    </div>
-                </div>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-primary rounded-pill px-4"><i class="bi bi-printer me-2"></i>Imprimer</button>
-                </div>
-            </div>
+    <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+        <div class="breadcrumb-title pe-3">Évaluations</div>
+        <div class="ps-3">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0 p-0">
+                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bi bi-house-door"></i></a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('evaluations.index') }}">Liste des évaluations</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Notes</li>
+                </ol>
+            </nav>
+        </div>
+        <div class="ms-auto">
+            <button class="btn theme-action-btn"><i class="bi bi-printer me-1"></i>Imprimer</button>
         </div>
     </div>
 

@@ -51,6 +51,18 @@
                         </form>
                     </div>
 
+                    <div class="alert alert-info border-0 d-flex align-items-start gap-3 mb-3">
+                        <i class="bi bi-envelope-check fs-4"></i>
+                        <div>
+                            <div class="fw-bold">Configuration SendEmail</div>
+                            <div class="small">
+                                Les emails parents partent seulement si le statut est en alerte, si l'école autorise les notifications email et si l'adresse email du parent est renseignée.
+                                Canal actuel : <strong>{{ config('mail.default') ?: 'non configuré' }}</strong>,
+                                expéditeur : <strong>{{ config('mail.from.address') ?: 'non configuré' }}</strong>.
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="table-responsive">
                         <table class="table table-striped table-bordered align-middle">
                             <thead class="table-light">
@@ -72,7 +84,7 @@
                                                 <span class="badge bg-secondary px-3 py-1">Non</span>
                                             @endif
                                         </td>
-                                        <td class="text-center fw-bold text-danger">{{ $controle->penalite_conduite }}</td>
+                                        <td class="text-center fw-bold text-danger">{{ number_format((float) $controle->penalite_conduite, 2, ',', ' ') }}</td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-2">
                                                 <button type="button" class="btn btn-sm btn-outline-primary"
@@ -131,7 +143,8 @@
                         </div>
                         <div class="mb-3">
                             <label for="penalite_conduite" class="form-label fw-bold">Pénalité de conduite (Points) <span class="text-danger">*</span></label>
-                            <input type="number" id="penalite_conduite" name="penalite_conduite" class="form-control" placeholder="Ex: 2" required>
+                            <input type="text" inputmode="decimal" id="penalite_conduite" name="penalite_conduite" class="form-control" placeholder="Ex: 0,5 ou 2" required>
+                            <small class="text-muted">Les décimales sont acceptées, par exemple 0,5 ou 1,25 point.</small>
                         </div>
                         <div class="mb-3">
                             <label for="alert" class="form-label fw-bold">Alerte ? <span class="text-danger">*</span></label>
@@ -168,7 +181,8 @@
                         </div>
                         <div class="mb-3">
                             <label for="edit_penalite_conduite" class="form-label fw-bold">Pénalité de conduite (Points) <span class="text-danger">*</span></label>
-                            <input type="number" id="edit_penalite_conduite" name="penalite_conduite" class="form-control" required>
+                            <input type="text" inputmode="decimal" id="edit_penalite_conduite" name="penalite_conduite" class="form-control" required>
+                            <small class="text-muted">Les décimales sont acceptées, par exemple 0,5 ou 1,25 point.</small>
                         </div>
                         <div class="mb-3">
                             <label for="edit_alert" class="form-label fw-bold">Alerte ? <span class="text-danger">*</span></label>

@@ -28,6 +28,7 @@ class Ecole extends Model
         'email',
         'academie',
         'notification_sms',
+        'notification_email',
     ];
 
     public function utilisateurs()

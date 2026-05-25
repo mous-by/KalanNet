@@ -19,6 +19,8 @@ use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\ConfigurationController;
 use App\Http\Controllers\ProgrammeController;
 use App\Http\Controllers\TeacherSalaryController;
+use App\Http\Controllers\AbonnementController;
+use App\Http\Controllers\AppelEpreuveController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -31,6 +33,8 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::post('/notifications/{id}/read', [DashboardController::class, 'markNotificationAsRead'])->name('notifications.read');
+    Route::put('/dashboard/abonnements/{abonnement}/dates', [DashboardController::class, 'updateSubscriptionDates'])->name('dashboard.abonnements.dates');
 
     // Élèves
     Route::match(['get', 'post'], '/eleves', [EleveController::class, 'index'])->name('eleves.index');
@@ -39,6 +43,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/eleves/cartes-scolaires/pdf', [EleveController::class, 'downloadCartesPdf'])->name('eleves.cartes.pdf');
     Route::post('/eleves/liste/pdf', [EleveController::class, 'downloadListPdf'])->name('eleves.list.pdf');
     Route::post('/eleves/liste/excel', [EleveController::class, 'downloadListExcel'])->name('eleves.list.excel');
+    Route::get('/eleves/transferts/{id}/fiche', [EleveController::class, 'transferCertificate'])->name('eleves.transfer.fiche');
     Route::get('/eleves/{id}/edit', [EleveController::class, 'edit'])->name('eleves.edit');
     Route::put('/eleves/{id}', [EleveController::class, 'update'])->name('eleves.update');
     Route::post('/eleves/{id}/transfert', [EleveController::class, 'transfer'])->name('eleves.transfer');
@@ -94,6 +99,9 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/programmes/{id}', [ProgrammeController::class, 'destroy'])->name('programmes.destroy');
 
     // Évaluations
+    Route::get('/appels-epreuves', [AppelEpreuveController::class, 'index'])->name('appels-epreuves.index');
+    Route::get('/appels-epreuves/create', [AppelEpreuveController::class, 'create'])->name('appels-epreuves.create');
+    Route::post('/appels-epreuves', [AppelEpreuveController::class, 'store'])->name('appels-epreuves.store');
     Route::match(['get', 'post'], '/evaluations', [EvaluationController::class, 'index'])->name('evaluations.index');
     Route::get('/evaluations/create', [EvaluationController::class, 'create'])->name('evaluations.create');
     Route::post('/evaluations/store', [EvaluationController::class, 'store'])->name('evaluations.store');
@@ -139,6 +147,14 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/finances/retraits/{id}/validate', [FinanceController::class, 'validateRetrait'])->name('finances.retraits.validate');
     Route::get('/finances/paiements/{id}/thermique', [FinanceController::class, 'downloadRecuThermique'])->name('finances.paiements.thermique');
     Route::get('/finances/paiements/{id}/download', [FinanceController::class, 'downloadRecu'])->name('finances.paiements.download');
+    Route::get('/abonnements', [AbonnementController::class, 'index'])->name('abonnements.index');
+    Route::post('/abonnements/paiements/manual-submit', [AbonnementController::class, 'manualSubmit'])->name('abonnements.paiements.manual');
+    Route::post('/abonnements/paiements/{paiement}/approve', [AbonnementController::class, 'approvePaiement'])->name('abonnements.paiements.approve');
+    Route::post('/abonnements/paiements/{paiement}/reject', [AbonnementController::class, 'rejectPaiement'])->name('abonnements.paiements.reject');
+    Route::post('/abonnements/offres', [AbonnementController::class, 'storeOffre'])->name('abonnements.offres.store');
+    Route::put('/abonnements/offres/{offre}', [AbonnementController::class, 'updateOffre'])->name('abonnements.offres.update');
+    Route::patch('/abonnements/offres/{offre}/statut', [AbonnementController::class, 'toggleOffre'])->name('abonnements.offres.toggle');
+    Route::get('/abonnements/paiements/{reference}', [AbonnementController::class, 'paiement'])->name('abonnements.paiements.show');
     Route::get('/pedagogie/bulletins', [BulletinController::class, 'classes'])->name('pedagogie.bulletins.classes');
     Route::get('/pedagogie/classes/{idClasse}/bulletins', [BulletinController::class, 'index'])->name('pedagogie.bulletins.index');
     Route::get('/pedagogie/classes/{idClasse}/bulletins/data', [BulletinController::class, 'data'])->name('pedagogie.bulletins.data');

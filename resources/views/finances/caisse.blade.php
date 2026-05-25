@@ -1,27 +1,23 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex align-items-center justify-content-between bg-card p-4 rounded-4 shadow-sm">
-                <div>
-                    <h2 class="mb-1 fw-bold">Journal de Caisse</h2>
-                    <nav aria-label="breadcrumb">
-                        <ol class="breadcrumb mb-0">
-                            <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Accueil</a></li>
-                            <li class="breadcrumb-item"><a href="{{ route('finances.index') }}">Finances</a></li>
-                            <li class="breadcrumb-item active">Mouvements de caisse</li>
-                        </ol>
-                    </nav>
-                </div>
-                @if($caisse)
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-danger rounded-pill px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#decaissementModal"><i class="bi bi-dash-lg me-2"></i>Sortie Caisse</button>
-                        <button class="btn btn-success rounded-pill px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#encaissementModal"><i class="bi bi-plus-lg me-2"></i>Entrée Caisse</button>
-                    </div>
-                @endif
-            </div>
+    <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+        <div class="breadcrumb-title pe-3">Finances</div>
+        <div class="ps-3">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0 p-0">
+                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bi bi-house-door"></i></a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('finances.index') }}">Gestion financière</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Journal de caisse</li>
+                </ol>
+            </nav>
         </div>
+        @if($caisse)
+            <div class="ms-auto d-flex gap-2">
+                <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#decaissementModal"><i class="bi bi-dash-lg me-1"></i>Sortie Caisse</button>
+                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#encaissementModal"><i class="bi bi-plus-lg me-1"></i>Entrée Caisse</button>
+            </div>
+        @endif
     </div>
 
     @if(session('success'))
@@ -67,9 +63,9 @@
             </div>
         </div>
         <div class="col-md-6 text-end">
-            <div class="d-inline-block bg-light p-3 rounded-4 shadow-sm">
-                <small class="text-muted d-block text-uppercase fw-bold">Référence Caisse</small>
-                <span class="fs-4 fw-bold font-monospace text-primary">{{ $caisse->reference }}</span>
+            <div class="d-inline-block caisse-reference-box p-3 rounded-4 shadow-sm">
+                <small class="d-block text-uppercase fw-bold">Référence Caisse</small>
+                <span class="fs-4 fw-bold font-monospace">{{ $caisse->reference }}</span>
             </div>
         </div>
     </div>
@@ -275,6 +271,17 @@
         display: flex;
         align-items: center;
         justify-content: center;
+    }
+    .caisse-reference-box {
+        background: #ffffff !important;
+        border: 1px solid #d8e2ee;
+    }
+    .caisse-reference-box small {
+        color: #475569 !important;
+        letter-spacing: 0;
+    }
+    .caisse-reference-box span {
+        color: #0f172a !important;
     }
 </style>
 @endsection

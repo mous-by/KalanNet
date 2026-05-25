@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Academie;
+use App\Models\Abonnement;
+use App\Models\AbonnementOffre;
 use App\Models\AnneeScolaire;
 use App\Models\Cap;
 use App\Models\ClasseOfficielle;
@@ -18,6 +20,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -78,8 +81,11 @@ class ConfigurationController extends Controller
 
         $academies = Academie::orderBy('nom_academie')->get();
         $caps = Cap::with('academie')->orderBy('nom_cap')->get();
+        $abonnementOffres = Auth::user()->droit === 'SupAdmin'
+            ? AbonnementOffre::where('actif', true)->orderBy('montant')->get()
+            : collect();
 
-        return view('configuration.ecoles', compact('ecoles', 'academies', 'caps'));
+        return view('configuration.ecoles', compact('ecoles', 'academies', 'caps', 'abonnementOffres'));
     }
 
     public function storeEcole(Request $request)
@@ -90,7 +96,8 @@ class ConfigurationController extends Controller
         $data['logoEcole'] = $this->storeEcoleLogo($request);
         $this->hydrateEcoleLegacyLabels($data);
 
-        Ecole::create($data);
+        $ecole = Ecole::create($data);
+        $this->activateInitialSubscription($request, $ecole);
 
         return redirect()->route('configuration.ecoles')->with('success', 'École ajoutée avec succès.');
     }
@@ -107,6 +114,7 @@ class ConfigurationController extends Controller
         $this->hydrateEcoleLegacyLabels($data);
 
         $ecole->update($data);
+        $this->activateInitialSubscription($request, $ecole);
 
         return redirect()->route('configuration.ecoles')->with('success', 'École modifiée avec succès.');
     }
@@ -947,7 +955,7 @@ class ConfigurationController extends Controller
                 'evaluation_modification',
                 'evaluation_supprimer',
                 'controle_apercu',
-                'controle_création',
+                'controle_creation',
                 'controle_modification',
                 'emargement_faire',
                 'enseignants_emploi',
@@ -1037,8 +1045,12 @@ class ConfigurationController extends Controller
             'nomProfessionnel' => 'nullable|string|max:255',
             'nomComplexe' => 'nullable|string|max:255',
             'notification_sms' => 'nullable|boolean',
+            'notification_email' => 'nullable|boolean',
             'logoEcole' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'abonnement_offre_id' => 'nullable',
         ]);
+
+        unset($data['abonnement_offre_id']);
 
         $needsCap = in_array($data['typeEcole'], ['Fondamentale I', 'Fondamentale II'], true)
             || ($data['typeEcole'] === 'Complexe Scolaire' && !empty($data['nomFondamental']));
@@ -1102,11 +1114,45 @@ class ConfigurationController extends Controller
         $data['academie'] = $academie?->nom_academie ?? ($data['academie'] ?? '');
         $data['cap'] = $cap?->nom_cap ?? ($data['cap'] ?? null);
         $data['notification_sms'] = !empty($data['notification_sms']) ? 1 : 0;
+        $data['notification_email'] = !empty($data['notification_email']) ? 1 : 0;
     }
 
     private function authorizeEcoleMutation(Ecole $ecole): void
     {
         $this->authorizeSupAdminOnly();
+    }
+
+    private function activateInitialSubscription(Request $request, Ecole $ecole): void
+    {
+        $offreId = $request->input('abonnement_offre_id');
+
+        if (!$offreId || $offreId === '__KEEP__') {
+            return;
+        }
+
+        $offre = AbonnementOffre::where('actif', true)->find($offreId);
+        if (!$offre) {
+            return;
+        }
+
+        $latestEnd = Abonnement::query()
+            ->where('ecole_id', $ecole->idEcole)
+            ->where('statut', 'actif')
+            ->whereNotNull('fin_at')
+            ->max('fin_at');
+
+        $start = now()->startOfDay();
+        if ($latestEnd && Carbon::parse($latestEnd)->isFuture()) {
+            $start = Carbon::parse($latestEnd)->startOfDay();
+        }
+
+        Abonnement::create([
+            'ecole_id' => $ecole->idEcole,
+            'offre_id' => $offre->id,
+            'statut' => 'actif',
+            'debut_at' => $start,
+            'fin_at' => $start->copy()->addDays((int) $offre->duree_jours),
+        ]);
     }
 
     public function typesNotes(Request $request)
@@ -1274,11 +1320,14 @@ class ConfigurationController extends Controller
     {
         $user = Auth::user();
         $this->authorizeAnyPermission($user, ['status_controles_apercu']);
+        $request->merge([
+            'penalite_conduite' => str_replace(',', '.', (string) $request->input('penalite_conduite')),
+        ]);
 
         $data = $request->validate([
             'controle' => 'required|string|max:150',
             'alert' => 'nullable|string|in:oui,non',
-            'penalite_conduite' => 'required|integer|min:0',
+            'penalite_conduite' => 'required|numeric|min:0|max:18',
         ]);
 
         $payload = [
@@ -1297,13 +1346,16 @@ class ConfigurationController extends Controller
     {
         $user = Auth::user();
         $this->authorizeAnyPermission($user, ['status_controles_apercu']);
+        $request->merge([
+            'penalite_conduite' => str_replace(',', '.', (string) $request->input('penalite_conduite')),
+        ]);
 
         $controle = Controle::findOrFail($id);
 
         $data = $request->validate([
             'controle' => 'required|string|max:150',
             'alert' => 'required|string|in:oui,non',
-            'penalite_conduite' => 'required|integer|min:0',
+            'penalite_conduite' => 'required|numeric|min:0|max:18',
         ]);
 
         $payload = [

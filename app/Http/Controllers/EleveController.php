@@ -225,8 +225,8 @@ class EleveController extends Controller
             return back()->with('error', 'La table des transferts n’est pas disponible.');
         }
 
-        DB::transaction(function () use ($eleve, $data) {
-            DB::table('transfert')->insert([
+        $transferId = DB::transaction(function () use ($eleve, $data) {
+            $transferId = DB::table('transfert')->insertGetId([
                 'id_eleve' => $eleve->id_eleve,
                 'id_ecole' => session('idEcole'),
                 'motif' => $data['motif'],
@@ -237,9 +237,38 @@ class EleveController extends Controller
 
             $eleve->etat_dossier = 1;
             $eleve->save();
+
+            return $transferId;
         });
 
-        return back()->with('success', 'Transfert de l’élève enregistré avec succès.');
+        return redirect()->route('eleves.transfer.fiche', $transferId);
+    }
+
+    public function transferCertificate($id)
+    {
+        if (!Schema::hasTable('transfert')) {
+            abort(404);
+        }
+
+        $transfer = DB::table('transfert')
+            ->where('id_transfert', $id)
+            ->where('id_ecole', session('idEcole'))
+            ->first();
+
+        if (!$transfer) {
+            abort(404);
+        }
+
+        $eleve = Eleve::with(['classe', 'ecole', 'parents'])
+            ->where('id_ecole', session('idEcole'))
+            ->findOrFail($transfer->id_eleve);
+        $annee = AnneeScolaire::where('id_anneeScolaire', $eleve->id_annee)->first();
+        $ecole = Ecole::withoutGlobalScopes()->find(session('idEcole'));
+
+        $pdf = Pdf::loadView('pdf.eleve_transfert', compact('transfer', 'eleve', 'annee', 'ecole'))
+            ->setPaper('a4', 'portrait');
+
+        return $pdf->stream('Fiche_transfert_' . ($eleve->matricule ?: $eleve->id_eleve) . '.pdf');
     }
 
     public function cartes(Request $request)

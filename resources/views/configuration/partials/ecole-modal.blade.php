@@ -62,13 +62,34 @@
                             <label class="form-label">Email</label>
                             <input type="email" name="email" class="form-control" value="{{ old('email', $ecole->email ?? '') }}">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label">Notification SMS</label>
                             <select name="notification_sms" class="form-select">
                                 <option value="0" @selected(old('notification_sms', $ecole->notification_sms ?? 0) == 0)>Non</option>
                                 <option value="1" @selected(old('notification_sms', $ecole->notification_sms ?? 0) == 1)>Oui</option>
                             </select>
                         </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Notification email parents</label>
+                            <select name="notification_email" class="form-select">
+                                <option value="1" @selected(old('notification_email', $ecole->notification_email ?? 1) == 1)>Oui</option>
+                                <option value="0" @selected(old('notification_email', $ecole->notification_email ?? 1) == 0)>Non</option>
+                            </select>
+                        </div>
+                        @if(Auth::user()->droit === 'SupAdmin')
+                            <div class="col-md-4">
+                                <label class="form-label">{{ $ecole ? "Changer/activer l'abonnement" : "Plan d'abonnement initial" }}</label>
+                                <select name="abonnement_offre_id" class="form-select">
+                                    <option value="{{ $ecole ? '__KEEP__' : '' }}" selected>{{ $ecole ? "Ne pas modifier l'abonnement" : 'Aucun plan au démarrage' }}</option>
+                                    @foreach($abonnementOffres ?? [] as $offre)
+                                        <option value="{{ $offre->id }}" @selected(old('abonnement_offre_id') == $offre->id)>
+                                            {{ $offre->nom }} - {{ number_format($offre->montant, 0, ',', ' ') }} {{ $offre->devise }} / {{ $offre->duree_jours }} jours
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <small class="text-muted d-block mt-1">{{ $ecole ? 'Choisir un plan ajoute une nouvelle période.' : 'Optionnel, comme dans Alliance.' }}</small>
+                            </div>
+                        @endif
                         <div class="col-md-4">
                             <label class="form-label">Logo de l'école</label>
                             <input type="file" name="logoEcole" class="form-control js-logo-input" accept="image/png,image/jpeg,image/webp">

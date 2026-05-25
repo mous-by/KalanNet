@@ -13,6 +13,14 @@
     </div>
 </div>
 
+@if(session('success'))
+    <div class="alert alert-success border-0 border-start border-success border-4">{{ session('success') }}</div>
+@endif
+@if($errors->any())
+    <div class="alert alert-danger border-0 border-start border-danger border-4">{{ $errors->first() }}</div>
+@endif
+
+
 
 <!-- Stats Cards (KPIs) -->
 <div class="row g-4 mb-4">

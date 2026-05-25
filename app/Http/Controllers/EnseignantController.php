@@ -205,11 +205,28 @@ class EnseignantController extends Controller
     private function validateEnseignant(Request $request, ?int $ignoreId = null): array
     {
         $contratsAutorises = implode(',', array_keys($this->contratsAutorises(Auth::user()->ecole)));
+        $schoolId = $ignoreId
+            ? Enseignant::withoutGlobalScopes()->where('id_enseignant', $ignoreId)->value('id_ecole')
+            : (session('idEcole') ?: Auth::user()->idEcole);
+
         return $request->validate([
             'nom_prenom' => 'required|string|max:200',
             'genre' => 'required|string|in:Feminin,Masculin,Féminin',
-            'email' => ['nullable', 'email', 'max:255', Rule::unique('enseignants', 'email_enseignant')->ignore($ignoreId, 'id_enseignant')],
-            'telephone' => ['required', 'digits:8', Rule::unique('enseignants', 'telephone_enseignant')->ignore($ignoreId, 'id_enseignant')],
+            'email' => [
+                'nullable',
+                'email',
+                'max:255',
+                Rule::unique('enseignants', 'email_enseignant')
+                    ->where(fn ($query) => $query->where('id_ecole', $schoolId))
+                    ->ignore($ignoreId, 'id_enseignant'),
+            ],
+            'telephone' => [
+                'required',
+                'digits:8',
+                Rule::unique('enseignants', 'telephone_enseignant')
+                    ->where(fn ($query) => $query->where('id_ecole', $schoolId))
+                    ->ignore($ignoreId, 'id_enseignant'),
+            ],
             'date_naissance' => 'required|date',
             'lieu_naissance' => 'required|string|max:100',
             'diplome' => 'required|string|max:100',

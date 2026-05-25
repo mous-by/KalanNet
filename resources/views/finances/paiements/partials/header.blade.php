@@ -1,21 +1,19 @@
-<div class="d-flex flex-wrap align-items-center justify-content-between bg-card p-4 rounded-4 shadow-sm mb-4 gap-3">
-    <div>
-        <h2 class="mb-1 fw-bold">Paiements scolaires</h2>
-        <div class="text-muted">
-            {{ $ecole?->nomEcole }} -
-            @if($isPublicSchool)
-                école publique : cotisations uniquement.
-            @else
-                école privée : frais scolaires par classe et échéances.
-            @endif
-        </div>
+<div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+    <div class="breadcrumb-title pe-3">Finances</div>
+    <div class="ps-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0 p-0">
+                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bi bi-house-door"></i></a></li>
+                <li class="breadcrumb-item active" aria-current="page">Paiements scolaires</li>
+            </ol>
+        </nav>
     </div>
-    <div class="d-flex gap-2">
-        <a href="{{ route('finances.paiements.historique') }}" class="btn btn-light">
+    <div class="ms-auto d-flex gap-2">
+        <a href="{{ route('finances.paiements.historique') }}" class="btn theme-outline-btn">
             <i class="bi bi-clock-history me-1"></i> Historique
         </a>
         @if($caisse && $canPay)
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#encaissementModal">
+            <button class="btn theme-action-btn" data-bs-toggle="modal" data-bs-target="#encaissementModal">
                 <i class="bi bi-cash-stack me-1"></i> Encaisser
             </button>
         @elseif(!$caisse)

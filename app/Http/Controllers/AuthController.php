@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Abonnement;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 
 class AuthController extends Controller
 {
@@ -22,27 +24,37 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'email' => ['required', 'email'],
+            'identifier' => ['required', 'string', 'max:255'],
             'pwd' => ['required'],
             'theme_preference' => ['nullable', 'string', 'in:bleu-sombre,light,dark,vert,violet,rouge,orange'],
+        ], [
+            'identifier.required' => 'Veuillez saisir votre email ou votre numéro de téléphone.',
         ]);
+
+        $identifier = trim($credentials['identifier']);
 
         // Eager load ecole relationship without global scope restrictions during lookup
         $users = User::with(['ecole' => function ($q) {
             $q->withoutGlobalScopes();
-        }])->where('email', $credentials['email'])->get();
+        }])
+            ->where(function ($query) use ($identifier) {
+                $query->where('email', $identifier)
+                    ->orWhere('telephone', $identifier);
+            })
+            ->get();
 
         if ($users->isEmpty()) {
             return back()->withErrors([
-                'email' => 'Email ou mot de passe incorrect.',
-            ])->onlyInput('email');
+                'identifier' => 'Email, téléphone ou mot de passe incorrect.',
+            ])->onlyInput('identifier');
         }
 
-        // Check password on the first user found (all accounts with same email should have same password)
-        if (!Hash::check($credentials['pwd'], $users[0]->pwd)) {
+        $users = $users->filter(fn (User $user) => Hash::check($credentials['pwd'], $user->pwd))->values();
+
+        if ($users->isEmpty()) {
             return back()->withErrors([
-                'email' => 'Email ou mot de passe incorrect.',
-            ])->onlyInput('email');
+                'identifier' => 'Email, téléphone ou mot de passe incorrect.',
+            ])->onlyInput('identifier');
         }
 
         // Check if user has multiple schools
@@ -51,6 +63,10 @@ class AuthController extends Controller
                 'ecoles_modal' => $users,
                 'selected_theme' => $request->input('theme_preference'),
             ]);
+        }
+
+        if ((int) $users[0]->statut === 0) {
+            return back()->with('error', 'Votre compte est inactif.');
         }
 
         // Single school, direct login
@@ -85,8 +101,11 @@ class AuthController extends Controller
     {
         if ($request->filled('theme_preference')) {
             $user->theme_preference = $request->input('theme_preference');
-            $user->save();
         }
+
+        $user->last_login_at = now();
+        $user->last_activity = now();
+        $user->save();
 
         Auth::login($user);
 
@@ -114,7 +133,32 @@ class AuthController extends Controller
             return redirect()->route('dashboard');
         }
 
+        if ($this->subscriptionIsBlocked($user, (int) $idEcole)) {
+            $request->session()->forget('url.intended');
+
+            return redirect()
+                ->route('abonnements.index')
+                ->with('open_subscription_renewal_modal', true)
+                ->with('error', "Votre abonnement a expiré. Veuillez renouveler l'abonnement pour continuer.");
+        }
+
         return redirect()->intended(route('dashboard'));
+    }
+
+    private function subscriptionIsBlocked(User $user, int $schoolId): bool
+    {
+        if ($schoolId <= 0 || in_array($user->droit, ['SupAdmin', 'DAE', 'DCAP'], true) || !Schema::hasTable('abonnements')) {
+            return false;
+        }
+
+        $subscription = Abonnement::query()
+            ->where('ecole_id', $schoolId)
+            ->where('statut', 'actif')
+            ->whereNotNull('fin_at')
+            ->orderByDesc('fin_at')
+            ->first();
+
+        return !$subscription || $subscription->fin_at->copy()->endOfDay()->isPast();
     }
 
     public function logout(Request $request)

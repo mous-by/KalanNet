@@ -1,14 +1,22 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h2 class="mb-1 fw-bold">Historique des paiements élèves</h2>
-        <div class="text-muted">Paiements enregistrés, reçus et exports.</div>
+<div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+    <div class="breadcrumb-title pe-3">Finances</div>
+    <div class="ps-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0 p-0">
+                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bi bi-house-door"></i></a></li>
+                <li class="breadcrumb-item"><a href="{{ route('finances.paiements') }}">Paiements élèves</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Historique</li>
+            </ol>
+        </nav>
     </div>
-    <a href="{{ route('finances.paiements') }}" class="btn btn-primary">
-        <i class="bi bi-arrow-left"></i> Retour
-    </a>
+    <div class="ms-auto">
+        <a href="{{ route('finances.paiements') }}" class="btn theme-outline-btn">
+            <i class="bi bi-arrow-left me-1"></i>Retour
+        </a>
+    </div>
 </div>
 
 <form method="POST" action="{{ route('finances.paiements.historique') }}" class="card theme-card mb-4" id="historyFilterForm" data-auto-filter="true">
@@ -77,10 +85,10 @@
                     <td>{{ $paiement->nom_payeur }}</td>
                     <td class="text-center">
                         <div class="btn-group">
-                            <a href="{{ route('finances.paiements.download', $paiement->id_paiement) }}" class="btn btn-sm btn-primary">
+                            <a href="{{ route('finances.paiements.download', $paiement->id_paiement) }}" class="btn btn-sm history-action-btn history-action-receipt" title="Reçu PDF" aria-label="Reçu PDF">
                                 <i class="bi bi-receipt"></i>
                             </a>
-                            <a href="{{ route('finances.paiements.thermique', $paiement->id_paiement) }}" class="btn btn-sm btn-primary">
+                            <a href="{{ route('finances.paiements.thermique', $paiement->id_paiement) }}" class="btn btn-sm history-action-btn history-action-print" title="Reçu thermique" aria-label="Reçu thermique">
                                 <i class="bi bi-printer"></i>
                             </a>
                         </div>
@@ -96,6 +104,40 @@
         <div class="card-footer bg-white">{{ $paiements->links() }}</div>
     @endif
 </div>
+
+@push('styles')
+<style>
+    .history-action-btn {
+        background: #ffffff !important;
+        border: 1px solid #d8e2ee !important;
+        color: #0f172a !important;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, .08);
+    }
+    .history-action-btn i {
+        opacity: 1 !important;
+    }
+    .history-action-receipt i {
+        color: #0f766e !important;
+    }
+    .history-action-print i {
+        color: #1d4ed8 !important;
+    }
+    .history-action-receipt:hover,
+    .history-action-receipt:focus {
+        background: #ecfdf5 !important;
+        border-color: #99f6e4 !important;
+    }
+    .history-action-print:hover,
+    .history-action-print:focus {
+        background: #eff6ff !important;
+        border-color: #bfdbfe !important;
+    }
+    .history-action-btn:hover i,
+    .history-action-btn:focus i {
+        opacity: 1 !important;
+    }
+</style>
+@endpush
 
 @push('scripts')
 <script>

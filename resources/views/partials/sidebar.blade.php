@@ -27,6 +27,7 @@
         'retraits_apercu',
     ];
     $canOpenFinance = $user->droit === 'SupAdmin' || $user->userHasAnyPermission($financeMenuPermissions);
+    $canOpenSubscriptions = $user->droit === 'SupAdmin' || $user->userHasAnyPermission(['abonnements_apercu', 'abonnements_paiement', 'abonnements_configuration', 'abonnements_validation']);
     $studentsParentsMenuPermissions = [
         'eleves_apercu',
         'eleves_dossier',
@@ -160,15 +161,20 @@
         </li>
         @endif
 
-        @if ($user->userHasPermission('evaluation_apercu'))
+        @if ($user->userHasPermission('evaluation_apercu') || $user->userHasAnyPermission(['controle_apercu', 'controle_creation', 'controle_création']))
         <li>
             <a href="javascript:;" class="has-arrow">
                 <div class="parent-icon"><i class="bi bi-check-circle-fill"></i></div>
-                <div class="menu-title">Évaluations</div>
+                <div class="menu-title">Contrôles & Évaluations</div>
             </a>
             <ul>
+                @if($user->userHasAnyPermission(['controle_apercu', 'controle_creation', 'controle_création']))
+                <li><a href="{{ route('appels-epreuves.index') }}"><i class="bi bi-circle"></i>Appels d'épreuves</a></li>
+                @endif
+                @if($user->userHasPermission('evaluation_apercu'))
                 <li><a href="{{ route('evaluations.index') }}"><i class="bi bi-circle"></i>Notes & Évaluations</a></li>
                 <li><a href="{{ route('pedagogie.bulletins.classes') }}"><i class="bi bi-circle"></i>Générer Bulletins</a></li>
+                @endif
             </ul>
         </li>
         @endif
@@ -205,6 +211,15 @@
                 @endif
             </ul>
         </li>
+        @endif
+
+        @if($canOpenSubscriptions)
+            <li>
+                <a href="{{ route('abonnements.index') }}">
+                    <div class="parent-icon"><i class="bi bi-credit-card-2-front-fill"></i></div>
+                    <div class="menu-title">Abonnements</div>
+                </a>
+            </li>
         @endif
 
         @if($canOpenConfiguration)

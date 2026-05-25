@@ -46,6 +46,8 @@ class User extends Authenticatable
         'image',
         'statut',
         'theme_preference',
+        'last_login_at',
+        'last_activity',
     ];
 
     /**
@@ -80,6 +82,8 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'pwd' => 'hashed',
+            'last_login_at' => 'datetime',
+            'last_activity' => 'datetime',
         ];
     }
 

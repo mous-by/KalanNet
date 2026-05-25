@@ -7,6 +7,7 @@ use App\Models\Classe;
 use App\Models\Ecole;
 use App\Models\AnneeScolaire;
 use App\Models\Trimestre;
+use App\Services\ConductNoteService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -236,7 +237,26 @@ class BulletinController extends Controller
                 ->where('id_annee_scolaire', $id_annee)
                 ->where('id_trimestre', $id_trimestre)
                 ->first();
-            if ($conduite) $note_conduite = $conduite->note_conduite;
+            $schoolId = (int) $classe->idEcole;
+            $hasCalls = DB::table('controle_eleve')
+                ->where('id_eleve', $id)
+                ->where('id_classe', $classe->id_classe)
+                ->where('id_annee_scolaire', $id_annee)
+                ->where('id_trimestre', $id_trimestre)
+                ->where('id_ecole', $schoolId)
+                ->exists();
+
+            if ($hasCalls) {
+                $note_conduite = app(ConductNoteService::class)->syncStudent(
+                    (int) $id,
+                    (int) $classe->id_classe,
+                    (int) $id_annee,
+                    (int) $id_trimestre,
+                    $schoolId
+                );
+            } elseif ($conduite) {
+                $note_conduite = $conduite->note_conduite;
+            }
         }
 
         // 3. Aperçu Info

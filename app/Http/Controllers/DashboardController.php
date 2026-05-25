@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Abonnement;
 use App\Models\AnneeScolaire;
+use App\Models\AppNotification;
 use App\Models\Eleve;
 use App\Models\Enseignant;
 use App\Models\Classe;
+use App\Models\Ecole;
 use App\Models\Emargement;
 use App\Models\LigneClasse;
 use App\Models\LigneEvaluation;
@@ -13,6 +16,7 @@ use App\Models\Paiement;
 use App\Models\ParentModel;
 use App\Models\PlanPaiement;
 use App\Models\Presence;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -31,6 +35,10 @@ class DashboardController extends Controller
 
         if ($user->droit === 'parent') {
             return $this->parentDashboard($user, $schoolId);
+        }
+
+        if ($user->droit === 'SupAdmin') {
+            return $this->supAdminDashboard($user);
         }
 
         $anneeEnCours = AnneeScolaire::when($schoolId, function ($query, $schoolId) {
@@ -98,6 +106,7 @@ class DashboardController extends Controller
 
         $teacherProgressRows = $this->schoolTeacherProgress($schoolId, $idAnnee);
         $presenceProgressRows = $this->schoolPresenceProgress($schoolId, $idAnnee);
+        $subscriptionOverview = $user->droit === 'SupAdmin' ? $this->subscriptionOverview() : collect();
 
         return view('dashboard', compact(
             'totalEleves', 
@@ -113,8 +122,31 @@ class DashboardController extends Controller
             'totalAbandons',
             'classesData',
             'teacherProgressRows',
-            'presenceProgressRows'
+            'presenceProgressRows',
+            'subscriptionOverview'
         ));
+    }
+
+    public function updateSubscriptionDates(Request $request, Abonnement $abonnement)
+    {
+        if (Auth::user()?->droit !== 'SupAdmin') {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'debut_at' => 'required|date',
+            'fin_at' => 'required|date|after:debut_at',
+        ]);
+
+        $abonnement->update([
+            'statut' => 'actif',
+            'debut_at' => Carbon::parse($data['debut_at'])->startOfDay(),
+            'fin_at' => Carbon::parse($data['fin_at'])->endOfDay(),
+        ]);
+
+        $this->notifySchoolUsersSubscriptionUpdated($abonnement);
+
+        return back()->with('success', 'Dates de l’abonnement mises à jour.');
     }
 
     private function teacherDashboard($user, ?int $schoolId)
@@ -194,6 +226,103 @@ class DashboardController extends Controller
             'teacherPresenceProgressRows',
             'teacherPermissions'
         ));
+    }
+
+    private function supAdminDashboard($user)
+    {
+        $subscriptionOverview = $this->subscriptionOverview();
+        
+        // Connected Users (active in the last 15 minutes)
+        $connectedUsers = \App\Models\User::with('ecole')
+            ->whereNotNull('last_activity')
+            ->where('last_activity', '>=', now()->subMinutes(15))
+            ->orderByDesc('last_activity')
+            ->get();
+
+        // App Health Stats
+        $health = [
+            'app_env' => config('app.env'),
+            'app_debug' => config('app.debug'),
+            'php_version' => phpversion(),
+            'disk_free_space' => function_exists('disk_free_space') ? round(disk_free_space('/') / 1024 / 1024 / 1024, 2) : 'N/A', // en GB
+            'disk_total_space' => function_exists('disk_total_space') ? round(disk_total_space('/') / 1024 / 1024 / 1024, 2) : 'N/A', // en GB
+            'db_connection' => 'OK',
+        ];
+
+        try {
+            DB::connection()->getPdo();
+        } catch (\Exception $e) {
+            $health['db_connection'] = 'ERREUR';
+        }
+
+        // Pending Subscriptions to validate
+        $pendingValidations = \App\Models\AbonnementPaiement::with(['offre', 'ecole'])
+            ->where('statut', 'en_attente')
+            ->orderByDesc('id')
+            ->get();
+
+        return view('dashboards.supadmin', compact(
+            'subscriptionOverview',
+            'connectedUsers',
+            'health',
+            'pendingValidations'
+        ));
+    }
+
+    private function subscriptionOverview()
+    {
+        return Ecole::query()
+            ->orderBy('nomEcole')
+            ->get()
+            ->map(function (Ecole $ecole) {
+                $abonnement = Abonnement::with('offre')
+                    ->where('ecole_id', $ecole->idEcole)
+                    ->orderByRaw("CASE WHEN statut = 'actif' THEN 0 ELSE 1 END")
+                    ->orderByDesc('fin_at')
+                    ->orderByDesc('id')
+                    ->first();
+
+                $daysRemaining = null;
+                if ($abonnement?->fin_at) {
+                    $daysRemaining = now()->startOfDay()->diffInDays($abonnement->fin_at->copy()->startOfDay(), false);
+                }
+
+                return [
+                    'ecole' => $ecole,
+                    'abonnement' => $abonnement,
+                    'days_remaining' => $daysRemaining,
+                ];
+            });
+    }
+
+    private function notifySchoolUsersSubscriptionUpdated(Abonnement $abonnement): void
+    {
+        if (!Schema::hasTable('app_notifications')) {
+            return;
+        }
+
+        $abonnement->loadMissing('ecole', 'offre');
+        $message = 'Les dates de votre abonnement ont été mises à jour. Nouvelle fin: '
+            . optional($abonnement->fin_at)->format('d/m/Y') . '.';
+
+        $users = \App\Models\User::where('idEcole', $abonnement->ecole_id)
+            ->whereIn('droit', ['Admin', 'Gestionnaire'])
+            ->get();
+
+        foreach ($users as $target) {
+            AppNotification::create([
+                'user_id' => $target->idUtilisateur,
+                'type' => 'abonnement',
+                'title' => 'Abonnement mis à jour',
+                'message' => $message,
+                'link' => route('abonnements.index'),
+                'data' => [
+                    'event' => 'SUBSCRIPTION_DATES_UPDATED',
+                    'abonnement_id' => $abonnement->id,
+                    'ecole_id' => $abonnement->ecole_id,
+                ],
+            ]);
+        }
     }
 
     private function parentDashboard($user, ?int $schoolId)
@@ -556,5 +685,14 @@ class DashboardController extends Controller
                 'p.montant_planification',
             ])
             ->get();
+    }
+
+    public function markNotificationAsRead(Request $request, $id)
+    {
+        $notification = AppNotification::where('user_id', Auth::id())->find($id);
+        if ($notification) {
+            $notification->update(['read_at' => now()]);
+        }
+        return response()->json(['success' => true]);
     }
 }

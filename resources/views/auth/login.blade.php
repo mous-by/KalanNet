@@ -40,21 +40,79 @@
             font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             color: #172033;
             background:
-                linear-gradient(120deg, rgba(255,255,255,.90), rgba(255,255,255,.74)),
-                url('{{ asset('assets/images/télécharger.jpeg') }}') center/cover no-repeat fixed;
+                linear-gradient(120deg, rgba(255,255,255,.52), rgba(255,255,255,.28)),
+                url('{{ asset('assets/images/logo_kalanNet.jpeg') }}') center/cover no-repeat fixed;
         }
         .login-page {
+            position: relative;
             min-height: 100vh;
             display: flex;
+            align-items: flex-end;
+            justify-content: flex-end;
+            padding: 22px clamp(22px, 8vw, 120px) clamp(44px, 9vh, 92px) 22px;
+            overflow: hidden;
+        }
+        .module-wave {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: clamp(285px, 38vh, 380px);
+            z-index: 1;
+            pointer-events: none;
+        }
+        .module-wave svg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+        .module-wave path {
+            fill: var(--theme-accent);
+            fill-opacity: .88;
+            stroke: var(--theme-accent);
+            stroke-width: 5;
+            stroke-linecap: round;
+            filter: drop-shadow(0 10px 18px rgba(15, 23, 42, .2));
+        }
+        .module-node {
+            display: inline-flex;
+            flex-direction: row;
             align-items: center;
+            gap: 5px;
             justify-content: center;
-            padding: 22px;
+            min-width: 0;
+            min-height: 30px;
+            padding: 0;
+            color: #fff;
+            font-size: clamp(.58rem, .7vw, .78rem);
+            font-weight: 800;
+            line-height: 1.15;
+            text-align: center;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, .28);
+        }
+        .module-node i {
+            color: #fff;
+            flex: 0 0 auto;
+            font-size: clamp(.78rem, .85vw, 1rem);
+        }
+        .module-list {
+            position: absolute;
+            left: clamp(18px, 3vw, 54px);
+            right: clamp(18px, 3vw, 54px);
+            bottom: 24px;
+            display: grid;
+            grid-template-columns: repeat(12, minmax(0, 1fr));
+            gap: clamp(5px, .8vw, 14px);
+            align-items: center;
         }
         .login-card {
             position: relative;
+            z-index: 2;
             width: min(100%, 430px);
             padding: 34px 34px 28px;
-            background: rgba(255,255,255,.97);
+            background: rgba(255,255,255,.92);
             border: 1px solid #e5e7eb;
             border-radius: 8px;
             box-shadow: 0 24px 70px rgba(15, 23, 42, .18);
@@ -94,18 +152,18 @@
             margin-bottom: 24px;
         }
         .brand-logo {
-            width: 70px;
-            height: 70px;
+            width: 96px;
+            height: 86px;
             margin: 0 auto 14px;
-            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: var(--theme-soft);
-            border: 1px solid var(--theme-ring);
-            color: var(--theme-accent);
-            font-size: 1.55rem;
-            font-weight: 800;
+        }
+        .brand-logo svg {
+            width: 96px;
+            height: 86px;
+            display: block;
+            filter: drop-shadow(0 5px 8px rgba(15, 23, 42, .16));
         }
         .brand-title {
             margin: 0;
@@ -115,10 +173,18 @@
             color: #0f172a;
             letter-spacing: 0;
         }
+        .brand-title-theme {
+            color: var(--theme-accent);
+        }
+        .brand-title-alt {
+            color: #2563eb;
+        }
         .brand-subtitle {
             margin: 8px 0 0;
             color: #64748b;
-            font-size: .95rem;
+            font-size: .82rem;
+            font-weight: 800;
+            letter-spacing: 0;
         }
         .theme-row {
             display: flex;
@@ -231,20 +297,92 @@
             border-top: 5px solid var(--theme-accent);
         }
         @media (max-width: 520px) {
-            .login-page { padding: 14px; }
+            .login-page {
+                align-items: center;
+                justify-content: center;
+                padding: 14px;
+            }
+            .module-wave { display: none; }
             .login-card { padding: 28px 20px 24px; }
             .brand-title { font-size: 1.75rem; }
+        }
+        @media (max-width: 1100px) {
+            .module-list {
+                left: 18px;
+                right: 18px;
+                grid-template-columns: repeat(12, minmax(0, 1fr));
+                gap: 4px;
+            }
+            .module-node {
+                flex-direction: column;
+                gap: 2px;
+                font-size: .48rem;
+            }
+            .module-node i { font-size: .72rem; }
         }
     </style>
 </head>
 <body>
     <main class="login-page">
+        <div class="module-wave" aria-hidden="true">
+            <svg viewBox="0 0 900 250" preserveAspectRatio="none">
+                <path d="M900 155 C790 168 755 218 630 205 C500 192 450 122 330 150 C205 180 175 232 0 210 L0 250 L900 250 Z" />
+            </svg>
+            <div class="module-list">
+                <div class="module-node"><i class="bi bi-people"></i><span>Élèves</span></div>
+                <div class="module-node"><i class="bi bi-person-plus"></i><span>Inscriptions</span></div>
+                <div class="module-node"><i class="bi bi-people-fill"></i><span>Parents</span></div>
+                <div class="module-node"><i class="bi bi-person-badge"></i><span>Enseignants</span></div>
+                <div class="module-node"><i class="bi bi-clipboard-check"></i><span>Présences</span></div>
+                <div class="module-node"><i class="bi bi-journal-text"></i><span>Émargements</span></div>
+                <div class="module-node"><i class="bi bi-pencil-square"></i><span>Notes</span></div>
+                <div class="module-node"><i class="bi bi-file-earmark-text"></i><span>Bulletins</span></div>
+                <div class="module-node"><i class="bi bi-cash-coin"></i><span>Paiements</span></div>
+                <div class="module-node"><i class="bi bi-wallet2"></i><span>Finances</span></div>
+                <div class="module-node"><i class="bi bi-calendar-week"></i><span>Emploi du temps</span></div>
+                <div class="module-node"><i class="bi bi-gear"></i><span>Configuration</span></div>
+            </div>
+        </div>
         <section class="login-card">
             <div class="login-content">
                 <div class="brand-area">
-                    <div class="brand-logo">KN</div>
-                    <h1 class="brand-title">KalanNet</h1>
-                    <p class="brand-subtitle">Connectez-vous à votre espace scolaire.</p>
+                    <div class="brand-logo" aria-hidden="true">
+                        <svg viewBox="0 0 120 104" role="img" focusable="false">
+                            <path d="M25 76c14-7 28-7 42 0V42c-14-7-28-7-42 0v34z" fill="#ffffff" stroke="#0b1f3a" stroke-width="3" stroke-linejoin="round"/>
+                            <path d="M95 76c-14-7-28-7-42 0V42c14-7 28-7 42 0v34z" fill="#f8fafc" stroke="#0b1f3a" stroke-width="3" stroke-linejoin="round"/>
+                            <path d="M60 47v34" stroke="#d4af37" stroke-width="4" stroke-linecap="round"/>
+                            <path d="M22 79c15-8 31-8 45 0M98 79c-15-8-31-8-45 0" stroke="#d4af37" stroke-width="4" stroke-linecap="round" fill="none"/>
+
+                            <path d="M35 30l25-11 25 11-25 11-25-11z" fill="#0b1f3a"/>
+                            <path d="M46 36v11c8 6 20 6 28 0V36l-14 6-14-6z" fill="#d4af37"/>
+                            <path d="M84 31v17" stroke="#0b1f3a" stroke-width="3" stroke-linecap="round"/>
+                            <circle cx="84" cy="52" r="3.5" fill="#d4af37"/>
+
+                            <circle cx="60" cy="55" r="9" fill="#0b1f3a"/>
+                            <path d="M49 72c5-11 17-11 22 0" fill="#0b1f3a"/>
+
+                            <g transform="translate(10 10) scale(.78)">
+                                <path d="M16 7c9 2 15 8 15 17 0 5 4 9 7 13-5 7-12 11-21 9-8-2-12-10-10-19 1-6 4-13 9-20z" fill="#ffffff" stroke="#0b1f3a" stroke-width="2"/>
+                                <clipPath id="mali-flag-clip">
+                                    <path d="M16 7c9 2 15 8 15 17 0 5 4 9 7 13-5 7-12 11-21 9-8-2-12-10-10-19 1-6 4-13 9-20z"/>
+                                </clipPath>
+                                <g clip-path="url(#mali-flag-clip)">
+                                    <rect x="5" y="5" width="11" height="44" fill="#14b53a"/>
+                                    <rect x="16" y="5" width="11" height="44" fill="#fcd116"/>
+                                    <rect x="27" y="5" width="13" height="44" fill="#ce1126"/>
+                                </g>
+                                <path d="M16 7c9 2 15 8 15 17 0 5 4 9 7 13-5 7-12 11-21 9-8-2-12-10-10-19 1-6 4-13 9-20z" fill="none" stroke="#0b1f3a" stroke-width="2"/>
+                            </g>
+
+                            <path d="M88 16c9 8 13 21 9 35M93 17c-6 4-11 10-14 19M97 51c-8-4-16-5-25-2" stroke="#0b1f3a" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+                            <circle cx="88" cy="16" r="3" fill="#d4af37"/>
+                            <circle cx="79" cy="36" r="3" fill="#d4af37"/>
+                            <circle cx="72" cy="49" r="3" fill="#d4af37"/>
+                            <circle cx="97" cy="51" r="3" fill="#d4af37"/>
+                        </svg>
+                    </div>
+                    <h1 class="brand-title"><span class="brand-title-theme">Kalan</span><span class="brand-title-alt">Net</span></h1>
+                    <p class="brand-subtitle">SYSTEME DE GESTION SCOLAIRE</p>
                 </div>
 
                 <div class="theme-row" aria-label="Choix du thème">
@@ -267,14 +405,20 @@
                     </div>
                 @endif
 
+                @if (session('error'))
+                    <div class="alert alert-danger border-0 rounded-3 py-2 small">
+                        {{ session('error') }}
+                    </div>
+                @endif
+
                 <form action="{{ route('login.post') }}" method="POST">
                     @csrf
                     <input type="hidden" name="theme_preference" id="theme_preference" value="{{ old('theme_preference', $selected_theme ?? 'vert') }}">
                     <div class="mb-3">
-                        <label class="form-label" for="email">Adresse email</label>
+                        <label class="form-label" for="identifier">Email ou téléphone</label>
                         <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-                            <input id="email" type="email" name="email" class="form-control" placeholder="exemple@ecole.com" value="{{ old('email') }}" required autofocus>
+                            <span class="input-group-text"><i class="bi bi-person-badge"></i></span>
+                            <input id="identifier" type="text" name="identifier" class="form-control" placeholder="exemple@ecole.com ou 70000000" value="{{ old('identifier') }}" required autofocus autocomplete="username">
                         </div>
                     </div>
                     <div class="mb-4">

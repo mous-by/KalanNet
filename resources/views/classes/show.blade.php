@@ -2,29 +2,20 @@
 
 @section('content')
 <div class="container-fluid py-4">
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex align-items-center justify-content-between bg-card p-4 rounded-4 shadow-sm">
-                <div class="d-flex align-items-center">
-                    <a href="{{ route('classes.index') }}" class="btn btn-light rounded-circle p-2 me-3">
-                        <i class="bi bi-arrow-left"></i>
-                    </a>
-                    <div>
-                        <h2 class="mb-1 fw-bold">{{ $classe->nom_classe }}</h2>
-                        <nav aria-label="breadcrumb">
-                            <ol class="breadcrumb mb-0">
-                                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Accueil</a></li>
-                                <li class="breadcrumb-item"><a href="{{ route('classes.index') }}">Classes</a></li>
-                                <li class="breadcrumb-item active">{{ $classe->nom_classe }}</li>
-                            </ol>
-                        </nav>
-                    </div>
-                </div>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-outline-primary rounded-pill px-4"><i class="bi bi-printer me-2"></i>Liste de classe</button>
-                    <button class="btn btn-primary rounded-pill px-4"><i class="bi bi-pencil me-2"></i>Modifier la Classe</button>
-                </div>
-            </div>
+    <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+        <div class="breadcrumb-title pe-3">Classes</div>
+        <div class="ps-3">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0 p-0">
+                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bi bi-house-door"></i></a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('classes.index') }}">Liste des classes</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ $classe->nom_classe }}</li>
+                </ol>
+            </nav>
+        </div>
+        <div class="ms-auto d-flex gap-2">
+            <button class="btn theme-outline-btn"><i class="bi bi-printer me-1"></i>Liste de classe</button>
+            <a href="{{ route('classes.edit', $classe->id_classe) }}" class="btn theme-action-btn"><i class="bi bi-pencil me-1"></i>Modifier</a>
         </div>
     </div>
 

@@ -4,6 +4,31 @@ KalanNet est une application Laravel de gestion scolaire. Elle regroupe les modu
 
 Ce document sert de base technique et fonctionnelle pour préparer plus tard un manuel d'utilisation complet.
 
+## Authentification et contexte école
+
+La connexion permet d'entrer dans le système avec l'email ou le numéro de téléphone de l'utilisateur.
+
+Cas particulier des utilisateurs liés à plusieurs écoles :
+
+- Le choix de l'école de travail se fait au moment de la connexion.
+- L'école choisie est conservée dans la session avec `idEcole`.
+- Les données affichées ensuite sont filtrées selon cette école, sauf pour les profils globaux comme `SupAdmin`, `DAE` et `DCAP`.
+
+Abonnement à la connexion :
+
+- Si l'école a un abonnement expiré, l'utilisateur est redirigé vers le module `Abonnements`.
+- Un modal de renouvellement peut s'ouvrir automatiquement.
+- Tant que l'abonnement est expiré, les routes fonctionnelles de l'école sont bloquées, sauf les pages nécessaires au renouvellement.
+
+Fichiers principaux :
+
+```text
+app/Http/Controllers/AuthController.php
+app/Http/Middleware/EnsureSchoolSelected.php
+app/Http/Middleware/EnsureActiveSubscription.php
+resources/views/auth/login.blade.php
+```
+
 ## Prérequis
 
 - PHP 8.3 ou plus
@@ -72,6 +97,7 @@ Actions disponibles :
 - Voir le profil de l'élève
 - Modifier les informations de l'élève
 - Enregistrer un transfert avec destination, motif, travail et conduite
+- Imprimer la fiche de transfert après un transfert
 - Retirer l'élève des listes actives avec confirmation
 - Sélectionner un ou plusieurs élèves avec les cases à cocher
 - Cocher tous les élèves visibles
@@ -81,6 +107,8 @@ Actions disponibles :
 La suppression utilise une confirmation SweetAlert. L'élève retiré n'est plus visible dans les listes actives, mais son historique reste conservé.
 
 Le transfert est séparé de l'abandon. L'abandon, l'exclusion et l'année blanche sont gérés dans le module de réinscription intelligente.
+
+Après transfert, l'élève sort des listes actives mais reste consultable dans les dossiers élèves avec le filtre `Transférés`. La fiche de transfert reprend les informations de l'élève, l'école, la destination, le motif, le travail et la conduite.
 
 La carte scolaire et le dossier élève ne sont pas affichés dans les actions de la liste, car ils disposent chacun d'un accès dédié dans le menu `Élèves & Parents`.
 
@@ -200,6 +228,7 @@ Routes utilisées :
 ```text
 GET|POST /eleves/cartes-scolaires
 POST     /eleves/cartes-scolaires/pdf
+GET      /eleves/transferts/{id}/fiche
 ```
 
 ### Dossiers élèves
@@ -752,6 +781,62 @@ Trimestrielle : 15 000
 Annuelle : 45 000
 ```
 
+### Abonnements
+
+Chemin : `Abonnements`
+
+Le module abonnement contrôle l'accès des écoles à la plateforme. La logique actuelle est en mode manuel, proche du cas Alliance.
+
+Fonctionnement côté école :
+
+- L'école choisit une offre active.
+- Elle soumet un paiement manuel avec canal de transfert, référence de transfert, numéro payeur, note éventuelle et preuve.
+- Les canaux affichés sont Orange Money, Mobile Money, MobiCash et Wave.
+- Le suivi du paiement se fait par référence.
+
+Fonctionnement côté superadmin :
+
+- Le superadmin configure les offres : nom, montant, devise, durée en jours et statut actif.
+- Le superadmin valide ou rejette les paiements soumis.
+- Une validation active ou prolonge l'abonnement de l'école.
+- Le tableau de bord superadmin permet aussi d'ajuster directement les dates d'un abonnement actif.
+
+Création d'école :
+
+- Lors de la création ou modification d'une école, le superadmin peut choisir un plan d'abonnement initial.
+- Choisir un plan ajoute une période d'abonnement pour l'école.
+
+Expiration et alertes :
+
+- Une école est notifiée une semaine avant la fin de l'abonnement.
+- La notification apparaît dans la cloche et dans un modal.
+- Si l'abonnement est expiré, l'accès fonctionnel est bloqué jusqu'au renouvellement.
+
+Routes utilisées :
+
+```text
+GET  /abonnements
+POST /abonnements/paiements/manual-submit
+POST /abonnements/paiements/{paiement}/approve
+POST /abonnements/paiements/{paiement}/reject
+POST /abonnements/offres
+PUT  /abonnements/offres/{offre}
+PATCH /abonnements/offres/{offre}/statut
+GET  /abonnements/paiements/{reference}
+```
+
+Fichiers principaux :
+
+```text
+app/Http/Controllers/AbonnementController.php
+app/Models/Abonnement.php
+app/Models/AbonnementOffre.php
+app/Models/AbonnementPaiement.php
+app/Services/Abonnements/AbonnementPaymentService.php
+resources/views/abonnements/index.blade.php
+resources/views/abonnements/paiement.blade.php
+```
+
 ### Paiements
 
 Le module finances permet de gérer :
@@ -774,6 +859,77 @@ Routes utilisées :
 ```text
 GET /finances/paiements/{id}/download
 GET /finances/paiements/{id}/thermique
+```
+
+### Appels d'épreuves
+
+Chemin : `Contrôles & Évaluations > Appels d'épreuves`
+
+Le module Appels d'épreuves remplace le besoin appelé parfois `Contrôle`. Il sert à faire l'appel des élèves pendant une épreuve, un devoir ou une composition.
+
+Accès :
+
+- Par défaut, les permissions sont données aux `Admin` et aux `enseignant`.
+- Un `Gestionnaire` peut utiliser le module si les permissions lui sont attribuées.
+- Permissions utilisées : `controle_apercu`, `controle_creation` et `controle_modification`.
+- Les enseignants ne voient que les classes et matières auxquelles ils sont affectés.
+- Les admins et gestionnaires autorisés voient les classes et matières de leur école.
+
+Préparer un appel :
+
+- L'utilisateur choisit la classe et l'année scolaire.
+- Les années scolaires globales sont acceptées.
+- L'utilisateur renseigne ensuite la matière, la période, la date, le libellé, l'heure de début et l'heure de fin.
+- Deux boutons `Enregistrer` sont disponibles : en haut et en bas de la liste.
+- Les boutons suivent dynamiquement la couleur du thème actif.
+
+Statuts de contrôle :
+
+- Les statuts sont configurés dans `Configuration > Statuts de contrôle`.
+- Chaque statut contient un libellé, une option d'alerte et une pénalité de conduite.
+- Les pénalités acceptent les décimales : `0,5`, `0.5`, `1,25`, etc.
+- Si le statut est en alerte, le parent peut être notifié.
+
+Notifications parents :
+
+- Une notification interne est envoyée dans l'espace parent si le parent est rattaché et marqué comme informé.
+- L'email est envoyé uniquement si :
+  - le statut est en alerte ;
+  - l'école autorise les notifications email ;
+  - le parent possède une adresse email ;
+  - la configuration SMTP Laravel est correcte.
+
+Historique :
+
+- Par défaut, l'historique n'affiche aucune ligne.
+- L'utilisateur doit choisir au moins un filtre : classe, matière, année ou période.
+- Le tableau affiche ensuite date, épreuve, élève, classe, année, matière, statut, pénalité, progression de conduite et notification parent.
+- La progression de conduite affiche la note avant et la note après l'appel.
+
+Conduite dynamique :
+
+- La note de conduite démarre à `18`.
+- Les pénalités configurées dans les statuts de contrôle sont déduites.
+- La note ne descend pas sous `6`.
+- La table `conduite` est synchronisée après chaque appel.
+- Le bulletin recalcule aussi la conduite depuis les appels existants afin que la ligne `Conduite` reste dynamique.
+
+Routes utilisées :
+
+```text
+GET  /appels-epreuves
+GET  /appels-epreuves/create
+POST /appels-epreuves
+```
+
+Fichiers principaux :
+
+```text
+app/Http/Controllers/AppelEpreuveController.php
+app/Models/AppelEpreuve.php
+app/Services/ConductNoteService.php
+resources/views/appels-epreuves/index.blade.php
+resources/views/appels-epreuves/create.blade.php
 ```
 
 ### Bulletins
@@ -808,6 +964,8 @@ Calcul des notes :
 - Pour Fondamentale I et les compositions mensuelles, le calcul peut utiliser les notes mensuelles.
 - Pour les bulletins trimestriels, le calcul utilise les devoirs et compositions du trimestre.
 - La conduite est liée au trimestre et n'est pas forcée dans un bulletin mensuel.
+- Si des appels d'épreuves existent pour l'élève, la classe, l'année et le trimestre, la note de conduite est recalculée dynamiquement avant l'affichage du bulletin.
+- La conduite est ajoutée comme ligne de bulletin avec coefficient `1`, sauf pour Fondamentale I et les bulletins mensuels.
 
 Liste des bulletins :
 
@@ -919,6 +1077,13 @@ Le module configuration regroupe :
 - Types de notes
 - Statuts de contrôle
 
+Configuration école :
+
+- Le superadmin peut rattacher un abonnement initial lors de la création ou modification d'une école.
+- L'école peut activer ou désactiver les notifications SMS.
+- L'école peut activer ou désactiver les notifications email parents.
+- Les notifications email parents sont utilisées notamment par les appels d'épreuves.
+
 Logo de l'école :
 
 - Le logo peut être ajouté ou remplacé lors de la création ou de la modification d'une école.
@@ -926,6 +1091,19 @@ Logo de l'école :
 - La taille maximale acceptée est de 2 Mo.
 - Un aperçu du fichier sélectionné s'affiche avant l'enregistrement.
 - Le logo enregistré peut être utilisé sur les cartes scolaires quand l'option d'affichage du logo est activée.
+
+Statuts de contrôle :
+
+- Le libellé décrit l'état observé pendant l'appel : présent, absent, retard, absence injustifiée, etc.
+- L'option `Alerte` déclenche les notifications parent.
+- La pénalité de conduite peut être décimale.
+- La configuration affiche aussi un rappel de la configuration SendEmail : canal mail et adresse expéditrice.
+
+Configuration SendEmail :
+
+- La configuration SMTP reste portée par Laravel via `.env`.
+- Les champs importants sont `MAIL_MAILER`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM_ADDRESS` et `MAIL_FROM_NAME`.
+- La fiche école contrôle seulement si les emails parents doivent être envoyés pour cette école.
 
 ## Gestion des droits
 
@@ -939,6 +1117,14 @@ Exemples :
 - Suppression
 - Export PDF
 - Paiements
+
+Permissions liées aux appels d'épreuves :
+
+- `controle_apercu`
+- `controle_creation`
+- `controle_modification`
+
+Ces permissions sont attribuées par défaut aux comptes `Admin` et `enseignant`. Elles peuvent être ajoutées manuellement aux `Gestionnaire`.
 
 ## Fichiers importants
 
@@ -956,6 +1142,8 @@ app/Http/Controllers/EleveController.php
 app/Http/Controllers/InscriptionController.php
 app/Http/Controllers/FinanceController.php
 app/Http/Controllers/BulletinController.php
+app/Http/Controllers/AppelEpreuveController.php
+app/Http/Controllers/AbonnementController.php
 app/Http/Controllers/TimetableController.php
 app/Http/Controllers/EnseignantController.php
 app/Http/Controllers/EmargementController.php
@@ -975,10 +1163,15 @@ resources/views/enseignants/show.blade.php
 resources/views/enseignants/emargements.blade.php
 resources/views/enseignants/presences.blade.php
 resources/views/enseignants/salaires.blade.php
+resources/views/appels-epreuves/index.blade.php
+resources/views/appels-epreuves/create.blade.php
+resources/views/abonnements/index.blade.php
+resources/views/abonnements/paiement.blade.php
 resources/views/dashboards/parent.blade.php
 resources/views/pedagogie/inscriptions/index.blade.php
 resources/views/finances/planifications/create.blade.php
 resources/views/pdf/eleves_liste.blade.php
+resources/views/pdf/eleve_transfert.blade.php
 resources/views/pdf/bulletin.blade.php
 resources/views/pdf/cartes_scolaires.blade.php
 resources/views/pdf/enseignants/bulletin_salaire.blade.php
@@ -1003,6 +1196,7 @@ resources/views/pdf/finances/recu_paiement_thermique.blade.php
 - Consultation des dossiers élèves
 - Accès parent au dossier de l'enfant
 - Modification et retrait d'un élève actif
+- Transfert d'élève et impression de la fiche de transfert
 - Génération des cartes scolaires
 - Création, modification, archivage et réactivation d'un enseignant
 - Profil enseignant, fiche imprimable et carte professionnelle
@@ -1018,9 +1212,12 @@ resources/views/pdf/finances/recu_paiement_thermique.blade.php
 - Gestion des parents
 - Paiement et reçu
 - Reçu thermique
+- Abonnement manuel, validation superadmin et expiration
+- Appels d'épreuves et conduite dynamique
 - Bulletin et export PDF
 - Emploi du temps
 - Gestion des utilisateurs et permissions
+- Configuration SendEmail et notifications parents
 
 ## Dépannage courant
 

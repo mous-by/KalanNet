@@ -292,8 +292,15 @@
                         </div>
                         @forelse($transferts as $transfert)
                             <div class="transfer-box mt-3">
-                                <strong>Transfert vers {{ $transfert->destination }}</strong>
-                                <div class="text-muted small">Motif : {{ $transfert->motif }} • Travail : {{ $transfert->travail ?: 'Non renseigné' }} • Conduite : {{ $transfert->conduite }}</div>
+                                <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+                                    <div>
+                                        <strong>Transfert vers {{ $transfert->destination }}</strong>
+                                        <div class="text-muted small">Motif : {{ $transfert->motif }} • Travail : {{ $transfert->travail ?: 'Non renseigné' }} • Conduite : {{ $transfert->conduite }}</div>
+                                    </div>
+                                    <a href="{{ route('eleves.transfer.fiche', $transfert->id_transfert) }}" target="_blank" class="btn btn-sm theme-outline-btn">
+                                        <i class="bi bi-file-earmark-pdf me-1"></i>Fiche PDF
+                                    </a>
+                                </div>
                             </div>
                         @empty
                             <div class="empty-note mt-3">Aucun transfert enregistré pour ce dossier.</div>

@@ -13,6 +13,11 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
             \App\Http\Middleware\EnsureSchoolSelected::class,
+            \App\Http\Middleware\EnsureActiveSubscription::class,
+            \App\Http\Middleware\UpdateLastActivity::class,
+        ]);
+        $middleware->validateCsrfTokens(except: [
+            'abonnements/webhook/*',
         ]);
         $middleware->alias([
             'permission' => \App\Http\Middleware\EnsurePermission::class,

@@ -2,32 +2,21 @@
 
 @section('content')
 <div class="container-fluid py-4">
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card theme-card shadow-sm">
-                <div class="card-header theme-header d-flex align-items-center justify-content-between flex-wrap gap-3">
-                <div class="d-flex align-items-center">
-                    <a href="{{ route('enseignants.index') }}" class="btn theme-outline-btn rounded-circle p-2 me-3">
-                        <i class="bi bi-arrow-left"></i>
-                    </a>
-                    <div>
-                        <h2 class="mb-1 fw-bold">Profil de l'Enseignant</h2>
-                        <nav aria-label="breadcrumb">
-                            <ol class="breadcrumb mb-0">
-                                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Accueil</a></li>
-                                <li class="breadcrumb-item"><a href="{{ route('enseignants.index') }}">Enseignants</a></li>
-                                <li class="breadcrumb-item active">{{ $enseignant->nom_prenom_enseignant }}</li>
-                            </ol>
-                        </nav>
-                    </div>
-                </div>
-                <div class="d-flex gap-2">
-                    <button type="button" class="btn theme-outline-btn px-4" data-bs-toggle="modal" data-bs-target="#teacherBadgeModal"><i class="bi bi-person-vcard me-2"></i>Carte professionnelle</button>
-                    <a href="{{ route('enseignants.edit', $enseignant->id_enseignant) }}" class="btn theme-outline-btn px-4"><i class="bi bi-pencil me-2"></i>Modifier</a>
-                    <button type="button" class="btn theme-action-btn px-4" onclick="printTeacherProfile()"><i class="bi bi-printer me-2"></i>Imprimer Fiche</button>
-                </div>
-                </div>
-            </div>
+    <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+        <div class="breadcrumb-title pe-3">Enseignants</div>
+        <div class="ps-3">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0 p-0">
+                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bi bi-house-door"></i></a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('enseignants.index') }}">Liste des enseignants</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ $enseignant->nom_prenom_enseignant }}</li>
+                </ol>
+            </nav>
+        </div>
+        <div class="ms-auto d-flex flex-wrap gap-2">
+            <button type="button" class="btn theme-outline-btn" data-bs-toggle="modal" data-bs-target="#teacherBadgeModal"><i class="bi bi-person-vcard me-1"></i>Carte professionnelle</button>
+            <a href="{{ route('enseignants.edit', $enseignant->id_enseignant) }}" class="btn theme-outline-btn"><i class="bi bi-pencil me-1"></i>Modifier</a>
+            <button type="button" class="btn theme-action-btn" onclick="printTeacherProfile()"><i class="bi bi-printer me-1"></i>Imprimer Fiche</button>
         </div>
     </div>
 
