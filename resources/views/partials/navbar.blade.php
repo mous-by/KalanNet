@@ -146,6 +146,7 @@
         // Update DOM
         document.documentElement.setAttribute('data-theme', themeName);
         document.documentElement.classList.remove('light-theme', 'dark-theme', 'minimal-theme', 'semi-dark');
+        localStorage.setItem('kalannet_theme', themeName);
         
         // Update current swatch in navbar
         const currentSwatch = document.getElementById('current-theme-swatch');

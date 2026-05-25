@@ -3,7 +3,8 @@
 @section('content')
     @php
         $first = $details->first();
-        $maxNote = optional($first->noteType)->codeNote === 'NT10' ? 10 : 20;
+        $maxNote = (float) ($first->noteType->valeur ?? 20);
+        $maxNote = $maxNote > 0 ? $maxNote : 20;
         $moisOptions = [1 => 'Janvier', 2 => 'Février', 3 => 'Mars', 4 => 'Avril', 5 => 'Mai', 6 => 'Juin', 9 => 'Septembre', 10 => 'Octobre', 11 => 'Novembre', 12 => 'Décembre'];
     @endphp
 
@@ -84,7 +85,7 @@
                             <tr>
                                 <th>N° matricule</th>
                                 <th>Élève</th>
-                                <th style="width: 180px;">Note / {{ $maxNote }}</th>
+                                <th style="width: 180px;">Note / {{ number_format($maxNote, 0, ',', ' ') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -96,7 +97,8 @@
                                     </td>
                                     <td class="fw-bold">{{ $line->eleve->nom_eleve ?? '' }} {{ $line->eleve->prenom_eleve ?? '' }}</td>
                                     <td>
-                                        <input type="number" name="note[]" class="form-control" min="0" max="{{ $maxNote }}" step="0.01" value="{{ old('note.'.$index, $line->note ?? 0) }}" required>
+                                        <input type="number" name="note[]" class="form-control evaluation-note-input" min="0" max="{{ $maxNote }}" step="0.01" value="{{ old('note.'.$index, $line->note ?? 0) }}" required data-max-note="{{ $maxNote }}">
+                                        <div class="invalid-feedback">La note doit être comprise entre 0 et {{ number_format($maxNote, 0, ',', ' ') }}.</div>
                                     </td>
                                 </tr>
                             @endforeach
@@ -105,9 +107,38 @@
                 </div>
                 <div class="d-flex justify-content-between mt-4">
                     <a href="{{ route('evaluations.index') }}" class="btn btn-light px-4">Retour</a>
-                    <button type="submit" class="btn btn-primary px-4">Enregistrer les notes</button>
+                    <button type="submit" class="btn btn-primary px-4" id="save-notes-button">Enregistrer les notes</button>
                 </div>
             </div>
         </div>
     </form>
 @endsection
+
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const inputs = document.querySelectorAll('.evaluation-note-input');
+            const saveButton = document.getElementById('save-notes-button');
+
+            const validateNotes = () => {
+                let hasInvalid = false;
+
+                inputs.forEach((input) => {
+                    const value = input.value === '' ? null : Number(input.value);
+                    const max = Number(input.dataset.maxNote || input.max || 20);
+                    const invalid = value !== null && (Number.isNaN(value) || value < 0 || value > max);
+
+                    input.classList.toggle('is-invalid', invalid);
+                    hasInvalid = hasInvalid || invalid;
+                });
+
+                if (saveButton) {
+                    saveButton.disabled = hasInvalid;
+                }
+            };
+
+            inputs.forEach((input) => input.addEventListener('input', validateNotes));
+            validateNotes();
+        });
+    </script>
+@endpush

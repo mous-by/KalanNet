@@ -26,6 +26,7 @@ class EvaluationController extends Controller
             ->with(['evaluation', 'classe', 'matiere', 'trimestre'])
             ->selectRaw('MIN(ligne_evaluation.id_ligneEvaluation) as id_ligneEvaluation, ligne_evaluation.id_evaluation, ligne_evaluation.id_classe, ligne_evaluation.id_matiere, ligne_evaluation.id_annee_scolaire, ligne_evaluation.id_trimestre, ligne_evaluation.mois')
             ->join('evaluation as e', 'e.id_evaluation', '=', 'ligne_evaluation.id_evaluation')
+            ->when(Auth::user()->id_enseignant, fn ($q, $teacherId) => $q->where('ligne_evaluation.id_enseignant', $teacherId))
             ->when($filters['id_classe'] ?? null, fn ($q, $value) => $q->where('ligne_evaluation.id_classe', $value))
             ->when($filters['id_matiere'] ?? null, fn ($q, $value) => $q->where('ligne_evaluation.id_matiere', $value))
             ->when($filters['id_annee_scolaire'] ?? null, fn ($q, $value) => $q->where('ligne_evaluation.id_annee_scolaire', $value))
@@ -100,6 +101,7 @@ class EvaluationController extends Controller
             ->orderBy('id_matiere')
             ->orderBy('id_eleve')
             ->get();
+        $this->authorizeEvaluationLines($details);
 
         $firstLine = $details->first();
         $matiere = $firstLine?->matiere ?? new Matiere(['nom_matiere' => 'Non renseignée']);
@@ -117,6 +119,7 @@ class EvaluationController extends Controller
             ->get();
 
         abort_if($details->isEmpty(), 404);
+        $this->authorizeEvaluationLines($details);
         $this->authorizeClasse($details->first()->classe);
 
         return view('evaluations.edit', compact('evaluation', 'details'));
@@ -131,6 +134,7 @@ class EvaluationController extends Controller
             ->get();
 
         abort_if($details->isEmpty(), 404);
+        $this->authorizeEvaluationLines($details);
         $this->authorizeClasse($details->first()->classe);
 
         return view('evaluations.programme', $this->evaluationContext() + compact('evaluation', 'details'));
@@ -142,6 +146,7 @@ class EvaluationController extends Controller
         $details = LigneEvaluation::with('classe')->where('id_evaluation', $evaluation->id_evaluation)->get();
 
         abort_if($details->isEmpty(), 404);
+        $this->authorizeEvaluationLines($details);
         $this->authorizeClasse($details->first()->classe);
 
         $data = $this->validateProgramme($request);
@@ -189,9 +194,10 @@ class EvaluationController extends Controller
         $evaluation = Evaluation::findOrFail($id);
         $details = LigneEvaluation::with(['classe', 'noteType'])->where('id_evaluation', $evaluation->id_evaluation)->get();
         abort_if($details->isEmpty(), 404);
+        $this->authorizeEvaluationLines($details);
         $this->authorizeClasse($details->first()->classe);
 
-        $maxNote = $this->maxNoteFor($details->first()->noteType?->codeNote);
+        $maxNote = $this->maxNoteFor($details->first()->noteType);
         $data = $request->validate([
             'id_ligneEvaluation' => 'required|array|min:1',
             'id_ligneEvaluation.*' => 'required|integer|exists:ligne_evaluation,id_ligneEvaluation',
@@ -214,6 +220,9 @@ class EvaluationController extends Controller
     {
         $evaluation = Evaluation::findOrFail($id);
         $firstLine = LigneEvaluation::with('classe')->where('id_evaluation', $evaluation->id_evaluation)->first();
+        if ($firstLine) {
+            $this->authorizeEvaluationLines(collect([$firstLine]));
+        }
         if ($firstLine?->classe) {
             $this->authorizeClasse($firstLine->classe);
         }
@@ -297,6 +306,7 @@ class EvaluationController extends Controller
         ]);
 
         $classe = Classe::find((int) $data['id_classe']);
+        $this->ensureTeacherCanEvaluate((int) $data['id_classe'], (int) $data['id_matiere']);
         if ($classe?->ordreEnseignement === 'fondamentale1') {
             if (empty($data['mois'])) {
                 throw ValidationException::withMessages(['mois' => 'Le mois est obligatoire pour cette classe.']);
@@ -335,6 +345,41 @@ class EvaluationController extends Controller
         }
     }
 
+    private function authorizeEvaluationLines($details): void
+    {
+        abort_if($details->isEmpty(), 404);
+
+        $user = Auth::user();
+        if (!$user->id_enseignant) {
+            return;
+        }
+
+        $belongsToTeacher = $details->every(fn (LigneEvaluation $line) => (int) $line->id_enseignant === (int) $user->id_enseignant);
+        if (!$belongsToTeacher) {
+            abort(403);
+        }
+    }
+
+    private function ensureTeacherCanEvaluate(int $classId, int $subjectId): void
+    {
+        $teacherId = Auth::user()->id_enseignant;
+        if (!$teacherId) {
+            return;
+        }
+
+        $isAssigned = DB::table('ligneclasse')
+            ->where('id_classe', $classId)
+            ->where('id_matiere', $subjectId)
+            ->where('id_enseignants', $teacherId)
+            ->exists();
+
+        if (!$isAssigned) {
+            throw ValidationException::withMessages([
+                'id_matiere' => 'Vous ne pouvez préparer ou modifier une évaluation que pour vos propres matières.',
+            ]);
+        }
+    }
+
     private function normalizeNote($value): ?float
     {
         if ($value === null || $value === '') {
@@ -344,8 +389,10 @@ class EvaluationController extends Controller
         return (float) str_replace(',', '.', (string) $value);
     }
 
-    private function maxNoteFor(?string $codeNote): int
+    private function maxNoteFor(?Note $note): float
     {
-        return $codeNote === 'NT10' ? 10 : 20;
+        $value = (float) ($note?->valeur ?? 20);
+
+        return $value > 0 ? $value : 20;
     }
 }

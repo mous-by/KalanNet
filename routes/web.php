@@ -64,6 +64,7 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/enseignants/presences/{id}', [PresenceController::class, 'destroy'])->name('enseignants.presences.destroy');
     Route::get('/enseignants/salaires', [TeacherSalaryController::class, 'index'])->name('enseignants.salaires');
     Route::get('/enseignants/salaires/etat', [TeacherSalaryController::class, 'etat'])->name('enseignants.salaires.etat');
+    Route::get('/enseignants/salaires/etat/pdf', [TeacherSalaryController::class, 'etatPdf'])->name('enseignants.salaires.etat.pdf');
     Route::get('/enseignants/salaires/bulletin', [TeacherSalaryController::class, 'bulletin'])->name('enseignants.salaires.bulletin');
     Route::post('/enseignants/salaires/paiement', [TeacherSalaryController::class, 'storePayment'])->name('enseignants.salaires.pay');
     Route::get('/enseignants/{id}', [EnseignantController::class, 'show'])->name('enseignants.show');
@@ -138,8 +139,10 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/finances/retraits/{id}/validate', [FinanceController::class, 'validateRetrait'])->name('finances.retraits.validate');
     Route::get('/finances/paiements/{id}/thermique', [FinanceController::class, 'downloadRecuThermique'])->name('finances.paiements.thermique');
     Route::get('/finances/paiements/{id}/download', [FinanceController::class, 'downloadRecu'])->name('finances.paiements.download');
+    Route::get('/pedagogie/bulletins', [BulletinController::class, 'classes'])->name('pedagogie.bulletins.classes');
     Route::get('/pedagogie/classes/{idClasse}/bulletins', [BulletinController::class, 'index'])->name('pedagogie.bulletins.index');
     Route::get('/pedagogie/classes/{idClasse}/bulletins/data', [BulletinController::class, 'data'])->name('pedagogie.bulletins.data');
+    Route::post('/pedagogie/classes/{idClasse}/bulletins/pdf', [BulletinController::class, 'downloadClassBulletins'])->name('pedagogie.bulletins.classe.pdf');
     Route::get('/pedagogie/bulletins/{id}/download', [BulletinController::class, 'downloadBulletin'])->name('pedagogie.bulletins.download');
     Route::get('/pedagogie/timetable', [TimetableController::class, 'index'])->name('pedagogie.timetable');
     Route::get('/pedagogie/timetable/download-pdf', [TimetableController::class, 'downloadPDF'])->name('pedagogie.timetable.download_pdf');

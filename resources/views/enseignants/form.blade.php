@@ -95,6 +95,13 @@
                                 <label class="form-label">Salaire</label>
                                 <input name="salaire" type="number" class="form-control" min="0" step="0.01" value="{{ old('salaire', $enseignant->salaire_enseignant) }}">
                             </div>
+                            <div class="col-md-4 private-field">
+                                <label class="form-label">Mois payés dans l'année scolaire</label>
+                                <select name="salaire_mois_mode" class="form-select">
+                                    <option value="9" @selected((int) old('salaire_mois_mode', $enseignant->salaire_mois_mode ?? 12) === 9)>9 mois sur 12</option>
+                                    <option value="12" @selected((int) old('salaire_mois_mode', $enseignant->salaire_mois_mode ?? 12) === 12)>12 mois sur 12</option>
+                                </select>
+                            </div>
                             <div class="col-md-4 cdd-field">
                                 <label class="form-label">Durée du contrat</label>
                                 <input name="duree_contrat" type="text" class="form-control" value="{{ old('duree_contrat', $enseignant->duree_contrat) }}">

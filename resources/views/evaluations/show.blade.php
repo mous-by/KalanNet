@@ -1,6 +1,12 @@
-@extends('layouts.app')
+    @extends('layouts.app')
 
-@section('content')
+    @section('content')
+    @php
+        $first = $details->first();
+        $maxNote = (float) ($first?->noteType?->valeur ?? 20);
+        $maxNote = $maxNote > 0 ? $maxNote : 20;
+        $passMark = $maxNote / 2;
+    @endphp
     <div class="row mb-4">
         <div class="col-12">
             <div class="d-flex align-items-center justify-content-between bg-card p-4 rounded-4 shadow-sm">
@@ -63,7 +69,7 @@
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
                             <h6 class="text-white-50 text-uppercase fw-bold small mb-3">Moyenne de Classe</h6>
-                            <h4 class="fw-bold mb-0">{{ number_format($details->whereNotNull('note')->avg('note') ?? 0, 2) }} / 20</h4>
+                            <h4 class="fw-bold mb-0">{{ number_format($details->whereNotNull('note')->avg('note') ?? 0, 2) }} / {{ number_format($maxNote, 0, ',', ' ') }}</h4>
                         </div>
                         <div class="widget-icon bg-white text-success rounded-3">
                             <i class="bi bi-bar-chart-line fs-4"></i>
@@ -94,21 +100,21 @@
                                 @if($line->note === null)
                                     <span class="badge rounded-pill px-3 py-2 bg-secondary-soft text-secondary" style="font-size: 1rem;">Non saisie</span>
                                 @else
-                                    <span class="badge rounded-pill px-3 py-2 {{ $line->note >= 10 ? 'bg-success-soft text-success' : 'bg-danger-soft text-danger' }}" style="font-size: 1rem;">
-                                        {{ number_format($line->note, 2) }}
+                                    <span class="badge rounded-pill px-3 py-2 {{ $line->note >= $passMark ? 'bg-success-soft text-success' : 'bg-danger-soft text-danger' }}" style="font-size: 1rem;">
+                                        {{ number_format($line->note, 2) }} / {{ number_format($maxNote, 0, ',', ' ') }}
                                     </span>
                                 @endif
                             </td>
                             <td class="px-4 text-end">
                                 @if($line->note === null)
                                     <span class="text-muted">En attente</span>
-                                @elseif($line->note >= 16)
+                                @elseif(($line->note / $maxNote) >= 0.8)
                                     <span class="text-success fw-bold">Très Bien</span>
-                                @elseif($line->note >= 14)
+                                @elseif(($line->note / $maxNote) >= 0.7)
                                     <span class="text-success">Bien</span>
-                                @elseif($line->note >= 12)
+                                @elseif(($line->note / $maxNote) >= 0.6)
                                     <span class="text-primary">Assez Bien</span>
-                                @elseif($line->note >= 10)
+                                @elseif($line->note >= $passMark)
                                     <span class="text-dark">Passable</span>
                                 @else
                                     <span class="text-danger">Insuffisant</span>

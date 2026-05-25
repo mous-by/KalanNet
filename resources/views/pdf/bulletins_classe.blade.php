@@ -2,10 +2,12 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Bulletin - {{ $apercu->nom_eleve }}</title>
+    <title>Bulletins - {{ $classe->nom_classe }}</title>
     <style>
         @page { margin: 8px; }
         body { font-family: Arial, DejaVu Sans, sans-serif; font-size: 10px; margin: 0; padding: 0; color: #000; }
+        .bulletin-page { page-break-after: always; }
+        .bulletin-page:last-child { page-break-after: auto; }
         .bulletin-container { width: 100%; }
         .header-table { width: 100%; font-size: 9px; margin-bottom: 6px; border-collapse: collapse; }
         .header-table td { vertical-align: top; width: 50%; padding: 0; }
@@ -34,6 +36,22 @@
     </style>
 </head>
 <body>
-    @include('pdf.partials.bulletin_alliance')
+@foreach($bulletins as $bulletin)
+    @php
+        $apercu = $bulletin['apercu'];
+        $ecole = $bulletin['ecole'];
+        $matieres = $bulletin['matieres'];
+        $moyenne_periode = $bulletin['moyenne_periode'];
+        $moyenne_premier = $bulletin['moyenne_premier'];
+        $note_conduite = $bulletin['note_conduite'];
+        $appreciation_conduite = $bulletin['appreciation_conduite'];
+        $rang = $bulletin['rang'];
+        $total_eleves = $bulletin['total_eleves'];
+        $ordre = $bulletin['ordre'];
+    @endphp
+    <div class="bulletin-page">
+        @include('pdf.partials.bulletin_alliance')
+    </div>
+@endforeach
 </body>
 </html>

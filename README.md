@@ -357,6 +357,367 @@ database/migrations/2026_05_21_000001_add_decision_details_to_reinscription_tabl
 
 Cette migration ajoute les champs permettant de conserver la décision proposée et le motif administratif.
 
+### Enseignants
+
+Chemin : `Enseignants`
+
+Le module enseignants couvre tout le cycle de gestion du personnel enseignant : création, fiche individuelle, carte professionnelle, affectations pédagogiques, émargements, cahier de présence, salaires, bulletin de salaire et état de paiement.
+
+#### Liste des enseignants
+
+La liste permet de consulter les enseignants de l'école active selon les droits de l'utilisateur connecté.
+
+Fonctionnement :
+
+- La liste est filtrable par recherche.
+- Les enseignants archivés ne sont plus traités comme actifs.
+- Les actions visibles dépendent des permissions.
+- Un enseignant connecté ne voit que son propre dossier.
+
+Actions disponibles selon les droits :
+
+- Créer un enseignant.
+- Voir le profil.
+- Modifier la fiche.
+- Archiver ou réactiver un enseignant.
+- Imprimer la liste des enseignants.
+
+Permissions principales :
+
+- `enseignants_creation`
+- `enseignants_modification`
+- `enseignants_archiver_ou_reactiver`
+- `enseignants_apercu`
+
+Routes utilisées :
+
+```text
+GET  /enseignants
+POST /enseignants/search
+GET  /enseignants/create
+POST /enseignants
+GET  /enseignants/{id}
+GET  /enseignants/{id}/edit
+PUT  /enseignants/{id}
+PATCH /enseignants/{id}/archive
+PATCH /enseignants/{id}/reactivate
+```
+
+#### Enregistrement d'un enseignant
+
+Le formulaire enseignant centralise les informations administratives, professionnelles et salariales.
+
+Champs principaux :
+
+- Nom et prénom.
+- Genre.
+- Email.
+- Téléphone.
+- Date et lieu de naissance.
+- Diplôme.
+- Spécialité.
+- Matricule.
+- Photo.
+- Type de contrat.
+
+Types de contrat :
+
+- `FONCTIONNAIRE` : enseignant public, salaire géré par l'État.
+- `CDI` : contrat privé avec salaire mensuel.
+- `CDD` : contrat privé avec salaire mensuel et durée de contrat.
+- `VCT` : vacataire payé selon les heures validées.
+
+Selon le type de contrat, le formulaire affiche les champs adaptés :
+
+- CDI/CDD : salaire mensuel et mode de mois payés dans l'année scolaire.
+- CDD : durée du contrat.
+- VCT : nombre d'heures et prix par heure.
+- Fonctionnaire : informations administratives publiques, service employeur, statut matrimonial, enfants et ancienneté.
+
+Mode de mois payés :
+
+- `12/12` : le salaire mensuel suit les mois de l'année scolaire, du début à la fin définis dans `Configuration > Années scolaires`.
+- `9/12` : le salaire commence au premier mois où l'enseignant a une présence ou un émargement validé dans l'année scolaire, puis suit les mois suivants sans dépasser la fin de l'année scolaire.
+
+Migration associée :
+
+```text
+database/migrations/2026_05_24_000001_add_salary_months_mode_to_enseignants_table.php
+```
+
+Cette migration ajoute `salaire_mois_mode` sur la table `enseignants`.
+
+#### Profil enseignant
+
+Le profil enseignant regroupe toutes les informations utiles sur une seule page.
+
+Contenu du profil :
+
+- Identité.
+- Coordonnées.
+- Informations personnelles et professionnelles.
+- Classes et matières affectées.
+- Bulletin du mois.
+- Émargements récents.
+- Progression du programme.
+- Présences récentes.
+
+Le bouton `Imprimer Fiche` génère une fiche A4 imprimable propre, sans menus ni boutons de l'application.
+
+#### Carte professionnelle enseignant
+
+Depuis le profil enseignant, le bouton `Carte professionnelle` ouvre une carte verticale inspirée du modèle vertical des cartes scolaires.
+
+Contenu de la carte :
+
+- Drapeau du Mali.
+- République du Mali.
+- Devise nationale.
+- Ministère de l'Éducation Nationale.
+- Académie de l'école.
+- CAP de l'école.
+- Nom de l'école.
+- Titre `Carte professionnelle`.
+- Photo de l'enseignant.
+- Nom de l'enseignant.
+- Matricule.
+- Contrat.
+- Spécialité.
+- Téléphone.
+- Statut.
+- Zone de signature de l'administration.
+
+La carte ne contient pas l'année scolaire. Le bouton `Imprimer` du modal imprime uniquement la carte professionnelle, pas toute la fiche enseignant.
+
+#### Émargements
+
+Chemin : `Enseignants > Émargements`
+
+L'émargement concerne par défaut les écoles de Fondamentale II, secondaire général et secondaire technique. Il peut aussi fonctionner pour une autre école si les permissions correspondantes sont données.
+
+Fonctionnement :
+
+- L'utilisateur filtre par enseignant, classe, matière, date, année scolaire et statut.
+- Un enseignant connecté ne peut émarger que sur ses propres affectations.
+- Un émargement validé ne peut plus être modifié.
+- Un émargement validé ne peut pas être supprimé.
+- Les heures validées servent au calcul des salaires VCT et à l'éligibilité des salaires mensuels liés à l'activité.
+
+Données d'un émargement :
+
+- Enseignant.
+- Classe.
+- Matière.
+- Leçon.
+- Trimestre.
+- Date d'émargement.
+- Nombre d'heures.
+- Statut validé ou en attente.
+
+Routes utilisées :
+
+```text
+GET    /enseignants/emargements
+POST   /enseignants/emargements/filter
+POST   /enseignants/emargements
+PUT    /enseignants/emargements/{id}
+PATCH  /enseignants/emargements/{id}/validate
+DELETE /enseignants/emargements/{id}
+```
+
+#### Cahier de présence
+
+Chemin : `Enseignants > Présences`
+
+Le cahier de présence concerne par défaut le Fondamental I. Il peut aussi fonctionner pour une autre école si les permissions correspondantes sont données.
+
+Fonctionnement :
+
+- L'utilisateur filtre par enseignant, classe, dates, année scolaire et statut.
+- Une présence peut contenir une ou plusieurs leçons.
+- Une présence validée ne peut plus être modifiée.
+- Une présence validée ne peut pas être supprimée.
+- Les heures validées servent au calcul des salaires VCT et à l'éligibilité des salaires mensuels liés à l'activité.
+
+Données d'une présence :
+
+- Enseignant.
+- Classe.
+- Trimestre.
+- Date de présence.
+- Leçons associées.
+- Nombre d'heures.
+- Statut validé ou en attente.
+
+Routes utilisées :
+
+```text
+GET    /enseignants/presences
+POST   /enseignants/presences/filter
+POST   /enseignants/presences
+PUT    /enseignants/presences/{id}
+PATCH  /enseignants/presences/{id}/validate
+DELETE /enseignants/presences/{id}
+```
+
+#### Règle de choix entre présence et émargement
+
+Le module salaire utilise une source d'activité :
+
+- `presence` : cahier de présence.
+- `emargement` : émargements.
+
+Source par défaut :
+
+- Fondamental I : cahier de présence.
+- Fondamental II, secondaire, technique : émargement.
+
+Exception :
+
+Si une école reçoit explicitement une permission sur l'autre source, l'application doit l'autoriser. Exemple : une école hors Fondamental I peut utiliser le cahier de présence si elle a les permissions de présence.
+
+Permissions liées :
+
+- `presence_paiement enseignant`
+- `presence_paiement_enseignant`
+- `emargement_paiement enseignant`
+- `emargement_paiement_enseignant`
+- `presence_etat de payement`
+- `presence_etat_de_payement`
+- `emargement_etat de payement`
+- `emargement_etat_de_payement`
+- `paiements_faire`
+
+#### Salaires enseignants
+
+Chemin : `Enseignants > Salaires`
+
+Le module salaire gère les enseignants payables par l'école : CDI, CDD et VCT. Les fonctionnaires sont exclus du paiement école, car leur salaire est géré par l'État.
+
+Modes de calcul :
+
+- CDI/CDD : salaire mensuel défini dans la fiche enseignant.
+- VCT : heures validées x prix de l'heure.
+
+Règles d'année scolaire :
+
+- Les mois proposés doivent appartenir à l'année scolaire sélectionnée.
+- L'année scolaire est définie par `date_debut` et `date_fin`.
+- Pour `12/12`, le calcul commence au début de l'année scolaire.
+- Pour `9/12`, le calcul commence au premier mois où l'enseignant a commencé à faire une présence ou un émargement validé.
+- Le système ne propose pas de salaire hors de la période de l'année scolaire.
+
+Paiement individuel :
+
+- L'utilisateur choisit un mois, une année, une source et éventuellement un enseignant.
+- Pour chaque enseignant, il saisit le montant à verser et la date.
+- Le montant saisi ne peut pas dépasser le reste à payer.
+- Un versement partiel est autorisé.
+- Le statut devient `Partiel` si une partie seulement est payée.
+- Le statut devient `Payé` lorsque le reste à payer est nul.
+
+Paiement groupé des arriérés :
+
+- L'interface groupe les mois par enseignant afin d'éviter les répétitions difficiles à lire.
+- L'utilisateur saisit uniquement les montants à payer maintenant.
+- Les lignes à `0` sont ignorées.
+- Plusieurs enseignants peuvent être payés dans une même opération.
+- Plusieurs mois peuvent être régularisés dans une même opération.
+- Il n'est pas obligatoire de payer tout le dû : les paiements partiels restent possibles.
+
+Décaissement :
+
+- Un paiement de salaire est un décaissement.
+- À chaque versement validé, le système crée une ligne de décaissement.
+- Le montant est retiré de la caisse active de l'école.
+- Si aucune caisse active n'existe, le paiement est refusé.
+- Si le solde de caisse est insuffisant, le paiement est refusé.
+
+Référence de salaire :
+
+```text
+SAL-{TYPE}-{ANNEE}-{MOIS}-{ID_ENSEIGNANT}
+```
+
+Exemples :
+
+- `SAL-MENSUEL-2026-04-6`
+- `SAL-EMARGEMENT-2026-04-6`
+- `SAL-PRESENCE-2026-04-6`
+
+Routes utilisées :
+
+```text
+GET  /enseignants/salaires
+POST /enseignants/salaires/paiement
+```
+
+#### État de paiement des enseignants
+
+Chemin : `Enseignants > Salaires > État`
+
+L'état de paiement n'est pas un bulletin individuel. C'est un document de décision, comparable à un mandat de paiement.
+
+Objectif :
+
+- Afficher tous les enseignants concernés par le mois sélectionné.
+- Voir le salaire dû, déjà versé et le reste à payer.
+- Permettre au décideur de savoir combien décaisser de la caisse.
+- Générer un PDF de mandat de paiement.
+
+Le PDF d'état de paiement est distinct du bulletin de salaire.
+
+Routes utilisées :
+
+```text
+GET /enseignants/salaires/etat
+GET /enseignants/salaires/etat/pdf
+```
+
+Vue PDF :
+
+```text
+resources/views/pdf/enseignants/etat_salaires.blade.php
+```
+
+#### Bulletin de salaire enseignant
+
+Le bulletin de salaire est individuel. Il est disponible :
+
+- Depuis l'état de paiement.
+- Depuis le profil enseignant, dans l'onglet `Bulletin du mois`.
+
+Format :
+
+- PDF A5 portrait.
+- Présentation de type vrai bulletin de salaire.
+- En-tête école.
+- Période.
+- Identité de l'enseignant.
+- Contrat.
+- Base de calcul.
+- Montant brut.
+- Déjà versé.
+- Net à payer.
+- Signatures.
+
+Accès enseignant :
+
+- Un enseignant connecté peut accéder à son propre bulletin depuis son profil.
+- Il ne peut pas accéder au bulletin d'un autre enseignant s'il n'a pas les permissions de gestion des salaires.
+
+Route utilisée :
+
+```text
+GET /enseignants/salaires/bulletin
+```
+
+Vue PDF :
+
+```text
+resources/views/pdf/enseignants/bulletin_salaire.blade.php
+```
+
 ### Planifications financières
 
 Chemin : `Finances > Planification`
@@ -417,18 +778,102 @@ GET /finances/paiements/{id}/thermique
 
 ### Bulletins
 
-Les bulletins utilisent un gabarit PDF institutionnel avec :
+Chemin : `Évaluations > Générer Bulletins`
 
-- En-tête école / académie / CAP
-- République du Mali
-- Classe
-- Année scolaire
-- Notes
-- Moyenne
-- Rang
-- Signatures
+Le module bulletins permet de générer les bulletins des élèves par classe, avec un fonctionnement inspiré du modèle Alliance.
 
-Ce gabarit sert de référence visuelle pour les autres PDF scolaires.
+Fonctionnement général :
+
+- L'utilisateur ouvre `Générer Bulletins`.
+- Le système affiche la liste des classes accessibles à l'utilisateur connecté.
+- L'utilisateur choisit une classe avec le bouton `Générer`.
+- Il choisit ensuite l'année scolaire.
+- Il choisit le mode du bulletin : `Trimestriel` ou `Composition mensuelle`.
+- Fondamentale I est positionnée en composition mensuelle par défaut.
+- Les autres ordres d'enseignement peuvent aussi utiliser la composition mensuelle si l'école fonctionne ainsi.
+- Le système charge les élèves ayant des notes pour l'année et la période choisies.
+- Un spinner s'affiche pendant le chargement du filtre.
+
+Modes de période :
+
+- `Trimestriel` : le bulletin est calculé sur le trimestre sélectionné.
+- `Composition mensuelle` : le bulletin est calculé sur le mois sélectionné.
+- Si un mois est envoyé, le titre PDF devient `Composition du mois ...`, quel que soit l'ordre d'enseignement.
+- Si un trimestre est envoyé, le titre PDF devient `Bulletin du ...`.
+
+Calcul des notes :
+
+- Le bulletin accepte les types de notes modernes de KalanNet : `devoir`, `composition`, `NT10`.
+- Il reste compatible avec les anciens codes Alliance : `dv`, `cp`, `NT10`.
+- Pour Fondamentale I et les compositions mensuelles, le calcul peut utiliser les notes mensuelles.
+- Pour les bulletins trimestriels, le calcul utilise les devoirs et compositions du trimestre.
+- La conduite est liée au trimestre et n'est pas forcée dans un bulletin mensuel.
+
+Liste des bulletins :
+
+- Le tableau affiche les élèves ayant une moyenne calculable pour la période.
+- L'utilisateur peut cocher un ou plusieurs élèves.
+- La case d'en-tête permet de tout sélectionner.
+- Le bouton `Imprimer la sélection` génère uniquement les bulletins cochés.
+- Le bouton `Toute la classe` génère tous les bulletins disponibles pour la période.
+- Un compteur affiche le nombre de bulletins sélectionnés.
+- Une flèche `Retour` couleur thème permet de revenir à la liste des classes.
+
+Génération PDF :
+
+- L'impression individuelle ouvre le PDF dans le navigateur.
+- L'impression groupée ouvre un onglet d'attente avec spinner pendant la génération.
+- Le PDF remplace automatiquement l'onglet d'attente quand il est prêt.
+- En impression groupée, chaque élève occupe une page.
+- Le format utilisé est A5 portrait.
+
+Gabarit PDF :
+
+Le bulletin reprend la disposition Alliance :
+
+- Ministère de l'Éducation Nationale.
+- Académie d'Enseignement.
+- CAP.
+- République du Mali et devise nationale.
+- Logo de l'école.
+- Nom de l'école ou nom du complexe selon la configuration.
+- Téléphone de l'école.
+- Titre de période.
+- Bloc identité élève avec double bordure.
+- Tableau des matières, notes, coefficients, moyennes et appréciations.
+- Moyenne de l'élève.
+- Rang.
+- Moyenne du premier.
+- Zone `Avis du Directeur Général`.
+- Zone `Le Tuteur`.
+
+Les libellés Académie et CAP sont nettoyés à l'affichage pour éviter les répétitions du type :
+
+- `Académie d'Enseignement de ACADEMIE DE KAYES`
+- `CAP de CAP KAYES RIVE GAUCHE`
+
+Routes utilisées :
+
+```text
+GET  /pedagogie/bulletins
+GET  /pedagogie/classes/{idClasse}/bulletins
+GET  /pedagogie/classes/{idClasse}/bulletins/data
+POST /pedagogie/classes/{idClasse}/bulletins/pdf
+GET  /pedagogie/bulletins/{id}/download
+```
+
+Fichiers principaux :
+
+```text
+app/Http/Controllers/BulletinController.php
+resources/views/bulletins/classes.blade.php
+resources/views/bulletins/index.blade.php
+resources/views/pdf/bulletin.blade.php
+resources/views/pdf/bulletins_classe.blade.php
+resources/views/pdf/partials/bulletin_alliance.blade.php
+```
+
+Ce gabarit sert aussi de référence visuelle pour les autres PDF scolaires.
 
 ### Emploi du temps
 
@@ -512,6 +957,10 @@ app/Http/Controllers/InscriptionController.php
 app/Http/Controllers/FinanceController.php
 app/Http/Controllers/BulletinController.php
 app/Http/Controllers/TimetableController.php
+app/Http/Controllers/EnseignantController.php
+app/Http/Controllers/EmargementController.php
+app/Http/Controllers/PresenceController.php
+app/Http/Controllers/TeacherSalaryController.php
 ```
 
 Vues principales :
@@ -520,12 +969,20 @@ Vues principales :
 resources/views/eleves/index.blade.php
 resources/views/eleves/dossiers.blade.php
 resources/views/eleves/show.blade.php
+resources/views/enseignants/index.blade.php
+resources/views/enseignants/form.blade.php
+resources/views/enseignants/show.blade.php
+resources/views/enseignants/emargements.blade.php
+resources/views/enseignants/presences.blade.php
+resources/views/enseignants/salaires.blade.php
 resources/views/dashboards/parent.blade.php
 resources/views/pedagogie/inscriptions/index.blade.php
 resources/views/finances/planifications/create.blade.php
 resources/views/pdf/eleves_liste.blade.php
 resources/views/pdf/bulletin.blade.php
 resources/views/pdf/cartes_scolaires.blade.php
+resources/views/pdf/enseignants/bulletin_salaire.blade.php
+resources/views/pdf/enseignants/etat_salaires.blade.php
 resources/views/pdf/finances/recu_paiement_thermique.blade.php
 ```
 
@@ -547,6 +1004,14 @@ resources/views/pdf/finances/recu_paiement_thermique.blade.php
 - Accès parent au dossier de l'enfant
 - Modification et retrait d'un élève actif
 - Génération des cartes scolaires
+- Création, modification, archivage et réactivation d'un enseignant
+- Profil enseignant, fiche imprimable et carte professionnelle
+- Émargements enseignants
+- Cahier de présence enseignants
+- Paiement individuel d'un salaire enseignant
+- Paiement groupé des arriérés enseignants
+- État de paiement des enseignants et PDF de mandat
+- Bulletin de salaire enseignant au format A5
 - Impression PDF de toute une liste
 - Impression PDF d'une sélection d'élèves
 - Export Excel d'une liste

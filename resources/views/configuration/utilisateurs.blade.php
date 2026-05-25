@@ -36,7 +36,17 @@
         ],
     ];
 
-    $visibleTabs = collect($tabs)->filter(fn ($tab) => $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission($tab['permission']));
+    $visibleTabs = collect($tabs)->filter(function ($tab, $key) use ($connectedUser) {
+        if ($connectedUser->droit === 'SupAdmin') {
+            return true;
+        }
+
+        if ($connectedUser->droit === 'Admin') {
+            return in_array($key, ['administrateurs', 'enseignants', 'parents'], true);
+        }
+
+        return $connectedUser->userHasPermission($tab['permission']);
+    });
     if ($visibleTabs->isEmpty()) {
         $visibleTabs = collect(['administrateurs' => $tabs['administrateurs']]);
     }

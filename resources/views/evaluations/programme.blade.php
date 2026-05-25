@@ -77,7 +77,7 @@
                         <select name="id_note" class="form-select" required>
                             <option value="">Choisir...</option>
                             @foreach($notes as $note)
-                                <option value="{{ $note->id_note }}" @selected(old('id_note', $first->id_note) == $note->id_note)>{{ $note->typeNote }}</option>
+                                <option value="{{ $note->id_note }}" @selected(old('id_note', $first->id_note) == $note->id_note)>{{ $note->typeNote }} / {{ number_format($note->valeur, 0, ',', ' ') }}</option>
                             @endforeach
                         </select>
                     </div>

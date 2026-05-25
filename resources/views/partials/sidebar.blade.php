@@ -168,7 +168,7 @@
             </a>
             <ul>
                 <li><a href="{{ route('evaluations.index') }}"><i class="bi bi-circle"></i>Notes & Évaluations</a></li>
-                <li><a href="{{ route('evaluations.index') }}"><i class="bi bi-circle"></i>Générer Bulletins</a></li>
+                <li><a href="{{ route('pedagogie.bulletins.classes') }}"><i class="bi bi-circle"></i>Générer Bulletins</a></li>
             </ul>
         </li>
         @endif

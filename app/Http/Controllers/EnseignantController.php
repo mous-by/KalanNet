@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Enseignant;
 use App\Models\LigneClasse;
+use App\Models\Salaire;
+use App\Models\AnneeScolaire;
+use Illuminate\Support\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -73,7 +76,8 @@ class EnseignantController extends Controller
     public function show($id)
     {
         $enseignant = Enseignant::with([
-            'ecole',
+            'ecole.academieRef',
+            'ecole.capRef',
             'emargements.classe',
             'emargements.matiere',
             'emargements.trimestre',
@@ -121,6 +125,7 @@ class EnseignantController extends Controller
             'prix_heure' => (float) ($enseignant->prix_heure ?? 0),
             'montant' => $enseignant->type_contrat_enseignant === 'VCT' ? $validatedHours * (float) ($enseignant->prix_heure ?? 0) : 0,
         ];
+        $monthlyBulletin = $this->monthlySalaryBulletin($enseignant);
 
         return view('enseignants.show', compact(
             'enseignant',
@@ -130,7 +135,8 @@ class EnseignantController extends Controller
             'recentPresences',
             'presenceStats',
             'programmeProgress',
-            'vctPayment'
+            'vctPayment',
+            'monthlyBulletin'
         ));
     }
 
@@ -209,6 +215,7 @@ class EnseignantController extends Controller
             'diplome' => 'required|string|max:100',
             'type_contrat' => 'required|string|in:' . $contratsAutorises,
             'salaire' => 'nullable|numeric|min:0',
+            'salaire_mois_mode' => 'nullable|integer|in:9,12',
             'duree_contrat' => 'nullable|string|max:100',
             'nombre_heure' => 'nullable|numeric|min:0',
             'prix_heure' => 'nullable|numeric|min:0',
@@ -277,6 +284,130 @@ class EnseignantController extends Controller
         });
     }
 
+    private function monthlySalaryBulletin(Enseignant $enseignant): array
+    {
+        $date = now()->startOfMonth();
+        $month = $date->format('m');
+        $year = $date->format('Y');
+        $contract = strtoupper((string) $enseignant->type_contrat_enseignant);
+        $source = $this->defaultSalarySource($enseignant);
+        $paymentType = $contract === 'VCT' ? $source : 'mensuel';
+        $reference = 'SAL-' . strtoupper($paymentType) . '-' . $year . '-' . $month . '-' . $enseignant->id_enseignant;
+        $periodStart = $date->copy()->startOfDay();
+        $periodEnd = $date->copy()->endOfMonth()->endOfDay();
+        $hours = 0.0;
+
+        if ($contract === 'VCT' && $source === 'presence') {
+            $hours = (float) $enseignant->presences()
+                ->where('valide', 1)
+                ->whereBetween('date_presence', [$periodStart, $periodEnd])
+                ->sum('nombre_heure');
+        } elseif ($contract === 'VCT') {
+            $hours = (float) $enseignant->emargements()
+                ->where('valide', 1)
+                ->whereBetween('date_emargement', [$periodStart, $periodEnd])
+                ->sum('nombre_heure');
+        }
+
+        $amountDue = $contract === 'VCT'
+            ? $hours * (float) ($enseignant->prix_heure ?? 0)
+            : $this->monthlyFixedSalaryDue($enseignant, $source, $periodStart, (float) ($enseignant->salaire_enseignant ?? 0));
+
+        $salary = Salaire::with('lignes')
+            ->where('reference', $reference)
+            ->first();
+        $paid = (float) ($salary?->lignes->sum('montant_verse') ?? 0);
+        $remaining = max($amountDue - $paid, 0);
+
+        return [
+            'managed_by_school' => in_array($contract, ['CDI', 'CDD', 'VCT'], true),
+            'month' => $month,
+            'year' => $year,
+            'source' => $source,
+            'label' => Carbon::create((int) $year, (int) $month, 1)->locale('fr')->translatedFormat('F Y'),
+            'hours' => $hours,
+            'amount_due' => $amountDue,
+            'paid' => $paid,
+            'remaining' => $remaining,
+            'status' => $remaining <= 0 && $amountDue > 0 ? 'Payé' : ($paid > 0 ? 'Partiel' : 'À payer'),
+            'reference' => $reference,
+            'salary' => $salary,
+        ];
+    }
+
+    private function defaultSalarySource(Enseignant $enseignant): string
+    {
+        $type = str($enseignant->ecole?->typeEcole ?? '')->lower()->ascii()->toString();
+
+        return str_contains($type, 'fondamentale i') && !str_contains($type, 'fondamentale ii')
+            ? 'presence'
+            : 'emargement';
+    }
+
+    private function monthlyFixedSalaryDue(Enseignant $enseignant, string $source, Carbon $monthStart, float $monthlySalary): float
+    {
+        $annee = AnneeScolaire::withoutGlobalScopes()
+            ->where(function ($query) use ($enseignant) {
+                $query->where('id_ecole', $enseignant->id_ecole)->orWhereNull('id_ecole');
+            })
+            ->where('date_debut', '<=', $monthStart->toDateString())
+            ->where('date_fin', '>=', $monthStart->toDateString())
+            ->orderByRaw('id_ecole IS NULL')
+            ->orderByDesc('id_anneeScolaire')
+            ->first();
+
+        if (!$annee || !$this->teacherHasSalaryActivity($enseignant, $source, $annee)) {
+            return 0.0;
+        }
+
+        $monthsCount = (int) ($enseignant->salaire_mois_mode ?: 12);
+        $monthsCount = in_array($monthsCount, [9, 12], true) ? $monthsCount : 12;
+        $academicStart = Carbon::parse($annee->date_debut ?: now()->startOfYear())->startOfMonth();
+        $start = $monthsCount === 9
+            ? $this->firstSalaryActivityMonth($enseignant, $source, $annee)
+            : $academicStart;
+
+        if (!$start) {
+            return 0.0;
+        }
+
+        if ($start->lt($academicStart)) {
+            $start = $academicStart;
+        }
+
+        $end = Carbon::parse($annee->date_fin ?: $start->copy()->addMonthsNoOverflow(11))->startOfMonth();
+
+        $allowed = collect(range(0, $monthsCount - 1))
+            ->map(fn (int $offset) => $start->copy()->addMonthsNoOverflow($offset)->startOfMonth())
+            ->filter(fn (Carbon $date) => $date->lte($end))
+            ->map(fn (Carbon $date) => $date->format('Y-m'))
+            ->contains($monthStart->format('Y-m'));
+
+        return $allowed ? $monthlySalary : 0.0;
+    }
+
+    private function firstSalaryActivityMonth(Enseignant $enseignant, string $source, AnneeScolaire $annee): ?Carbon
+    {
+        $relation = $source === 'presence' ? $enseignant->presences() : $enseignant->emargements();
+        $dateColumn = $source === 'presence' ? 'date_presence' : 'date_emargement';
+        $date = $relation
+            ->where('valide', 1)
+            ->where('id_anneeScolaire', $annee->id_anneeScolaire)
+            ->min($dateColumn);
+
+        return $date ? Carbon::parse($date)->startOfMonth() : null;
+    }
+
+    private function teacherHasSalaryActivity(Enseignant $enseignant, string $source, AnneeScolaire $annee): bool
+    {
+        $relation = $source === 'presence' ? $enseignant->presences() : $enseignant->emargements();
+
+        return $relation
+            ->where('valide', 1)
+            ->where('id_anneeScolaire', $annee->id_anneeScolaire)
+            ->exists();
+    }
+
     private function mapFields(array $data): array
     {
         $isPublic = $data['type_contrat'] === 'FONCTIONNAIRE';
@@ -293,6 +424,7 @@ class EnseignantController extends Controller
             'type_contrat_enseignant' => $data['type_contrat'],
             'matricule' => $data['matricule'],
             'salaire_enseignant' => $isSalariedPrivateContract ? ($data['salaire'] ?? null) : null,
+            'salaire_mois_mode' => $isSalariedPrivateContract ? (int) ($data['salaire_mois_mode'] ?? 12) : null,
             'duree_contrat' => (!$isPublic && $data['type_contrat'] === 'CDD') ? ($data['duree_contrat'] ?? null) : null,
             'nombre_heure' => (!$isPublic && $data['type_contrat'] === 'VCT') ? ($data['nombre_heure'] ?? null) : null,
             'prix_heure' => (!$isPublic && $data['type_contrat'] === 'VCT') ? ($data['prix_heure'] ?? null) : null,

@@ -21,6 +21,7 @@ class Enseignant extends Model
         'lieu_naissance_enseignant',
         'diplome_enseignant',
         'salaire_enseignant',
+        'salaire_mois_mode',
         'type_contrat_enseignant',
         'matricule',
         'avatar_enseignant',

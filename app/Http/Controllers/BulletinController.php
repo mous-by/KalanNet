@@ -13,6 +13,22 @@ use Illuminate\Support\Facades\DB;
 
 class BulletinController extends Controller
 {
+    public function classes()
+    {
+        $user = auth()->user();
+        $idEcole = session('idEcole') ?: $user->idEcole;
+
+        $classes = Classe::query()
+            ->with(['ecole', 'classeOfficielle'])
+            ->withCount(['eleves' => fn ($query) => $query->where('etat_dossier', 0)])
+            ->when($user->droit !== 'SupAdmin', fn ($query) => $query->where('idEcole', $idEcole))
+            ->orderBy('ordreEnseignement')
+            ->orderBy('nom_classe')
+            ->get();
+
+        return view('bulletins.classes', compact('classes'));
+    }
+
     public function index(int $idClasse)
     {
         $classe = Classe::findOrFail($idClasse);
@@ -37,8 +53,8 @@ class BulletinController extends Controller
             'mois' => 'nullable|integer|between:1,12',
         ]);
 
-        $periode = $classe->ordreEnseignement === 'fondamentale1'
-            ? ['column' => 'mois', 'value' => $data['mois'] ?? null]
+        $periode = !empty($data['mois'])
+            ? ['column' => 'mois', 'value' => $data['mois']]
             : ['column' => 'id_trimestre', 'value' => $data['id_trimestre'] ?? null];
 
         if (!$periode['value']) {
@@ -116,7 +132,87 @@ class BulletinController extends Controller
         $pdf = Pdf::loadView('pdf.bulletin', $data);
         $pdf->setPaper('A5', 'portrait');
         
-        return $pdf->download('Bulletin_' . ($data['apercu']->nom_eleve ?? 'Eleve') . '.pdf');
+        return $pdf->stream('Bulletin_' . ($data['apercu']->nom_eleve ?? 'Eleve') . '.pdf');
+    }
+
+    public function downloadClassBulletins(int $idClasse, Request $request)
+    {
+        $classe = Classe::findOrFail($idClasse);
+        $this->authorizeClasse($classe);
+
+        $data = $request->validate([
+            'id_annee' => 'required|integer|exists:anneescolaire,id_anneeScolaire',
+            'id_trimestre' => 'nullable|integer|exists:trimestre,id_trimestre',
+            'mois' => 'nullable|integer|between:1,12',
+            'ids' => 'nullable|string',
+            'eleves' => 'nullable|array',
+            'eleves.*' => 'integer|exists:eleve,id_eleve',
+        ]);
+
+        $periode = !empty($data['mois'])
+            ? ['column' => 'mois', 'value' => $data['mois']]
+            : ['column' => 'id_trimestre', 'value' => $data['id_trimestre'] ?? null];
+
+        if (!$periode['value']) {
+            return back()->with('error', "Sélectionnez l'année scolaire et la période avant d'imprimer.");
+        }
+
+        $selectedIds = collect($data['eleves'] ?? []);
+        if (!empty($data['ids'])) {
+            $decodedIds = json_decode($data['ids'], true);
+            if (is_array($decodedIds)) {
+                $selectedIds = collect($decodedIds);
+            }
+        }
+
+        $selectedIds = $selectedIds
+            ->filter(fn ($id) => is_numeric($id))
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        $studentQuery = Eleve::query()
+            ->where('id_classe', $classe->id_classe)
+            ->where('id_annee', $data['id_annee'])
+            ->where('etat_dossier', 0)
+            ->orderBy('nom_eleve')
+            ->orderBy('prenom_eleve');
+
+        if ($selectedIds->isNotEmpty()) {
+            $studentQuery->whereIn('id_eleve', $selectedIds);
+        }
+
+        $bulletins = $studentQuery
+            ->pluck('id_eleve')
+            ->map(fn ($idEleve) => $this->getBulletinData(
+                $idEleve,
+                (int) $data['id_annee'],
+                $periode['column'] === 'id_trimestre' ? $periode['value'] : null,
+                $periode['column'] === 'mois' ? $periode['value'] : null
+            ))
+            ->filter()
+            ->values();
+
+        if ($bulletins->isEmpty()) {
+            return back()->with('error', "Aucun bulletin disponible pour cette sélection.");
+        }
+
+        $annee = AnneeScolaire::find($data['id_annee']);
+        $periodeLabel = $periode['column'] === 'mois'
+            ? ($this->moisOptions()[(int) $periode['value']] ?? 'Mois sélectionné')
+            : (Trimestre::find($periode['value'])->nom_trimestre ?? 'Période sélectionnée');
+
+        $pdf = Pdf::loadView('pdf.bulletins_classe', [
+            'bulletins' => $bulletins,
+            'classe' => $classe,
+            'annee' => $annee,
+            'periodeLabel' => $periodeLabel,
+        ]);
+        $pdf->setPaper('A5', 'portrait');
+
+        $fileName = 'Bulletins_' . str_replace(' ', '_', $classe->nom_classe) . '_' . str_replace(' ', '_', $periodeLabel) . '.pdf';
+
+        return $pdf->stream($fileName);
     }
 
     private function getBulletinData($id, $id_annee, $id_trimestre = null, $mois = null, bool $withRank = true)
@@ -128,12 +224,12 @@ class BulletinController extends Controller
         $ordre = $classe->ordreEnseignement;
         $ecole = Ecole::findOrFail($classe->idEcole);
 
-        $periode_col = ($ordre === "fondamentale1") ? "mois" : "id_trimestre";
-        $periode_val = ($ordre === "fondamentale1") ? $mois : $id_trimestre;
+        $periode_col = $mois ? "mois" : "id_trimestre";
+        $periode_val = $mois ?: $id_trimestre;
 
         // 2. Conduite
         $note_conduite = null;
-        if ($ordre !== "fondamentale1") {
+        if ($ordre !== "fondamentale1" && !$mois) {
             $conduite = DB::table('conduite')
                 ->where('id_eleve', $id)
                 ->where('id_classe', $classe->id_classe)
@@ -157,7 +253,7 @@ class BulletinController extends Controller
 
         if (!$apercu) return null;
 
-        if ($ordre === "fondamentale1") {
+        if ($mois) {
             $moisNoms = $this->moisOptions();
             $apercu->mois_nom = $moisNoms[intval($mois)] ?? 'Inconnu';
         }
@@ -174,7 +270,10 @@ class BulletinController extends Controller
                 ->join('note as n', 'le.id_note', '=', 'n.id_note')
                 ->where('le.id_eleve', $id)
                 ->where('le.id_matiere', $matiere->id_matiere)
-                ->where('n.codeNote', 'dv')
+                ->where(function ($query) {
+                    $query->where('n.typeNote', 'devoir')
+                        ->orWhereIn('n.codeNote', ['dv', 'devoir']);
+                })
                 ->where('le.' . $periode_col, $periode_val)
                 ->where('le.id_annee_scolaire', $id_annee)
                 ->avg('le.note') ?? 0;
@@ -183,7 +282,10 @@ class BulletinController extends Controller
                 ->join('note as n', 'le.id_note', '=', 'n.id_note')
                 ->where('le.id_eleve', $id)
                 ->where('le.id_matiere', $matiere->id_matiere)
-                ->where('n.codeNote', 'cp')
+                ->where(function ($query) {
+                    $query->where('n.typeNote', 'composition')
+                        ->orWhereIn('n.codeNote', ['cp', 'composition']);
+                })
                 ->where('le.' . $periode_col, $periode_val)
                 ->where('le.id_annee_scolaire', $id_annee)
                 ->value('le.note') ?? 0) * 2;
@@ -192,7 +294,10 @@ class BulletinController extends Controller
                 ->join('note as n', 'le.id_note', '=', 'n.id_note')
                 ->where('le.id_eleve', $id)
                 ->where('le.id_matiere', $matiere->id_matiere)
-                ->where('n.codeNote', 'NT10')
+                ->where(function ($query) {
+                    $query->where('n.typeNote', 'NT10')
+                        ->orWhere('n.codeNote', 'NT10');
+                })
                 ->where('le.' . $periode_col, $periode_val)
                 ->where('le.id_annee_scolaire', $id_annee)
                 ->avg('le.note') ?? 0;

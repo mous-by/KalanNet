@@ -14,7 +14,9 @@ class AuthController extends Controller
         if (Auth::check()) {
             return redirect()->route('dashboard');
         }
-        return view('auth.login');
+        return view('auth.login', [
+            'selected_theme' => request()->query('theme'),
+        ]);
     }
 
     public function login(Request $request)
@@ -22,6 +24,7 @@ class AuthController extends Controller
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'pwd' => ['required'],
+            'theme_preference' => ['nullable', 'string', 'in:bleu-sombre,light,dark,vert,violet,rouge,orange'],
         ]);
 
         // Eager load ecole relationship without global scope restrictions during lookup
@@ -44,7 +47,10 @@ class AuthController extends Controller
 
         // Check if user has multiple schools
         if ($users->count() > 1) {
-            return view('auth.login', ['ecoles_modal' => $users]);
+            return view('auth.login', [
+                'ecoles_modal' => $users,
+                'selected_theme' => $request->input('theme_preference'),
+            ]);
         }
 
         // Single school, direct login
@@ -56,6 +62,7 @@ class AuthController extends Controller
         $request->validate([
             'idUtilisateur' => 'required|exists:utilisateurs,idUtilisateur',
             'idEcole' => 'required|exists:ecole,idEcole',
+            'theme_preference' => ['nullable', 'string', 'in:bleu-sombre,light,dark,vert,violet,rouge,orange'],
         ]);
 
         $user = User::withoutGlobalScopes()
@@ -76,6 +83,11 @@ class AuthController extends Controller
 
     protected function performLogin($user, Request $request)
     {
+        if ($request->filled('theme_preference')) {
+            $user->theme_preference = $request->input('theme_preference');
+            $user->save();
+        }
+
         Auth::login($user);
 
         $user->loadMissing(['enseignant', 'parent']);
@@ -107,10 +119,12 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
+        $theme = Auth::user()?->theme_preference ?: 'vert';
+
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('login');
+        return redirect()->route('login', ['theme' => $theme]);
     }
 }

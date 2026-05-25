@@ -181,7 +181,20 @@ html[data-theme] .theme-icon-soft {
 
 /* Autres réglages */
 html[data-theme] .btn { border-radius: 8px !important; font-weight: 600; }
-html[data-theme] .form-control, html[data-theme] .form-select { background-color: var(--bg-input) !important; border: 1px solid var(--border-color) !important; color: var(--text-main) !important; }
+html[data-theme] .form-control, html[data-theme] .form-select { background-color: var(--bg-input) !important; border: 1px solid var(--border-color) !important; color: var(--text-main) !important; accent-color: var(--theme-accent); }
+html[data-theme] .form-control:focus,
+html[data-theme] .form-select:focus {
+    border-color: var(--theme-accent) !important;
+    box-shadow: 0 0 0 .2rem color-mix(in srgb, var(--theme-accent) 22%, transparent) !important;
+}
+html[data-theme] .form-select option:checked {
+    background-color: var(--theme-accent) !important;
+    color: #ffffff !important;
+}
+html[data-theme] ::selection {
+    background-color: var(--theme-accent);
+    color: #ffffff;
+}
 html[data-theme] .text-primary { color: var(--theme-accent) !important; }
 html[data-theme] .sidebar-wrapper .metismenu a { color: var(--text-sidebar) !important; }
 html[data-theme] .sidebar-wrapper .metismenu a:hover { color: var(--sidebar-text-active) !important; background: rgba(255,255,255,0.05); }
