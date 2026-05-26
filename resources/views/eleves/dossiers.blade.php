@@ -125,7 +125,7 @@
                                 <th>Classe</th>
                                 <th>Parent à contacter</th>
                                 <th>Statut</th>
-                                <th class="text-end">Dossier</th>
+                                <th class="text-end">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -162,9 +162,55 @@
                                     </td>
                                     <td><span class="badge theme-icon-soft">{{ $statusLabel }}</span></td>
                                     <td class="text-end">
+                                        @if((int) $eleve->etat_dossier === 1)
+                                            <button type="button" class="btn btn-sm btn-outline-success me-1" data-bs-toggle="modal" data-bs-target="#reintegrateModal{{ $eleve->id_eleve }}">
+                                                <i class="bi bi-arrow-counterclockwise me-1"></i>Réintégrer
+                                            </button>
+                                        @endif
                                         <a href="{{ route('eleves.show', $eleve->id_eleve) }}" class="btn btn-sm btn-primary">
                                             <i class="bi bi-folder2-open me-1"></i>Ouvrir
                                         </a>
+                                        @if((int) $eleve->etat_dossier === 1)
+                                            <div class="modal fade text-start" id="reintegrateModal{{ $eleve->id_eleve }}" tabindex="-1" aria-hidden="true">
+                                                <div class="modal-dialog modal-dialog-centered">
+                                                    <div class="modal-content border-0 rounded-4 shadow">
+                                                        <form action="{{ route('eleves.reintegrate', $eleve->id_eleve) }}" method="POST">
+                                                            @csrf
+                                                            <div class="modal-header theme-header">
+                                                                <h5 class="modal-title fw-bold">Réintégrer {{ $eleve->prenom_eleve }} {{ $eleve->nom_eleve }}</h5>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <div class="mb-3">
+                                                                    <label class="form-label">Classe de retour</label>
+                                                                    <select name="id_classe" class="form-select" required>
+                                                                        @foreach($classes as $classe)
+                                                                            <option value="{{ $classe->id_classe }}" @selected($classe->id_classe == $eleve->id_classe)>{{ $classe->nom_classe }}</option>
+                                                                        @endforeach
+                                                                    </select>
+                                                                </div>
+                                                                <div class="mb-3">
+                                                                    <label class="form-label">Année scolaire</label>
+                                                                    <select name="id_annee" class="form-select" required>
+                                                                        @foreach($annees as $annee)
+                                                                            <option value="{{ $annee->id_anneeScolaire }}" @selected($annee->id_anneeScolaire == $eleve->id_annee)>{{ $annee->annee }}</option>
+                                                                        @endforeach
+                                                                    </select>
+                                                                </div>
+                                                                <div>
+                                                                    <label class="form-label">Motif du retour</label>
+                                                                    <input type="text" name="motif_retour" class="form-control" placeholder="Ex: retour dans l'établissement">
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+                                                                <button type="submit" class="btn btn-success">Réintégrer</button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endif
                                     </td>
                                 </tr>
                             @empty

@@ -116,7 +116,7 @@
                             <span class="menu-icon rounded-circle d-flex align-items-center justify-content-center me-2">
                                 <i class="bi bi-calendar-check"></i>
                             </span>
-                            <span>Planification</span>
+                            <span>{{ $isPublicSchool ? 'Coopérative' : 'Planification' }}</span>
                         </a>
                     </li>
                     <li class="nav-item">
@@ -144,7 +144,7 @@
         <div class="card theme-card w-100">
             <div class="card-header theme-header">
                 <i class="bi bi-cash-coin me-1"></i>
-                Paiements scolaires
+                {{ $isPublicSchool ? 'Paiements coopérative' : 'Paiements scolaires' }}
             </div>
             <div class="card-body">
                 <form method="POST" action="{{ route('finances.paiements.filter') }}" class="row g-3" id="paymentFilterForm" data-auto-filter="true">
@@ -213,6 +213,11 @@
                 <li class="nav-item" role="presentation">
                         <a class="nav-link @if($selectedType === '') active @endif" href="#" data-filter-type="">Tous</a>
                     </li>
+                    @if($isPublicSchool)
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link @if($selectedType === 'cooperative') active @endif" href="#" data-filter-type="cooperative">Coopérative</a>
+                    </li>
+                    @else
                     <li class="nav-item" role="presentation">
                         <a class="nav-link @if($selectedType === 'trimestriel') active @endif" href="#" data-filter-type="trimestriel">Paiement Trimestriel</a>
                     </li>
@@ -222,6 +227,7 @@
                     <li class="nav-item" role="presentation">
                         <a class="nav-link @if($selectedType === 'annuel') active @endif" href="#" data-filter-type="annuel">Paiement Annuel</a>
                     </li>
+                    @endif
             </ul>
 
             @if(!$caisse)
@@ -239,7 +245,7 @@
                             </th>
                             <th>N°</th>
                             <th>Eleve</th>
-                            <th>Motif</th>
+                            <th>{{ $isPublicSchool ? 'Coopérative' : 'Motif' }}</th>
                             <th>Parent</th>
                             <th>Téléphone</th>
                             <th>Montant Total</th>
@@ -260,7 +266,7 @@
                                     {{ $row->eleve->prenom_eleve }} {{ $row->eleve->nom_eleve }}
                                 </td>
                                 <td>
-                                    <input type="text" name="motif[]" value="{{ $row->planification->motif }}" class="form-control form-control-sm">
+                                    <input type="text" name="motif[]" value="{{ $isPublicSchool ? 'Coopérative' : $row->planification->motif }}" class="form-control form-control-sm">
                                 </td>
                                 <td style="min-width: 220px;">
                                     <select name="parent_id[]" class="form-select form-select-sm payer-select">
@@ -288,7 +294,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="text-center text-muted py-4">Aucun élève à afficher pour ce type de planification.</td>
+                                <td colspan="9" class="text-center text-muted py-4">{{ $isPublicSchool ? 'Aucun élève à afficher pour la coopérative.' : 'Aucun élève à afficher pour ce type de planification.' }}</td>
                             </tr>
                         @endforelse
                     </tbody>

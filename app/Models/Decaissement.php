@@ -32,6 +32,15 @@ class Decaissement extends Model
         'id_caisse',
         'idUtilisateur',
         'valide',
+        'validated_by',
+        'validated_at',
+    ];
+
+    protected $casts = [
+        'date_decaissement' => 'date',
+        'montant_decaissement' => 'decimal:2',
+        'valide' => 'boolean',
+        'validated_at' => 'datetime',
     ];
 
     public function caisse()
@@ -42,5 +51,10 @@ class Decaissement extends Model
     public function utilisateur()
     {
         return $this->belongsTo(User::class, 'idUtilisateur', 'idUtilisateur');
+    }
+
+    public function validateur()
+    {
+        return $this->belongsTo(User::class, 'validated_by', 'idUtilisateur');
     }
 }

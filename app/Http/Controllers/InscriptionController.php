@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Eleve;
 use App\Models\Classe;
 use App\Models\AnneeScolaire;
+use App\Models\Ecole;
 use App\Models\ParentModel;
 use App\Models\Planification;
 use Illuminate\Http\Request;
@@ -25,17 +26,18 @@ class InscriptionController extends Controller
         $annees = AnneeScolaire::orderByDesc('id_anneeScolaire')->get();
         $parents = ParentModel::where('idEcole', session('idEcole'))->orderBy('nom_prenom_parent')->get();
         $planifications = Planification::whereIn('id_classe', $classeIds)->orderBy('motif')->get();
+        $planificationRequired = $this->schoolRequiresPlanification();
+        $planificationLabel = $planificationRequired ? 'Planification' : 'Coopérative';
         $eleves = Eleve::where('id_ecole', session('idEcole'))
             ->where('etat_dossier', 0)
             ->with('classe')
-            ->orderBy('nom_eleve')
-            ->orderBy('prenom_eleve')
+            ->orderBy('prenom_eleve')->orderBy('nom_eleve')
             ->get();
         $activeTab = in_array($request->query('tab'), ['group', 'reinscription'], true) ? $request->query('tab') : 'individual';
         $reinscriptionFilters = $activeTab === 'reinscription' ? $this->defaultReinscriptionFilters($annees) : [];
         $reinscriptionPreview = null;
 
-        return view('pedagogie.inscriptions.index', compact('classes', 'annees', 'parents', 'planifications', 'eleves', 'activeTab', 'reinscriptionFilters', 'reinscriptionPreview'));
+        return view('pedagogie.inscriptions.index', compact('classes', 'annees', 'parents', 'planifications', 'planificationRequired', 'planificationLabel', 'eleves', 'activeTab', 'reinscriptionFilters', 'reinscriptionPreview'));
     }
 
     public function create()
@@ -66,7 +68,7 @@ class InscriptionController extends Controller
             'fichier_excel' => 'required|file|mimes:xls,xlsx',
             'id_classe' => 'required|exists:classe,id_classe',
             'id_annee' => 'required|exists:anneescolaire,id_anneeScolaire',
-            'id_planification' => 'required|exists:planification,id_planification',
+            'id_planification' => [$this->schoolRequiresPlanification() ? 'required' : 'nullable', 'integer', 'exists:planification,id_planification'],
             'date_inscription' => 'nullable|date',
         ]);
 
@@ -78,10 +80,13 @@ class InscriptionController extends Controller
             ]);
         }
 
-        $planification = Planification::where('id_classe', $data['id_classe'])
-            ->where('id_annee', $data['id_annee'])
-            ->find($data['id_planification']);
-        if (!$planification) {
+        $planificationId = $data['id_planification'] ?? null;
+        $planification = $planificationId
+            ? Planification::where('id_classe', $data['id_classe'])
+                ->where('id_annee', $data['id_annee'])
+                ->find($planificationId)
+            : null;
+        if ($planificationId && !$planification) {
             throw ValidationException::withMessages([
                 'id_planification' => 'La planification choisie ne correspond pas à cette classe et cette année scolaire.',
             ]);
@@ -96,7 +101,7 @@ class InscriptionController extends Controller
         $highestRow = $worksheet->getHighestDataRow();
         $createdCount = 0;
 
-        DB::transaction(function () use ($worksheet, $highestRow, $data, $idEcole, &$createdCount) {
+        DB::transaction(function () use ($worksheet, $highestRow, $data, $idEcole, $planificationId, &$createdCount) {
             $dateInscription = $data['date_inscription'] ?? now()->toDateString();
 
             for ($row = 2; $row <= $highestRow; $row++) {
@@ -149,7 +154,7 @@ class InscriptionController extends Controller
                     'id_eleve' => $eleve->id_eleve,
                     'id_classe' => $data['id_classe'],
                     'id_annee' => $data['id_annee'],
-                    'id_planification' => $data['id_planification'],
+                    'id_planification' => $planificationId,
                     'date_inscription' => $dateInscription,
                 ]);
 
@@ -243,14 +248,17 @@ class InscriptionController extends Controller
             'parent_id' => 'nullable|exists:parents,id_parent',
             'lien_parent' => 'nullable|string|max:100',
             'informer' => 'nullable|string|in:Oui,Non',
-            'id_planification' => 'required|exists:planification,id_planification',
+            'id_planification' => [$this->schoolRequiresPlanification() ? 'required' : 'nullable', 'integer', 'exists:planification,id_planification'],
         ]);
 
-        Planification::where('id_classe', $data['id_classe'])
-            ->where('id_annee', $data['id_annee'])
-            ->findOrFail($data['id_planification']);
+        $planificationId = $data['id_planification'] ?? null;
+        if ($planificationId) {
+            Planification::where('id_classe', $data['id_classe'])
+                ->where('id_annee', $data['id_annee'])
+                ->findOrFail($planificationId);
+        }
 
-        DB::transaction(function () use ($request, $data) {
+        DB::transaction(function () use ($request, $data, $planificationId) {
             $eleve = new Eleve();
             $eleve->prenom_eleve = $data['prenom_eleve'];
             $eleve->nom_eleve = $data['nom_eleve'];
@@ -281,7 +289,7 @@ class InscriptionController extends Controller
                 'id_eleve' => $eleve->id_eleve,
                 'id_classe' => $data['id_classe'],
                 'id_annee' => $data['id_annee'],
-                'id_planification' => $data['id_planification'],
+                'id_planification' => $planificationId,
                 'date_inscription' => $eleve->date_inscription,
             ]);
         });
@@ -294,7 +302,7 @@ class InscriptionController extends Controller
         $data = $request->validate([
             'id_classe' => 'required|exists:classe,id_classe',
             'id_annee' => 'required|exists:anneescolaire,id_anneeScolaire',
-            'id_planification' => 'required|exists:planification,id_planification',
+            'id_planification' => [$this->schoolRequiresPlanification() ? 'required' : 'nullable', 'integer', 'exists:planification,id_planification'],
             'date_inscription' => 'nullable|date',
             'eleves' => 'required|array|min:1',
             'eleves.*.prenom_eleve' => 'required|string|max:255',
@@ -307,12 +315,15 @@ class InscriptionController extends Controller
 
         $idEcole = session('idEcole');
         Classe::where('idEcole', $idEcole)->findOrFail($data['id_classe']);
-        Planification::where('id_classe', $data['id_classe'])
-            ->where('id_annee', $data['id_annee'])
-            ->findOrFail($data['id_planification']);
+        $planificationId = $data['id_planification'] ?? null;
+        if ($planificationId) {
+            Planification::where('id_classe', $data['id_classe'])
+                ->where('id_annee', $data['id_annee'])
+                ->findOrFail($planificationId);
+        }
         $dateInscription = $data['date_inscription'] ?? now()->toDateString();
 
-        DB::transaction(function () use ($data, $dateInscription, $idEcole) {
+        DB::transaction(function () use ($data, $dateInscription, $idEcole, $planificationId) {
             foreach ($data['eleves'] as $row) {
                 $eleve = Eleve::create([
                     'prenom_eleve' => $row['prenom_eleve'],
@@ -336,7 +347,7 @@ class InscriptionController extends Controller
                     'id_eleve' => $eleve->id_eleve,
                     'id_classe' => $data['id_classe'],
                     'id_annee' => $data['id_annee'],
-                    'id_planification' => $data['id_planification'],
+                    'id_planification' => $planificationId,
                     'date_inscription' => $dateInscription,
                 ]);
             }
@@ -414,11 +425,12 @@ class InscriptionController extends Controller
         $annees = AnneeScolaire::orderByDesc('id_anneeScolaire')->get();
         $parents = ParentModel::where('idEcole', session('idEcole'))->orderBy('nom_prenom_parent')->get();
         $planifications = Planification::whereIn('id_classe', $classeIds)->orderBy('motif')->get();
+        $planificationRequired = $this->schoolRequiresPlanification();
+        $planificationLabel = $planificationRequired ? 'Planification' : 'Coopérative';
         $eleves = Eleve::where('id_ecole', session('idEcole'))
             ->where('etat_dossier', 0)
             ->with('classe')
-            ->orderBy('nom_eleve')
-            ->orderBy('prenom_eleve')
+            ->orderBy('prenom_eleve')->orderBy('nom_eleve')
             ->get();
 
         $activeTab = 'reinscription';
@@ -433,6 +445,8 @@ class InscriptionController extends Controller
             'annees',
             'parents',
             'planifications',
+            'planificationRequired',
+            'planificationLabel',
             'eleves',
             'activeTab',
             'reinscriptionPreview',
@@ -460,25 +474,23 @@ class InscriptionController extends Controller
         $targetAnnee = AnneeScolaire::find((int) $data['target_annee_id']);
         $this->ensureTargetYearAfterSource($sourceAnnee, $targetAnnee);
 
-        $defaultTargetClasse = !empty($data['target_classe_id'])
+        $suggestedTargetClasse = !empty($data['target_classe_id'])
             ? $classes->firstWhere('id_classe', (int) $data['target_classe_id'])
             : $this->suggestNextClasse($sourceClasse, $classes);
 
-        if (!$defaultTargetClasse) {
-            $defaultTargetClasse = $sourceClasse;
-        }
-
-        if ((int) $defaultTargetClasse->idEcole !== (int) $idEcole) {
+        if ($suggestedTargetClasse && (int) $suggestedTargetClasse->idEcole !== (int) $idEcole) {
             throw ValidationException::withMessages(['target_classe_id' => 'La classe cible n’appartient pas à votre école.']);
         }
+
+        $defaultTargetClasse = $suggestedTargetClasse ?: $sourceClasse;
+        $examLevel = $this->nationalExamLevel($sourceClasse);
 
         $students = Eleve::where('id_ecole', $idEcole)
             ->where('etat_dossier', 0)
             ->where('id_classe', $sourceClasse->id_classe)
             ->where('id_annee', (int) $data['source_annee_id'])
             ->with('classe')
-            ->orderBy('nom_eleve')
-            ->orderBy('prenom_eleve')
+            ->orderBy('prenom_eleve')->orderBy('nom_eleve')
             ->get();
 
         $existingIds = DB::table('ligne_reinscription')
@@ -489,23 +501,36 @@ class InscriptionController extends Controller
             ->all();
 
         $threshold = $this->passageThreshold($sourceClasse);
-        $rows = $students->map(function ($student) use ($sourceClasse, $defaultTargetClasse, $data, $existingIds, $threshold) {
+        $rows = $students->map(function ($student) use ($sourceClasse, $defaultTargetClasse, $suggestedTargetClasse, $data, $existingIds, $threshold, $examLevel) {
             $moyenne = $this->moyenneAnnuelle($student->id_eleve, $sourceClasse->id_classe, (int) $data['source_annee_id']);
-            $proposal = $this->proposeDecision($moyenne, $threshold);
+            $resultatNational = $examLevel
+                ? $this->resultatNational($student->id_eleve, $sourceClasse->id_classe, (int) $data['source_annee_id'], $examLevel)
+                : null;
+            $proposal = $examLevel
+                ? $this->proposeNationalExamDecision($resultatNational, $examLevel, $suggestedTargetClasse)
+                : $this->proposeDecision($moyenne, $threshold);
+            $classeCibleId = match ($proposal) {
+                'redoublant' => $sourceClasse->id_classe,
+                'admis_sortant', 'diplome_sortant', 'en_attente_resultat' => null,
+                default => $defaultTargetClasse->id_classe,
+            };
 
             return [
                 'eleve' => $student,
                 'moyenne' => $moyenne,
+                'moyenne_examen' => $resultatNational?->moyenne !== null ? round((float) $resultatNational->moyenne, 2) : null,
+                'resultat_national' => $resultatNational?->decision,
+                'niveau_examen' => $examLevel,
                 'seuil' => $threshold,
                 'decision_proposee' => $proposal,
-                'classe_cible_id' => $proposal === 'redoublant' ? $sourceClasse->id_classe : $defaultTargetClasse->id_classe,
+                'classe_cible_id' => $classeCibleId,
                 'deja_reinscrit' => in_array((int) $student->id_eleve, $existingIds, true),
             ];
         });
 
         return [
             'sourceClasse' => $sourceClasse,
-            'targetClasse' => $defaultTargetClasse,
+            'targetClasse' => $examLevel === 'BAC' || ($examLevel === 'DEF' && !$suggestedTargetClasse) ? null : $defaultTargetClasse,
             'sourceAnnee' => $sourceAnnee,
             'targetAnnee' => $targetAnnee,
             'date' => $data['date_reinscription'] ?? now()->toDateString(),
@@ -516,8 +541,11 @@ class InscriptionController extends Controller
                 'passants' => $rows->where('decision_proposee', 'passant')->count(),
                 'redoublants' => $rows->where('decision_proposee', 'redoublant')->count(),
                 'sans_moyenne' => $rows->where('decision_proposee', 'non_defini')->count(),
+                'sortants' => $rows->whereIn('decision_proposee', ['admis_sortant', 'diplome_sortant'])->count(),
+                'en_attente_resultat' => $rows->where('decision_proposee', 'en_attente_resultat')->count(),
                 'deja_reinscrits' => $rows->where('deja_reinscrit', true)->count(),
             ],
+            'niveauExamen' => $examLevel,
         ];
     }
 
@@ -531,7 +559,7 @@ class InscriptionController extends Controller
             'eleves' => 'required|array|min:1',
             'eleves.*.selected' => 'nullable',
             'eleves.*.id_eleve' => 'required|integer|exists:eleve,id_eleve',
-            'eleves.*.decision' => 'nullable|string|in:passant,redoublant,ajourne,abandon,exclu',
+            'eleves.*.decision' => 'nullable|string|in:passant,redoublant,admis_sortant,diplome_sortant,en_attente_resultat,ajourne,abandon,exclu',
             'eleves.*.id_classe' => 'nullable|integer|exists:classe,id_classe',
             'eleves.*.motif_decision' => 'nullable|string|max:1000',
         ]);
@@ -587,20 +615,33 @@ class InscriptionController extends Controller
                     $skipped++;
                     continue;
                 }
+                if ($decision === 'en_attente_resultat') {
+                    $skipped++;
+                    continue;
+                }
+
                 $moyenne = $this->moyenneAnnuelle($eleve->id_eleve, $sourceClasse->id_classe, (int) $data['source_annee_id']);
+                $examLevel = $this->nationalExamLevel($sourceClasse);
+                $resultatNational = $examLevel
+                    ? $this->resultatNational($eleve->id_eleve, $sourceClasse->id_classe, (int) $data['source_annee_id'], $examLevel)
+                    : null;
                 $statut = $decision;
 
-                if ($decision === 'passant' && $moyenne !== null && $moyenne < $threshold) {
+                if (!$examLevel && $decision === 'passant' && $moyenne !== null && $moyenne < $threshold) {
                     $statut = 'passage_force';
                     $forced++;
                 }
 
-                $targetClasseId = (int) ($row['id_classe'] ?: $sourceClasse->id_classe);
+                $targetClasseId = !empty($row['id_classe']) ? (int) $row['id_classe'] : null;
                 if (in_array($decision, ['redoublant', 'ajourne', 'abandon', 'exclu'], true)) {
                     $targetClasseId = $sourceClasse->id_classe;
                 }
 
-                if (!$classes->has($targetClasseId)) {
+                if ($targetClasseId !== null && !$classes->has($targetClasseId)) {
+                    $skipped++;
+                    continue;
+                }
+                if (in_array($decision, ['passant', 'redoublant'], true) && $targetClasseId === null) {
                     $skipped++;
                     continue;
                 }
@@ -609,10 +650,12 @@ class InscriptionController extends Controller
                     'statut' => $statut,
                     'date_reinscription' => $dateReinscription,
                     'enrolement' => in_array($decision, ['passant', 'redoublant'], true) ? 1 : 0,
-                    'moyenneGeneral' => $moyenne,
+                    'moyenneGeneral' => $resultatNational?->moyenne ?? $moyenne,
                 ];
                 if (Schema::hasColumn('reinscription', 'statut_propose')) {
-                    $insert['statut_propose'] = $this->proposeDecision($moyenne, $threshold);
+                    $insert['statut_propose'] = $examLevel
+                        ? $this->proposeNationalExamDecision($resultatNational, $examLevel, $classes->get($targetClasseId))
+                        : $this->proposeDecision($moyenne, $threshold);
                 }
                 if (Schema::hasColumn('reinscription', 'motif_decision')) {
                     $insert['motif_decision'] = $row['motif_decision'] ?? null;
@@ -635,6 +678,11 @@ class InscriptionController extends Controller
                     $eleve->save();
                 } elseif ($decision === 'ajourne') {
                     $ajournes++;
+                } elseif (in_array($decision, ['admis_sortant', 'diplome_sortant'], true)) {
+                    $eleve->id_annee = (int) $data['target_annee_id'];
+                    $eleve->etat_dossier = 2;
+                    $eleve->save();
+                    $sorties++;
                 } else {
                     $eleve->id_classe = $targetClasseId;
                     $eleve->id_annee = (int) $data['target_annee_id'];
@@ -700,6 +748,51 @@ class InscriptionController extends Controller
         $average = $query->avg('moyenne');
 
         return $average !== null ? round((float) $average, 2) : null;
+    }
+
+    private function nationalExamLevel(Classe $classe): ?string
+    {
+        return match ($this->extractClasseLevel($classe->nom_classe)) {
+            9 => 'DEF',
+            12 => 'BAC',
+            default => null,
+        };
+    }
+
+    private function resultatNational(int $idEleve, int $idClasse, int $idAnnee, string $niveau): ?object
+    {
+        if (!Schema::hasTable('resultats_def_terminal')) {
+            return null;
+        }
+
+        return DB::table('resultats_def_terminal')
+            ->where('id_eleve', $idEleve)
+            ->where('id_annee', $idAnnee)
+            ->where('niveau_examen', $niveau)
+            ->where(function ($query) use ($idClasse) {
+                $query->whereNull('id_classe')->orWhere('id_classe', $idClasse);
+            })
+            ->orderByDesc('date_resultat')
+            ->orderByDesc('id')
+            ->first();
+    }
+
+    private function proposeNationalExamDecision(?object $resultat, string $niveau, ?Classe $nextClasse): string
+    {
+        if (!$resultat || !$resultat->decision) {
+            return 'en_attente_resultat';
+        }
+
+        $decision = Str::lower(Str::ascii((string) $resultat->decision));
+        if ($decision === 'admis') {
+            if ($niveau === 'BAC') {
+                return 'diplome_sortant';
+            }
+
+            return $nextClasse ? 'passant' : 'admis_sortant';
+        }
+
+        return 'redoublant';
     }
 
     private function suggestNextClasse(Classe $sourceClasse, $classes): ?Classe
@@ -787,6 +880,14 @@ class InscriptionController extends Controller
                 'target_annee_id' => 'L’année cible doit obligatoirement être après l’année actuelle.',
             ]);
         }
+    }
+
+    private function schoolRequiresPlanification(): bool
+    {
+        $ecole = Ecole::withoutGlobalScopes()->find(session('idEcole'));
+        $statut = Str::lower(Str::ascii((string) ($ecole->statut ?? '')));
+
+        return $statut !== 'public';
     }
 
     private function generateMatricule(array $data): string

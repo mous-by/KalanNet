@@ -24,11 +24,11 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
-        <h1 class="h3 mb-1">Planification</h1>
+        <h1 class="h3 mb-1">{{ $isPublicSchool ? 'Coopérative' : 'Planification' }}</h1>
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-0">
                 <li class="breadcrumb-item"><a href="{{ route('finances.index') }}">Finances</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Liste des planifications des paiements</li>
+                <li class="breadcrumb-item active" aria-current="page">{{ $isPublicSchool ? 'Liste des coopératives' : 'Liste des planifications des paiements' }}</li>
             </ol>
         </nav>
     </div>
@@ -65,7 +65,7 @@
                             <span class="menu-icon rounded-circle d-flex align-items-center justify-content-center me-2">
                                 <i class="bi bi-calendar-check"></i>
                             </span>
-                            <span>Planification</span>
+                            <span>{{ $isPublicSchool ? 'Coopérative' : 'Planification' }}</span>
                         </a>
                     </li>
                     <li class="nav-item">
@@ -93,7 +93,7 @@
         <div class="card theme-card w-100">
             <div class="card-header theme-header">
                 <i class="bi bi-cash-coin me-1"></i>
-                Liste des planifications
+                {{ $isPublicSchool ? 'Liste des coopératives' : 'Liste des planifications' }}
             </div>
             <div class="card-body">
                 <form method="POST" action="{{ route('finances.planifications.filter') }}" class="row g-3" id="planificationFilterForm" data-auto-filter="true">
@@ -126,15 +126,15 @@
                     <table class="table table-striped table-bordered" style="width:100%">
                         <thead>
                             <tr>
-                                <th>Motif</th>
-                                <th>Coût total</th>
+                                <th>{{ $isPublicSchool ? 'Coopérative' : 'Motif' }}</th>
+                                <th>{{ $isPublicSchool ? 'Montant coopérative' : 'Coût total' }}</th>
                                 <th class="text-center">Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse($planifications as $planification)
                                 <tr>
-                                    <td>{{ $planification->motif }}</td>
+                                    <td>{{ $isPublicSchool ? 'Coopérative' : $planification->motif }}</td>
                                     <td>{{ number_format((float) $planification->montant_planification, 0, ',', ' ') }} F CFA</td>
                                     <td class="text-center">
                                         <div class="dropdown">
@@ -145,7 +145,7 @@
                                                 <form method="POST" action="{{ route('finances.planifications.destroy', $planification->id_planification) }}">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="dropdown-item" onclick="return confirm('Supprimer cette planification ?')">
+                                                    <button type="submit" class="dropdown-item" onclick="return confirm('{{ $isPublicSchool ? 'Supprimer cette coopérative ?' : 'Supprimer cette planification ?' }}')">
                                                         <i class="bi bi-trash me-1"></i> Supprimer
                                                     </button>
                                                 </form>
@@ -155,7 +155,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="3" class="text-center text-muted py-4">Aucune planification à afficher.</td>
+                                    <td colspan="3" class="text-center text-muted py-4">{{ $isPublicSchool ? 'Aucune coopérative à afficher.' : 'Aucune planification à afficher.' }}</td>
                                 </tr>
                             @endforelse
                         </tbody>

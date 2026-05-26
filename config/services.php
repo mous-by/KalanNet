@@ -57,4 +57,29 @@ return [
         ],
     ],
 
+    'assistant' => [
+        'provider' => env('ASSISTANT_PROVIDER', 'gemini'),
+        'timeout' => (int) env('ASSISTANT_TIMEOUT', 20),
+        'max_history' => (int) env('ASSISTANT_MAX_HISTORY', 8),
+        'gemini' => [
+            'key' => env('GEMINI_API_KEY'),
+            'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
+            'endpoint' => env('GEMINI_ENDPOINT', 'https://generativelanguage.googleapis.com/v1beta'),
+        ],
+        'groq' => [
+            'key' => env('GROQ_API_KEY'),
+            'model' => env('GROQ_MODEL', 'llama3-8b-8192'),
+            'endpoint' => env('GROQ_ENDPOINT', 'https://api.groq.com/openai/v1/chat/completions'),
+        ],
+        'openrouter' => [
+            'key' => env('OPENROUTER_API_KEY'),
+            'model' => env('OPENROUTER_MODEL', 'mistralai/mistral-7b-instruct:free'),
+            'endpoint' => env('OPENROUTER_ENDPOINT', 'https://openrouter.ai/api/v1/chat/completions'),
+        ],
+        'ollama' => [
+            'model' => env('OLLAMA_MODEL', 'llama3'),
+            'endpoint' => env('OLLAMA_ENDPOINT', 'http://127.0.0.1:11434/api/chat'),
+        ],
+    ],
+
 ];

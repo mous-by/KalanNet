@@ -196,8 +196,7 @@ class ParentController extends Controller
         return Eleve::with('classe')
             ->where('id_ecole', session('idEcole'))
             ->where('etat_dossier', 0)
-            ->orderBy('nom_eleve')
-            ->orderBy('prenom_eleve')
+            ->orderBy('prenom_eleve')->orderBy('nom_eleve')
             ->get();
     }
 

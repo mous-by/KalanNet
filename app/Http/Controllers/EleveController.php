@@ -48,8 +48,7 @@ class EleveController extends Controller
             });
         }
 
-        $eleves = $query->orderBy('nom_eleve')
-            ->orderBy('prenom_eleve')
+        $eleves = $query->orderBy('prenom_eleve')->orderBy('nom_eleve')
             ->get();
 
         return view('eleves.index', compact('eleves', 'classes', 'annees', 'showList'));
@@ -147,8 +146,7 @@ class EleveController extends Controller
             });
         }
 
-        $eleves = $query->orderBy('nom_eleve')
-            ->orderBy('prenom_eleve')
+        $eleves = $query->orderBy('prenom_eleve')->orderBy('nom_eleve')
             ->paginate(20)
             ->withQueryString();
 
@@ -177,6 +175,7 @@ class EleveController extends Controller
             'adresse_eleve' => 'nullable|string|max:255',
             'cas_social' => 'nullable|string|max:255',
             'mode_paiement' => 'nullable|string|max:255',
+            'statut_paiement' => 'nullable|string|in:normal,subventionne,boursier,gratuit',
             'id_classe' => 'required|integer|exists:classe,id_classe',
             'id_annee' => 'required|integer|exists:anneescolaire,id_anneeScolaire',
             'date_inscription' => 'nullable|date',
@@ -194,6 +193,7 @@ class EleveController extends Controller
             'adresse_eleve' => $data['adresse_eleve'] ?? null,
             'cas_social' => $data['cas_social'] ?: 'normal',
             'mode_paiement' => $data['mode_paiement'] ?? null,
+            'statut_paiement' => $data['statut_paiement'] ?? 'normal',
             'id_classe' => $data['id_classe'],
             'id_annee' => $data['id_annee'],
             'date_inscription' => $data['date_inscription'] ?? $eleve->date_inscription,
@@ -233,6 +233,7 @@ class EleveController extends Controller
                 'destination' => $data['destination'],
                 'travail' => $data['travail'] ?? null,
                 'conduite' => $data['conduite'],
+                ...$this->transferOptionalColumns(['date_transfert' => now()]),
             ]);
 
             $eleve->etat_dossier = 1;
@@ -242,6 +243,53 @@ class EleveController extends Controller
         });
 
         return redirect()->route('eleves.transfer.fiche', $transferId);
+    }
+
+    public function reintegrate(Request $request, $id)
+    {
+        $eleve = Eleve::where('id_ecole', session('idEcole'))->where('etat_dossier', 1)->findOrFail($id);
+        $data = $request->validate([
+            'id_classe' => 'required|integer|exists:classe,id_classe',
+            'id_annee' => 'required|integer|exists:anneescolaire,id_anneeScolaire',
+            'motif_retour' => 'nullable|string|max:255',
+        ]);
+
+        Classe::where('idEcole', session('idEcole'))->findOrFail($data['id_classe']);
+
+        DB::transaction(function () use ($eleve, $data) {
+            $eleve->update([
+                'etat_dossier' => 0,
+                'id_classe' => $data['id_classe'],
+                'id_annee' => $data['id_annee'],
+            ]);
+
+            if (Schema::hasTable('transfert')) {
+                $latestTransfer = DB::table('transfert')
+                    ->where('id_eleve', $eleve->id_eleve)
+                    ->where('id_ecole', session('idEcole'))
+                    ->when(Schema::hasColumn('transfert', 'date_retour'), fn ($query) => $query->whereNull('date_retour'))
+                    ->orderByDesc('id_transfert')
+                    ->first();
+
+                if ($latestTransfer) {
+                    $returnColumns = $this->transferOptionalColumns([
+                        'date_retour' => now(),
+                        'motif_retour' => $data['motif_retour'] ?: 'Réintégration',
+                        'retour_effectue_par' => Auth::id(),
+                    ]);
+
+                    if (!empty($returnColumns)) {
+                        DB::table('transfert')
+                            ->where('id_transfert', $latestTransfer->id_transfert)
+                            ->update($returnColumns);
+                    }
+                }
+            }
+        });
+
+        return redirect()
+            ->route('eleves.dossiers', ['status' => 'actifs', 'id_classe' => $data['id_classe'], 'id_annee' => $data['id_annee']])
+            ->with('success', 'Élève réintégré dans la liste active.');
     }
 
     public function transferCertificate($id)
@@ -389,8 +437,7 @@ class EleveController extends Controller
             });
         }
 
-        $eleves = $query->orderBy('nom_eleve')
-            ->orderBy('prenom_eleve')
+        $eleves = $query->orderBy('prenom_eleve')->orderBy('nom_eleve')
             ->get();
 
         if ($eleves->isEmpty()) {
@@ -421,7 +468,7 @@ class EleveController extends Controller
             });
         }
 
-        return $query->orderBy('nom_eleve')->orderBy('prenom_eleve');
+        return $query->orderBy('prenom_eleve')->orderBy('nom_eleve');
     }
 
     private function cardPrintConfig(Request $request): array
@@ -656,6 +703,17 @@ class EleveController extends Controller
             ->where('id_ecole', session('idEcole'))
             ->orderByDesc('id_transfert')
             ->get();
+    }
+
+    private function transferOptionalColumns(array $values): array
+    {
+        if (!Schema::hasTable('transfert')) {
+            return [];
+        }
+
+        return collect($values)
+            ->filter(fn ($value, $column) => Schema::hasColumn('transfert', $column))
+            ->all();
     }
 
     private function studentDossierAlerts(Eleve $eleve, array $paymentSummary, array $echeancesResume): array

@@ -177,9 +177,6 @@
 
                 function fieldMatches(field, type) {
                     if (type === 'Complexe Scolaire') return field.classList.contains('js-complexe');
-                    if (type === 'Fondamentale I' || type === 'Fondamentale II') return false;
-                    if (type === 'Secondaire Generale') return field.classList.contains('js-secondaire-generale');
-                    if (type === 'Secondaire Technique et Professionnel') return field.classList.contains('js-secondaire-technique');
                     return false;
                 }
 

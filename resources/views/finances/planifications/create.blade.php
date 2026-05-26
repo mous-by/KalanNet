@@ -86,7 +86,7 @@
                                 <span class="menu-icon rounded-circle d-flex align-items-center justify-content-center me-2">
                                     <i class="bi bi-calendar-check"></i>
                                 </span>
-                                <span>Planification</span>
+                                <span>{{ $isPublicSchool ? 'Coopérative' : 'Planification' }}</span>
                             </a>
                         </li>
                         <li class="nav-item">
@@ -114,7 +114,7 @@
             <div class="card theme-card w-100">
                 <div class="card-header theme-header">
                     <i class="bi bi-table me-1"></i>
-                    Planification des paiements
+                    {{ $isPublicSchool ? 'Coopérative scolaire' : 'Planification des paiements' }}
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -158,10 +158,10 @@
                         <table class="table table-striped table-bordered" style="width:100%" id="dynamic-table">
                             <thead>
                                 <tr>
-                                    <th style="width: 30%;">Motif</th>
+                                    <th style="width: 30%;">{{ $isPublicSchool ? 'Type' : 'Motif' }}</th>
                                     <th style="width: 20%;">Date de debut</th>
                                     <th style="width: 20%;">Date de fin</th>
-                                    <th style="width: 20%;">Frais scolaire</th>
+                                    <th style="width: 20%;">{{ $isPublicSchool ? 'Montant coopérative' : 'Frais scolaire' }}</th>
                                     <th class="text-center" style="width: 10%; font-size: 14px;">Action</th>
                                 </tr>
                             </thead>
@@ -169,9 +169,13 @@
                                 <tr id="form-fields" class="form-row">
                                     <td>
                                         <select name="motif[]" class="form-select planification-motif" required>
-                                            <option value="mensuelle">mensuelle</option>
-                                            <option value="trimestrielle">trimestrielle</option>
-                                            <option value="annuelle">annuelle</option>
+                                            @if($isPublicSchool)
+                                                <option value="cooperative">Coopérative</option>
+                                            @else
+                                                <option value="mensuelle">mensuelle</option>
+                                                <option value="trimestrielle">trimestrielle</option>
+                                                <option value="annuelle">annuelle</option>
+                                            @endif
                                         </select>
                                     </td>
                                     <td><input type="date" class="form-control planification-date-debut" name="date_debut[]" required></td>
@@ -179,7 +183,7 @@
                                     <td><input type="number" class="form-control planification-montant" name="montant[]" min="1" required></td>
                                     <td class="text-center align-middle">
                                         <div class="col-md-12 item-center">
-                                            <button type="button" class="btn btn-primary mb-2" id="add-more" style="float: right;">
+                                            <button type="button" class="btn btn-primary mb-2 {{ $isPublicSchool ? 'd-none' : '' }}" id="add-more" style="float: right;">
                                                 <span style="font-size: 18px; line-height: 1;">+</span>
                                             </button>
                                         </div>

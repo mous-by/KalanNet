@@ -67,8 +67,7 @@ class AppelEpreuveController extends Controller
                 ->where('id_annee', $selectedAnnee)
                 ->where('etat_dossier', 0)
                 ->when($schoolId && $user->droit !== 'SupAdmin', fn ($query) => $query->where('id_ecole', $schoolId))
-                ->orderBy('nom_eleve')
-                ->orderBy('prenom_eleve')
+                ->orderBy('prenom_eleve')->orderBy('nom_eleve')
                 ->get();
         }
 
@@ -190,7 +189,7 @@ class AppelEpreuveController extends Controller
             return;
         }
 
-        $message = "Votre enfant {$eleve->prenom_eleve} {$eleve->nom_eleve} a été marqué \"{$status->type_controle}\" pendant l’épreuve {$data['libelle']} du " . date('d/m/Y', strtotime($data['date'])) . '.';
+        $message = "Votre enfant {$eleve->prenom_eleve} {$eleve->nom_eleve} a été marqué \"{$status->type_controle}\" pendant l’appel {$data['libelle']} du " . date('d/m/Y', strtotime($data['date'])) . '.';
 
         foreach ($eleve->parents as $parent) {
             if (($parent->pivot->informer ?? 'Non') !== 'Oui') {
@@ -202,9 +201,9 @@ class AppelEpreuveController extends Controller
                     AppNotification::create([
                         'user_id' => $user->idUtilisateur,
                         'type' => 'controle',
-                        'title' => 'Appel d’épreuve',
+                        'title' => 'Appel de présence',
                         'message' => $message,
-                        'link' => route('dashboard'),
+                        'link' => route('dashboard') . '#appel-presence-parent',
                         'data' => ['event' => 'EXAM_CALL_STATUS', 'id_eleve' => $eleve->id_eleve],
                     ]);
                 });
@@ -213,7 +212,7 @@ class AppelEpreuveController extends Controller
             if ($emailEnabled && $parent->email_parent) {
                 try {
                     Mail::raw($message, function ($mail) use ($parent) {
-                        $mail->to($parent->email_parent)->subject('Notification appel d’épreuve');
+                        $mail->to($parent->email_parent)->subject('Notification appel de présence');
                     });
                 } catch (\Throwable $exception) {
                     report($exception);

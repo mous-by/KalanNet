@@ -56,6 +56,8 @@
 
         @auth
             @include('partials.footer')
+            @include('annonces._unread-modal')
+            @include('components.assistant')
         @endauth
 
         <!--start overlay-->

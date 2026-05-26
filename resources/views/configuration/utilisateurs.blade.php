@@ -116,6 +116,7 @@
                                         'showActions' => $canSeeDaeActions,
                                         'permissionAllowed' => $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('dae_permission'),
                                         'statusAllowed' => $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('dae_activer'),
+                                        'deleteAllowed' => $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('utilisateurs_supprimer'),
                                     ])
                                 @elseif($key === 'dcap')
                                     @include('configuration.partials.users-table', [
@@ -124,6 +125,7 @@
                                         'showActions' => $canSeeDcapActions,
                                         'permissionAllowed' => $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('dcap_permission'),
                                         'statusAllowed' => $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('dcap_activer'),
+                                        'deleteAllowed' => $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('utilisateurs_supprimer'),
                                     ])
                                 @elseif($key === 'enseignants' || $key === 'parents')
                                     @include('configuration.partials.users-table', [
@@ -132,6 +134,7 @@
                                         'showActions' => true,
                                         'permissionAllowed' => true,
                                         'statusAllowed' => $connectedUser->droit === 'SupAdmin' || $connectedUser->droit === 'Admin',
+                                        'deleteAllowed' => $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('utilisateurs_supprimer'),
                                     ])
                                 @else
                                     @include('configuration.partials.users-table', [
@@ -140,6 +143,7 @@
                                         'showActions' => true,
                                         'permissionAllowed' => true,
                                         'statusAllowed' => $connectedUser->droit === 'SupAdmin' || $connectedUser->droit === 'Admin',
+                                        'deleteAllowed' => $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('utilisateurs_supprimer'),
                                     ])
                                 @endif
                             </div>
@@ -150,3 +154,33 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('[data-confirm-delete]').forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    event.preventDefault();
+                    const title = form.dataset.confirmTitle || 'Supprimer ce compte ?';
+                    const text = form.dataset.confirmText || '';
+                    if (!window.Swal) {
+                        if (confirm(title)) form.submit();
+                        return;
+                    }
+                    Swal.fire({
+                        title,
+                        text,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Oui, supprimer',
+                        cancelButtonText: 'Annuler',
+                        confirmButtonColor: '#dc3545',
+                        cancelButtonColor: '#6c757d',
+                    }).then(result => {
+                        if (result.isConfirmed) form.submit();
+                    });
+                });
+            });
+        });
+    </script>
+@endpush

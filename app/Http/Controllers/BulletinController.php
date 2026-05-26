@@ -10,7 +10,9 @@ use App\Models\Trimestre;
 use App\Services\ConductNoteService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class BulletinController extends Controller
 {
@@ -66,8 +68,7 @@ class BulletinController extends Controller
             ->where('id_classe', $classe->id_classe)
             ->where('id_annee', $data['id_annee'])
             ->where('etat_dossier', 0)
-            ->orderBy('nom_eleve')
-            ->orderBy('prenom_eleve')
+            ->orderBy('prenom_eleve')->orderBy('nom_eleve')
             ->get()
             ->map(function ($eleve) use ($data, $periode) {
                 $bulletin = $this->getBulletinData($eleve->id_eleve, $data['id_annee'], $periode['column'] === 'id_trimestre' ? $periode['value'] : null, $periode['column'] === 'mois' ? $periode['value'] : null, false);
@@ -124,6 +125,8 @@ class BulletinController extends Controller
             return back()->with('error', "Année scolaire manquante !");
         }
 
+        $this->authorizeParentBulletinAccess((int) $id_eleve, (int) $id_annee, $id_trimestre ? (int) $id_trimestre : null, $mois ? (int) $mois : null);
+
         $data = $this->getBulletinData($id_eleve, $id_annee, $id_trimestre, $mois);
         
         if (!$data) {
@@ -176,8 +179,7 @@ class BulletinController extends Controller
             ->where('id_classe', $classe->id_classe)
             ->where('id_annee', $data['id_annee'])
             ->where('etat_dossier', 0)
-            ->orderBy('nom_eleve')
-            ->orderBy('prenom_eleve');
+            ->orderBy('prenom_eleve')->orderBy('nom_eleve');
 
         if ($selectedIds->isNotEmpty()) {
             $studentQuery->whereIn('id_eleve', $selectedIds);
@@ -214,6 +216,70 @@ class BulletinController extends Controller
         $fileName = 'Bulletins_' . str_replace(' ', '_', $classe->nom_classe) . '_' . str_replace(' ', '_', $periodeLabel) . '.pdf';
 
         return $pdf->stream($fileName);
+    }
+
+    public function publishClassBulletins(int $idClasse, Request $request)
+    {
+        $classe = Classe::findOrFail($idClasse);
+        $this->authorizeClasse($classe);
+        $this->authorizeBulletinPublication();
+
+        $data = $request->validate([
+            'id_annee' => 'required|integer|exists:anneescolaire,id_anneeScolaire',
+            'id_trimestre' => 'nullable|integer|exists:trimestre,id_trimestre',
+            'mois' => 'nullable|integer|between:1,12',
+        ]);
+
+        if (empty($data['id_trimestre']) && empty($data['mois'])) {
+            return back()->with('error', 'Sélectionnez la période à publier.');
+        }
+
+        if (!Schema::hasTable('bulletin_publications')) {
+            return back()->with('error', 'Le module de publication des bulletins n’est pas encore migré.');
+        }
+
+        DB::table('bulletin_publications')->updateOrInsert(
+            [
+                'id_ecole' => $classe->idEcole,
+                'id_classe' => $classe->id_classe,
+                'id_annee' => $data['id_annee'],
+                'id_trimestre' => $data['mois'] ? null : ($data['id_trimestre'] ?? null),
+                'mois' => $data['mois'] ?? null,
+            ],
+            [
+                'published_by' => Auth::id(),
+                'published_at' => now(),
+                'updated_at' => now(),
+                'created_at' => now(),
+            ]
+        );
+
+        return back()->with('success', 'Bulletins publiés pour les parents.');
+    }
+
+    public function unpublishClassBulletins(int $idClasse, Request $request)
+    {
+        $classe = Classe::findOrFail($idClasse);
+        $this->authorizeClasse($classe);
+        $this->authorizeBulletinPublication();
+
+        $data = $request->validate([
+            'id_annee' => 'required|integer|exists:anneescolaire,id_anneeScolaire',
+            'id_trimestre' => 'nullable|integer|exists:trimestre,id_trimestre',
+            'mois' => 'nullable|integer|between:1,12',
+        ]);
+
+        if (Schema::hasTable('bulletin_publications')) {
+            DB::table('bulletin_publications')
+                ->where('id_ecole', $classe->idEcole)
+                ->where('id_classe', $classe->id_classe)
+                ->where('id_annee', $data['id_annee'])
+                ->where('id_trimestre', $data['mois'] ? null : ($data['id_trimestre'] ?? null))
+                ->where('mois', $data['mois'] ?? null)
+                ->delete();
+        }
+
+        return back()->with('success', 'Publication des bulletins retirée pour cette période.');
     }
 
     private function getBulletinData($id, $id_annee, $id_trimestre = null, $mois = null, bool $withRank = true)
@@ -269,6 +335,7 @@ class BulletinController extends Controller
             ->where('e.id_eleve', $id)
             ->where('le.id_annee_scolaire', $id_annee)
             ->where('le.' . $periode_col, $periode_val)
+            ->when($this->shouldFilterValidatedNotes($ecole), fn ($query) => $query->where('le.validation_status', 'valide'))
             ->first();
 
         if (!$apercu) return null;
@@ -296,6 +363,7 @@ class BulletinController extends Controller
                 })
                 ->where('le.' . $periode_col, $periode_val)
                 ->where('le.id_annee_scolaire', $id_annee)
+                ->when($this->shouldFilterValidatedNotes($ecole), fn ($query) => $query->where('le.validation_status', 'valide'))
                 ->avg('le.note') ?? 0;
 
             $matiere->M_Compo = (DB::table('ligne_evaluation as le')
@@ -308,6 +376,7 @@ class BulletinController extends Controller
                 })
                 ->where('le.' . $periode_col, $periode_val)
                 ->where('le.id_annee_scolaire', $id_annee)
+                ->when($this->shouldFilterValidatedNotes($ecole), fn ($query) => $query->where('le.validation_status', 'valide'))
                 ->value('le.note') ?? 0) * 2;
 
             $matiere->NT10 = DB::table('ligne_evaluation as le')
@@ -320,6 +389,7 @@ class BulletinController extends Controller
                 })
                 ->where('le.' . $periode_col, $periode_val)
                 ->where('le.id_annee_scolaire', $id_annee)
+                ->when($this->shouldFilterValidatedNotes($ecole), fn ($query) => $query->where('le.validation_status', 'valide'))
                 ->avg('le.note') ?? 0;
 
             // Calculations
@@ -422,5 +492,53 @@ class BulletinController extends Controller
     private function moisOptions(): array
     {
         return [1 => "Janvier", 2 => "Février", 3 => "Mars", 4 => "Avril", 5 => "Mai", 6 => "Juin", 7 => "Juillet", 8 => "Août", 9 => "Septembre", 10 => "Octobre", 11 => "Novembre", 12 => "Décembre"];
+    }
+
+    private function shouldFilterValidatedNotes(Ecole $ecole): bool
+    {
+        return Schema::hasColumn('ligne_evaluation', 'validation_status')
+            && strtolower(trim((string) $ecole->statut)) === 'prive';
+    }
+
+    private function authorizeBulletinPublication(): void
+    {
+        $user = Auth::user();
+
+        if ($user->droit !== 'SupAdmin' && !$user->userHasPermission('bulletins_publication')) {
+            abort(403);
+        }
+    }
+
+    private function authorizeParentBulletinAccess(int $idEleve, int $idAnnee, ?int $idTrimestre, ?int $mois): void
+    {
+        $user = Auth::user();
+        if ($user?->droit !== 'parent') {
+            return;
+        }
+
+        $eleve = Eleve::with('parents')->findOrFail($idEleve);
+        $parentId = $user->id_parent ?: $user->parent?->id_parent;
+        $isOwnChild = $parentId && $eleve->parents->contains('id_parent', $parentId);
+
+        if (!$isOwnChild) {
+            abort(403);
+        }
+
+        if (!Schema::hasTable('bulletin_publications')) {
+            abort(403, 'Bulletin non publié.');
+        }
+
+        $published = DB::table('bulletin_publications')
+            ->where('id_ecole', $eleve->id_ecole)
+            ->where('id_classe', $eleve->id_classe)
+            ->where('id_annee', $idAnnee)
+            ->where('id_trimestre', $mois ? null : $idTrimestre)
+            ->where('mois', $mois)
+            ->whereNotNull('published_at')
+            ->exists();
+
+        if (!$published) {
+            abort(403, 'Bulletin non publié.');
+        }
     }
 }

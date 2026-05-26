@@ -57,6 +57,7 @@
                     @if($showActions)
                         <td class="text-center">
                             <div class="d-flex justify-content-center align-items-center gap-2">
+                                @php($deleteAllowed = $deleteAllowed ?? false)
                                 @if($statusAllowed)
                                     <button class="btn btn-light btn-sm p-2" data-bs-toggle="modal" data-bs-target="#statusUserModal{{ $utilisateur->idUtilisateur }}" title="{{ (int) $utilisateur->statut === 1 ? 'Désactiver' : 'Activer' }}">
                                         @if((int) $utilisateur->statut === 1)
@@ -65,6 +66,15 @@
                                             <i class="bx bx-lock-alt text-danger fs-5"></i>
                                         @endif
                                     </button>
+                                @endif
+                                @if($deleteAllowed && Auth::id() !== $utilisateur->idUtilisateur)
+                                    <form action="{{ route('configuration.utilisateurs.destroy', $utilisateur->idUtilisateur) }}" method="POST" data-confirm-delete data-confirm-title="Supprimer ce compte ?" data-confirm-text="Le compte d'accès sera supprimé. Les fiches enseignant, parent et les historiques métier restent conservés.">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-light btn-sm p-2" title="Supprimer le compte">
+                                            <i class="bx bx-trash text-danger fs-5"></i>
+                                        </button>
+                                    </form>
                                 @endif
                             </div>
 

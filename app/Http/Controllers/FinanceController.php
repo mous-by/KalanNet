@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Caisse;
 use App\Models\Banque;
+use App\Models\AppNotification;
 use App\Models\Classe;
 use App\Models\Paiement;
 use App\Models\Encaissement;
@@ -20,6 +21,7 @@ use App\Models\ReductionPaiementConfig;
 use App\Models\Retrait;
 use App\Models\Trimestre;
 use App\Models\AnneeScolaire;
+use App\Models\User;
 use App\Models\Versement;
 use App\Services\Paiements\EcheanceService;
 use App\Services\Paiements\PaiementEleveReportService;
@@ -29,6 +31,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 class FinanceController extends Controller
@@ -92,6 +95,7 @@ class FinanceController extends Controller
             ->get();
         $caisse = Caisse::where('id_ecole', $idEcole)->where('status', 1)->first();
         $ecole = Ecole::find($idEcole);
+        $isPublicSchool = $this->isPublicSchool($ecole);
         $paymentRows = collect();
 
         if (!empty($filters['id_classe']) && !empty($filters['id_annee'])) {
@@ -111,6 +115,7 @@ class FinanceController extends Controller
             'trimestres',
             'caisse',
             'ecole',
+            'isPublicSchool',
             'filters',
             'paymentRows',
             'newRef'
@@ -163,6 +168,8 @@ class FinanceController extends Controller
 
         $classes = Classe::where('idEcole', $idEcole)->orderBy('nom_classe')->get();
         $annees = AnneeScolaire::orderByDesc('id_anneeScolaire')->get();
+        $ecole = Ecole::find($idEcole);
+        $isPublicSchool = $this->isPublicSchool($ecole);
         $filters = $request->only(['id_classe', 'id_annee']);
         $planifications = collect();
 
@@ -174,7 +181,7 @@ class FinanceController extends Controller
                 ->get();
         }
 
-        return view('finances.planifications.index', compact('classes', 'annees', 'filters', 'planifications'));
+        return view('finances.planifications.index', compact('classes', 'annees', 'filters', 'planifications', 'isPublicSchool'));
     }
 
     public function createLegacyPlanification()
@@ -183,6 +190,8 @@ class FinanceController extends Controller
         $this->ensureAnyPermission(['finances_planifications_creation', 'paiements_faire']);
 
         $classes = Classe::where('idEcole', $idEcole)->orderBy('nom_classe')->get();
+        $ecole = Ecole::find($idEcole);
+        $isPublicSchool = $this->isPublicSchool($ecole);
         $annees = AnneeScolaire::whereDate('date_debut', '<=', now())
             ->whereDate('date_fin', '>=', now())
             ->orderByDesc('id_anneeScolaire')
@@ -191,7 +200,7 @@ class FinanceController extends Controller
             $annees = AnneeScolaire::orderByDesc('id_anneeScolaire')->get();
         }
 
-        return view('finances.planifications.create', compact('classes', 'annees'));
+        return view('finances.planifications.create', compact('classes', 'annees', 'isPublicSchool'));
     }
 
     public function storeLegacyPlanification(Request $request)
@@ -213,6 +222,7 @@ class FinanceController extends Controller
         ]);
 
         $idEcole = (int) session('idEcole');
+        $isPublicSchool = $this->isPublicSchool(Ecole::find($idEcole));
         $classeIds = collect($data['id_classes'])->map(fn ($id) => (int) $id)->unique()->values();
         $allowedClasseIds = Classe::where('idEcole', $idEcole)
             ->whereIn('id_classe', $classeIds)
@@ -229,7 +239,7 @@ class FinanceController extends Controller
         $created = 0;
 
         try {
-            DB::transaction(function () use ($data, $allowedClasseIds, &$errors, &$created) {
+            DB::transaction(function () use ($data, $allowedClasseIds, $isPublicSchool, &$errors, &$created) {
                 $classNames = Classe::whereIn('id_classe', $allowedClasseIds)
                     ->pluck('nom_classe', 'id_classe');
 
@@ -239,15 +249,17 @@ class FinanceController extends Controller
                         ->pluck('motif')
                         ->map(fn ($motif) => strtolower(trim((string) $motif)))
                         ->all();
-                    $requiredTypes = ['annuelle', 'mensuelle', 'trimestrielle'];
+                    $requiredTypes = $isPublicSchool ? ['cooperative'] : ['annuelle', 'mensuelle', 'trimestrielle'];
 
                     if (empty(array_diff($requiredTypes, $existing))) {
-                        $errors[] = "La classe {$classNames[$classeId]} est déjà planifiée avec les trois types.";
+                        $errors[] = $isPublicSchool
+                            ? "La coopérative existe déjà pour la classe {$classNames[$classeId]}."
+                            : "La classe {$classNames[$classeId]} est déjà planifiée avec les trois types.";
                         continue;
                     }
 
                     foreach ($data['motif'] as $index => $motif) {
-                        $motif = strtolower(trim((string) $motif));
+                        $motif = $isPublicSchool ? 'cooperative' : strtolower(trim((string) $motif));
                         $dateDebut = $data['date_debut'][$index] ?? null;
                         $dateFin = $data['date_fin'][$index] ?? null;
                         $montant = $data['montant'][$index] ?? null;
@@ -257,7 +269,8 @@ class FinanceController extends Controller
                             continue;
                         }
                         if (in_array($motif, $existing, true)) {
-                            $errors[] = "Le type de planification '{$motif}' existe déjà pour {$classNames[$classeId]} à la ligne " . ($index + 1) . '.';
+                            $label = $isPublicSchool ? 'La coopérative' : "Le type de planification '{$motif}'";
+                            $errors[] = "{$label} existe déjà pour {$classNames[$classeId]} à la ligne " . ($index + 1) . '.';
                             continue;
                         }
 
@@ -280,10 +293,12 @@ class FinanceController extends Controller
         } catch (\Throwable) {
             return redirect()->route('finances.planifications.create')
                 ->withInput()
-                ->with('error', 'Impossible d’enregistrer la planification du paiement.');
+                ->with('error', $isPublicSchool ? 'Impossible d’enregistrer la coopérative.' : 'Impossible d’enregistrer la planification du paiement.');
         }
 
-        $message = $created > 0 ? "{$created} planification(s) insérée(s) avec succès." : 'Aucune planification insérée.';
+        $message = $created > 0
+            ? ($isPublicSchool ? "{$created} coopérative(s) insérée(s) avec succès." : "{$created} planification(s) insérée(s) avec succès.")
+            : ($isPublicSchool ? 'Aucune coopérative insérée.' : 'Aucune planification insérée.');
         return redirect()->route('finances.planifications.create')
             ->with($created > 0 ? 'success' : 'error', $message)
             ->with('planification_errors', $errors);
@@ -706,6 +721,7 @@ class FinanceController extends Controller
 
     public function showCaisse()
     {
+        $this->ensurePermission('caisses_apercu');
         $idEcole = session('idEcole');
         $caisse = Caisse::where('id_ecole', $idEcole)->first();
         $annees = AnneeScolaire::orderByDesc('id_anneeScolaire')->get();
@@ -723,7 +739,7 @@ class FinanceController extends Controller
             return $item;
         });
 
-        $decaissements = Decaissement::where('id_caisse', $caisse->id_caisse)->get()->map(function($item) {
+        $decaissements = Decaissement::with('utilisateur')->where('id_caisse', $caisse->id_caisse)->get()->map(function($item) {
             $item->type = 'DEPENSE';
             $item->date = $item->date_decaissement;
             $item->montant = $item->montant_decaissement;
@@ -734,6 +750,176 @@ class FinanceController extends Controller
         $mouvements = $encaissements->concat($decaissements)->sortByDesc('date');
 
         return view('finances.caisse', compact('caisse', 'mouvements', 'annees'));
+    }
+
+    public function depenses()
+    {
+        $this->ensurePermission('decaissements_apercu');
+        $idEcole = session('idEcole');
+        $caisse = Caisse::where('id_ecole', $idEcole)->where('status', 1)->first();
+        $annees = AnneeScolaire::orderByDesc('id_anneeScolaire')->get();
+        $depenses = collect();
+
+        if ($caisse) {
+            $depenses = Decaissement::with(['caisse', 'utilisateur', 'validateur'])
+                ->where('id_caisse', $caisse->id_caisse)
+                ->orderBy('valide')
+                ->orderByDesc('date_decaissement')
+                ->orderByDesc('id_decaissement')
+                ->get();
+        }
+
+        return view('finances.depenses', compact('caisse', 'annees', 'depenses'));
+    }
+
+    public function subventionsEtat(Request $request)
+    {
+        $this->ensureAnyPermission(['subventions_etat_apercu', 'paiements_apercu']);
+        $idEcole = (int) session('idEcole');
+        $annees = AnneeScolaire::orderByDesc('id_anneeScolaire')->get();
+        $classes = Classe::where('idEcole', $idEcole)->orderBy('nom_classe')->get();
+        $caisse = Caisse::where('id_ecole', $idEcole)->where('status', 1)->first();
+        $filters = $request->only(['annee_scolaire_id', 'classe_id']);
+        $subventionRows = collect();
+
+        if (!empty($filters['annee_scolaire_id'])) {
+            $subventionRows = $this->stateSubventionRows(
+                (int) $filters['annee_scolaire_id'],
+                !empty($filters['classe_id']) ? (int) $filters['classe_id'] : null
+            );
+        }
+
+        return view('finances.subventions-etat', compact('annees', 'classes', 'caisse', 'filters', 'subventionRows'));
+    }
+
+    public function storeSubventionEtat(Request $request)
+    {
+        $this->ensureAnyPermission(['subventions_etat_encaisser', 'paiements_faire']);
+        $data = $request->validate([
+            'annee_scolaire_id' => 'required|exists:anneescolaire,id_anneeScolaire',
+            'classe_id' => 'nullable|exists:classe,id_classe',
+            'date_paiement' => 'required|date',
+            'montant_recu' => 'required|numeric|min:1',
+            'reference_etat' => 'nullable|string|max:100',
+            'observation' => 'nullable|string|max:255',
+        ]);
+
+        $idEcole = (int) session('idEcole');
+        if (!empty($data['classe_id'])) {
+            Classe::where('idEcole', $idEcole)->findOrFail($data['classe_id']);
+        }
+
+        try {
+            $result = DB::transaction(function () use ($data, $idEcole) {
+                $caisse = Caisse::where('id_ecole', $idEcole)->where('status', 1)->lockForUpdate()->firstOrFail();
+                $remainingGlobal = round((float) $data['montant_recu'], 2);
+                $reference = trim((string) ($data['reference_etat'] ?? '')) ?: $this->nextSubventionReference();
+                $rows = $this->stateSubventionRows((int) $data['annee_scolaire_id'], !empty($data['classe_id']) ? (int) $data['classe_id'] : null);
+                $allocations = [];
+
+                foreach ($rows as $row) {
+                    if ($remainingGlobal <= 0) {
+                        break;
+                    }
+
+                    $amount = min($remainingGlobal, (float) $row->reste);
+                    if ($amount <= 0) {
+                        continue;
+                    }
+
+                    $allocations[] = [
+                        'row' => $row,
+                        'amount' => $amount,
+                    ];
+                    $remainingGlobal = round($remainingGlobal - $amount, 2);
+                }
+
+                if (empty($allocations)) {
+                    throw ValidationException::withMessages([
+                        'montant_recu' => 'Aucune échéance subventionnée ouverte pour cette sélection.',
+                    ]);
+                }
+
+                $allocatedTotal = collect($allocations)->sum('amount');
+                $encaissement = Encaissement::create([
+                    'type_operation' => 'Subvention État',
+                    'date_encaissement' => $data['date_paiement'],
+                    'motif_encaissement' => 'Paiement global État - ' . $reference,
+                    'montant_encaissement' => $allocatedTotal,
+                    'id_annee_scolaire' => $data['annee_scolaire_id'],
+                    'id_caisse' => $caisse->id_caisse,
+                    'idUtilisateur' => Auth::id(),
+                    'statut' => 'valide',
+                ]);
+
+                foreach ($allocations as $allocation) {
+                    $row = $allocation['row'];
+                    $amount = $allocation['amount'];
+
+                    $paiement = Paiement::create([
+                        'date_paiement' => $data['date_paiement'],
+                        'mode_reglement' => 'virement_etat',
+                        'reference' => $reference,
+                        'id_classe' => $row->plan->classe_id,
+                        'id_annee' => $row->plan->annee_scolaire_id,
+                        'id_eleve' => $row->plan->eleve_id,
+                        'echeance_id' => $row->echeance->id,
+                        'motif' => 'Subvention État - ' . $row->echeance->libelle,
+                        'montant' => $amount,
+                        'montant_paye' => $amount,
+                        'parent' => null,
+                        'nom_payeur' => 'État',
+                        'telephone' => '',
+                        'id_trimestre' => 0,
+                        'idEcole' => $idEcole,
+                        'id_utilisateur' => Auth::id(),
+                        'id_caisse' => $caisse->id_caisse,
+                        'numero_recu' => $this->referenceService->nextReceiptNumber($idEcole),
+                        'id_planification' => 0,
+                        'statut' => 'valide',
+                        'encaissement_id' => $encaissement->id_encaissement,
+                    ]);
+
+                    if (!$encaissement->paiement_id) {
+                        $encaissement->paiement_id = $paiement->id_paiement;
+                        $encaissement->save();
+                    }
+
+                    $this->refreshStateSubventionEcheanceStatus($row->echeance);
+                }
+
+                $caisse->montant_net = (float) $caisse->montant_net + $allocatedTotal;
+                $caisse->save();
+
+                return [
+                    'allocated' => $allocatedTotal,
+                    'remaining' => $remainingGlobal,
+                    'count' => count($allocations),
+                    'reference' => $reference,
+                ];
+            });
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (\Throwable) {
+            return redirect()->route('finances.subventions-etat', $request->only(['annee_scolaire_id', 'classe_id']))
+                ->withInput()
+                ->with('error', 'Impossible d’enregistrer la subvention État.');
+        }
+
+        $message = 'Subvention État enregistrée : '
+            . number_format($result['allocated'], 0, ',', ' ')
+            . ' FCFA répartis sur '
+            . $result['count']
+            . ' échéance(s). Référence : '
+            . $result['reference']
+            . '.';
+
+        if ($result['remaining'] > 0) {
+            $message .= ' Reliquat non affecté : ' . number_format($result['remaining'], 0, ',', ' ') . ' FCFA.';
+        }
+
+        return redirect()->route('finances.subventions-etat', $request->only(['annee_scolaire_id', 'classe_id']))
+            ->with('success', $message);
     }
 
     public function storeCaisse(Request $request)
@@ -801,6 +987,7 @@ class FinanceController extends Controller
 
     public function storeDecaissement(Request $request)
     {
+        $this->ensurePermission('decaissements_creation');
         $data = $request->validate([
             'id_caisse' => 'required|exists:caisse,id_caisse',
             'id_annee_scolaire' => 'required|exists:anneescolaire,id_anneeScolaire',
@@ -810,26 +997,92 @@ class FinanceController extends Controller
         ]);
 
         $caisse = $this->getOwnedCaisse($data['id_caisse']);
+        $shouldValidateNow = $this->canValidateDecaissement(Auth::user());
 
-        if ((float) $caisse->montant_net < (float) $data['montant_decaissement']) {
+        if ($shouldValidateNow && (float) $caisse->montant_net < (float) $data['montant_decaissement']) {
             return redirect()->route('finances.caisse')->with('error', 'Solde insuffisant pour effectuer cette sortie.');
         }
 
-        DB::transaction(function () use ($data, $caisse) {
-            Decaissement::create([
+        $decaissement = DB::transaction(function () use ($data, $caisse, $shouldValidateNow) {
+            $decaissement = Decaissement::create(array_filter([
                 'date_decaissement' => $data['date_decaissement'],
                 'motif_decaissement' => $data['motif_decaissement'],
                 'montant_decaissement' => $data['montant_decaissement'],
                 'id_annee_scolaire' => $data['id_annee_scolaire'],
                 'id_caisse' => $caisse->id_caisse,
                 'idUtilisateur' => Auth::id(),
-                'valide' => 1,
-            ]);
+                'valide' => $shouldValidateNow ? 1 : 0,
+                'validated_by' => $shouldValidateNow && Schema::hasColumn('decaissement', 'validated_by') ? Auth::id() : null,
+                'validated_at' => $shouldValidateNow && Schema::hasColumn('decaissement', 'validated_at') ? now() : null,
+            ], fn ($value) => $value !== null));
 
-            $caisse->decrement('montant_net', $data['montant_decaissement']);
+            if ($shouldValidateNow) {
+                $caisse->decrement('montant_net', $data['montant_decaissement']);
+            }
+
+            return $decaissement;
         });
 
-        return redirect()->route('finances.caisse')->with('success', 'Décaissement ajouté avec succès.');
+        if (!$shouldValidateNow) {
+            $this->notifyDecaissementValidators($decaissement);
+        }
+
+        return redirect()->route('finances.caisse')->with(
+            'success',
+            $shouldValidateNow
+                ? 'Décaissement validé et déduit de la caisse.'
+                : 'Dépense soumise en attente de validation.'
+        );
+    }
+
+    public function validateDecaissement($id)
+    {
+        if (!$this->canValidateDecaissement(Auth::user())) {
+            abort(403, 'Permission insuffisante.');
+        }
+        $idEcole = session('idEcole');
+
+        try {
+            DB::transaction(function () use ($id, $idEcole) {
+                $decaissement = Decaissement::with('caisse')
+                    ->whereHas('caisse', fn ($query) => $query->where('id_ecole', $idEcole))
+                    ->lockForUpdate()
+                    ->findOrFail($id);
+
+                if ((int) $decaissement->valide === 1) {
+                    return;
+                }
+
+                $caisse = Caisse::where('id_ecole', $idEcole)
+                    ->whereKey($decaissement->id_caisse)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                if ((float) $caisse->montant_net < (float) $decaissement->montant_decaissement) {
+                    throw ValidationException::withMessages([
+                        'decaissement' => 'Solde insuffisant dans la caisse pour valider cette dépense.',
+                    ]);
+                }
+
+                $caisse->montant_net = (float) $caisse->montant_net - (float) $decaissement->montant_decaissement;
+                $caisse->save();
+
+                $updates = ['valide' => 1];
+                if (Schema::hasColumn('decaissement', 'validated_by')) {
+                    $updates['validated_by'] = Auth::id();
+                }
+                if (Schema::hasColumn('decaissement', 'validated_at')) {
+                    $updates['validated_at'] = now();
+                }
+                $decaissement->update($updates);
+            });
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (\Throwable) {
+            return redirect()->route('finances.caisse')->with('error', 'Impossible de valider cette dépense.');
+        }
+
+        return redirect()->route('finances.caisse')->with('success', 'Dépense validée et déduite de la caisse.');
     }
 
     public function banques()
@@ -1110,8 +1363,7 @@ class FinanceController extends Controller
             ->where('id_classe', $classeId)
             ->where('id_annee', $anneeId)
             ->where('etat_dossier', 0)
-            ->orderBy('nom_eleve')
-            ->orderBy('prenom_eleve')
+            ->orderBy('prenom_eleve')->orderBy('nom_eleve')
             ->get();
 
         $inscriptions = DB::table('ligne_inscription')
@@ -1184,6 +1436,9 @@ class FinanceController extends Controller
         if (str_contains($value, 'trimestr')) {
             return 'trimestriel';
         }
+        if (str_contains($value, 'cooper') || str_contains($value, 'coop')) {
+            return 'cooperative';
+        }
         if (str_contains($value, 'annuel')) {
             return 'annuel';
         }
@@ -1206,6 +1461,11 @@ class FinanceController extends Controller
         }
 
         return '';
+    }
+
+    private function isPublicSchool(?Ecole $ecole): bool
+    {
+        return strtolower(trim((string) ($ecole->statut ?? ''))) === 'public';
     }
 
     private function resolveLegacyPayer(Eleve $eleve, $parentId, ?string $otherName, ?string $otherPhone): array
@@ -1237,6 +1497,127 @@ class FinanceController extends Controller
             'nom_payeur' => $otherName,
             'telephone' => $otherPhone,
         ];
+    }
+
+    private function canValidateDecaissement(?User $user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        return $user->droit === 'SupAdmin'
+            || $user->droit === 'Admin'
+            || $user->userHasPermission('decaissements_validation');
+    }
+
+    private function notifyDecaissementValidators(Decaissement $decaissement): void
+    {
+        if (!Schema::hasTable('app_notifications')) {
+            return;
+        }
+
+        $caisse = $decaissement->caisse;
+        if (!$caisse) {
+            return;
+        }
+
+        $validators = User::with('permissions')
+            ->where('idEcole', $caisse->id_ecole)
+            ->where('statut', 1)
+            ->where('idUtilisateur', '!=', Auth::id())
+            ->get()
+            ->filter(fn ($user) => $this->canValidateDecaissement($user));
+
+        foreach ($validators as $validator) {
+            $alreadyNotified = AppNotification::where('user_id', $validator->idUtilisateur)
+                ->whereNull('read_at')
+                ->where('type', 'decaissement_validation')
+                ->where(function ($query) use ($decaissement) {
+                    $query->where('data->id_decaissement', $decaissement->id_decaissement)
+                        ->orWhere('link', route('finances.depenses') . '#decaissement-' . $decaissement->id_decaissement);
+                })
+                ->exists();
+
+            if ($alreadyNotified) {
+                continue;
+            }
+
+            AppNotification::create([
+                'user_id' => $validator->idUtilisateur,
+                'type' => 'decaissement_validation',
+                'title' => 'Dépense à valider',
+                'message' => 'Une sortie de caisse de '
+                    . number_format((float) $decaissement->montant_decaissement, 0, ',', ' ')
+                    . ' FCFA attend votre validation.',
+                'link' => route('finances.depenses') . '#decaissement-' . $decaissement->id_decaissement,
+                'data' => [
+                    'id_decaissement' => $decaissement->id_decaissement,
+                    'id_caisse' => $decaissement->id_caisse,
+                    'montant' => (float) $decaissement->montant_decaissement,
+                ],
+            ]);
+        }
+    }
+
+    private function stateSubventionRows(int $anneeId, ?int $classeId = null)
+    {
+        $idEcole = (int) session('idEcole');
+        $plans = PlanPaiement::with(['eleve', 'classe', 'anneeScolaire', 'echeances.paiements'])
+            ->where('ecole_id', $idEcole)
+            ->where('annee_scolaire_id', $anneeId)
+            ->where(function ($query) {
+                $query->where('payeur_type', 'etat')
+                    ->orWhere('statut_paiement', 'subventionne');
+            })
+            ->when($classeId, fn ($query) => $query->where('classe_id', $classeId))
+            ->orderBy('classe_id')
+            ->get();
+
+        return $plans->flatMap(function (PlanPaiement $plan) {
+            return $plan->echeances->map(function (EcheancePaiement $echeance) use ($plan) {
+                $paid = (float) $echeance->paiements
+                    ->where('statut', 'valide')
+                    ->sum(fn ($paiement) => (float) ($paiement->montant_paye ?? $paiement->montant));
+                $reste = max(0, (float) $echeance->montant_prevu - $paid);
+
+                if ($reste <= 0) {
+                    return null;
+                }
+
+                return (object) [
+                    'plan' => $plan,
+                    'echeance' => $echeance,
+                    'deja_paye' => $paid,
+                    'reste' => $reste,
+                ];
+            })->filter();
+        })->sortBy([
+            fn ($a, $b) => strcmp((string) $a->echeance->date_limite, (string) $b->echeance->date_limite),
+            fn ($a, $b) => strcmp((string) ($a->plan->classe?->nom_classe ?? ''), (string) ($b->plan->classe?->nom_classe ?? '')),
+            fn ($a, $b) => strcmp((string) ($a->plan->eleve?->nom_eleve ?? ''), (string) ($b->plan->eleve?->nom_eleve ?? '')),
+        ])->values();
+    }
+
+    private function refreshStateSubventionEcheanceStatus(EcheancePaiement $echeance): void
+    {
+        $paid = Paiement::where('echeance_id', $echeance->id)
+            ->where('statut', 'valide')
+            ->sum(DB::raw('COALESCE(montant_paye, montant)'));
+        $remaining = max(0, (float) $echeance->montant_prevu - (float) $paid);
+
+        $echeance->update([
+            'statut' => match (true) {
+                $remaining <= 0.0 => 'paye',
+                $paid > 0 => 'partiel',
+                now()->toDateString() > $echeance->date_limite->toDateString() => 'retard',
+                default => 'en_attente',
+            },
+        ]);
+    }
+
+    private function nextSubventionReference(): string
+    {
+        return 'SUBV-ETAT-' . now()->format('Ymd-His');
     }
 
     private function getOwnedCaisse(int $id): Caisse

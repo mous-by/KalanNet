@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Abonnement;
 use App\Models\AnneeScolaire;
 use App\Models\AppNotification;
+use App\Models\AppelEpreuve;
 use App\Models\Eleve;
 use App\Models\Enseignant;
 use App\Models\Classe;
@@ -47,17 +48,15 @@ class DashboardController extends Controller
         $idAnnee = $anneeEnCours ? $anneeEnCours->id_anneeScolaire : null;
 
         // General stats
-        $totalEleves = Eleve::when($schoolId, function ($query, $schoolId) {
+        $activeStudentsQuery = Eleve::when($schoolId, function ($query, $schoolId) {
             $query->where('id_ecole', $schoolId);
-        })->where('etat_dossier', 0)->where('id_annee', $idAnnee)->count();
+        })->when($idAnnee, function ($query, $idAnnee) {
+            $query->where('id_annee', $idAnnee);
+        })->where('etat_dossier', 0);
 
-        $totalGarcons = Eleve::when($schoolId, function ($query, $schoolId) {
-            $query->where('id_ecole', $schoolId);
-        })->where('etat_dossier', 0)->where('id_annee', $idAnnee)->where('genre_eleve', 'Masculin')->count();
-
-        $totalFilles = Eleve::when($schoolId, function ($query, $schoolId) {
-            $query->where('id_ecole', $schoolId);
-        })->where('etat_dossier', 0)->where('id_annee', $idAnnee)->where('genre_eleve', 'Féminin')->count();
+        $totalEleves = (clone $activeStudentsQuery)->count();
+        $totalGarcons = (clone $activeStudentsQuery)->whereIn('genre_eleve', ['Masculin', 'M', 'Garçon', 'Garcon', 'Homme', 'H'])->count();
+        $totalFilles = (clone $activeStudentsQuery)->whereIn('genre_eleve', ['Féminin', 'Feminin', 'F', 'Fille', 'Femme'])->count();
 
         $totalEnseignants = Enseignant::when($schoolId, function ($query, $schoolId) {
             $query->where('id_ecole', $schoolId);
@@ -78,7 +77,9 @@ class DashboardController extends Controller
         // Pedagogical indicators
         $totalAbandons = Eleve::when($schoolId, function ($query, $schoolId) {
             $query->where('id_ecole', $schoolId);
-        })->where('etat_dossier', 2)->where('id_annee', $idAnnee)->count();
+        })->when($idAnnee, function ($query, $idAnnee) {
+            $query->where('id_annee', $idAnnee);
+        })->where('etat_dossier', 2)->count();
 
         $tauxAbandon = $totalEleves > 0 ? round(($totalAbandons / ($totalEleves + $totalAbandons)) * 100, 1) : 0;
 
@@ -86,11 +87,15 @@ class DashboardController extends Controller
         $classesData = Classe::when($schoolId, function ($query, $schoolId) {
             $query->where('idEcole', $schoolId);
         })->get()->map(function($classe) use ($idAnnee) {
+            $students = $classe->eleves()
+                ->when($idAnnee, fn ($query, $idAnnee) => $query->where('id_annee', $idAnnee))
+                ->where('etat_dossier', 0);
+
             return [
                 'nom' => $classe->nom_classe,
-                'total' => $classe->eleves()->where('id_annee', $idAnnee)->where('etat_dossier', 0)->count(),
-                'filles' => $classe->eleves()->where('id_annee', $idAnnee)->where('etat_dossier', 0)->where('genre_eleve', 'Féminin')->count(),
-                'garcons' => $classe->eleves()->where('id_annee', $idAnnee)->where('etat_dossier', 0)->where('genre_eleve', 'Masculin')->count(),
+                'total' => (clone $students)->count(),
+                'filles' => (clone $students)->whereIn('genre_eleve', ['Féminin', 'Feminin', 'F', 'Fille', 'Femme'])->count(),
+                'garcons' => (clone $students)->whereIn('genre_eleve', ['Masculin', 'M', 'Garçon', 'Garcon', 'Homme', 'H'])->count(),
             ];
         })->sortByDesc('total');
 
@@ -98,8 +103,10 @@ class DashboardController extends Controller
             ->when($schoolId, function ($query, $schoolId) {
                 $query->where('id_ecole', $schoolId);
             })
+            ->when($idAnnee, function ($query, $idAnnee) {
+                $query->where('id_annee', $idAnnee);
+            })
             ->where('etat_dossier', 0)
-            ->where('id_annee', $idAnnee)
             ->orderBy('id_eleve', 'desc')
             ->limit(5)
             ->get();
@@ -370,8 +377,11 @@ class DashboardController extends Controller
         $totalRemaining = $financialRows->sum('reste');
         $latePlans = $financialRows->where('retards', '>', 0)->count();
         $annonces = $this->parentAnnouncements($parent, $schoolId);
+        $publishedBulletins = $this->parentPublishedBulletins($children);
         $childrenProgressRows = $this->parentChildrenProgress($children, $anneeEnCours?->id_anneeScolaire);
         $childrenPresenceProgressRows = $this->parentChildrenPresenceProgress($children, $anneeEnCours?->id_anneeScolaire);
+        $callPeriod = request('appel_presence_periode', 'today');
+        $childrenCallRows = $this->parentChildrenCallRows($children, $callPeriod);
 
         return view('dashboards.parent', compact(
             'parent',
@@ -380,7 +390,10 @@ class DashboardController extends Controller
             'financialRows',
             'childrenProgressRows',
             'childrenPresenceProgressRows',
+            'childrenCallRows',
+            'callPeriod',
             'annonces',
+            'publishedBulletins',
             'anneeEnCours',
             'totalExpected',
             'totalPaid',
@@ -581,6 +594,43 @@ class DashboardController extends Controller
             ->values();
     }
 
+    private function parentChildrenCallRows($children, string $period = 'today')
+    {
+        $childIds = $children->pluck('id_eleve')->filter()->unique()->values();
+
+        if ($childIds->isEmpty()) {
+            return collect();
+        }
+
+        $query = AppelEpreuve::with(['eleve', 'classe', 'matiere', 'statutControle'])
+            ->whereIn('id_eleve', $childIds)
+            ->where('notifier_parent', true);
+
+        if ($period === 'today') {
+            $query->whereDate('date', now()->toDateString());
+        } elseif ($period === '7days') {
+            $query->whereDate('date', '>=', now()->subDays(7)->toDateString());
+        } elseif ($period === '30days') {
+            $query->whereDate('date', '>=', now()->subDays(30)->toDateString());
+        }
+
+        return $query
+            ->orderByDesc('date')
+            ->orderByDesc('id_controle_eleve')
+            ->limit($period === 'all' ? 30 : 12)
+            ->get()
+            ->map(fn (AppelEpreuve $appel) => [
+                'child' => $appel->eleve,
+                'classe' => $appel->classe,
+                'matiere' => $appel->matiere,
+                'statut' => $appel->statutControle,
+                'date' => $appel->date,
+                'libelle' => $appel->libelle,
+                'heure_debut' => $appel->heure_debut,
+                'heure_fin' => $appel->heure_fin,
+            ]);
+    }
+
     private function parentAnnouncements(ParentModel $parent, ?int $schoolId)
     {
         if (!$schoolId || !Schema::hasTable('annonces_admin_gestionnaire')) {
@@ -591,6 +641,7 @@ class DashboardController extends Controller
             ->leftJoin('utilisateurs as users', 'users.idUtilisateur', '=', 'annonces.id_utilisateur')
             ->where('annonces.id_ecole', $schoolId)
             ->whereIn('annonces.public_cible', ['tous', 'parents', 'parent'])
+            ->when(Schema::hasColumn('annonces_admin_gestionnaire', 'statut_annonce'), fn ($query) => $query->where('annonces.statut_annonce', 'publie'))
             ->select([
                 'annonces.id_annonce',
                 'annonces.titre',
@@ -604,6 +655,51 @@ class DashboardController extends Controller
             ->orderByDesc('annonces.date_publication')
             ->limit(5)
             ->get();
+    }
+
+    private function parentPublishedBulletins($children)
+    {
+        if ($children->isEmpty() || !Schema::hasTable('bulletin_publications')) {
+            return collect();
+        }
+
+        $classIds = $children->pluck('id_classe')->filter()->unique()->values();
+        $yearIds = $children->pluck('id_annee')->filter()->unique()->values();
+        $childrenByClass = $children->groupBy('id_classe');
+
+        $publications = DB::table('bulletin_publications as bp')
+            ->leftJoin('trimestre as t', 'bp.id_trimestre', '=', 't.id_trimestre')
+            ->whereIn('bp.id_classe', $classIds)
+            ->whereIn('bp.id_annee', $yearIds)
+            ->whereNotNull('bp.published_at')
+            ->select('bp.*', 't.nom_trimestre')
+            ->orderByDesc('bp.published_at')
+            ->get();
+
+        $moisOptions = [1 => 'Janvier', 2 => 'Février', 3 => 'Mars', 4 => 'Avril', 5 => 'Mai', 6 => 'Juin', 7 => 'Juillet', 8 => 'Août', 9 => 'Septembre', 10 => 'Octobre', 11 => 'Novembre', 12 => 'Décembre'];
+
+        return $publications
+            ->flatMap(function ($publication) use ($childrenByClass, $moisOptions) {
+                return ($childrenByClass[$publication->id_classe] ?? collect())
+                    ->where('id_annee', $publication->id_annee)
+                    ->map(function (Eleve $child) use ($publication, $moisOptions) {
+                        return [
+                            'child' => $child,
+                            'periode' => $publication->mois
+                                ? ($moisOptions[(int) $publication->mois] ?? 'Mois')
+                                : ($publication->nom_trimestre ?? 'Trimestre'),
+                            'published_at' => $publication->published_at,
+                            'url' => route('pedagogie.bulletins.download', [
+                                'id' => $child->id_eleve,
+                                'id_annee' => $publication->id_annee,
+                                'id_trimestre' => $publication->id_trimestre,
+                                'mois' => $publication->mois,
+                            ]),
+                        ];
+                    });
+            })
+            ->take(10)
+            ->values();
     }
 
     private function parentFinancialRow(Eleve $child, $payments): array

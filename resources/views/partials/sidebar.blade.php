@@ -12,6 +12,7 @@
         'administrateur_tabsConfig',
         'enseignants_tabsConfig',
         'parents_tabsConfig',
+        'utilisateurs_supprimer',
         'dae_permission',
         'dcap_permission',
         'permissions_apercu',
@@ -20,8 +21,10 @@
         'finances_planifications_apercu',
         'paiements_apercu',
         'paiements_faire',
+        'subventions_etat_apercu',
         'historique_paiement_apercu',
         'caisses_apercu',
+        'decaissements_apercu',
         'banques_apercu',
         'versements_apercu',
         'retraits_apercu',
@@ -52,6 +55,7 @@
         'paiements_faire',
     ];
     $canOpenTeachers = $user->droit === 'SupAdmin' || $user->userHasAnyPermission($teacherMenuPermissions);
+    $canOpenAnnouncements = $user->droit === 'SupAdmin' || $user->userHasAnyPermission(['annonces_apercu', 'annonces_creation', 'annonces_supprimer']);
 @endphp
 
 <!--start sidebar -->
@@ -161,7 +165,7 @@
         </li>
         @endif
 
-        @if ($user->userHasPermission('evaluation_apercu') || $user->userHasAnyPermission(['controle_apercu', 'controle_creation', 'controle_création']))
+        @if ($user->droit === 'SupAdmin' || $user->userHasPermission('evaluation_apercu') || $user->userHasAnyPermission(['controle_apercu', 'controle_creation', 'controle_création']))
         <li>
             <a href="javascript:;" class="has-arrow">
                 <div class="parent-icon"><i class="bi bi-check-circle-fill"></i></div>
@@ -169,10 +173,11 @@
             </a>
             <ul>
                 @if($user->userHasAnyPermission(['controle_apercu', 'controle_creation', 'controle_création']))
-                <li><a href="{{ route('appels-epreuves.index') }}"><i class="bi bi-circle"></i>Appels d'épreuves</a></li>
+                <li><a href="{{ route('appels-epreuves.index') }}"><i class="bi bi-circle"></i>Appel de Présence</a></li>
                 @endif
-                @if($user->userHasPermission('evaluation_apercu'))
+                @if($user->droit === 'SupAdmin' || $user->userHasPermission('evaluation_apercu'))
                 <li><a href="{{ route('evaluations.index') }}"><i class="bi bi-circle"></i>Notes & Évaluations</a></li>
+                <li><a href="{{ route('pedagogie.resultats-nationaux.index') }}"><i class="bi bi-circle"></i>Résultats nationaux</a></li>
                 <li><a href="{{ route('pedagogie.bulletins.classes') }}"><i class="bi bi-circle"></i>Générer Bulletins</a></li>
                 @endif
             </ul>
@@ -180,6 +185,15 @@
         @endif
 
         <li class="menu-label">Gestion</li>
+
+        @if($canOpenAnnouncements)
+            <li>
+                <a href="{{ route('annonces.index') }}">
+                    <div class="parent-icon"><i class="bi bi-megaphone-fill"></i></div>
+                    <div class="menu-title">Annonces</div>
+                </a>
+            </li>
+        @endif
         
         @if ($canOpenFinance)
         <li>
@@ -194,11 +208,20 @@
                 @if ($user->droit === 'SupAdmin' || $user->userHasAnyPermission(['paiements_apercu', 'paiements_faire']))
                 <li><a href="{{ route('finances.paiements') }}"><i class="bi bi-circle"></i>Paiements Élèves</a></li>
                 @endif
+                @php
+                    $isFondamentale = $user->ecole && in_array($user->ecole->typeEcole, ['Fondamentale I', 'Fondamentale II', 'Fondamental I', 'Fondamental II']);
+                @endphp
+                @if (!$isFondamentale && ($user->droit === 'SupAdmin' || $user->userHasAnyPermission(['subventions_etat_apercu', 'paiements_apercu'])))
+                <li><a href="{{ route('finances.subventions-etat') }}"><i class="bi bi-circle"></i>Subventions État</a></li>
+                @endif
                 @if ($user->userHasPermission('historique_paiement_apercu'))
                 <li><a href="{{ route('finances.paiements.historique') }}"><i class="bi bi-circle"></i>Historique paiements</a></li>
                 @endif
                 @if ($user->userHasPermission('caisses_apercu'))
                 <li><a href="{{ route('finances.caisse') }}"><i class="bi bi-circle"></i>Journal de Caisse</a></li>
+                @endif
+                @if ($user->droit === 'SupAdmin' || $user->userHasPermission('decaissements_apercu'))
+                <li><a href="{{ route('finances.depenses') }}"><i class="bi bi-circle"></i>Dépenses</a></li>
                 @endif
                 @if ($user->userHasPermission('banques_apercu'))
                 <li><a href="{{ route('finances.banques') }}"><i class="bi bi-circle"></i>Banques</a></li>
@@ -230,6 +253,13 @@
                 </a>
             </li>
         @endif
+
+        <li>
+            <a href="{{ route('documentation.index') }}">
+                <div class="parent-icon"><i class="bi bi-book-fill"></i></div>
+                <div class="menu-title">Documentation</div>
+            </a>
+        </li>
 
     </ul>
     <!--end navigation-->

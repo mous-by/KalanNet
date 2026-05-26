@@ -91,6 +91,19 @@
                         </select>
                     </div>
                     <div class="col-md-4">
+                        <label class="form-label small fw-bold text-uppercase">Statut financier</label>
+                        <select name="statut_paiement" class="form-select">
+                            @foreach([
+                                'normal' => 'Normal - parent/tuteur',
+                                'subventionne' => 'Subventionné par l’État',
+                                'boursier' => 'Boursier / organisme',
+                                'gratuit' => 'Gratuité totale',
+                            ] as $value => $label)
+                                <option value="{{ $value }}" @selected(old('statut_paiement', $eleve->statut_paiement ?? 'normal') === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-4">
                         <label class="form-label small fw-bold text-uppercase">Date d'inscription</label>
                         <input type="date" name="date_inscription" class="form-control" value="{{ old('date_inscription', $eleve->date_inscription) }}">
                     </div>

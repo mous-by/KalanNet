@@ -92,6 +92,7 @@
                             <th>Classe</th>
                             <th>Matière</th>
                             <th>Période</th>
+                            <th>Validation</th>
                             <th>Heure début</th>
                             <th>Heure fin</th>
                             <th class="text-center">Ce que vous voulez faire</th>
@@ -105,6 +106,13 @@
                                 <td>{{ $ligne->classe->nom_classe ?? '' }}</td>
                                 <td>{{ $ligne->matiere->nom_matiere ?? '' }}</td>
                                 <td>{{ $ligne->mois ? ($moisOptions[(int) $ligne->mois] ?? $ligne->mois) : ($ligne->trimestre->nom_trimestre ?? '') }}</td>
+                                <td>
+                                    @if(($ligne->validation_status ?? 'valide') === 'en_attente')
+                                        <span class="badge bg-warning text-dark">En attente</span>
+                                    @else
+                                        <span class="badge bg-success">Validée</span>
+                                    @endif
+                                </td>
                                 <td>{{ $ligne->evaluation->heure_debut }}</td>
                                 <td>{{ $ligne->evaluation->heure_fin }}</td>
                                 <td class="text-center">
@@ -119,6 +127,15 @@
                                             <i class="bi bi-journal-check me-1"></i>Saisir les notes
                                         </a>
                                     @endif
+                                    @if(auth()->user()->userHasAnyPermission(['evaluation_validation_notes', 'valider_note_saisi', 'valider_notes_saisies']) && ($ligne->validation_status ?? 'valide') === 'en_attente')
+                                        <form action="{{ route('evaluations.validate-notes', $ligne->id_evaluation) }}" method="POST" class="d-inline validate-notes-form">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit" class="btn btn-sm btn-outline-primary mb-1" title="Valider les notes">
+                                                <i class="bi bi-check2-circle me-1"></i>Valider
+                                            </button>
+                                        </form>
+                                    @endif
                                     @if(auth()->user()->userHasPermission('evaluation_supprimer'))
                                         <form action="{{ route('evaluations.destroy', $ligne->id_evaluation) }}" method="POST" class="d-inline" onsubmit="return confirm('Supprimer cette évaluation ?');">
                                             @csrf
@@ -131,7 +148,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="8" class="text-center py-4 text-muted">Aucune évaluation trouvée.</td></tr>
+                            <tr><td colspan="9" class="text-center py-4 text-muted">Aucune évaluation trouvée.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -197,6 +214,37 @@
             syncPeriodMode();
             loadMatieres();
             readyToSubmit = true;
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.validate-notes-form').forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    event.preventDefault();
+
+                    if (!window.Swal) {
+                        if (confirm('Valider ces notes pour les bulletins ?')) {
+                            form.submit();
+                        }
+                        return;
+                    }
+
+                    Swal.fire({
+                        title: 'Valider ces notes ?',
+                        text: 'Valider ces notes pour les bulletins ?',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: 'Oui, valider',
+                        cancelButtonText: 'Annuler',
+                        confirmButtonColor: '#0d6efd',
+                        cancelButtonColor: '#6c757d',
+                    }).then(function (result) {
+                        if (result.isConfirmed) {
+                            form.submit();
+                        }
+                    });
+                });
+            });
         });
     </script>
 @endpush

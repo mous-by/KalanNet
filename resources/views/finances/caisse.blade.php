@@ -14,8 +14,12 @@
         </div>
         @if($caisse)
             <div class="ms-auto d-flex gap-2">
-                <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#decaissementModal"><i class="bi bi-dash-lg me-1"></i>Sortie Caisse</button>
-                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#encaissementModal"><i class="bi bi-plus-lg me-1"></i>Entrée Caisse</button>
+                @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('decaissements_creation'))
+                    <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#decaissementModal"><i class="bi bi-dash-lg me-1"></i>Sortie Caisse</button>
+                @endif
+                @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('encaissement_creation'))
+                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#encaissementModal"><i class="bi bi-plus-lg me-1"></i>Entrée Caisse</button>
+                @endif
             </div>
         @endif
     </div>
@@ -82,11 +86,13 @@
                         <th class="py-3 border-0 small fw-bold text-muted text-uppercase">Type</th>
                         <th class="py-3 border-0 small fw-bold text-muted text-uppercase">Motif / Libellé</th>
                         <th class="py-3 border-0 small fw-bold text-muted text-uppercase text-end">Montant</th>
+                        <th class="py-3 border-0 small fw-bold text-muted text-uppercase">Statut</th>
+                        <th class="px-4 py-3 border-0 small fw-bold text-muted text-uppercase text-end">Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($mouvements as $m)
-                        <tr class="{{ $m->type == 'DEPENSE' ? 'table-danger-light' : '' }}">
+                        <tr id="{{ $m->type == 'DEPENSE' ? 'decaissement-' . $m->id_decaissement : '' }}" class="{{ $m->type == 'DEPENSE' ? 'table-danger-light' : '' }}">
                             <td class="px-4 py-3 small">{{ date('d/m/Y H:i', strtotime($m->date)) }}</td>
                             <td>
                                 @if($m->type == 'RECETTE')
@@ -99,14 +105,42 @@
                                 <div class="fw-bold">{{ $m->motif }}</div>
                                 @if($m->type == 'RECETTE')
                                     <small class="text-muted">{{ $m->type_operation }}</small>
+                                @else
+                                    <small class="text-muted">Demandé par {{ $m->utilisateur?->nomPrenom ?? 'Utilisateur' }}</small>
                                 @endif
                             </td>
-                            <td class="px-4 text-end fw-bold {{ $m->type == 'DEPENSE' ? 'text-danger' : 'text-success' }}">
-                                {{ $m->type == 'DEPENSE' ? '-' : '+' }} {{ number_format($m->montant, 0, ',', ' ') }} FCFA
+                            <td class="text-end fw-bold {{ $m->type == 'DEPENSE' ? ($m->valide ? 'text-danger' : 'text-warning') : 'text-success' }}">
+                                @if($m->type == 'DEPENSE')
+                                    {{ $m->valide ? '-' : '' }} {{ number_format($m->montant, 0, ',', ' ') }} FCFA
+                                @else
+                                    + {{ number_format($m->montant, 0, ',', ' ') }} FCFA
+                                @endif
+                            </td>
+                            <td>
+                                @if($m->type == 'DEPENSE')
+                                    <span class="badge bg-{{ $m->valide ? 'success' : 'warning' }} rounded-pill px-3">
+                                        {{ $m->valide ? 'Validée' : 'En attente' }}
+                                    </span>
+                                @else
+                                    <span class="badge bg-success rounded-pill px-3">Validée</span>
+                                @endif
+                            </td>
+                            <td class="px-4 text-end">
+                                @if($m->type == 'DEPENSE' && !$m->valide && (auth()->user()->droit === 'SupAdmin' || auth()->user()->droit === 'Admin' || auth()->user()->userHasPermission('decaissements_validation')))
+                                    <form method="POST" action="{{ route('finances.decaissements.validate', $m->id_decaissement) }}" class="d-inline js-validate-decaissement">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" class="btn btn-sm btn-success">
+                                            <i class="bi bi-check2-circle me-1"></i>Valider
+                                        </button>
+                                    </form>
+                                @else
+                                    <span class="text-muted">-</span>
+                                @endif
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="4" class="text-center py-5 text-muted">Aucun mouvement enregistré.</td></tr>
+                        <tr><td colspan="6" class="text-center py-5 text-muted">Aucun mouvement enregistré.</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -206,7 +240,7 @@
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
-                            <button type="submit" class="btn btn-primary">Envoyer</button>
+                            <button type="submit" class="btn btn-primary">Soumettre</button>
                         </div>
                     </form>
                 </div>
@@ -284,4 +318,26 @@
         color: #0f172a !important;
     }
 </style>
+@push('scripts')
+    <script>
+        document.querySelectorAll('.js-validate-decaissement').forEach((form) => {
+            form.addEventListener('submit', function (event) {
+                event.preventDefault();
+                Swal.fire({
+                    title: 'Valider cette dépense ?',
+                    text: 'Le montant sera déduit de la caisse.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Oui, valider',
+                    cancelButtonText: 'Annuler',
+                    confirmButtonColor: '#198754'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+        });
+    </script>
+@endpush
 @endsection

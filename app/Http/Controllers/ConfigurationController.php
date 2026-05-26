@@ -440,6 +440,42 @@ class ConfigurationController extends Controller
         return redirect()->route('configuration.utilisateurs')->with('success', 'Statut utilisateur modifié avec succès.');
     }
 
+    public function destroyUtilisateur(int $id)
+    {
+        $authUser = Auth::user();
+        $idEcole = session('idEcole');
+
+        $utilisateur = $this->userScope(User::query(), $authUser, $idEcole)
+            ->where('idUtilisateur', $id)
+            ->firstOrFail();
+
+        $this->authorizeTargetUserGovernance($authUser, $utilisateur);
+
+        if ($authUser->idUtilisateur === $utilisateur->idUtilisateur) {
+            return redirect()->route('configuration.utilisateurs')->with('error', 'Vous ne pouvez pas supprimer votre propre compte.');
+        }
+
+        if ($authUser->droit !== 'SupAdmin' && !$authUser->userHasPermission('utilisateurs_supprimer')) {
+            abort(403);
+        }
+
+        DB::transaction(function () use ($utilisateur) {
+            $utilisateur->permissions()->detach();
+
+            if (DB::getSchemaBuilder()->hasTable('app_notifications')) {
+                DB::table('app_notifications')->where('user_id', $utilisateur->idUtilisateur)->delete();
+            }
+
+            if (DB::getSchemaBuilder()->hasTable('sessions') && DB::getSchemaBuilder()->hasColumn('sessions', 'user_id')) {
+                DB::table('sessions')->where('user_id', $utilisateur->idUtilisateur)->delete();
+            }
+
+            $utilisateur->delete();
+        });
+
+        return redirect()->route('configuration.utilisateurs')->with('success', 'Compte utilisateur supprimé. Les fiches métier restent conservées.');
+    }
+
     public function editUserPermissions(int $id)
     {
         $authUser = Auth::user();
@@ -1069,12 +1105,14 @@ class ConfigurationController extends Controller
         } elseif ($data['typeEcole'] === 'Secondaire Generale') {
             $data['id_cap'] = null;
             $data['nomFondamental'] = null;
+            $data['nomLycee'] = $data['nomEcole'];
             $data['nomProfessionnel'] = null;
             $data['nomComplexe'] = null;
         } elseif ($data['typeEcole'] === 'Secondaire Technique et Professionnel') {
             $data['id_cap'] = null;
             $data['nomFondamental'] = null;
             $data['nomLycee'] = null;
+            $data['nomProfessionnel'] = $data['nomEcole'];
             $data['nomComplexe'] = null;
         }
 

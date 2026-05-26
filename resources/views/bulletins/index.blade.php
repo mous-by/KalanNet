@@ -20,6 +20,9 @@
     @if(session('error'))
         <div class="alert alert-danger border-0 border-start border-danger border-4">{{ session('error') }}</div>
     @endif
+    @if(session('success'))
+        <div class="alert alert-success border-0 border-start border-success border-4">{{ session('success') }}</div>
+    @endif
 
     <div class="card theme-card shadow-sm mb-4">
         <div class="card-header theme-header">
@@ -81,6 +84,14 @@
                     <span class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true"></span>
                     <i class="bi bi-files me-2"></i><span class="btn-label">Toute la classe</span>
                 </button>
+                @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('bulletins_publication'))
+                    <button type="button" class="btn btn-success px-4" id="publish-bulletins" disabled>
+                        <i class="bi bi-check2-circle me-2"></i>Publier
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary px-4" id="unpublish-bulletins" disabled>
+                        <i class="bi bi-eye-slash me-2"></i>Retirer
+                    </button>
+                @endif
             </div>
         </div>
         <div class="card-body">
@@ -90,6 +101,19 @@
                 <input type="hidden" name="id_trimestre" id="bulk-id-trimestre">
                 <input type="hidden" name="mois" id="bulk-mois">
                 <input type="hidden" name="ids" id="bulk-ids">
+            </form>
+            <form id="publish-bulletins-form" method="POST" action="{{ route('pedagogie.bulletins.publish', $classe->id_classe) }}" class="d-none">
+                @csrf
+                <input type="hidden" name="id_annee" class="publish-id-annee">
+                <input type="hidden" name="id_trimestre" class="publish-id-trimestre">
+                <input type="hidden" name="mois" class="publish-mois">
+            </form>
+            <form id="unpublish-bulletins-form" method="POST" action="{{ route('pedagogie.bulletins.unpublish', $classe->id_classe) }}" class="d-none">
+                @csrf
+                @method('DELETE')
+                <input type="hidden" name="id_annee" class="publish-id-annee">
+                <input type="hidden" name="id_trimestre" class="publish-id-trimestre">
+                <input type="hidden" name="mois" class="publish-mois">
             </form>
             <div class="table-responsive">
                 <table class="table table-striped table-bordered align-middle">
@@ -135,6 +159,10 @@
             const bulkTrimestre = document.getElementById('bulk-id-trimestre');
             const bulkMois = document.getElementById('bulk-mois');
             const bulkIds = document.getElementById('bulk-ids');
+            const publishButton = document.getElementById('publish-bulletins');
+            const unpublishButton = document.getElementById('unpublish-bulletins');
+            const publishForm = document.getElementById('publish-bulletins-form');
+            const unpublishForm = document.getElementById('unpublish-bulletins-form');
 
             if (ordre === 'fondamentale1') {
                 periodeMode.value = 'mois';
@@ -152,6 +180,7 @@
                 const idTrimestre = trimestre.value;
                 const moisValue = mois.value;
                 resetBulkActions();
+                syncPublicationButtons(false);
                 if (!idAnnee || (mode === 'mois' ? !moisValue : !idTrimestre)) {
                     body.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">Sélectionnez l’année scolaire et la période.</td></tr>';
                     return;
@@ -186,11 +215,13 @@
                         }).join('') || '<tr><td colspan="7" class="text-center py-4 text-muted">Aucun bulletin trouvé pour cette période.</td></tr>';
                         printAll.disabled = rows.length === 0;
                         selectAll.disabled = rows.length === 0;
+                        syncPublicationButtons(rows.length > 0);
                         bindSelection();
                     })
                     .catch(() => {
                         body.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger">Impossible de charger les bulletins. Vérifiez que les notes sont saisies pour cette année et cette période.</td></tr>';
                         resetBulkActions();
+                        syncPublicationButtons(false);
                     });
             }
 
@@ -221,6 +252,17 @@
                 printSelected.disabled = true;
                 printAll.disabled = true;
                 selectedCount.textContent = '0 sélection';
+            }
+
+            function syncPublicationButtons(enabled) {
+                if (publishButton) publishButton.disabled = !enabled;
+                if (unpublishButton) unpublishButton.disabled = !enabled;
+            }
+
+            function fillPublicationForm(form) {
+                form.querySelectorAll('.publish-id-annee').forEach(input => input.value = annee.value);
+                form.querySelectorAll('.publish-id-trimestre').forEach(input => input.value = periodeMode.value === 'mois' ? '' : trimestre.value);
+                form.querySelectorAll('.publish-mois').forEach(input => input.value = periodeMode.value === 'mois' ? mois.value : '');
             }
 
             function submitBulk(ids) {
@@ -295,6 +337,18 @@
             });
             printSelected.addEventListener('click', () => submitBulk(selectedIds()));
             printAll.addEventListener('click', () => submitBulk([]));
+            if (publishButton && publishForm) {
+                publishButton.addEventListener('click', () => {
+                    fillPublicationForm(publishForm);
+                    publishForm.submit();
+                });
+            }
+            if (unpublishButton && unpublishForm) {
+                unpublishButton.addEventListener('click', () => {
+                    fillPublicationForm(unpublishForm);
+                    unpublishForm.submit();
+                });
+            }
             periodeMode.addEventListener('change', updatePeriodFields);
             annee.addEventListener('change', loadBulletins);
             trimestre.addEventListener('change', loadBulletins);

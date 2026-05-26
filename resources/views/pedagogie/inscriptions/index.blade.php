@@ -3,6 +3,8 @@
 @section('content')
 @php
     $activeTab = request('tab', 'individual');
+    $planificationRequired = $planificationRequired ?? true;
+    $planificationLabel = $planificationLabel ?? 'Planification';
 @endphp
 
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
@@ -123,11 +125,16 @@
                                         </select>
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label small fw-bold text-uppercase">Planification <span class="text-danger">*</span></label>
-                                        <select name="id_planification" class="form-select rounded-3" required data-planification-select>
-                                            <option value="">Veuillez choisir</option>
+                                        <label class="form-label small fw-bold text-uppercase">
+                                            {{ $planificationLabel }}
+                                            @if($planificationRequired)
+                                                <span class="text-danger">*</span>
+                                            @endif
+                                        </label>
+                                        <select name="id_planification" class="form-select rounded-3" @required($planificationRequired) data-planification-select>
+                                            <option value="">{{ $planificationRequired ? 'Veuillez choisir' : 'Sans coopérative / sans frais' }}</option>
                                             @foreach($planifications as $planification)
-                                                <option value="{{ $planification->id_planification }}" data-classe="{{ $planification->id_classe }}" data-annee="{{ $planification->id_annee }}" @selected(old('id_planification') == $planification->id_planification)>{{ $planification->motif }} - {{ number_format((float) $planification->montant_planification, 0, ',', ' ') }} F</option>
+                                                <option value="{{ $planification->id_planification }}" data-classe="{{ $planification->id_classe }}" data-annee="{{ $planification->id_annee }}" @selected(old('id_planification') == $planification->id_planification)>{{ $planificationRequired ? $planification->motif : 'Coopérative' }} - {{ number_format((float) $planification->montant_planification, 0, ',', ' ') }} F</option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -217,11 +224,16 @@
                                         </select>
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label small fw-bold text-uppercase">Planification <span class="text-danger">*</span></label>
-                                        <select name="id_planification" class="form-select rounded-3" required data-planification-select>
-                                            <option value="">Veuillez choisir</option>
+                                        <label class="form-label small fw-bold text-uppercase">
+                                            {{ $planificationLabel }}
+                                            @if($planificationRequired)
+                                                <span class="text-danger">*</span>
+                                            @endif
+                                        </label>
+                                        <select name="id_planification" class="form-select rounded-3" @required($planificationRequired) data-planification-select>
+                                            <option value="">{{ $planificationRequired ? 'Veuillez choisir' : 'Sans coopérative / sans frais' }}</option>
                                             @foreach($planifications as $planification)
-                                                <option value="{{ $planification->id_planification }}" data-classe="{{ $planification->id_classe }}" data-annee="{{ $planification->id_annee }}">{{ $planification->motif }} - {{ number_format((float) $planification->montant_planification, 0, ',', ' ') }} F</option>
+                                                <option value="{{ $planification->id_planification }}" data-classe="{{ $planification->id_classe }}" data-annee="{{ $planification->id_annee }}">{{ $planificationRequired ? $planification->motif : 'Coopérative' }} - {{ number_format((float) $planification->montant_planification, 0, ',', ' ') }} F</option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -290,6 +302,9 @@
                                 $decisionLabels = [
                                     'passant' => 'Passant',
                                     'redoublant' => 'Redoublant',
+                                    'admis_sortant' => 'Admis sortant',
+                                    'diplome_sortant' => 'Diplômé sortant',
+                                    'en_attente_resultat' => 'En attente résultat',
                                     'ajourne' => 'Ajourné / année blanche',
                                     'abandon' => 'Abandon',
                                     'exclu' => 'Exclu',
@@ -298,6 +313,9 @@
                                     'passant' => 'Passant',
                                     'redoublant' => 'Redoublant',
                                     'non_defini' => 'Moyenne non disponible',
+                                    'admis_sortant' => 'Admis sortant',
+                                    'diplome_sortant' => 'Diplômé sortant',
+                                    'en_attente_resultat' => 'Résultat national absent',
                                 ];
                             @endphp
 
@@ -385,13 +403,17 @@
                                         <div class="border rounded-3 p-3 h-100">
                                             <div class="small text-muted">Classe source</div>
                                             <div class="fw-bold">{{ $reinscriptionPreview['sourceClasse']->nom_classe }}</div>
-                                            <div class="small">Seuil : {{ number_format($reinscriptionPreview['seuil'], 2, ',', ' ') }}</div>
+                                            @if($reinscriptionPreview['niveauExamen'])
+                                                <div class="small">Examen : {{ $reinscriptionPreview['niveauExamen'] }}</div>
+                                            @else
+                                                <div class="small">Seuil : {{ number_format($reinscriptionPreview['seuil'], 2, ',', ' ') }}</div>
+                                            @endif
                                         </div>
                                     </div>
                                     <div class="col-md-3">
                                         <div class="border rounded-3 p-3 h-100">
                                             <div class="small text-muted">Classe proposée</div>
-                                            <div class="fw-bold">{{ $reinscriptionPreview['targetClasse']->nom_classe }}</div>
+                                            <div class="fw-bold">{{ $reinscriptionPreview['targetClasse']?->nom_classe ?? 'Sortie / transfert' }}</div>
                                             <div class="small">{{ $reinscriptionPreview['targetAnnee']?->annee }}</div>
                                         </div>
                                     </div>
@@ -400,12 +422,17 @@
                                             <div class="small text-muted">Propositions</div>
                                             <div class="fw-bold">{{ $reinscriptionPreview['stats']['passants'] }} passant(s)</div>
                                             <div class="small">{{ $reinscriptionPreview['stats']['redoublants'] }} redoublant(s)</div>
+                                            @if($reinscriptionPreview['niveauExamen'])
+                                                <div class="small">{{ $reinscriptionPreview['stats']['sortants'] }} sortant(s)</div>
+                                            @endif
                                         </div>
                                     </div>
                                     <div class="col-md-3">
                                         <div class="border rounded-3 p-3 h-100">
                                             <div class="small text-muted">À surveiller</div>
-                                            <div class="fw-bold">{{ $reinscriptionPreview['stats']['sans_moyenne'] }} sans moyenne</div>
+                                            <div class="fw-bold">
+                                                {{ $reinscriptionPreview['niveauExamen'] ? $reinscriptionPreview['stats']['en_attente_resultat'].' en attente résultat' : $reinscriptionPreview['stats']['sans_moyenne'].' sans moyenne' }}
+                                            </div>
                                             <div class="small">{{ $reinscriptionPreview['stats']['deja_reinscrits'] }} déjà réinscrit(s)</div>
                                         </div>
                                     </div>
@@ -438,7 +465,13 @@
                                                     <th class="text-center" style="width: 48px;"><input type="checkbox" class="form-check-input" data-reinscription-check-all checked></th>
                                                     <th>Élève</th>
                                                     <th>Matricule</th>
-                                                    <th>Moyenne annuelle</th>
+                                                    @if($reinscriptionPreview['niveauExamen'])
+                                                        <th>Examen</th>
+                                                        <th>Résultat national</th>
+                                                        <th>Moyenne examen</th>
+                                                    @else
+                                                        <th>Moyenne annuelle</th>
+                                                    @endif
                                                     <th>Proposition</th>
                                                     <th>Décision finale</th>
                                                     <th>Classe finale</th>
@@ -451,10 +484,11 @@
                                                         $eleve = $row['eleve'];
                                                         $key = $eleve->id_eleve;
                                                         $proposal = $row['decision_proposee'] === 'non_defini' ? 'redoublant' : $row['decision_proposee'];
+                                                        $blockedDecision = $row['decision_proposee'] === 'en_attente_resultat';
                                                     @endphp
                                                     <tr class="{{ $row['deja_reinscrit'] ? 'table-warning' : '' }}">
                                                         <td class="text-center">
-                                                            <input type="checkbox" class="form-check-input" name="eleves[{{ $key }}][selected]" value="1" data-reinscription-check @checked(!$row['deja_reinscrit']) @disabled($row['deja_reinscrit'])>
+                                                            <input type="checkbox" class="form-check-input" name="eleves[{{ $key }}][selected]" value="1" data-reinscription-check @checked(!$row['deja_reinscrit'] && !$blockedDecision) @disabled($row['deja_reinscrit'] || $blockedDecision)>
                                                             <input type="hidden" name="eleves[{{ $key }}][id_eleve]" value="{{ $eleve->id_eleve }}">
                                                         </td>
                                                         <td>
@@ -464,30 +498,43 @@
                                                             @endif
                                                         </td>
                                                         <td>{{ $eleve->matricule ?: 'Non renseigné' }}</td>
-                                                        <td>
-                                                            @if($row['moyenne'] === null)
-                                                                <span class="text-muted">Non disponible</span>
-                                                            @else
-                                                                <span class="fw-bold">{{ number_format($row['moyenne'], 2, ',', ' ') }}</span>
-                                                            @endif
-                                                        </td>
+                                                        @if($reinscriptionPreview['niveauExamen'])
+                                                            <td>{{ $row['niveau_examen'] }}</td>
+                                                            <td>{{ $row['resultat_national'] ?: 'Non disponible' }}</td>
+                                                            <td>
+                                                                @if($row['moyenne_examen'] === null)
+                                                                    <span class="text-muted">Non disponible</span>
+                                                                @else
+                                                                    <span class="fw-bold">{{ number_format($row['moyenne_examen'], 2, ',', ' ') }}</span>
+                                                                @endif
+                                                            </td>
+                                                        @else
+                                                            <td>
+                                                                @if($row['moyenne'] === null)
+                                                                    <span class="text-muted">Non disponible</span>
+                                                                @else
+                                                                    <span class="fw-bold">{{ number_format($row['moyenne'], 2, ',', ' ') }}</span>
+                                                                @endif
+                                                            </td>
+                                                        @endif
                                                         <td>{{ $proposalLabels[$row['decision_proposee']] ?? $row['decision_proposee'] }}</td>
                                                         <td>
-                                                            <select name="eleves[{{ $key }}][decision]" class="form-select form-select-sm" data-reinscription-decision data-pass-classe="{{ $row['classe_cible_id'] }}" data-source-classe="{{ $reinscriptionPreview['sourceClasse']->id_classe }}" @disabled($row['deja_reinscrit'])>
+                                                            <select name="eleves[{{ $key }}][decision]" class="form-select form-select-sm" data-reinscription-decision data-pass-classe="{{ $row['classe_cible_id'] }}" data-source-classe="{{ $reinscriptionPreview['sourceClasse']->id_classe }}" @disabled($row['deja_reinscrit'] || $blockedDecision)>
                                                                 @foreach($decisionLabels as $value => $label)
                                                                     <option value="{{ $value }}" @selected($proposal === $value)>{{ $label }}</option>
                                                                 @endforeach
                                                             </select>
                                                         </td>
                                                         <td>
-                                                            <select name="eleves[{{ $key }}][id_classe]" class="form-select form-select-sm" data-reinscription-classe @disabled($row['deja_reinscrit'])>
+                                                            <select name="eleves[{{ $key }}][id_classe]" class="form-select form-select-sm" data-reinscription-classe @disabled($row['deja_reinscrit'] || $blockedDecision)>
+                                                                <option value="" @selected($row['classe_cible_id'] === null)>Aucune classe</option>
                                                                 @foreach($classes as $classe)
                                                                     <option value="{{ $classe->id_classe }}" @selected((int) $row['classe_cible_id'] === (int) $classe->id_classe)>{{ $classe->nom_classe }}</option>
                                                                 @endforeach
                                                             </select>
                                                         </td>
                                                         <td>
-                                                            <input type="text" name="eleves[{{ $key }}][motif_decision]" class="form-control form-control-sm" data-reinscription-observation placeholder="Motif si nécessaire" @disabled($row['deja_reinscrit'])>
+                                                            <input type="text" name="eleves[{{ $key }}][motif_decision]" class="form-control form-control-sm" data-reinscription-observation placeholder="Motif si nécessaire" @disabled($row['deja_reinscrit'] || $blockedDecision)>
                                                         </td>
                                                     </tr>
                                                 @endforeach
@@ -696,9 +743,15 @@
                     if (decision === 'passant') {
                         classSelect.value = select.dataset.passClasse;
                         classSelect.disabled = false;
+                    } else if (decision === 'redoublant') {
+                        classSelect.value = select.dataset.sourceClasse;
+                        classSelect.disabled = false;
+                    } else if (['admis_sortant', 'diplome_sortant', 'en_attente_resultat'].includes(decision)) {
+                        classSelect.value = '';
+                        classSelect.disabled = true;
                     } else {
                         classSelect.value = select.dataset.sourceClasse;
-                        classSelect.disabled = decision !== 'redoublant';
+                        classSelect.disabled = true;
                     }
                     if (observation) {
                         observation.required = ['ajourne', 'abandon', 'exclu'].includes(decision);

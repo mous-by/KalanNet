@@ -6,6 +6,7 @@
         $maxNote = (float) ($first?->noteType?->valeur ?? 20);
         $maxNote = $maxNote > 0 ? $maxNote : 20;
         $passMark = $maxNote / 2;
+        $validationStatus = $first->validation_status ?? 'valide';
     @endphp
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
         <div class="breadcrumb-title pe-3">Évaluations</div>
@@ -19,9 +20,22 @@
             </nav>
         </div>
         <div class="ms-auto">
+            @if(auth()->user()->userHasAnyPermission(['evaluation_validation_notes', 'valider_note_saisi', 'valider_notes_saisies']) && $validationStatus === 'en_attente')
+                <form action="{{ route('evaluations.validate-notes', $first->id_evaluation) }}" method="POST" class="d-inline validate-notes-form">
+                    @csrf
+                    @method('PATCH')
+                    <button type="submit" class="btn btn-primary me-2"><i class="bi bi-check2-circle me-1"></i>Valider les notes</button>
+                </form>
+            @endif
             <button class="btn theme-action-btn"><i class="bi bi-printer me-1"></i>Imprimer</button>
         </div>
     </div>
+
+    @if($validationStatus === 'en_attente')
+        <div class="alert alert-warning border-0 border-start border-warning border-4">
+            Ces notes attendent une validation avant leur prise en compte sur les bulletins.
+        </div>
+    @endif
 
     <div class="row g-4 mb-4">
         <div class="col-md-4">
@@ -122,3 +136,37 @@
         .widget-icon { width: 54px; height: 54px; display: flex; align-items: center; justify-content: center; }
     </style>
 @endsection
+
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.validate-notes-form').forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    event.preventDefault();
+
+                    if (!window.Swal) {
+                        if (confirm('Valider ces notes pour les bulletins ?')) {
+                            form.submit();
+                        }
+                        return;
+                    }
+
+                    Swal.fire({
+                        title: 'Valider ces notes ?',
+                        text: 'Valider ces notes pour les bulletins ?',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: 'Oui, valider',
+                        cancelButtonText: 'Annuler',
+                        confirmButtonColor: '#0d6efd',
+                        cancelButtonColor: '#6c757d',
+                    }).then(function (result) {
+                        if (result.isConfirmed) {
+                            form.submit();
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+@endpush

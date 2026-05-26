@@ -19,8 +19,15 @@ class LigneEvaluation extends Model
         'id_note',
         'id_eleve',
         'note',
+        'validation_status',
+        'validated_by',
+        'validated_at',
         'id_enseignant',
         'mois'
+    ];
+
+    protected $casts = [
+        'validated_at' => 'datetime',
     ];
 
     public function evaluation()

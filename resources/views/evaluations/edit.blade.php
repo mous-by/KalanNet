@@ -6,6 +6,7 @@
         $maxNote = (float) ($first->noteType->valeur ?? 20);
         $maxNote = $maxNote > 0 ? $maxNote : 20;
         $moisOptions = [1 => 'Janvier', 2 => 'Février', 3 => 'Mars', 4 => 'Avril', 5 => 'Mai', 6 => 'Juin', 9 => 'Septembre', 10 => 'Octobre', 11 => 'Novembre', 12 => 'Décembre'];
+        $validationStatus = $first->validation_status ?? 'valide';
     @endphp
 
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
@@ -26,6 +27,11 @@
     @endif
     @if(session('success'))
         <div class="alert alert-success border-0 border-start border-success border-4">{{ session('success') }}</div>
+    @endif
+    @if($validationStatus === 'en_attente')
+        <div class="alert alert-warning border-0 border-start border-warning border-4">
+            Validation en attente : ces notes ne sortiront sur les bulletins qu'après validation.
+        </div>
     @endif
 
     <form method="POST" action="{{ route('evaluations.update', $evaluation->id_evaluation) }}">

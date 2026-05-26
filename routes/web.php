@@ -21,6 +21,9 @@ use App\Http\Controllers\ProgrammeController;
 use App\Http\Controllers\TeacherSalaryController;
 use App\Http\Controllers\AbonnementController;
 use App\Http\Controllers\AppelEpreuveController;
+use App\Http\Controllers\ResultatNationalController;
+use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\AssistantController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -33,6 +36,11 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/documentation', function () {
+        return view('documentation.index');
+    })->name('documentation.index');
+    Route::get('/documentation/download/{format}', [\App\Http\Controllers\DocumentationController::class, 'download'])->name('documentation.download');
+    Route::post('/assistant/chat', [AssistantController::class, 'chat'])->name('assistant.chat');
     Route::post('/notifications/{id}/read', [DashboardController::class, 'markNotificationAsRead'])->name('notifications.read');
     Route::put('/dashboard/abonnements/{abonnement}/dates', [DashboardController::class, 'updateSubscriptionDates'])->name('dashboard.abonnements.dates');
 
@@ -47,6 +55,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/eleves/{id}/edit', [EleveController::class, 'edit'])->name('eleves.edit');
     Route::put('/eleves/{id}', [EleveController::class, 'update'])->name('eleves.update');
     Route::post('/eleves/{id}/transfert', [EleveController::class, 'transfer'])->name('eleves.transfer');
+    Route::post('/eleves/{id}/reintegrer', [EleveController::class, 'reintegrate'])->name('eleves.reintegrate');
     Route::delete('/eleves/{id}', [EleveController::class, 'destroy'])->name('eleves.destroy');
     Route::get('/eleves/{id}', [EleveController::class, 'show'])->name('eleves.show');
 
@@ -111,6 +120,7 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/evaluations/{id}/programme', [EvaluationController::class, 'updateProgramme'])->name('evaluations.programme.update');
     Route::get('/evaluations/{id}/edit', [EvaluationController::class, 'edit'])->name('evaluations.edit');
     Route::put('/evaluations/{id}', [EvaluationController::class, 'update'])->name('evaluations.update');
+    Route::patch('/evaluations/{id}/validate-notes', [EvaluationController::class, 'validateNotes'])->name('evaluations.validate-notes');
     Route::delete('/evaluations/{id}', [EvaluationController::class, 'destroy'])->name('evaluations.destroy');
     Route::get('/evaluations/{id}', [EvaluationController::class, 'show'])->name('evaluations.show');
 
@@ -129,14 +139,18 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/finances/paiements/frais', [FinanceController::class, 'storeFraisScolaire'])->name('finances.paiements.frais.store');
     Route::post('/finances/paiements/reductions', [FinanceController::class, 'storeReductionConfig'])->name('finances.paiements.reductions.store');
     Route::post('/finances/paiements/plans', [FinanceController::class, 'generatePlanPaiement'])->name('finances.paiements.plans.store');
+    Route::get('/finances/subventions-etat', [FinanceController::class, 'subventionsEtat'])->name('finances.subventions-etat');
+    Route::post('/finances/subventions-etat', [FinanceController::class, 'storeSubventionEtat'])->name('finances.subventions-etat.store');
     Route::post('/finances/paiements/groupes', [FinanceController::class, 'storePaiementsGroupes'])->name('finances.paiements.groupes.store');
     Route::post('/finances/paiements', [FinanceController::class, 'storePaiement'])->name('finances.paiements.store');
     Route::put('/finances/paiements/{id}', [FinanceController::class, 'updatePaiement'])->name('finances.paiements.update');
     Route::delete('/finances/paiements/{id}', [FinanceController::class, 'cancelPaiement'])->name('finances.paiements.cancel');
     Route::get('/finances/caisse', [FinanceController::class, 'showCaisse'])->name('finances.caisse');
     Route::post('/finances/caisse', [FinanceController::class, 'storeCaisse'])->name('finances.caisse.store');
+    Route::get('/finances/depenses', [FinanceController::class, 'depenses'])->name('finances.depenses');
     Route::post('/finances/caisse/encaissements', [FinanceController::class, 'storeEncaissement'])->name('finances.encaissements.store');
     Route::post('/finances/caisse/decaissements', [FinanceController::class, 'storeDecaissement'])->name('finances.decaissements.store');
+    Route::patch('/finances/caisse/decaissements/{id}/validate', [FinanceController::class, 'validateDecaissement'])->name('finances.decaissements.validate');
     Route::get('/finances/banques', [FinanceController::class, 'banques'])->name('finances.banques');
     Route::post('/finances/banques', [FinanceController::class, 'storeBanque'])->name('finances.banques.store');
     Route::put('/finances/banques/{id}', [FinanceController::class, 'updateBanque'])->name('finances.banques.update');
@@ -158,8 +172,17 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/pedagogie/bulletins', [BulletinController::class, 'classes'])->name('pedagogie.bulletins.classes');
     Route::get('/pedagogie/classes/{idClasse}/bulletins', [BulletinController::class, 'index'])->name('pedagogie.bulletins.index');
     Route::get('/pedagogie/classes/{idClasse}/bulletins/data', [BulletinController::class, 'data'])->name('pedagogie.bulletins.data');
+    Route::post('/pedagogie/classes/{idClasse}/bulletins/publish', [BulletinController::class, 'publishClassBulletins'])->name('pedagogie.bulletins.publish');
+    Route::delete('/pedagogie/classes/{idClasse}/bulletins/publish', [BulletinController::class, 'unpublishClassBulletins'])->name('pedagogie.bulletins.unpublish');
     Route::post('/pedagogie/classes/{idClasse}/bulletins/pdf', [BulletinController::class, 'downloadClassBulletins'])->name('pedagogie.bulletins.classe.pdf');
     Route::get('/pedagogie/bulletins/{id}/download', [BulletinController::class, 'downloadBulletin'])->name('pedagogie.bulletins.download');
+
+    Route::get('/annonces', [AnnouncementController::class, 'index'])->name('annonces.index');
+    Route::post('/annonces', [AnnouncementController::class, 'store'])->name('annonces.store');
+    Route::post('/annonces/read-visible', [AnnouncementController::class, 'markVisibleAsRead'])->name('annonces.read-visible');
+    Route::patch('/annonces/{id}/publish', [AnnouncementController::class, 'publish'])->name('annonces.publish');
+    Route::patch('/annonces/{id}/archive', [AnnouncementController::class, 'archive'])->name('annonces.archive');
+    Route::delete('/annonces/{id}', [AnnouncementController::class, 'destroy'])->name('annonces.destroy');
     Route::get('/pedagogie/timetable', [TimetableController::class, 'index'])->name('pedagogie.timetable');
     Route::get('/pedagogie/timetable/download-pdf', [TimetableController::class, 'downloadPDF'])->name('pedagogie.timetable.download_pdf');
     Route::post('/pedagogie/timetable/filter', [TimetableController::class, 'index'])->name('pedagogie.timetable.filter');
@@ -167,6 +190,9 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/pedagogie/timetable/{id}', [TimetableController::class, 'update'])->name('pedagogie.timetable.update');
     Route::delete('/pedagogie/timetable/{id}', [TimetableController::class, 'destroy'])->name('pedagogie.timetable.destroy');
     Route::post('/pedagogie/timetable/save-grid', [TimetableController::class, 'saveGrid'])->name('pedagogie.timetable.save_grid');
+    Route::get('/pedagogie/resultats-nationaux', [ResultatNationalController::class, 'index'])->name('pedagogie.resultats-nationaux.index');
+    Route::post('/pedagogie/resultats-nationaux', [ResultatNationalController::class, 'store'])->name('pedagogie.resultats-nationaux.store');
+    Route::post('/pedagogie/resultats-nationaux/import', [ResultatNationalController::class, 'import'])->name('pedagogie.resultats-nationaux.import');
     Route::get('/pedagogie/parents', [ParentController::class, 'index'])->name('pedagogie.parents');
     Route::post('/pedagogie/parents/filter', [ParentController::class, 'index'])->name('pedagogie.parents.filter');
     Route::get('/pedagogie/parents/create', [ParentController::class, 'create'])->name('pedagogie.parents.create');
@@ -210,6 +236,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/configuration/utilisateurs', [ConfigurationController::class, 'storeUtilisateur'])->name('configuration.utilisateurs.store');
     Route::get('/configuration/utilisateurs/permissions/assigner', [ConfigurationController::class, 'assignUserPermissions'])->name('configuration.utilisateurs.permissions.assigner');
     Route::patch('/configuration/utilisateurs/{id}/status', [ConfigurationController::class, 'updateUserStatus'])->name('configuration.utilisateurs.status');
+    Route::delete('/configuration/utilisateurs/{id}', [ConfigurationController::class, 'destroyUtilisateur'])->name('configuration.utilisateurs.destroy');
     Route::get('/configuration/utilisateurs/{id}/permissions', [ConfigurationController::class, 'editUserPermissions'])->name('configuration.utilisateurs.permissions');
     Route::put('/configuration/utilisateurs/{id}/permissions', [ConfigurationController::class, 'updateUserPermissions'])->name('configuration.utilisateurs.permissions.update');
     Route::get('/configuration/permissions', [ConfigurationController::class, 'permissions'])->name('configuration.permissions');

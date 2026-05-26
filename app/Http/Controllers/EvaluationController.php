@@ -3,15 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\Evaluation;
+use App\Models\AppNotification;
 use App\Models\LigneEvaluation;
 use App\Models\Classe;
 use App\Models\Eleve;
+use App\Models\User;
 use App\Models\Matiere;
 use App\Models\AnneeScolaire;
 use App\Models\Note;
 use App\Models\Trimestre;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
@@ -22,9 +25,13 @@ class EvaluationController extends Controller
         $context = $this->evaluationContext();
         $filters = $request->only(['id_classe', 'id_matiere', 'id_annee_scolaire', 'id_trimestre', 'mois']);
 
+        $validationSelect = Schema::hasColumn('ligne_evaluation', 'validation_status')
+            ? "MIN(COALESCE(ligne_evaluation.validation_status, 'valide')) as validation_status"
+            : "'valide' as validation_status";
+
         $evaluations = LigneEvaluation::query()
             ->with(['evaluation', 'classe', 'matiere', 'trimestre'])
-            ->selectRaw('MIN(ligne_evaluation.id_ligneEvaluation) as id_ligneEvaluation, ligne_evaluation.id_evaluation, ligne_evaluation.id_classe, ligne_evaluation.id_matiere, ligne_evaluation.id_annee_scolaire, ligne_evaluation.id_trimestre, ligne_evaluation.mois')
+            ->selectRaw("MIN(ligne_evaluation.id_ligneEvaluation) as id_ligneEvaluation, ligne_evaluation.id_evaluation, ligne_evaluation.id_classe, ligne_evaluation.id_matiere, ligne_evaluation.id_annee_scolaire, ligne_evaluation.id_trimestre, ligne_evaluation.mois, {$validationSelect}")
             ->join('evaluation as e', 'e.id_evaluation', '=', 'ligne_evaluation.id_evaluation')
             ->when(Auth::user()->id_enseignant, fn ($q, $teacherId) => $q->where('ligne_evaluation.id_enseignant', $teacherId))
             ->when($filters['id_classe'] ?? null, fn ($q, $value) => $q->where('ligne_evaluation.id_classe', $value))
@@ -192,7 +199,7 @@ class EvaluationController extends Controller
     public function update(Request $request, int $id)
     {
         $evaluation = Evaluation::findOrFail($id);
-        $details = LigneEvaluation::with(['classe', 'noteType'])->where('id_evaluation', $evaluation->id_evaluation)->get();
+        $details = LigneEvaluation::with(['classe.ecole', 'noteType'])->where('id_evaluation', $evaluation->id_evaluation)->get();
         abort_if($details->isEmpty(), 404);
         $this->authorizeEvaluationLines($details);
         $this->authorizeClasse($details->first()->classe);
@@ -205,15 +212,42 @@ class EvaluationController extends Controller
             'note.*' => 'nullable|numeric|min:0|max:' . $maxNote,
         ]);
 
-        DB::transaction(function () use ($evaluation, $data) {
+        DB::transaction(function () use ($evaluation, $data, $details) {
+            $validationStatus = $this->requiresPrivateNoteValidation($details->first()->classe) ? 'en_attente' : 'valide';
+            $validationColumns = $this->validationColumns($validationStatus);
+
             foreach ($data['id_ligneEvaluation'] as $index => $lineId) {
                 LigneEvaluation::where('id_evaluation', $evaluation->id_evaluation)
                     ->where('id_ligneEvaluation', $lineId)
-                    ->update(['note' => $this->normalizeNote($data['note'][$index] ?? null)]);
+                    ->update(array_merge([
+                        'note' => $this->normalizeNote($data['note'][$index] ?? null),
+                    ], $validationColumns));
             }
         });
 
-        return redirect()->route('evaluations.edit', $evaluation->id_evaluation)->with('success', 'Notes enregistrées avec succès.');
+        $this->notifyNoteValidators($evaluation);
+
+        $message = $this->requiresPrivateNoteValidation($details->first()->classe)
+            ? 'Notes enregistrées. Elles sont en attente de validation avant bulletin.'
+            : 'Notes enregistrées avec succès.';
+
+        return redirect()->route('evaluations.edit', $evaluation->id_evaluation)->with('success', $message);
+    }
+
+    public function validateNotes(int $id)
+    {
+        $this->authorizeNoteValidation();
+
+        $evaluation = Evaluation::findOrFail($id);
+        $details = LigneEvaluation::with(['classe'])->where('id_evaluation', $evaluation->id_evaluation)->get();
+
+        abort_if($details->isEmpty(), 404);
+        $this->authorizeClasse($details->first()->classe);
+
+        LigneEvaluation::where('id_evaluation', $evaluation->id_evaluation)
+            ->update($this->validationColumns('valide'));
+
+        return back()->with('success', 'Notes validées. Elles sont maintenant disponibles pour les bulletins.');
     }
 
     public function destroy(int $id)
@@ -332,8 +366,7 @@ class EvaluationController extends Controller
             ->where('id_classe', $idClasse)
             ->where('id_annee', $idAnnee)
             ->where('etat_dossier', 0)
-            ->orderBy('nom_eleve')
-            ->orderBy('prenom_eleve')
+            ->orderBy('prenom_eleve')->orderBy('nom_eleve')
             ->get();
     }
 
@@ -394,5 +427,89 @@ class EvaluationController extends Controller
         $value = (float) ($note?->valeur ?? 20);
 
         return $value > 0 ? $value : 20;
+    }
+
+    private function validationColumns(string $status): array
+    {
+        if (!Schema::hasColumn('ligne_evaluation', 'validation_status')) {
+            return [];
+        }
+
+        return [
+            'validation_status' => $status,
+            'validated_by' => $status === 'valide' ? Auth::id() : null,
+            'validated_at' => $status === 'valide' ? now() : null,
+        ];
+    }
+
+    private function requiresPrivateNoteValidation(?Classe $classe): bool
+    {
+        $statut = strtolower(trim((string) ($classe?->ecole?->statut ?? '')));
+
+        return $statut === 'prive';
+    }
+
+    private function notifyNoteValidators(Evaluation $evaluation): void
+    {
+        if (!Schema::hasTable('app_notifications') || !Schema::hasColumn('ligne_evaluation', 'validation_status')) {
+            return;
+        }
+
+        $firstLine = LigneEvaluation::with(['classe.ecole', 'matiere', 'enseignant'])
+            ->where('id_evaluation', $evaluation->id_evaluation)
+            ->first();
+
+        if (!$firstLine || !$this->requiresPrivateNoteValidation($firstLine->classe)) {
+            return;
+        }
+
+        $schoolId = $firstLine->classe?->idEcole ?: (session('idEcole') ?: Auth::user()?->idEcole);
+        $validators = User::with('permissions')
+            ->where('idEcole', $schoolId)
+            ->where('statut', 1)
+            ->where('idUtilisateur', '!=', Auth::id())
+            ->get()
+            ->filter(fn ($user) => $user->userHasAnyPermission(['evaluation_validation_notes', 'valider_note_saisi', 'valider_notes_saisies']));
+
+        foreach ($validators as $validator) {
+            $alreadyNotified = AppNotification::where('user_id', $validator->idUtilisateur)
+                ->whereNull('read_at')
+                ->where('type', 'notes_validation')
+                ->where(function ($query) use ($evaluation) {
+                    $query->where('data->id_evaluation', $evaluation->id_evaluation)
+                        ->orWhere('link', route('evaluations.show', $evaluation->id_evaluation));
+                })
+                ->exists();
+
+            if ($alreadyNotified) {
+                continue;
+            }
+
+            AppNotification::create([
+                'user_id' => $validator->idUtilisateur,
+                'type' => 'notes_validation',
+                'title' => 'Notes à valider',
+                'message' => trim(($firstLine->enseignant?->nom_prenom_enseignant ?? 'Un enseignant')
+                    . ' a saisi des notes'
+                    . ' - ' . ($firstLine->classe?->nom_classe ?? 'Classe')
+                    . ' / ' . ($firstLine->matiere?->nom_matiere ?? 'Matière')),
+                'link' => route('evaluations.show', $evaluation->id_evaluation),
+                'data' => [
+                    'id_evaluation' => $evaluation->id_evaluation,
+                    'id_classe' => $firstLine->id_classe,
+                    'id_matiere' => $firstLine->id_matiere,
+                    'id_enseignant' => $firstLine->id_enseignant,
+                ],
+            ]);
+        }
+    }
+
+    private function authorizeNoteValidation(): void
+    {
+        $user = Auth::user();
+
+        if ($user->droit !== 'SupAdmin' && !$user->userHasAnyPermission(['evaluation_validation_notes', 'valider_note_saisi', 'valider_notes_saisies'])) {
+            abort(403);
+        }
     }
 }
