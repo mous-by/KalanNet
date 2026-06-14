@@ -46,6 +46,7 @@ class User extends Authenticatable
         'image',
         'statut',
         'theme_preference',
+        'locale_preference',
         'last_login_at',
         'last_activity',
     ];

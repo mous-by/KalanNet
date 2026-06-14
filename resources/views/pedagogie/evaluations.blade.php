@@ -86,7 +86,9 @@
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-3">
                                         <li><a class="dropdown-item py-2" href="#"><i class="bi bi-pencil me-2 text-warning"></i> Modifier</a></li>
-                                        <li><a class="dropdown-item py-2" href="{{ route('pedagogie.bulletins.download', $note->id_eleve) }}"><i class="bi bi-file-earmark-pdf me-2 text-primary"></i> Voir Bulletin</a></li>
+                                        @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasAnyPermission(['bulletins_apercu', 'bulletins_generation', 'bulletins_génération', 'bulletins_pdf', 'bulletins_impression', 'bulletins_publication', 'generer_bulletins', 'générer_bulletins']))
+                                            <li><a class="dropdown-item py-2" href="{{ route('pedagogie.bulletins.download', $note->id_eleve) }}"><i class="bi bi-file-earmark-pdf me-2 text-primary"></i> Voir Bulletin</a></li>
+                                        @endif
                                         <li><hr class="dropdown-divider"></li>
                                         <li><a class="dropdown-item py-2 text-danger" href="#"><i class="bi bi-trash me-2"></i> Supprimer</a></li>
                                     </ul>

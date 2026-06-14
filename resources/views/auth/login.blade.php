@@ -1,9 +1,13 @@
+@php
+    $currentLocale = $currentLocale ?? app()->getLocale();
+    $currentDirection = $currentDirection ?? config("app.supported_locales.$currentLocale.dir", 'ltr');
+@endphp
 <!DOCTYPE html>
-<html lang="fr" data-theme="vert">
+<html lang="{{ $currentLocale }}" dir="{{ $currentDirection }}" data-theme="vert">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Connexion - KalanNet</title>
+    <title>{{ __('messages.auth.login_title') }} - KalanNet</title>
 
     <script>
         (function () {
@@ -110,7 +114,8 @@
         .login-card {
             position: relative;
             z-index: 2;
-            width: min(100%, 430px);
+            width: 100%;
+            max-width: 430px;
             padding: 34px 34px 28px;
             background: rgba(255,255,255,.92);
             border: 1px solid #e5e7eb;
@@ -186,6 +191,40 @@
             font-weight: 800;
             letter-spacing: 0;
         }
+        .login-language-row {
+            display: flex;
+            justify-content: center;
+            margin: 0 0 16px;
+        }
+        .login-language-row .kalannet-language-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            min-height: 38px;
+            border: 1px solid #dfe5ee;
+            border-radius: 999px;
+            background: #fff;
+            color: var(--theme-accent);
+            font-weight: 800;
+            padding: 0 12px;
+        }
+        [dir="rtl"] .login-page {
+            justify-content: flex-start;
+            padding: 22px 22px clamp(44px, 9vh, 92px) clamp(22px, 8vw, 120px);
+        }
+        [dir="rtl"] .input-group-text {
+            border-radius: 0 8px 8px 0;
+        }
+        [dir="rtl"] .form-control {
+            border-radius: 8px 0 0 8px;
+            text-align: right;
+        }
+        [dir="rtl"] .password-toggle {
+            border-left: 1px solid #dfe5ee;
+            border-right: 0;
+            border-radius: 8px 0 0 8px;
+        }
         .theme-row {
             display: flex;
             justify-content: center;
@@ -210,6 +249,9 @@
             color: #334155;
             margin-bottom: 8px;
         }
+        .input-group {
+            flex-wrap: nowrap;
+        }
         .input-group-text {
             width: 46px;
             justify-content: center;
@@ -224,6 +266,11 @@
             border-radius: 0 8px 8px 0;
             color: #0f172a;
             font-weight: 500;
+            min-width: 0;
+        }
+        .form-control::placeholder {
+            font-size: 0.9rem;
+            text-overflow: ellipsis;
         }
         .form-control:focus {
             border-color: var(--theme-accent);
@@ -329,18 +376,18 @@
                 <path d="M900 155 C790 168 755 218 630 205 C500 192 450 122 330 150 C205 180 175 232 0 210 L0 250 L900 250 Z" />
             </svg>
             <div class="module-list">
-                <div class="module-node"><i class="bi bi-people"></i><span>Élèves</span></div>
-                <div class="module-node"><i class="bi bi-person-plus"></i><span>Inscriptions</span></div>
-                <div class="module-node"><i class="bi bi-people-fill"></i><span>Parents</span></div>
-                <div class="module-node"><i class="bi bi-person-badge"></i><span>Enseignants</span></div>
-                <div class="module-node"><i class="bi bi-clipboard-check"></i><span>Présences</span></div>
-                <div class="module-node"><i class="bi bi-journal-text"></i><span>Émargements</span></div>
-                <div class="module-node"><i class="bi bi-pencil-square"></i><span>Notes</span></div>
-                <div class="module-node"><i class="bi bi-file-earmark-text"></i><span>Bulletins</span></div>
-                <div class="module-node"><i class="bi bi-cash-coin"></i><span>Paiements</span></div>
-                <div class="module-node"><i class="bi bi-wallet2"></i><span>Finances</span></div>
-                <div class="module-node"><i class="bi bi-calendar-week"></i><span>Emploi du temps</span></div>
-                <div class="module-node"><i class="bi bi-gear"></i><span>Configuration</span></div>
+                <div class="module-node"><i class="bi bi-people"></i><span>{{ __('messages.modules.students') }}</span></div>
+                <div class="module-node"><i class="bi bi-person-plus"></i><span>{{ __('messages.modules.registrations') }}</span></div>
+                <div class="module-node"><i class="bi bi-people-fill"></i><span>{{ __('messages.modules.parents') }}</span></div>
+                <div class="module-node"><i class="bi bi-person-badge"></i><span>{{ __('messages.modules.teachers') }}</span></div>
+                <div class="module-node"><i class="bi bi-clipboard-check"></i><span>{{ __('messages.modules.attendance') }}</span></div>
+                <div class="module-node"><i class="bi bi-journal-text"></i><span>{{ __('messages.modules.emargements') }}</span></div>
+                <div class="module-node"><i class="bi bi-pencil-square"></i><span>{{ __('messages.modules.grades') }}</span></div>
+                <div class="module-node"><i class="bi bi-file-earmark-text"></i><span>{{ __('messages.modules.bulletins') }}</span></div>
+                <div class="module-node"><i class="bi bi-cash-coin"></i><span>{{ __('messages.modules.payments') }}</span></div>
+                <div class="module-node"><i class="bi bi-wallet2"></i><span>{{ __('messages.modules.finances') }}</span></div>
+                <div class="module-node"><i class="bi bi-calendar-week"></i><span>{{ __('messages.modules.timetable') }}</span></div>
+                <div class="module-node"><i class="bi bi-gear"></i><span>{{ __('messages.modules.configuration') }}</span></div>
             </div>
         </div>
         <section class="login-card">
@@ -382,7 +429,16 @@
                         </svg>
                     </div>
                     <h1 class="brand-title"><span class="brand-title-theme">Kalan</span><span class="brand-title-alt">Net</span></h1>
-                    <p class="brand-subtitle">SYSTEME DE GESTION SCOLAIRE</p>
+                    <p class="brand-subtitle">{{ __('messages.auth.subtitle') }}</p>
+                </div>
+
+                <div class="login-language-row">
+                    @include('partials.language-switcher', [
+                        'switcherId' => 'loginLanguageSelector',
+                        'switcherClass' => 'kalannet-language-btn',
+                        'showLabel' => true,
+                        'menuClass' => 'dropdown-menu-end',
+                    ])
                 </div>
 
                 <div class="theme-row" aria-label="Choix du thème">
@@ -415,25 +471,25 @@
                     @csrf
                     <input type="hidden" name="theme_preference" id="theme_preference" value="{{ old('theme_preference', $selected_theme ?? 'vert') }}">
                     <div class="mb-3">
-                        <label class="form-label" for="identifier">Email ou téléphone</label>
+                        <label class="form-label" for="identifier">{{ __('messages.auth.identifier') }}</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-person-badge"></i></span>
-                            <input id="identifier" type="text" name="identifier" class="form-control" placeholder="exemple@ecole.com ou 70000000" value="{{ old('identifier') }}" required autofocus autocomplete="username">
+                            <input id="identifier" type="text" name="identifier" class="form-control" placeholder="{{ __('messages.auth.identifier_placeholder') }}" value="{{ old('identifier') }}" required autofocus autocomplete="username">
                         </div>
                     </div>
                     <div class="mb-4">
-                        <label class="form-label" for="pwd">Mot de passe</label>
+                        <label class="form-label" for="pwd">{{ __('messages.auth.password') }}</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                            <input id="pwd" type="password" name="pwd" class="form-control password-input" placeholder="Votre mot de passe" required>
-                            <button class="btn password-toggle" type="button" id="toggle-password" aria-label="Afficher le mot de passe">
+                            <input id="pwd" type="password" name="pwd" class="form-control password-input" placeholder="{{ __('messages.auth.password_placeholder') }}" required>
+                            <button class="btn password-toggle" type="button" id="toggle-password" aria-label="{{ __('messages.auth.show_password') }}">
                                 <i class="bi bi-eye"></i>
                             </button>
                         </div>
                     </div>
                     <div class="d-grid">
                         <button type="submit" class="btn login-button">
-                            <i class="bi bi-box-arrow-in-right me-2"></i>Connexion
+                            <i class="bi bi-box-arrow-in-right me-2"></i>{{ __('messages.auth.login') }}
                         </button>
                     </div>
                 </form>
@@ -450,7 +506,7 @@
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content border-0 rounded-3 shadow">
                     <div class="modal-header pb-2">
-                        <h5 class="modal-title fw-bold">Choisir un établissement</h5>
+                        <h5 class="modal-title fw-bold">{{ __('messages.auth.choose_school') }}</h5>
                     </div>
                     <div class="modal-body">
                         @foreach($ecoles_modal as $school)
@@ -490,6 +546,8 @@
         </script>
     @endif
 
+    <script src="{{ asset('assets/js/bootstrap.bundle.min.js') }}"></script>
+    @include('partials.localized-inputs-script')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const dots = document.querySelectorAll('.theme-dot');

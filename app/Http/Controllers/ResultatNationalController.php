@@ -367,7 +367,13 @@ class ResultatNationalController extends Controller
     private function authorizeAccess(): void
     {
         $user = Auth::user();
-        if (!$user || ($user->droit !== 'SupAdmin' && !$user->userHasAnyPermission(['evaluation_apercu', 'reinscriptions_apercu', 'inscriptions_reinscrire']))) {
+        if (!$user || ($user->droit !== 'SupAdmin' && !$user->userHasAnyPermission([
+            'resultats_nationaux_apercu',
+            'resultats nationaux_apercu',
+            'resultats_def_terminal_apercu',
+            'reinscriptions_apercu',
+            'inscriptions_reinscrire',
+        ]))) {
             abort(403);
         }
 

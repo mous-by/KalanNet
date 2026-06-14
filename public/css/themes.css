@@ -199,6 +199,41 @@ html[data-theme] .text-primary { color: var(--theme-accent) !important; }
 html[data-theme] .sidebar-wrapper .metismenu a { color: var(--text-sidebar) !important; }
 html[data-theme] .sidebar-wrapper .metismenu a:hover { color: var(--sidebar-text-active) !important; background: rgba(255,255,255,0.05); }
 
+/* Language switcher stays readable on every navbar theme */
+html[data-theme] .language-switcher .dropdown-menu {
+    width: auto !important;
+    min-width: 210px !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border: 1px solid rgba(15, 23, 42, .08) !important;
+    box-shadow: 0 14px 34px rgba(15, 23, 42, .18) !important;
+}
+
+html[data-theme] .language-switcher .dropdown-menu::after {
+    background: #ffffff !important;
+}
+
+html[data-theme] .language-switcher .dropdown-header {
+    color: #64748b !important;
+}
+
+html[data-theme] .language-switcher .dropdown-item {
+    color: #0f172a !important;
+    background: transparent !important;
+    font-weight: 700;
+}
+
+html[data-theme] .language-switcher .dropdown-item:hover,
+html[data-theme] .language-switcher .dropdown-item:focus {
+    color: #0f172a !important;
+    background: #f1f5f9 !important;
+}
+
+html[data-theme] .language-switcher .dropdown-item.active-theme {
+    color: var(--theme-accent) !important;
+    background: var(--accent-light) !important;
+}
+
 /* Theme Switcher UI */
 .theme-switcher-btn { background: transparent; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 5px 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
 html[data-theme="light"] .theme-switcher-btn { border-color: #e2e8f0; }
