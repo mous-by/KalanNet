@@ -8,6 +8,7 @@ use App\Models\Ecole;
 use App\Models\Matiere;
 use App\Models\Enseignant;
 use App\Models\LigneClasse;
+use App\Support\SchoolOrderAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -271,12 +272,19 @@ class ClasseController extends Controller
         $typeEcole = $ecole->typeEcole ?? null;
 
         if ($typeEcole === 'Complexe Scolaire' || ($user->droit === 'SupAdmin' && !$ecole)) {
-            return [
+            $orders = [
                 'fondamentale1' => 'Fondamentale I (1 à 6)',
                 'fondamentale2' => 'Fondamentale II (7 à 9)',
                 'secondairegenerale' => 'Secondaire Général',
                 'secondairetechniqueetprofessionnel' => 'Secondaire Technique et Professionnel',
             ];
+
+            if (SchoolOrderAccess::userNeedsOrderFilter($user, $ecole)) {
+                $allowed = SchoolOrderAccess::allowedOrders($user, $ecole);
+                return array_intersect_key($orders, array_flip($allowed));
+            }
+
+            return $orders;
         }
 
         if ($typeEcole === 'Fondamentale I') {

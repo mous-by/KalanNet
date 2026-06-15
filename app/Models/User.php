@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use App\Traits\BelongsToSchool;
+use App\Support\SchoolOrderAccess;
 use Illuminate\Notifications\Notifiable;
 use App\Models\Permission;
 
@@ -38,6 +39,7 @@ class User extends Authenticatable
         'genre',
         'droit',
         'idEcole',
+        'managed_orders',
         'id_academie',
         'id_cap',
         'id_enseignant',
@@ -83,6 +85,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'pwd' => 'hashed',
+            'managed_orders' => 'array',
             'last_login_at' => 'datetime',
             'last_activity' => 'datetime',
         ];
@@ -111,6 +114,15 @@ class User extends Authenticatable
         }
 
         return false;
+    }
+
+    public function managedOrderLabels(): array
+    {
+        $orders = SchoolOrderAccess::normalizeMany($this->managed_orders ?? []);
+
+        return collect($orders)
+            ->mapWithKeys(fn ($order) => [$order => SchoolOrderAccess::ORDERS[$order]])
+            ->all();
     }
 
     public function permissionCanonicalNames(): array

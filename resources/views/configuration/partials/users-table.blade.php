@@ -35,6 +35,11 @@
                                     @break
                                 @case('ecole')
                                     {{ $utilisateur->ecole->nomEcole ?? $utilisateur->enseignant->ecole->nomEcole ?? $utilisateur->parent->ecole->nomEcole ?? 'Non assigné' }}
+                                    @if($utilisateur->droit === 'Gestionnaire' && $utilisateur->ecole?->typeEcole === 'Complexe Scolaire')
+                                        <small class="d-block text-muted">
+                                            Ordres: {{ implode(', ', $utilisateur->managedOrderLabels()) ?: 'Aucun ordre assigné' }}
+                                        </small>
+                                    @endif
                                     @break
                                 @case('fonction')
                                     {{ $utilisateur->fonction ?? $utilisateur->droit ?? 'N/A' }}
@@ -58,6 +63,11 @@
                         <td class="text-center">
                             <div class="d-flex justify-content-center align-items-center gap-2">
                                 @php($deleteAllowed = $deleteAllowed ?? false)
+                                @if(($permissionAllowed ?? false) && Auth::id() !== $utilisateur->idUtilisateur && $utilisateur->droit !== 'SupAdmin')
+                                    <a href="{{ route('configuration.utilisateurs.permissions.assigner', ['user_id' => $utilisateur->idUtilisateur]) }}" class="btn btn-light btn-sm p-2" title="Assigner les permissions">
+                                        <i class="bx bx-user-check text-primary fs-5"></i>
+                                    </a>
+                                @endif
                                 @if($statusAllowed)
                                     <button class="btn btn-light btn-sm p-2" data-bs-toggle="modal" data-bs-target="#statusUserModal{{ $utilisateur->idUtilisateur }}" title="{{ (int) $utilisateur->statut === 1 ? 'Désactiver' : 'Activer' }}">
                                         @if((int) $utilisateur->statut === 1)

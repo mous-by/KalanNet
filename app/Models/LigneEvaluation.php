@@ -2,7 +2,10 @@
 
 namespace App\Models;
 
+use App\Support\SchoolOrderAccess;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class LigneEvaluation extends Model
 {
@@ -29,6 +32,21 @@ class LigneEvaluation extends Model
     protected $casts = [
         'validated_at' => 'datetime',
     ];
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope('managed_orders', function (Builder $builder) {
+            if (!Auth::check()) {
+                return;
+            }
+
+            $user = Auth::user();
+            $schoolId = session('idEcole') ?: $user->idEcole;
+            $school = $schoolId ? Ecole::withoutGlobalScopes()->find($schoolId) : $user->ecole;
+
+            SchoolOrderAccess::applyClassOrderFilter($builder, $user, $school);
+        });
+    }
 
     public function evaluation()
     {

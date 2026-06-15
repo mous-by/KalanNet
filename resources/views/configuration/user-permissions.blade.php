@@ -65,6 +65,7 @@
                             <div class="row g-3 align-items-end">
                                 <div class="col-md-8">
                                     <label class="form-label fw-bold">Utilisateur</label>
+                                    <input type="text" id="userFilter" class="form-control mb-2" placeholder="Filtrer les utilisateurs...">
                                     <select name="user_id" id="permission_user_id" class="form-select" required>
                                         <option value="">Choisir un utilisateur</option>
                                         @foreach($availableUsers as $userItem)
@@ -104,6 +105,25 @@
 
                 <div class="card theme-card shadow-sm mb-4">
                     <div class="card-body">
+                        @if($utilisateur->droit === 'Gestionnaire' && ($utilisateur->ecole?->typeEcole === 'Complexe Scolaire'))
+                            <div class="mb-4 pb-3 border-bottom">
+                                <h6 class="fw-bold mb-2">Ordres d'enseignement gérés</h6>
+                                <div class="row g-2">
+                                    @foreach($complexeOrders as $orderKey => $orderLabel)
+                                        <div class="col-md-6">
+                                            <div class="form-check theme-permission-check">
+                                                <input class="form-check-input" type="checkbox" name="managed_orders[]" value="{{ $orderKey }}" id="managed_permission_order_{{ $orderKey }}" @checked(in_array($orderKey, $utilisateur->managed_orders ?? [], true))>
+                                                <label class="form-check-label" for="managed_permission_order_{{ $orderKey }}">{{ $orderLabel }}</label>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                <small class="text-muted d-block mt-2">L'Admin du complexe voit tous les ordres. Le gestionnaire ne voit que les ordres cochés ici.</small>
+                                @error('managed_orders')
+                                    <div class="text-danger small mt-2">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        @endif
                         <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between">
                             <div>
                                 <strong>Organisation:</strong>
@@ -203,6 +223,7 @@
             const selectAll = document.getElementById('select_all_permissions');
             const moduleBoxes = Array.from(document.querySelectorAll('.module-checkbox'));
             const userSelect = document.getElementById('permission_user_id');
+            const userFilter = document.getElementById('userFilter');
 
             userSelect?.addEventListener('change', function () {
                 if (userSelect.value) {
@@ -210,7 +231,17 @@
                 }
             });
 
-            if (!selectAll) return;
+            function normalize(value) {
+                return String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            }
+
+            userFilter?.addEventListener('input', function () {
+                const term = normalize(userFilter.value);
+                Array.from(userSelect.options).forEach((option, index) => {
+                    if (index === 0) return;
+                    option.hidden = term !== '' && !normalize(option.textContent).includes(term);
+                });
+            });
 
             function syncModule(module) {
                 const items = permissionBoxes.filter((box) => box.dataset.module === module);
@@ -223,12 +254,13 @@
 
             function syncAll() {
                 const checkedCount = permissionBoxes.filter((box) => box.checked).length;
+                if (!selectAll) return;
                 selectAll.checked = checkedCount === permissionBoxes.length;
                 selectAll.indeterminate = checkedCount > 0 && checkedCount < permissionBoxes.length;
                 moduleBoxes.forEach((box) => syncModule(box.dataset.module));
             }
 
-            selectAll.addEventListener('change', function () {
+            selectAll?.addEventListener('change', function () {
                 permissionBoxes.forEach((box) => box.checked = selectAll.checked);
                 syncAll();
             });
@@ -249,12 +281,13 @@
             const filterInput = document.getElementById('permissionFilter');
             if (filterInput) {
                 filterInput.addEventListener('input', function() {
-                    const term = this.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    const term = normalize(this.value);
                     const permissionContainers = document.querySelectorAll('.theme-permission-check');
                     
                     permissionContainers.forEach(container => {
-                        const labelText = container.textContent.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                        const colElement = container.closest('.col-md-4');
+                        const labelText = normalize(container.textContent);
+                        const colElement = container.closest('.col-md-4, .col-md-6');
+                        if (!colElement) return;
                         if (labelText.includes(term)) {
                             colElement.style.display = '';
                         } else {

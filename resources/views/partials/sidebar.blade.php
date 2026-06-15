@@ -12,10 +12,15 @@
         'administrateur_tabsConfig',
         'enseignants_tabsConfig',
         'parents_tabsConfig',
+        'utilisateurs_apercu',
+        'utilisateurs_creation',
         'utilisateurs_supprimer',
         'dae_permission',
         'dcap_permission',
         'permissions_apercu',
+        'permission_voir',
+        'permissions_assigner',
+        'permission_assigner',
     ]);
     $financeMenuPermissions = [
         'finances_planifications_apercu',
