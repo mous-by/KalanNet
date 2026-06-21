@@ -92,7 +92,7 @@
             <img src="{{ asset('assets/images/logo_gsco1.png') }}" class="logo-icon" alt="logo icon">
         </div> --}}
         <div>
-            <h4 class="logo-text fw-bold mb-0" style="color: var(--text-on-accent) !important; font-family: 'Arial Black', Impact, sans-serif; letter-spacing: 2px; text-transform: uppercase; text-shadow: 1px 1px 0 rgba(0,0,0,0.3), 2px 2px 0 rgba(0,0,0,0.2), 3px 3px 0 rgba(0,0,0,0.1), 4px 4px 4px rgba(0,0,0,0.4);">KALANNET</h4>
+            <h4 class="logo-text fw-bold mb-0" style="font-family: 'Arial Black', Impact, sans-serif; letter-spacing: 2px; text-transform: uppercase; text-shadow: 1px 1px 0 rgba(0,0,0,0.3), 2px 2px 0 rgba(0,0,0,0.2), 3px 3px 0 rgba(0,0,0,0.1), 4px 4px 4px rgba(0,0,0,0.4);"><span style="color:#4ade80;">KAL</span><span style="color:#facc15;">AN</span><span style="color:#f87171;">NET</span></h4>
         </div>
         <div class="toggle-icon ms-auto" style="color: var(--text-on-accent) !important;"><i class="bi bi-list"></i></div>
     </div>

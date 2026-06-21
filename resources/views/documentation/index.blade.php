@@ -26,8 +26,8 @@
     <div class="card theme-card shadow-sm mb-4">
         <div class="card-body p-4 p-md-5">
             <div class="text-center mb-5">
-                <h2 class="fw-bold" style="color: var(--theme-accent);">DOCUMENTATION UTILISATEUR KALANNET</h2>
-                <p class="lead text-muted">Le guide complet pour maîtriser KalanNet de A à Z</p>
+                <h2 class="fw-bold" style="color: var(--theme-accent);">DOCUMENTATION UTILISATEUR <span style="color:#16a34a;">KAL</span><span style="color:#eab308;">AN</span><span style="color:#dc2626;">NET</span></h2>
+                <p class="lead text-muted">Le guide complet pour maîtriser <span style="color:#16a34a;font-weight:700;">Kal</span><span style="color:#eab308;font-weight:700;">an</span><span style="color:#dc2626;font-weight:700;">Net</span> de A à Z</p>
             </div>
 
             @include('documentation.content')

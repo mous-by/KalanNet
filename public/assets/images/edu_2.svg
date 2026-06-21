@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox">
+      <stop offset="0%" stop-color="#eff6ff"/>
+      <stop offset="50%" stop-color="#bfdbfe"/>
+      <stop offset="100%" stop-color="#1e3a8a"/>
+    </linearGradient>
+    <linearGradient id="fl2" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
+      <stop offset="0%" stop-color="#1e40af" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.7"/>
+    </linearGradient>
+    <radialGradient id="spot2" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#dbeafe" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#dbeafe" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1920" height="1080" fill="url(#bg2)"/>
+  <!-- Ceiling -->
+  <rect width="1920" height="120" fill="#0f172a" opacity="0.25"/>
+  <!-- Floor -->
+  <rect y="780" width="1920" height="300" fill="url(#fl2)"/>
+  <line x1="0" y1="780" x2="1920" y2="780" stroke="#1e3a8a" stroke-width="3" opacity="0.4"/>
+
+  <!-- Wall paneling -->
+  <rect y="0" width="1920" height="780" fill="#dbeafe" opacity="0.15"/>
+  <line x1="0" y1="640" x2="1920" y2="640" stroke="#3b82f6" stroke-width="2" opacity="0.15"/>
+
+  <!-- Windows right side -->
+  <rect x="1680" y="100" width="200" height="260" rx="8" fill="#bae6fd" opacity="0.5"/>
+  <rect x="1680" y="100" width="200" height="260" rx="8" fill="none" stroke="#3b82f6" stroke-width="5"/>
+  <line x1="1780" y1="100" x2="1780" y2="360" stroke="#3b82f6" stroke-width="3"/>
+  <line x1="1680" y1="230" x2="1880" y2="230" stroke="#3b82f6" stroke-width="3"/>
+  <ellipse cx="1780" cy="230" rx="280" ry="250" fill="url(#spot2)"/>
+
+  <rect x="1680" y="400" width="200" height="240" rx="8" fill="#bae6fd" opacity="0.45"/>
+  <rect x="1680" y="400" width="200" height="240" rx="8" fill="none" stroke="#3b82f6" stroke-width="5"/>
+  <line x1="1780" y1="400" x2="1780" y2="640" stroke="#3b82f6" stroke-width="3"/>
+  <line x1="1680" y1="520" x2="1880" y2="520" stroke="#3b82f6" stroke-width="3"/>
+
+  <!-- LARGE BLACKBOARD (centered, dominant) -->
+  <rect x="120" y="40" width="1300" height="620" rx="10" fill="#1e3a8a"/>
+  <rect x="132" y="52" width="1276" height="596" rx="8" fill="#0f2718"/>
+  <!-- Equations and content on board -->
+  <text x="200" y="160" font-family="Georgia,serif" font-size="52" fill="#60a5fa" opacity="0.9" font-weight="bold">Sciences Naturelles</text>
+  <line x1="200" y1="178" x2="1000" y2="178" stroke="#60a5fa" stroke-width="3" opacity="0.7"/>
+  <!-- Diagram: plant cell -->
+  <ellipse cx="900" cy="400" rx="200" ry="160" fill="none" stroke="#4ade80" stroke-width="3" opacity="0.65"/>
+  <ellipse cx="900" cy="400" rx="80" ry="60" fill="none" stroke="#86efac" stroke-width="2.5" opacity="0.6"/>
+  <circle cx="900" cy="400" r="20" fill="#4ade80" opacity="0.5"/>
+  <!-- Labels -->
+  <text x="1060" y="310" font-family="Georgia,serif" font-size="24" fill="#86efac" opacity="0.7">Membrane</text>
+  <line x1="1060" y1="315" x2="1090" y2="350" stroke="#86efac" stroke-width="1.5" opacity="0.5"/>
+  <text x="1060" y="390" font-family="Georgia,serif" font-size="24" fill="#86efac" opacity="0.7">Noyau</text>
+  <line x1="1060" y1="395" x2="960" y2="400" stroke="#86efac" stroke-width="1.5" opacity="0.5"/>
+  <!-- Text content -->
+  <text x="200" y="240" font-family="Georgia,serif" font-size="30" fill="#bfdbfe" opacity="0.75">I. La cellule végétale</text>
+  <rect x="200" y="262" width="280" height="5" rx="2" fill="#bfdbfe" opacity="0.35"/>
+  <rect x="200" y="285" width="420" height="5" rx="2" fill="#bfdbfe" opacity="0.28"/>
+  <rect x="200" y="308" width="360" height="5" rx="2" fill="#bfdbfe" opacity="0.28"/>
+  <rect x="200" y="331" width="440" height="5" rx="2" fill="#bfdbfe" opacity="0.25"/>
+  <text x="200" y="440" font-family="Georgia,serif" font-size="30" fill="#bfdbfe" opacity="0.7">II. La photosynthèse</text>
+  <text x="200" y="490" font-family="Georgia,serif" font-size="26" fill="#93c5fd" opacity="0.65">6CO₂ + 6H₂O → C₆H₁₂O₆ + 6O₂</text>
+  <rect x="200" y="540" width="380" height="5" rx="2" fill="#bfdbfe" opacity="0.25"/>
+  <rect x="200" y="563" width="310" height="5" rx="2" fill="#bfdbfe" opacity="0.22"/>
+  <!-- Chalk tray -->
+  <rect x="120" y="652" width="1300" height="16" rx="3" fill="#1e3a8a"/>
+  <rect x="300" y="655" width="26" height="8" rx="4" fill="#f8fafc" opacity="0.85"/>
+  <rect x="332" y="656" width="18" height="7" rx="3" fill="#bfdbfe" opacity="0.8"/>
+  <rect x="356" y="655" width="22" height="8" rx="4" fill="#f8fafc" opacity="0.8"/>
+
+  <!-- TEACHER silhouette (left of board, facing it) -->
+  <g transform="translate(1490,160)">
+    <ellipse cx="0" cy="0" rx="40" ry="46" fill="#0f172a"/>
+    <ellipse cx="0" cy="-32" rx="42" ry="22" fill="#050f1a"/>
+    <rect x="-15" y="44" width="30" height="24" fill="#0f172a"/>
+    <path d="M-46,68 C-50,220 -44,360 -40,430 L40,430 C44,360 50,220 46,68 Z" fill="#1e3a8a"/>
+    <!-- Arm pointing at board -->
+    <path d="M-46,120 C-120,105 -240,95 -310,90" stroke="#0f172a" stroke-width="22" stroke-linecap="round" fill="none"/>
+    <line x1="-44" y1="118" x2="-350" y2="92" stroke="#374151" stroke-width="5" stroke-linecap="round"/>
+    <!-- Other arm -->
+    <path d="M46,120 C70,155 75,210 70,248" stroke="#0f172a" stroke-width="20" stroke-linecap="round" fill="none"/>
+    <!-- Legs -->
+    <rect x="-32" y="428" width="22" height="140" rx="4" fill="#0f172a"/>
+    <rect x="10" y="428" width="22" height="140" rx="4" fill="#0f172a"/>
+    <ellipse cx="-21" cy="574" rx="20" ry="9" fill="#050f1a"/>
+    <ellipse cx="21" cy="574" rx="20" ry="9" fill="#050f1a"/>
+  </g>
+
+  <!-- Students at bottom (partially visible) -->
+  <!-- Row 1 back -->
+  <g transform="translate(200,850) scale(0.62)"><ellipse cx="0" cy="-88" rx="28" ry="32" fill="#0f172a"/><ellipse cx="0" cy="-108" rx="30" ry="16" fill="#050f1a"/><path d="M-24,-56 C-26,-16 -24,0 -24,0 L24,0 C24,0 26,-16 24,-56 Z" fill="#0f172a"/><path d="M-24,-26 L-54,-14 L-54,-6 L-24,-18 Z" fill="#0f172a"/><path d="M24,-26 L54,-14 L54,-6 L24,-18 Z" fill="#0f172a"/><rect x="-65" y="-12" width="130" height="13" rx="3" fill="#1e40af"/><rect x="-44" y="-14" width="34" height="4" rx="2" fill="#2563eb"/><rect x="10" y="-14" width="34" height="4" rx="2" fill="#1d4ed8"/></g>
+  <g transform="translate(450,850) scale(0.62)"><ellipse cx="0" cy="-88" rx="28" ry="32" fill="#0f172a"/><ellipse cx="0" cy="-108" rx="30" ry="16" fill="#050f1a"/><path d="M-24,-56 C-26,-16 -24,0 -24,0 L24,0 C24,0 26,-16 24,-56 Z" fill="#0f172a"/><path d="M-24,-26 L-54,-14 L-54,-6 L-24,-18 Z" fill="#0f172a"/><path d="M24,-26 L54,-14 L54,-6 L24,-18 Z" fill="#0f172a"/><rect x="-65" y="-12" width="130" height="13" rx="3" fill="#1e40af"/><rect x="-44" y="-14" width="34" height="4" rx="2" fill="#3b82f6"/><rect x="10" y="-14" width="34" height="4" rx="2" fill="#2563eb"/></g>
+  <g transform="translate(700,850) scale(0.62)"><ellipse cx="0" cy="-88" rx="28" ry="32" fill="#0f172a"/><ellipse cx="0" cy="-108" rx="30" ry="16" fill="#050f1a"/><path d="M-24,-56 C-26,-16 -24,0 -24,0 L24,0 C24,0 26,-16 24,-56 Z" fill="#0f172a"/><path d="M-24,-26 L-54,-14 L-54,-6 L-24,-18 Z" fill="#0f172a"/><path d="M24,-26 L54,-14 L54,-6 L24,-18 Z" fill="#0f172a"/><rect x="-65" y="-12" width="130" height="13" rx="3" fill="#1e40af"/><rect x="-44" y="-14" width="34" height="4" rx="2" fill="#1d4ed8"/><rect x="10" y="-14" width="34" height="4" rx="2" fill="#3b82f6"/></g>
+  <g transform="translate(950,850) scale(0.62)"><ellipse cx="0" cy="-88" rx="28" ry="32" fill="#0f172a"/><ellipse cx="0" cy="-108" rx="30" ry="16" fill="#050f1a"/><path d="M-24,-56 C-26,-16 -24,0 -24,0 L24,0 C24,0 26,-16 24,-56 Z" fill="#0f172a"/><path d="M-24,-26 L-54,-14 L-54,-6 L-24,-18 Z" fill="#0f172a"/><path d="M24,-26 L54,-14 L54,-6 L24,-18 Z" fill="#0f172a"/><rect x="-65" y="-12" width="130" height="13" rx="3" fill="#1e40af"/><rect x="-44" y="-14" width="34" height="4" rx="2" fill="#2563eb"/><rect x="10" y="-14" width="34" height="4" rx="2" fill="#1d4ed8"/></g>
+  <!-- Row 2 front -->
+  <g transform="translate(160,985) scale(0.8)"><ellipse cx="0" cy="-88" rx="28" ry="32" fill="#0f172a"/><ellipse cx="0" cy="-108" rx="30" ry="16" fill="#050f1a"/><path d="M-24,-56 C-26,-16 -24,0 -24,0 L24,0 C24,0 26,-16 24,-56 Z" fill="#0f172a"/><path d="M-24,-26 L-54,-14 L-54,-6 L-24,-18 Z" fill="#0f172a"/><path d="M24,-26 L54,-14 L54,-6 L24,-18 Z" fill="#0f172a"/><rect x="-65" y="-12" width="130" height="13" rx="3" fill="#1e40af"/><rect x="-44" y="-14" width="34" height="4" rx="2" fill="#3b82f6"/><rect x="10" y="-14" width="34" height="4" rx="2" fill="#2563eb"/></g>
+  <g transform="translate(480,985) scale(0.8)"><ellipse cx="0" cy="-88" rx="28" ry="32" fill="#0f172a"/><ellipse cx="0" cy="-108" rx="30" ry="16" fill="#050f1a"/><path d="M-24,-56 C-26,-16 -24,0 -24,0 L24,0 C24,0 26,-16 24,-56 Z" fill="#0f172a"/><path d="M-24,-26 L-54,-14 L-54,-6 L-24,-18 Z" fill="#0f172a"/><path d="M24,-26 L54,-14 L54,-6 L24,-18 Z" fill="#0f172a"/><rect x="-65" y="-12" width="130" height="13" rx="3" fill="#1e40af"/><rect x="-44" y="-14" width="34" height="4" rx="2" fill="#1d4ed8"/><rect x="10" y="-14" width="34" height="4" rx="2" fill="#3b82f6"/></g>
+  <g transform="translate(800,985) scale(0.8)"><ellipse cx="0" cy="-88" rx="28" ry="32" fill="#0f172a"/><ellipse cx="0" cy="-108" rx="30" ry="16" fill="#050f1a"/><path d="M-24,-56 C-26,-16 -24,0 -24,0 L24,0 C24,0 26,-16 24,-56 Z" fill="#0f172a"/><path d="M-24,-26 L-54,-14 L-54,-6 L-24,-18 Z" fill="#0f172a"/><path d="M24,-26 L54,-14 L54,-6 L24,-18 Z" fill="#0f172a"/><rect x="-65" y="-12" width="130" height="13" rx="3" fill="#1e40af"/><rect x="-44" y="-14" width="34" height="4" rx="2" fill="#2563eb"/><rect x="10" y="-14" width="34" height="4" rx="2" fill="#1d4ed8"/></g>
+  <g transform="translate(1120,985) scale(0.8)"><ellipse cx="0" cy="-88" rx="28" ry="32" fill="#0f172a"/><ellipse cx="0" cy="-108" rx="30" ry="16" fill="#050f1a"/><path d="M-24,-56 C-26,-16 -24,0 -24,0 L24,0 C24,0 26,-16 24,-56 Z" fill="#0f172a"/><path d="M-24,-26 L-54,-14 L-54,-6 L-24,-18 Z" fill="#0f172a"/><path d="M24,-26 L54,-14 L54,-6 L24,-18 Z" fill="#0f172a"/><rect x="-65" y="-12" width="130" height="13" rx="3" fill="#1e40af"/><rect x="-44" y="-14" width="34" height="4" rx="2" fill="#3b82f6"/><rect x="10" y="-14" width="34" height="4" rx="2" fill="#2563eb"/></g>
+</svg>

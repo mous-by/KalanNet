@@ -18,7 +18,7 @@ class AuthController extends Controller
             return redirect()->route('dashboard');
         }
         return view('auth.login', [
-            'selected_theme' => request()->query('theme'),
+            'selected_theme' => request()->cookie('theme_preference'),
             'selected_locale' => app()->getLocale(),
         ]);
     }
@@ -184,7 +184,8 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()
-            ->route('login', ['theme' => $theme])
-            ->withCookie(Cookie::make('locale', $locale, 60 * 24 * 365));
+            ->route('login')
+            ->withCookie(Cookie::make('locale', $locale, 60 * 24 * 365))
+            ->withCookie(Cookie::make('theme_preference', $theme, 60 * 24 * 365));
     }
 }
