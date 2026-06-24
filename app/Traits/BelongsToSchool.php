@@ -3,6 +3,7 @@
 namespace App\Traits;
 
 use App\Models\Ecole;
+use App\Support\SchoolOrderAccess;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 
@@ -60,6 +61,7 @@ trait BelongsToSchool
                         $q->orWhereNull($column);
                     }
                 });
+                self::applyManagedOrderScope($builder, $user, $table, (int) $selectedSchool);
                 return;
             }
 
@@ -118,8 +120,30 @@ trait BelongsToSchool
                             $q->orWhereNull($column);
                         }
                     });
+                    self::applyManagedOrderScope($builder, $user, $table, (int) $user->idEcole);
                 }
             }
         });
+    }
+
+    private static function applyManagedOrderScope(Builder $builder, $user, string $table, int $schoolId): void
+    {
+        if (!$user || SchoolOrderAccess::unrestricted($user)) {
+            return;
+        }
+
+        $school = Ecole::withoutGlobalScopes()->find($schoolId);
+        if (!SchoolOrderAccess::userNeedsOrderFilter($user, $school)) {
+            return;
+        }
+
+        if ($table === 'classe') {
+            SchoolOrderAccess::applyClasseFilter($builder, $user, $school);
+            return;
+        }
+
+        if (in_array($table, ['eleve', 'paiement', 'controle_eleve', 'presences', 'emargements'], true)) {
+            SchoolOrderAccess::applyClassOrderFilter($builder, $user, $school);
+        }
     }
 }

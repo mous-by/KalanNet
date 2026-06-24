@@ -9,6 +9,7 @@ use App\Http\Controllers\MatiereController;
 use App\Http\Controllers\InscriptionController;
 use App\Http\Controllers\PresenceController;
 use App\Http\Controllers\ThemeController;
+use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EleveController;
 use App\Http\Controllers\EmargementController;
@@ -259,3 +260,4 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::post('/theme/store', [ThemeController::class, 'store'])->name('theme.store');
+Route::post('/language/{locale}', [LocaleController::class, 'update'])->name('language.update');

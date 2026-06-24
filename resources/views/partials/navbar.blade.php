@@ -72,27 +72,30 @@
 
 <header class="top-header">
     <nav class="navbar navbar-expand gap-3">
+        <div class="mobile-toggle-icon fs-3 d-xl-none" style="cursor: pointer;">
+            <i class="bi bi-list"></i>
+        </div>
         <div class="top-navbar-right ms-auto">
             <ul class="navbar-nav align-items-center">
                 <!-- Academic Year Badge -->
                 <li class="nav-item d-none d-sm-flex align-items-center me-3">
                     <div class="d-flex align-items-center px-3 py-1 border rounded-pill shadow-sm" style="border-color: rgba(128, 128, 128, 0.3) !important;">
                         <i class="bi bi-calendar3 me-2 opacity-75"></i> 
-                        <span class="fw-bold fs-6">Année Scolaire: {{ $anneeEnCours ? $anneeEnCours->annee : 'N/A' }}</span>
+                        <span class="fw-bold fs-6">{{ __('messages.navbar.school_year') }}: {{ $anneeEnCours ? $anneeEnCours->annee : 'N/A' }}</span>
                     </div>
                 </li>
 
 
                 <!-- Theme Selector Dropdown -->
                 <li class="nav-item dropdown dropdown-large">
-                    <a class="nav-link dropdown-toggle dropdown-toggle-nocaret" href="#" data-bs-toggle="dropdown" title="Changer de thème">
+                    <a class="nav-link dropdown-toggle dropdown-toggle-nocaret" href="#" data-bs-toggle="dropdown" title="{{ __('messages.theme.change') }}">
                         <div class="theme-switcher-btn">
                             <span class="theme-swatch swatch-bleu-sombre" id="current-theme-swatch"></span>
                             <i class="bi bi-palette-fill"></i>
                         </div>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end p-2" style="min-width: 200px;">
-                        <li><h6 class="dropdown-header text-uppercase fw-bold small mb-2">Thèmes Disponibles</h6></li>
+                        <li><h6 class="dropdown-header text-uppercase fw-bold small mb-2">{{ __('messages.theme.available') }}</h6></li>
                         <li><a class="dropdown-item theme-option d-flex align-items-center gap-2 rounded-2 mb-1 {{ ($user->theme_preference ?? 'bleu-sombre') == 'bleu-sombre' ? 'active-theme' : '' }}" href="javascript:;" onclick="changeTheme('bleu-sombre')" style="color: #3b82f6 !important;">
                             <span class="theme-swatch swatch-bleu-sombre"></span> Bleu Sombre (Défaut)
                         </a></li>
@@ -118,15 +121,24 @@
                 </li>
 
                 <li class="nav-item dropdown dropdown-large">
+                    @include('partials.language-switcher', [
+                        'switcherId' => 'topbarLanguageSelector',
+                        'switcherClass' => 'kalannet-language-btn',
+                        'showLabel' => true,
+                        'menuClass' => 'dropdown-menu-end',
+                    ])
+                </li>
+
+                <li class="nav-item dropdown dropdown-large">
                     <a class="nav-link dropdown-toggle dropdown-toggle-nocaret" href="#" data-bs-toggle="dropdown">
-                        <div class="notifications">
+                            <div class="notifications">
                             <span class="notify-badge">{{ $unreadNotificationsCount }}</span>
                             <i class="bi bi-bell-fill"></i>
                         </div>
                     </a>
                     <div class="dropdown-menu dropdown-menu-end p-0" style="width: 350px; max-width: 100vw;">
                         <div class="p-2 border-bottom m-2">
-                            <h5 class="h5 mb-0">Notifications</h5>
+                            <h5 class="h5 mb-0">{{ __('messages.navbar.notifications') }}</h5>
                         </div>
                         <div class="header-notifications-list p-2" style="max-height: 400px; overflow-y: auto;">
                             @forelse($notifications as $notification)
@@ -139,10 +151,10 @@
                                         <div class="text-muted small" style="word-break: break-word;">{{ \Illuminate\Support\Str::limit($notification->message, 150) }}</div>
                                         <div class="text-muted mt-1" style="font-size: 11px;">{{ optional($notification->created_at)->diffForHumans() }}</div>
                                     </div>
-                                    <button type="button" class="btn-close btn-close-sm mt-1 mark-read-btn" aria-label="Marquer comme lu" title="Marquer comme lu" style="font-size: 10px;"></button>
+                                    <button type="button" class="btn-close btn-close-sm mt-1 mark-read-btn" aria-label="Fermer" title="{{ __('messages.navbar.mark_as_read') }}" style="font-size: 10px;"></button>
                                 </a>
                             @empty
-                                <div class="dropdown-item text-center text-secondary empty-notifications">Aucune notification</div>
+                                <div class="dropdown-item text-center text-secondary empty-notifications">{{ __('messages.navbar.no_notifications') }}</div>
                             @endforelse
                         </div>
                     </div>
@@ -174,7 +186,7 @@
                             <a class="dropdown-item" href="#">
                                 <div class="d-flex align-items-center">
                                     <div class=""><i class="bi bi-person-fill"></i></div>
-                                    <div class="ms-3"><span>Profil</span></div>
+                                    <div class="ms-3"><span>{{ __('messages.navbar.profile') }}</span></div>
                                 </div>
                             </a>
                         </li>
@@ -184,7 +196,7 @@
                                 @csrf
                                 <button type="submit" class="dropdown-item d-flex align-items-center rounded-2 py-2 text-center" style="background-color: var(--theme-accent) !important; color: var(--text-on-accent) !important; border: none; font-weight: 600; justify-content: center; gap: 8px;">
                                     <i class="bi bi-box-arrow-right fs-5"></i>
-                                    <span>Déconnexion</span>
+                                    <span>{{ __('messages.navbar.logout') }}</span>
                                 </button>
                             </form>
                         </li>
@@ -200,15 +212,15 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow">
                 <div class="modal-header {{ $subscriptionReminderState['blocked'] ? 'bg-danger' : 'bg-warning' }} text-white">
-                    <h5 class="modal-title fw-bold">Avertissement abonnement</h5>
+                    <h5 class="modal-title fw-bold">{{ __('messages.navbar.subscription_warning') }}</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
                 </div>
                 <div class="modal-body">
                     <p class="fw-bold mb-0">{{ $subscriptionReminderState['message'] }}</p>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Plus tard</button>
-                    <a href="{{ route('abonnements.index') }}" class="btn btn-primary">Renouveler</a>
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">{{ __('messages.navbar.later') }}</button>
+                    <a href="{{ route('abonnements.index') }}" class="btn btn-primary">{{ __('messages.navbar.renew') }}</a>
                 </div>
             </div>
         </div>
@@ -296,7 +308,7 @@
                                   notifyBadge.style.display = 'none';
                                   const list = document.querySelector('.header-notifications-list');
                                   if (list) {
-                                      list.innerHTML = '<div class="dropdown-item text-center text-secondary empty-notifications">Aucune notification</div>';
+                                      list.innerHTML = '<div class="dropdown-item text-center text-secondary empty-notifications">{{ __('messages.navbar.no_notifications') }}</div>';
                                   }
                               }
                           }

@@ -18,6 +18,8 @@ class BulletinController extends Controller
 {
     public function classes()
     {
+        $this->authorizeBulletinGeneration();
+
         $user = auth()->user();
         $idEcole = session('idEcole') ?: $user->idEcole;
 
@@ -34,6 +36,8 @@ class BulletinController extends Controller
 
     public function index(int $idClasse)
     {
+        $this->authorizeBulletinGeneration();
+
         $classe = Classe::findOrFail($idClasse);
         $this->authorizeClasse($classe);
 
@@ -47,6 +51,8 @@ class BulletinController extends Controller
 
     public function data(int $idClasse, Request $request)
     {
+        $this->authorizeBulletinGeneration();
+
         $classe = Classe::findOrFail($idClasse);
         $this->authorizeClasse($classe);
 
@@ -141,6 +147,8 @@ class BulletinController extends Controller
 
     public function downloadClassBulletins(int $idClasse, Request $request)
     {
+        $this->authorizeBulletinGeneration();
+
         $classe = Classe::findOrFail($idClasse);
         $this->authorizeClasse($classe);
 
@@ -489,6 +497,24 @@ class BulletinController extends Controller
         }
     }
 
+    private function authorizeBulletinGeneration(): void
+    {
+        $user = Auth::user();
+
+        if (!$user || ($user->droit !== 'SupAdmin' && !$user->userHasAnyPermission([
+            'bulletins_apercu',
+            'bulletins_generation',
+            'bulletins_génération',
+            'bulletins_pdf',
+            'bulletins_impression',
+            'bulletins_publication',
+            'generer_bulletins',
+            'générer_bulletins',
+        ]))) {
+            abort(403);
+        }
+    }
+
     private function moisOptions(): array
     {
         return [1 => "Janvier", 2 => "Février", 3 => "Mars", 4 => "Avril", 5 => "Mai", 6 => "Juin", 7 => "Juillet", 8 => "Août", 9 => "Septembre", 10 => "Octobre", 11 => "Novembre", 12 => "Décembre"];
@@ -513,6 +539,7 @@ class BulletinController extends Controller
     {
         $user = Auth::user();
         if ($user?->droit !== 'parent') {
+            $this->authorizeBulletinGeneration();
             return;
         }
 

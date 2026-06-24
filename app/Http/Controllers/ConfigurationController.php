@@ -15,6 +15,7 @@ use App\Models\Permission;
 use App\Models\User;
 use App\Models\Note;
 use App\Models\Controle;
+use App\Support\SchoolOrderAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -291,7 +292,7 @@ class ConfigurationController extends Controller
     {
         $user = Auth::user();
         if ($user->droit !== 'Admin') {
-            $this->authorizeAnyPermission($user, ['administrateur_tabsConfig', 'enseignants_tabsConfig', 'parents_tabsConfig', 'dae_apercu', 'dcap_apercu']);
+            $this->authorizeAnyPermission($user, ['utilisateurs_apercu', 'administrateur_tabsConfig', 'enseignants_tabsConfig', 'parents_tabsConfig', 'dae_apercu', 'dcap_apercu']);
         }
 
         $idEcole = session('idEcole');
@@ -319,7 +320,7 @@ class ConfigurationController extends Controller
     public function createUtilisateur()
     {
         $authUser = Auth::user();
-        if (!in_array($authUser->droit, ['SupAdmin', 'Admin'], true)) {
+        if (!in_array($authUser->droit, ['SupAdmin', 'Admin'], true) && !$authUser->userHasPermission('utilisateurs_creation')) {
             abort(403);
         }
 
@@ -331,6 +332,7 @@ class ConfigurationController extends Controller
             'parents' => $this->parentsScope(ParentModel::query(), $authUser, $idEcole)->orderBy('nom_prenom_parent')->get(),
             'academies' => Academie::orderBy('nom_academie')->get(),
             'caps' => Cap::with('academie')->orderBy('nom_cap')->get(),
+            'complexeOrders' => SchoolOrderAccess::ORDERS,
         ]);
     }
 
@@ -342,6 +344,7 @@ class ConfigurationController extends Controller
         $idEcole = session('idEcole');
 
         $this->authorizeUserCreation($authUser, $type, $data);
+        $this->validateManagedOrdersForUser($authUser, $type, $data, $idEcole);
 
         $createdUser = DB::transaction(function () use ($type, $data, $authUser, $idEcole) {
             $password = $data['pwd'] ?? $this->generatePassword();
@@ -402,6 +405,7 @@ class ConfigurationController extends Controller
                     'genre' => $data['genre'],
                     'droit' => $data['droit'],
                     'idEcole' => $authUser->droit === 'SupAdmin' ? ($data['idEcole'] ?? null) : ($idEcole ?: $authUser->idEcole),
+                    'managed_orders' => $data['droit'] === 'Gestionnaire' ? SchoolOrderAccess::normalizeMany($data['managed_orders'] ?? []) : null,
                 ];
             }
 
@@ -480,7 +484,7 @@ class ConfigurationController extends Controller
     {
         $authUser = Auth::user();
         if (!in_array($authUser->droit, ['SupAdmin', 'Admin'], true)) {
-            $this->authorizeAnyPermission($authUser, ['dae_permission', 'dcap_permission']);
+            $this->authorizeAnyPermission($authUser, ['permissions_assigner', 'permission_assigner', 'dae_permission', 'dcap_permission']);
         }
 
         $idEcole = session('idEcole');
@@ -499,13 +503,15 @@ class ConfigurationController extends Controller
             ->all();
 
         $availableUsers = $this->permissionAssignableUsers($authUser, $idEcole);
+        $complexeOrders = SchoolOrderAccess::ORDERS;
 
         return view('configuration.user-permissions', compact(
             'utilisateur',
             'availableUsers',
             'groupedPermissions',
             'userPermissionIds',
-            'userPermissionNames'
+            'userPermissionNames',
+            'complexeOrders'
         ));
     }
 
@@ -513,7 +519,7 @@ class ConfigurationController extends Controller
     {
         $authUser = Auth::user();
         if (!in_array($authUser->droit, ['SupAdmin', 'Admin'], true)) {
-            $this->authorizeAnyPermission($authUser, ['dae_permission', 'dcap_permission']);
+            $this->authorizeAnyPermission($authUser, ['permissions_assigner', 'permission_assigner', 'dae_permission', 'dcap_permission']);
         }
 
         $idEcole = session('idEcole');
@@ -523,6 +529,7 @@ class ConfigurationController extends Controller
         $groupedPermissions = Permission::groupedByModule();
         $userPermissionIds = [];
         $userPermissionNames = [];
+        $complexeOrders = SchoolOrderAccess::ORDERS;
 
         if ($selectedUserId > 0) {
             $utilisateur = $this->userScope(User::with(['ecole', 'permissions']), $authUser, $idEcole)
@@ -543,7 +550,8 @@ class ConfigurationController extends Controller
             'availableUsers',
             'groupedPermissions',
             'userPermissionIds',
-            'userPermissionNames'
+            'userPermissionNames',
+            'complexeOrders'
         ));
     }
 
@@ -551,7 +559,7 @@ class ConfigurationController extends Controller
     {
         $authUser = Auth::user();
         if (!in_array($authUser->droit, ['SupAdmin', 'Admin'], true)) {
-            $this->authorizeAnyPermission($authUser, ['dae_permission', 'dcap_permission']);
+            $this->authorizeAnyPermission($authUser, ['permissions_assigner', 'permission_assigner', 'dae_permission', 'dcap_permission']);
         }
 
         $idEcole = session('idEcole');
@@ -572,6 +580,20 @@ class ConfigurationController extends Controller
         $validPermissionIds = Permission::whereIn('id', $permissionIds)->pluck('id')->all();
         $utilisateur->permissions()->sync($validPermissionIds);
 
+        $orders = SchoolOrderAccess::normalizeMany($request->input('managed_orders', []));
+        if ($utilisateur->droit === 'Gestionnaire' && SchoolOrderAccess::isComplex($utilisateur->ecole)) {
+            if (empty($orders)) {
+                throw ValidationException::withMessages([
+                    'managed_orders' => 'Veuillez sélectionner au moins un ordre d’enseignement pour ce gestionnaire du complexe.',
+                ]);
+            }
+            $utilisateur->managed_orders = $orders;
+            $utilisateur->save();
+        } elseif ($utilisateur->managed_orders) {
+            $utilisateur->managed_orders = null;
+            $utilisateur->save();
+        }
+
         return redirect()
             ->route('configuration.utilisateurs.permissions.assigner', ['user_id' => $utilisateur->idUtilisateur])
             ->with('success', 'Permissions enregistrées avec succès pour ' . $utilisateur->nomPrenom . '.');
@@ -579,7 +601,7 @@ class ConfigurationController extends Controller
 
     public function permissions(Request $request)
     {
-        $this->authorizeSupAdminOnly();
+        $this->authorizeAnyPermission(Auth::user(), ['permissions_apercu', 'permission_voir']);
 
         $search = $request->get('search');
 
@@ -698,7 +720,13 @@ class ConfigurationController extends Controller
             });
         }
 
-        return $query->where('idEcole', $idEcole ?: $user->idEcole);
+        $query->where('idEcole', $idEcole ?: $user->idEcole);
+
+        if ($user->droit === 'Gestionnaire') {
+            $query->where('droit', '!=', 'Admin');
+        }
+
+        return $query;
     }
 
     private function enseignantsScope($query, User $user, ?int $idEcole)
@@ -779,6 +807,7 @@ class ConfigurationController extends Controller
     private function firstAvailableConfigurationRoute(User $user): string
     {
         $routes = [
+            'utilisateurs_apercu' => 'configuration.utilisateurs',
             'ecoles_apercu' => 'configuration.ecoles',
             'academies_apercu' => 'configuration.academies',
             'dcap_apercu' => 'configuration.caps',
@@ -787,6 +816,10 @@ class ConfigurationController extends Controller
             'classes_officielles_apercu' => 'configuration.classes-officielles',
             'status_controles_apercu' => 'configuration.status-controles',
             'administrateur_tabsConfig' => 'configuration.utilisateurs',
+            'permissions_apercu' => 'configuration.permissions',
+            'permission_voir' => 'configuration.permissions',
+            'permissions_assigner' => 'configuration.utilisateurs.permissions.assigner',
+            'permission_assigner' => 'configuration.utilisateurs.permissions.assigner',
             'dae_permission' => 'configuration.utilisateurs.permissions.assigner',
             'dcap_permission' => 'configuration.utilisateurs.permissions.assigner',
         ];
@@ -834,7 +867,7 @@ class ConfigurationController extends Controller
 
     private function authorizeUserCreation(User $authUser, int $type, array $data): void
     {
-        if (!in_array($authUser->droit, ['SupAdmin', 'Admin'], true)) {
+        if (!in_array($authUser->droit, ['SupAdmin', 'Admin'], true) && !$authUser->userHasPermission('utilisateurs_creation')) {
             abort(403);
         }
 
@@ -857,7 +890,7 @@ class ConfigurationController extends Controller
 
     private function authorizeTargetPermissionAssignment(User $authUser, User $target): void
     {
-        if ($target->idUtilisateur === $authUser->idUtilisateur || $target->droit === 'SupAdmin') {
+        if ($target->idUtilisateur === $authUser->idUtilisateur || in_array($target->droit, ['SupAdmin', 'Admin'], true)) {
             abort(403);
         }
 
@@ -913,7 +946,25 @@ class ConfigurationController extends Controller
             'fonction' => 'nullable|string|max:50',
             'droit' => 'required|string|in:' . (Auth::user()->droit === 'SupAdmin' ? 'SupAdmin,Admin,Gestionnaire' : 'Gestionnaire'),
             'idEcole' => 'nullable|integer|exists:ecole,idEcole',
+            'managed_orders' => 'nullable|array',
+            'managed_orders.*' => 'required|string|in:' . implode(',', array_keys(SchoolOrderAccess::ORDERS)),
         ]);
+    }
+
+    private function validateManagedOrdersForUser(User $authUser, int $type, array $data, ?int $idEcole): void
+    {
+        if ($type !== 1 || ($data['droit'] ?? null) !== 'Gestionnaire') {
+            return;
+        }
+
+        $targetSchoolId = $authUser->droit === 'SupAdmin' ? ($data['idEcole'] ?? null) : ($idEcole ?: $authUser->idEcole);
+        $school = $targetSchoolId ? Ecole::withoutGlobalScopes()->find($targetSchoolId) : null;
+
+        if (SchoolOrderAccess::isComplex($school) && empty(SchoolOrderAccess::normalizeMany($data['managed_orders'] ?? []))) {
+            throw ValidationException::withMessages([
+                'managed_orders' => 'Veuillez sélectionner au moins un ordre d’enseignement pour ce gestionnaire du complexe.',
+            ]);
+        }
     }
 
     private function ensureUniqueLinkedUser(string $column, int $id, ?int $idEcole = null): void

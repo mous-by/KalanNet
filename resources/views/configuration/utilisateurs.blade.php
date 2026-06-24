@@ -54,6 +54,8 @@
 
     $canSeeDaeActions = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('dae_voiraction');
     $canSeeDcapActions = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('dcap_voiraction');
+    $canAssignPermissions = in_array($connectedUser->droit, ['SupAdmin', 'Admin'], true)
+        || $connectedUser->userHasAnyPermission(['permissions_assigner', 'permission_assigner']);
 @endphp
 
 @section('content')
@@ -84,7 +86,7 @@
                         <form action="{{ route('configuration.utilisateurs') }}" method="GET" data-auto-filter="true">
                             <input type="text" name="search" class="form-control" placeholder="Nom, email, fonction..." value="{{ request('search') }}">
                         </form>
-                        @if(in_array($connectedUser->droit, ['SupAdmin', 'Admin'], true))
+                        @if(in_array($connectedUser->droit, ['SupAdmin', 'Admin'], true) || $connectedUser->userHasPermission('utilisateurs_creation'))
                             <a href="{{ route('configuration.utilisateurs.create') }}"
                                class="btn btn-sm d-flex align-items-center gap-1 shadow-sm text-white"
                                style="background-color: var(--theme-accent) !important; color: var(--text-on-accent) !important; border: none;">
@@ -113,8 +115,8 @@
                                     @include('configuration.partials.users-table', [
                                         'users' => $tab['users'],
                                         'columns' => ['name', 'email', 'fonction', 'telephone', 'academie'],
-                                        'showActions' => $canSeeDaeActions,
-                                        'permissionAllowed' => $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('dae_permission'),
+                                        'showActions' => $canSeeDaeActions || $canAssignPermissions,
+                                        'permissionAllowed' => $canAssignPermissions || $connectedUser->userHasPermission('dae_permission'),
                                         'statusAllowed' => $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('dae_activer'),
                                         'deleteAllowed' => $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('utilisateurs_supprimer'),
                                     ])
@@ -122,8 +124,8 @@
                                     @include('configuration.partials.users-table', [
                                         'users' => $tab['users'],
                                         'columns' => ['name', 'email', 'fonction', 'telephone', 'cap'],
-                                        'showActions' => $canSeeDcapActions,
-                                        'permissionAllowed' => $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('dcap_permission'),
+                                        'showActions' => $canSeeDcapActions || $canAssignPermissions,
+                                        'permissionAllowed' => $canAssignPermissions || $connectedUser->userHasPermission('dcap_permission'),
                                         'statusAllowed' => $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('dcap_activer'),
                                         'deleteAllowed' => $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('utilisateurs_supprimer'),
                                     ])
@@ -132,7 +134,7 @@
                                         'users' => $tab['users'],
                                         'columns' => ['name', 'email', 'ecole', 'telephone'],
                                         'showActions' => true,
-                                        'permissionAllowed' => true,
+                                        'permissionAllowed' => $canAssignPermissions,
                                         'statusAllowed' => $connectedUser->droit === 'SupAdmin' || $connectedUser->droit === 'Admin',
                                         'deleteAllowed' => $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('utilisateurs_supprimer'),
                                     ])
@@ -141,7 +143,7 @@
                                         'users' => $tab['users'],
                                         'columns' => ['name', 'email', 'ecole', 'fonction', 'genre', 'telephone'],
                                         'showActions' => true,
-                                        'permissionAllowed' => true,
+                                        'permissionAllowed' => $canAssignPermissions,
                                         'statusAllowed' => $connectedUser->droit === 'SupAdmin' || $connectedUser->droit === 'Admin',
                                         'deleteAllowed' => $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('utilisateurs_supprimer'),
                                     ])

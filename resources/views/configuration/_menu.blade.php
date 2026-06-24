@@ -15,7 +15,7 @@
                     </a>
                 </li>
             @endif
-            @if(in_array($connectedUser->droit, ['SupAdmin', 'Admin'], true) || $connectedUser->userHasPermission('administrateur_tabsConfig'))
+            @if(in_array($connectedUser->droit, ['SupAdmin', 'Admin'], true) || $connectedUser->userHasAnyPermission(['utilisateurs_apercu', 'administrateur_tabsConfig', 'enseignants_tabsConfig', 'parents_tabsConfig', 'dae_apercu', 'dcap_apercu']))
                 <li class="nav-item">
                     <a class="nav-link d-flex align-items-center py-2 {{ request()->routeIs('configuration.utilisateurs') ? 'theme-pill-active fw-bold' : '' }}" href="{{ route('configuration.utilisateurs') }}">
                         <span class="me-2"><i class="bi bi-people"></i></span>
@@ -79,7 +79,7 @@
                     </a>
                 </li>
             @endif
-            @if($connectedUser->droit === 'SupAdmin')
+            @if($connectedUser->droit === 'SupAdmin' || $connectedUser->userHasAnyPermission(['permissions_apercu', 'permission_voir']))
                 <li class="nav-item">
                     <a class="nav-link d-flex align-items-center py-2 {{ request()->routeIs('configuration.permissions') ? 'theme-pill-active fw-bold' : '' }}" href="{{ route('configuration.permissions') }}">
                         <span class="me-2"><i class="bi bi-shield-lock"></i></span>
@@ -87,7 +87,7 @@
                     </a>
                 </li>
             @endif
-            @if(in_array($connectedUser->droit, ['SupAdmin', 'Admin'], true) || $connectedUser->userHasPermission('dae_permission') || $connectedUser->userHasPermission('dcap_permission'))
+            @if(in_array($connectedUser->droit, ['SupAdmin', 'Admin'], true) || $connectedUser->userHasAnyPermission(['permissions_assigner', 'permission_assigner', 'dae_permission', 'dcap_permission']))
                 <li class="nav-item">
                     <a class="nav-link d-flex align-items-center py-2 {{ request()->routeIs('configuration.utilisateurs.permissions.assigner') ? 'theme-pill-active fw-bold' : '' }}" href="{{ route('configuration.utilisateurs.permissions.assigner') }}">
                         <span class="me-2"><i class="bx bx-user-check"></i></span>

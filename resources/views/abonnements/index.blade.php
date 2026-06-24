@@ -183,7 +183,7 @@
                 <tr>
                     <th>École</th>
                     <th>Référence</th>
-                    <th>Plan</th>
+                    <th>Formule</th>
                     <th>Montant</th>
                     <th>Statut</th>
                     <th>Preuve</th>

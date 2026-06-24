@@ -1,9 +1,11 @@
 <!doctype html>
-@php 
+@php
     $userTheme = auth()->check() ? auth()->user()->theme_preference : null;
-    $theme = $userTheme ?: 'bleu-sombre'; 
+    $theme = $userTheme ?: 'bleu-sombre';
+    $currentLocale = $currentLocale ?? app()->getLocale();
+    $currentDirection = $currentDirection ?? config("app.supported_locales.$currentLocale.dir", 'ltr');
 @endphp
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-theme="{{ $theme }}">
+<html lang="{{ $currentLocale }}" dir="{{ $currentDirection }}" data-theme="{{ $theme }}">
 
 <head>
     <script>
@@ -34,7 +36,35 @@
     <title>{{ config('app.name', 'KalanNet') }} - Alliance Team</title>
     
     @stack('styles')
-    
+    <style>
+        .kalannet-language-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            min-height: 36px;
+            border: 1px solid rgba(128,128,128,.28);
+            background: #fff;
+            color: var(--theme-accent, #14532d);
+            font-weight: 800;
+            border-radius: 999px;
+            padding: 0 12px;
+        }
+
+        .kalannet-language-btn strong {
+            font-size: 11px;
+        }
+
+        [dir="rtl"] input.arabic-input-ready,
+        [dir="rtl"] textarea.arabic-input-ready {
+            text-align: right;
+        }
+
+        input.arabic-input-ready,
+        textarea.arabic-input-ready {
+            text-align: right;
+        }
+    </style>
     <!-- Custom Overrides (KalanNet) - Loaded LAST to ensure priority -->
     <link href="{{ asset('css/themes.css') }}?v={{ time() }}" rel="stylesheet" />
     
@@ -87,6 +117,8 @@
     <script src="{{ asset('assets/js/app.js') }}"></script>
     <script src="{{ asset('assets/mon_js/auto_filter.js') }}?v={{ filemtime(public_path('assets/mon_js/auto_filter.js')) }}"></script>
     
+    @include('partials.localized-inputs-script')
+    @include('partials.ui-translator-script')
     @stack('scripts')
 </body>
 

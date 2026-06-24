@@ -6,7 +6,9 @@ use App\Models\Abonnement;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 
 class AuthController extends Controller
@@ -17,8 +19,14 @@ class AuthController extends Controller
             return redirect()->route('dashboard');
         }
         return view('auth.login', [
-            'selected_theme' => request()->query('theme'),
+            'selected_theme' => request()->cookie('theme_preference'),
+            'selected_locale' => app()->getLocale(),
         ]);
+    }
+
+    private function throttleKey(Request $request): string
+    {
+        return 'login:' . strtolower(trim($request->input('identifier', ''))) . '|' . $request->ip();
     }
 
     public function login(Request $request)
@@ -30,6 +38,15 @@ class AuthController extends Controller
         ], [
             'identifier.required' => 'Veuillez saisir votre email ou votre numéro de téléphone.',
         ]);
+
+        $throttleKey = $this->throttleKey($request);
+
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+            return back()->withErrors([
+                'identifier' => __('messages.auth.too_many_attempts', ['seconds' => $seconds]),
+            ])->onlyInput('identifier');
+        }
 
         $identifier = trim($credentials['identifier']);
 
@@ -44,16 +61,18 @@ class AuthController extends Controller
             ->get();
 
         if ($users->isEmpty()) {
+            RateLimiter::hit($throttleKey, 180);
             return back()->withErrors([
-                'identifier' => 'Email, téléphone ou mot de passe incorrect.',
+                'identifier' => __('messages.auth.invalid_credentials'),
             ])->onlyInput('identifier');
         }
 
         $users = $users->filter(fn (User $user) => Hash::check($credentials['pwd'], $user->pwd))->values();
 
         if ($users->isEmpty()) {
+            RateLimiter::hit($throttleKey, 180);
             return back()->withErrors([
-                'identifier' => 'Email, téléphone ou mot de passe incorrect.',
+                'identifier' => __('messages.auth.invalid_credentials'),
             ])->onlyInput('identifier');
         }
 
@@ -62,14 +81,16 @@ class AuthController extends Controller
             return view('auth.login', [
                 'ecoles_modal' => $users,
                 'selected_theme' => $request->input('theme_preference'),
+                'selected_locale' => app()->getLocale(),
             ]);
         }
 
         if ((int) $users[0]->statut === 0) {
-            return back()->with('error', 'Votre compte est inactif.');
+            return back()->with('error', __('messages.auth.inactive_account'));
         }
 
         // Single school, direct login
+        RateLimiter::clear($throttleKey);
         return $this->performLogin($users[0], $request);
     }
 
@@ -87,13 +108,14 @@ class AuthController extends Controller
                     ->first();
 
         if (!$user) {
-            return redirect()->route('login')->with('error', 'Erreur lors de la sélection de l\'école.');
+            return redirect()->route('login')->with('error', __('messages.auth.school_selection_error'));
         }
 
         if ($user->statut == 0) {
-            return redirect()->route('login')->with('error', 'Votre compte est inactif pour cette école.');
+            return redirect()->route('login')->with('error', __('messages.auth.inactive_school_account'));
         }
 
+        RateLimiter::clear($this->throttleKey($request));
         return $this->performLogin($user, $request);
     }
 
@@ -101,6 +123,11 @@ class AuthController extends Controller
     {
         if ($request->filled('theme_preference')) {
             $user->theme_preference = $request->input('theme_preference');
+        }
+
+        $locale = $request->session()->get('locale');
+        if ($locale && array_key_exists($locale, config('app.supported_locales', [])) && Schema::hasColumn($user->getTable(), 'locale_preference')) {
+            $user->locale_preference = $locale;
         }
 
         $user->last_login_at = now();
@@ -164,11 +191,20 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         $theme = Auth::user()?->theme_preference ?: 'vert';
+        $locale = Auth::user()?->locale_preference
+            ?: $request->session()->get('locale', $request->cookie('locale', config('app.fallback_locale', 'fr')));
+
+        if (!array_key_exists($locale, config('app.supported_locales', []))) {
+            $locale = config('app.fallback_locale', 'fr');
+        }
 
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('login', ['theme' => $theme]);
+        return redirect()
+            ->route('login')
+            ->withCookie(Cookie::make('locale', $locale, 60 * 24 * 365))
+            ->withCookie(Cookie::make('theme_preference', $theme, 60 * 24 * 365));
     }
 }

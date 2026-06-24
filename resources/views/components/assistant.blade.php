@@ -15,7 +15,7 @@
         <header class="kalanbot-header">
             <div>
                 <div class="kalanbot-title">KalanBot</div>
-                <div class="kalanbot-subtitle">Assistant KalanNet</div>
+                <div class="kalanbot-subtitle">Assistant <span style="color:#4ade80;font-weight:700;">Kal</span><span style="color:#eab308;font-weight:700;">an</span><span style="color:#f87171;font-weight:700;">Net</span></div>
             </div>
             <div class="kalanbot-actions">
                 <button type="button" class="kalanbot-icon-btn" data-kalanbot-clear title="Effacer la conversation" aria-label="Effacer">
@@ -29,7 +29,7 @@
 
         <div class="kalanbot-messages">
             <div class="kalanbot-message assistant">
-                <div class="kalanbot-bubble">Bonjour, je suis KalanBot. Posez-moi une question sur l'utilisation de KalanNet.</div>
+                <div class="kalanbot-bubble">Bonjour, je suis KalanBot. Posez-moi une question sur l'utilisation de <span style="color:#4ade80;font-weight:700;">Kal</span><span style="color:#eab308;font-weight:700;">an</span><span style="color:#f87171;font-weight:700;">Net</span>.</div>
             </div>
         </div>
 

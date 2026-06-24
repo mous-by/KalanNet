@@ -129,7 +129,7 @@
                                 <select name="idEcole" class="form-select">
                                     <option value="">Choisir une école</option>
                                     @foreach($ecoles as $ecole)
-                                        <option value="{{ $ecole->idEcole }}" @selected(old('idEcole') == $ecole->idEcole)>{{ $ecole->nomEcole }}</option>
+                                        <option value="{{ $ecole->idEcole }}" data-type="{{ $ecole->typeEcole }}" @selected(old('idEcole', session('idEcole')) == $ecole->idEcole)>{{ $ecole->nomEcole }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -143,6 +143,25 @@
                                     @endif
                                     <option value="Gestionnaire" @selected(old('droit') === 'Gestionnaire')>Gestionnaire</option>
                                 </select>
+                            </div>
+                            <div class="col-12 js-field js-admin js-managed-orders d-none">
+                                <label class="form-label fw-bold">Ordres d'enseignement à gérer</label>
+                                <div class="border rounded-3 p-3">
+                                    <div class="row g-2">
+                                        @foreach($complexeOrders as $orderKey => $orderLabel)
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="managed_orders[]" value="{{ $orderKey }}" id="managed_order_{{ $orderKey }}" @checked(in_array($orderKey, old('managed_orders', []), true))>
+                                                    <label class="form-check-label" for="managed_order_{{ $orderKey }}">{{ $orderLabel }}</label>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                    <small class="text-muted d-block mt-2">Disponible seulement pour un gestionnaire d'une école de type Complexe Scolaire.</small>
+                                    @error('managed_orders')
+                                        <div class="text-danger small mt-2">{{ $message }}</div>
+                                    @enderror
+                                </div>
                             </div>
                         </div>
 
@@ -159,6 +178,9 @@
         document.addEventListener('DOMContentLoaded', function () {
             const radios = document.querySelectorAll('.user-type-radio');
             const fields = document.querySelectorAll('.js-field');
+            const schoolSelect = document.querySelector('select[name="idEcole"]');
+            const droitSelect = document.querySelector('select[name="droit"]');
+            const managedOrders = document.querySelector('.js-managed-orders');
 
             function setVisibility() {
                 const type = Number(document.querySelector('.user-type-radio:checked')?.value || 1);
@@ -180,6 +202,21 @@
                         document.querySelectorAll('.js-admin').forEach((el) => el.classList.remove('d-none'));
                     }
                 }
+
+                syncManagedOrders();
+            }
+
+            function syncManagedOrders() {
+                if (!managedOrders || !schoolSelect || !droitSelect) return;
+                const type = Number(document.querySelector('.user-type-radio:checked')?.value || 1);
+                const selectedSchoolType = schoolSelect.selectedOptions[0]?.dataset.type || '';
+                const visible = type === 1 && droitSelect.value === 'Gestionnaire' && selectedSchoolType === 'Complexe Scolaire';
+                managedOrders.classList.toggle('d-none', !visible);
+                if (!visible) {
+                    managedOrders.querySelectorAll('input[type="checkbox"]').forEach((box) => {
+                        box.checked = false;
+                    });
+                }
             }
 
             function fillFromSelect(selectId) {
@@ -193,6 +230,8 @@
             }
 
             radios.forEach((radio) => radio.addEventListener('change', setVisibility));
+            schoolSelect?.addEventListener('change', syncManagedOrders);
+            droitSelect?.addEventListener('change', syncManagedOrders);
             fillFromSelect('id_enseignant');
             fillFromSelect('id_parent');
             setVisibility();

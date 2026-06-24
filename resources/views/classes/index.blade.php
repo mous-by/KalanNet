@@ -71,11 +71,13 @@
                                                     <i class="bi bi-calendar-plus text-primary me-2"></i>Emploi du temps
                                                 </a>
                                             </li>
-                                            <li>
-                                                <a class="dropdown-item py-2" href="{{ route('pedagogie.bulletins.index', $classe->id_classe) }}">
-                                                    <i class="bi bi-card-list text-primary me-2"></i>Bulletins
-                                                </a>
-                                            </li>
+                                            @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasAnyPermission(['bulletins_apercu', 'bulletins_generation', 'bulletins_génération', 'bulletins_pdf', 'bulletins_impression', 'bulletins_publication', 'generer_bulletins', 'générer_bulletins']))
+                                                <li>
+                                                    <a class="dropdown-item py-2" href="{{ route('pedagogie.bulletins.index', $classe->id_classe) }}">
+                                                        <i class="bi bi-card-list text-primary me-2"></i>Bulletins
+                                                    </a>
+                                                </li>
+                                            @endif
                                             <li><hr class="dropdown-divider"></li>
                                             <li>
                                                 <form action="{{ route('classes.destroy', $classe->id_classe) }}" method="POST" onsubmit="return confirm('Supprimer cette classe ?');">

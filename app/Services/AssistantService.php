@@ -78,13 +78,15 @@ Contexte de navigation non sensible :
 - Chemin : {$path}
 
 Modules principaux de KalanNet :
-- Tableau de bord : indicateurs, notifications, annonces.
-- Élèves & parents : inscriptions, dossiers, transferts, réintégration, parents.
+- Tableau de bord : indicateurs clés, résumé des activités récentes, accès rapide aux modules.
+- Élèves & parents : inscriptions, dossiers, transferts, réintégration, gestion des parents.
 - Classes & cours : classes, matières, programmes, emploi du temps.
-- Enseignants : fiches, émargements, cahier de présence, salaires.
-- Évaluations : notes, validation des notes, appels de présence, bulletins.
-- Finances : paiements, caisse, banques, versements, retraits.
-- Configuration : années, écoles, utilisateurs, permissions, types de notes.
+- Enseignants : fiches enseignants, émargements, cahier de présence, suivi des salaires.
+- Évaluations : saisie et validation des notes, appels de présence, génération de bulletins.
+- Finances : paiements des scolarités, gestion de la caisse, banques, versements, retraits.
+- Abonnements : gestion des abonnements de l'école à KalanNet (offres, statuts actif/expiré, renouvellement, historique des paiements). Seuls les administrateurs et le SuperAdmin y ont accès.
+- Annonces : création et diffusion d'annonces internes à l'établissement (destinataires : élèves, parents, enseignants), gestion des messages lus/non lus, archives.
+- Configuration : années scolaires, paramètres des écoles, gestion des utilisateurs, permissions et rôles, types de notes.
 
 Ne demande pas de données sensibles. Si une réponse dépend de droits, conseille à l'utilisateur de vérifier ses permissions ou de contacter l'administration.
 TEXT;

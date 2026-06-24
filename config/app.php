@@ -54,6 +54,8 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    'asset_url' => env('ASSET_URL'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone
@@ -78,11 +80,17 @@ return [
     |
     */
 
-    'locale' => env('APP_LOCALE', 'en'),
+    'locale' => env('APP_LOCALE', 'fr'),
 
-    'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
+    'fallback_locale' => env('APP_FALLBACK_LOCALE', 'fr'),
 
     'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
+
+    'supported_locales' => [
+        'fr' => ['name' => 'French', 'native' => 'Français', 'dir' => 'ltr'],
+        'en' => ['name' => 'English', 'native' => 'English', 'dir' => 'ltr'],
+        'ar' => ['name' => 'Arabic', 'native' => 'العربية', 'dir' => 'ltr'],
+    ],
 
     /*
     |--------------------------------------------------------------------------
