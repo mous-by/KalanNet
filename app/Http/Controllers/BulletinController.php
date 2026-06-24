@@ -121,8 +121,78 @@ class BulletinController extends Controller
         return response()->json($ranked);
     }
 
+    public function generatorPage(int $idClasse, Request $request)
+    {
+        $this->authorizeBulletinGeneration();
+        $classe = Classe::findOrFail($idClasse);
+        $this->authorizeClasse($classe);
+
+        return view('bulletins.generator', [
+            'classe'       => $classe,
+            'id_annee'     => $request->get('id_annee', ''),
+            'id_trimestre' => $request->get('id_trimestre', ''),
+            'mois'         => $request->get('mois', ''),
+            'ids'          => $request->get('ids', '[]'),
+        ]);
+    }
+
+    public function studentsForBulletin(int $idClasse, Request $request)
+    {
+        $this->authorizeBulletinGeneration();
+        $classe = Classe::findOrFail($idClasse);
+        $this->authorizeClasse($classe);
+
+        $data = $request->validate([
+            'id_annee'     => 'required|integer',
+            'id_trimestre' => 'nullable|integer',
+            'mois'         => 'nullable|integer|between:1,12',
+            'ids'          => 'nullable|string',
+        ]);
+
+        $selectedIds = collect();
+        if (!empty($data['ids'])) {
+            $decoded = json_decode($data['ids'], true);
+            if (is_array($decoded)) {
+                $selectedIds = collect($decoded)
+                    ->filter(fn($id) => is_numeric($id))
+                    ->map(fn($id) => (int) $id)
+                    ->unique()
+                    ->values();
+            }
+        }
+
+        $query = Eleve::query()
+            ->where('id_classe', $classe->id_classe)
+            ->where('id_annee', $data['id_annee'])
+            ->where('etat_dossier', 0)
+            ->orderBy('prenom_eleve')
+            ->orderBy('nom_eleve');
+
+        if ($selectedIds->isNotEmpty()) {
+            $query->whereIn('id_eleve', $selectedIds);
+        }
+
+        $params = ['id_annee' => $data['id_annee']];
+        if (!empty($data['mois'])) {
+            $params['mois'] = $data['mois'];
+        } elseif (!empty($data['id_trimestre'])) {
+            $params['id_trimestre'] = $data['id_trimestre'];
+        }
+
+        $students = $query->get()->map(fn($eleve) => [
+            'id'        => $eleve->id_eleve,
+            'nom'       => $eleve->nom_eleve,
+            'prenom'    => $eleve->prenom_eleve,
+            'matricule' => $eleve->matricule,
+            'url'       => route('pedagogie.bulletins.download', $eleve->id_eleve) . '?' . http_build_query($params),
+        ]);
+
+        return response()->json($students);
+    }
+
     public function downloadBulletin($id_eleve, Request $request)
     {
+        set_time_limit(180);
         $id_annee = $request->get('id_annee');
         $id_trimestre = $request->get('id_trimestre');
         $mois = $request->get('mois');
@@ -147,6 +217,7 @@ class BulletinController extends Controller
 
     public function downloadClassBulletins(int $idClasse, Request $request)
     {
+        set_time_limit(300);
         $this->authorizeBulletinGeneration();
 
         $classe = Classe::findOrFail($idClasse);

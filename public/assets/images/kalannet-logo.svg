@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a3d20"/>
+      <stop offset="55%" style="stop-color:#146c43"/>
+      <stop offset="100%" style="stop-color:#1a9e5c"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f59e0b"/>
+      <stop offset="100%" style="stop-color:#fcd34d"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background rounded square -->
+  <rect width="512" height="512" rx="100" ry="100" fill="url(#bgGrad)"/>
+
+  <!-- Subtle inner ring decoration -->
+  <circle cx="256" cy="256" r="215" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="30"/>
+
+  <!-- Letter K using clean path -->
+  <!--
+    K shape:
+    - Left vertical bar: x=100..168, y=100..412
+    - Upper arm: from (168, 256) to (390, 100)
+    - Lower arm: from (168, 256) to (390, 412)
+  -->
+  <path d="
+    M 110 100
+    L 172 100
+    Q 184 100 184 112
+    L 184 222
+    L 352 108
+    Q 362 100 374 100
+    L 402 100
+    Q 420 100 408 114
+    L 238 252
+    L 410 398
+    Q 424 412 406 412
+    L 374 412
+    Q 362 412 350 402
+    L 184 290
+    L 184 400
+    Q 184 412 172 412
+    L 110 412
+    Q 98 412 98 400
+    L 98 112
+    Q 98 100 110 100 Z
+  " fill="white"/>
+
+  <!-- Network nodes - upper right accent -->
+  <circle cx="400" cy="136" r="20" fill="url(#goldGrad)" filter="url(#glow)"/>
+  <circle cx="448" cy="180" r="13" fill="url(#goldGrad)" opacity="0.85"/>
+  <circle cx="365" cy="168" r="9" fill="url(#goldGrad)" opacity="0.75"/>
+
+  <!-- Connection lines -->
+  <line x1="400" y1="136" x2="448" y2="180" stroke="#fcd34d" stroke-width="2.5" opacity="0.65"/>
+  <line x1="400" y1="136" x2="365" y2="168" stroke="#fcd34d" stroke-width="2" opacity="0.55"/>
+  <line x1="448" y1="180" x2="365" y2="168" stroke="#fcd34d" stroke-width="1.5" opacity="0.4"/>
+
+  <!-- Bottom text KALANNET -->
+  <text x="256" y="476"
+    font-family="'Arial Black', 'Arial', sans-serif"
+    font-weight="900"
+    font-size="52"
+    fill="white"
+    text-anchor="middle"
+    letter-spacing="4"
+    opacity="0.92">KALANNET</text>
+</svg>

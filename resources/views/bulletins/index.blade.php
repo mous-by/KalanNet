@@ -95,13 +95,6 @@
             </div>
         </div>
         <div class="card-body">
-            <form id="bulk-bulletins-form" method="POST" target="bulletins-pdf-window" action="{{ route('pedagogie.bulletins.classe.pdf', $classe->id_classe) }}" class="d-none">
-                @csrf
-                <input type="hidden" name="id_annee" id="bulk-id-annee">
-                <input type="hidden" name="id_trimestre" id="bulk-id-trimestre">
-                <input type="hidden" name="mois" id="bulk-mois">
-                <input type="hidden" name="ids" id="bulk-ids">
-            </form>
             <form id="publish-bulletins-form" method="POST" action="{{ route('pedagogie.bulletins.publish', $classe->id_classe) }}" class="d-none">
                 @csrf
                 <input type="hidden" name="id_annee" class="publish-id-annee">
@@ -154,11 +147,6 @@
             const printSelected = document.getElementById('print-selected-bulletins');
             const printAll = document.getElementById('print-all-bulletins');
             const selectedCount = document.getElementById('selected-bulletins-count');
-            const bulkForm = document.getElementById('bulk-bulletins-form');
-            const bulkAnnee = document.getElementById('bulk-id-annee');
-            const bulkTrimestre = document.getElementById('bulk-id-trimestre');
-            const bulkMois = document.getElementById('bulk-mois');
-            const bulkIds = document.getElementById('bulk-ids');
             const publishButton = document.getElementById('publish-bulletins');
             const unpublishButton = document.getElementById('unpublish-bulletins');
             const publishForm = document.getElementById('publish-bulletins-form');
@@ -266,15 +254,12 @@
             }
 
             function submitBulk(ids) {
-                const button = ids && ids.length ? printSelected : printAll;
-                setButtonLoading(button, true);
-                openPdfLoadingWindow();
-                bulkAnnee.value = annee.value;
-                bulkTrimestre.value = periodeMode.value === 'mois' ? '' : trimestre.value;
-                bulkMois.value = periodeMode.value === 'mois' ? mois.value : '';
-                bulkIds.value = JSON.stringify(ids || []);
-                bulkForm.submit();
-                setTimeout(() => setButtonLoading(button, false), 3500);
+                const params = new URLSearchParams({ id_annee: annee.value });
+                if (periodeMode.value === 'mois') params.set('mois', mois.value);
+                else params.set('id_trimestre', trimestre.value);
+                if (ids && ids.length > 0) params.set('ids', JSON.stringify(ids));
+                const url = "{{ route('pedagogie.bulletins.generator', $classe->id_classe) }}?" + params.toString();
+                window.open(url, 'kn-bulletin-gen', 'width=1200,height=760,resizable=yes,scrollbars=yes');
             }
 
             function updatePeriodFields() {
@@ -286,44 +271,6 @@
                 loadBulletins();
             }
 
-            function openPdfLoadingWindow() {
-                const popup = window.open('', 'bulletins-pdf-window');
-                if (!popup) return;
-                popup.document.open();
-                popup.document.write(`<!DOCTYPE html>
-                    <html lang="fr">
-                    <head>
-                        <meta charset="UTF-8">
-                        <title>Génération des bulletins</title>
-                        <style>
-                            body { margin: 0; font-family: Arial, sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f8fafc; color: #111827; }
-                            .loader { text-align: center; }
-                            .spinner { width: 46px; height: 46px; margin: 0 auto 16px; border: 4px solid #d1d5db; border-top-color: #2563eb; border-radius: 50%; animation: spin .8s linear infinite; }
-                            h1 { font-size: 18px; margin: 0 0 6px; }
-                            p { margin: 0; color: #6b7280; font-size: 14px; }
-                            @keyframes spin { to { transform: rotate(360deg); } }
-                        </style>
-                    </head>
-                    <body>
-                        <div class="loader">
-                            <div class="spinner"></div>
-                            <h1>Génération des bulletins...</h1>
-                            <p>Veuillez patienter, le PDF va s'afficher automatiquement.</p>
-                        </div>
-                    </body>
-                    </html>`);
-                popup.document.close();
-            }
-
-            function setButtonLoading(button, loading) {
-                const spinner = button.querySelector('.spinner-border');
-                const icon = button.querySelector('i');
-                const label = button.querySelector('.btn-label');
-                spinner.classList.toggle('d-none', !loading);
-                icon.classList.toggle('d-none', loading);
-                if (label) label.textContent = loading ? 'Génération...' : (button === printSelected ? 'Imprimer la sélection' : 'Toute la classe');
-                button.disabled = loading || (button === printSelected ? selectedIds().length === 0 : document.querySelectorAll('.bulletin-checkbox').length === 0);
-            }
 
             function escapeHtml(value) {
                 return String(value).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'}[c]));

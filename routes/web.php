@@ -177,6 +177,8 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/pedagogie/classes/{idClasse}/bulletins/publish', [BulletinController::class, 'unpublishClassBulletins'])->name('pedagogie.bulletins.unpublish');
     Route::post('/pedagogie/classes/{idClasse}/bulletins/pdf', [BulletinController::class, 'downloadClassBulletins'])->name('pedagogie.bulletins.classe.pdf');
     Route::get('/pedagogie/bulletins/{id}/download', [BulletinController::class, 'downloadBulletin'])->name('pedagogie.bulletins.download');
+    Route::get('/pedagogie/classes/{idClasse}/bulletin-generator', [BulletinController::class, 'generatorPage'])->name('pedagogie.bulletins.generator');
+    Route::get('/pedagogie/classes/{idClasse}/bulletins/students', [BulletinController::class, 'studentsForBulletin'])->name('pedagogie.bulletins.students');
 
     Route::get('/annonces', [AnnouncementController::class, 'index'])->name('annonces.index');
     Route::post('/annonces', [AnnouncementController::class, 'store'])->name('annonces.store');
