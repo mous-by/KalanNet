@@ -26,6 +26,7 @@ return [
         'hide_password' => 'Masquer le mot de passe',
         'choose_school' => 'Choisir un établissement',
         'invalid_credentials' => 'Email, téléphone ou mot de passe incorrect.',
+        'too_many_attempts' => 'Trop de tentatives de connexion. Veuillez réessayer dans :seconds secondes.',
         'inactive_account' => 'Votre compte est inactif.',
         'inactive_school_account' => 'Votre compte est inactif pour cette école.',
         'school_selection_error' => 'Erreur lors de la sélection de l\'école.',

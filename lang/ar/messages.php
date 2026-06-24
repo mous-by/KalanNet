@@ -26,6 +26,7 @@ return [
         'hide_password' => 'إخفاء كلمة المرور',
         'choose_school' => 'اختر المؤسسة',
         'invalid_credentials' => 'البريد الإلكتروني أو الهاتف أو كلمة المرور غير صحيحة.',
+        'too_many_attempts' => 'محاولات تسجيل دخول كثيرة جداً. يرجى المحاولة مرة أخرى بعد :seconds ثانية.',
         'inactive_account' => 'حسابك غير نشط.',
         'inactive_school_account' => 'حسابك غير نشط لهذه المؤسسة.',
         'school_selection_error' => 'حدث خطأ أثناء اختيار المؤسسة.',

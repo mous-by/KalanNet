@@ -26,6 +26,7 @@ return [
         'hide_password' => 'Hide password',
         'choose_school' => 'Choose a school',
         'invalid_credentials' => 'Email, phone or password is incorrect.',
+        'too_many_attempts' => 'Too many login attempts. Please try again in :seconds seconds.',
         'inactive_account' => 'Your account is inactive.',
         'inactive_school_account' => 'Your account is inactive for this school.',
         'school_selection_error' => 'An error occurred while selecting the school.',

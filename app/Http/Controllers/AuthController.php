@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 
 class AuthController extends Controller
@@ -23,6 +24,11 @@ class AuthController extends Controller
         ]);
     }
 
+    private function throttleKey(Request $request): string
+    {
+        return 'login:' . strtolower(trim($request->input('identifier', ''))) . '|' . $request->ip();
+    }
+
     public function login(Request $request)
     {
         $credentials = $request->validate([
@@ -32,6 +38,15 @@ class AuthController extends Controller
         ], [
             'identifier.required' => 'Veuillez saisir votre email ou votre numéro de téléphone.',
         ]);
+
+        $throttleKey = $this->throttleKey($request);
+
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+            return back()->withErrors([
+                'identifier' => __('messages.auth.too_many_attempts', ['seconds' => $seconds]),
+            ])->onlyInput('identifier');
+        }
 
         $identifier = trim($credentials['identifier']);
 
@@ -46,6 +61,7 @@ class AuthController extends Controller
             ->get();
 
         if ($users->isEmpty()) {
+            RateLimiter::hit($throttleKey, 180);
             return back()->withErrors([
                 'identifier' => __('messages.auth.invalid_credentials'),
             ])->onlyInput('identifier');
@@ -54,6 +70,7 @@ class AuthController extends Controller
         $users = $users->filter(fn (User $user) => Hash::check($credentials['pwd'], $user->pwd))->values();
 
         if ($users->isEmpty()) {
+            RateLimiter::hit($throttleKey, 180);
             return back()->withErrors([
                 'identifier' => __('messages.auth.invalid_credentials'),
             ])->onlyInput('identifier');
@@ -73,6 +90,7 @@ class AuthController extends Controller
         }
 
         // Single school, direct login
+        RateLimiter::clear($throttleKey);
         return $this->performLogin($users[0], $request);
     }
 
@@ -97,6 +115,7 @@ class AuthController extends Controller
             return redirect()->route('login')->with('error', __('messages.auth.inactive_school_account'));
         }
 
+        RateLimiter::clear($this->throttleKey($request));
         return $this->performLogin($user, $request);
     }
 
