@@ -170,9 +170,9 @@
 
                 function shouldShowCap() {
                     const type = selectedType();
-                    if (type === 'Fondamentale I' || type === 'Fondamentale II') return true;
-                    if (type === 'Complexe Scolaire') return (nomFondamental?.value || '').trim() !== '';
-                    return false;
+                    return type === 'Fondamentale I'
+                        || type === 'Fondamentale II'
+                        || type === 'Complexe Scolaire';
                 }
 
                 function fieldMatches(field, type) {
@@ -214,7 +214,6 @@
 
                 typeSelect?.addEventListener('change', updateFields);
                 academieSelect?.addEventListener('change', filterCaps);
-                nomFondamental?.addEventListener('input', updateFields);
                 logoInput?.addEventListener('change', () => {
                     const file = logoInput.files?.[0];
                     if (!file || !logoPreview) return;

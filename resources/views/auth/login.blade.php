@@ -373,13 +373,55 @@
 
         /* ── Responsive ── */
         @media (max-width: 600px) {
-            .login-page { align-items: flex-end; justify-content: center; padding: 12px 12px 100px; }
-            .login-card { padding: 26px 20px 22px; border-radius: 12px; max-width: 100%; }
-            .brand-title { font-size: 1.7rem; }
+            /* Allow scroll when virtual keyboard opens */
+            html, body {
+                height: auto;
+                min-height: 100%;
+                overflow-y: auto;
+                overflow-x: hidden;
+            }
+
+            .login-page {
+                align-items: flex-start;
+                justify-content: center;
+                padding: 20px 14px 148px;
+                min-height: 100svh;
+            }
+
+            .login-card {
+                padding: 22px 18px 20px;
+                border-radius: 14px;
+                max-width: 100%;
+                width: 100%;
+            }
+
+            .brand-area { margin-bottom: 12px; }
+            .brand-logo { width: 56px; height: 50px; margin-bottom: 6px; }
+            .brand-logo svg { width: 56px; height: 50px; }
+            .brand-title { font-size: 1.5rem; }
+            .brand-subtitle { font-size: .7rem; }
+
+            .theme-row { gap: 7px; margin-bottom: 14px; }
+            .theme-dot { width: 26px; height: 26px; }
+
+            .login-language-row { margin-bottom: 10px; }
+
             .bg-caption { display: none; }
-            .module-node { font-size: .44rem; }
-            .module-node i { font-size: .62rem; }
+            /* Hide nav dots — swipe is supported */
+            .bg-dots { display: none; }
+
+            /* Module bar: icons only in a single compact row */
+            .module-wave { height: clamp(58px, 9vh, 72px); }
+            .module-list {
+                grid-template-columns: repeat(12, minmax(0, 1fr));
+                bottom: 6px;
+                gap: 2px;
+            }
+            .module-node { flex-direction: column; gap: 0; font-size: 0; }
+            .module-node span { display: none; }
+            .module-node i { font-size: .82rem; }
         }
+
         @media (max-width: 900px) {
             .module-node { font-size: .48rem; flex-direction: row; gap: 3px; }
             .module-node i { font-size: .68rem; }
