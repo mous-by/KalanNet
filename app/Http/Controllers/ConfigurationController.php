@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Academie;
+use App\Rules\MaliPhone;
 use App\Models\Abonnement;
 use App\Models\AbonnementOffre;
 use App\Models\AnneeScolaire;
@@ -920,7 +921,7 @@ class ConfigurationController extends Controller
             return $request->validate($base + [
                 'nomPrenom' => 'required|string|max:150',
                 'email' => 'required|email|max:150|unique:utilisateurs,email',
-                'telephone' => 'required|string|max:20',
+                'telephone' => ['required', 'string', 'max:20', new MaliPhone()],
                 'genre' => 'required|string|max:20',
                 'fonction' => 'nullable|string|max:50',
                 'id_academie' => 'required|integer|exists:academie,id_academie',
@@ -931,7 +932,7 @@ class ConfigurationController extends Controller
             return $request->validate($base + [
                 'nomPrenom' => 'required|string|max:150',
                 'email' => 'required|email|max:150|unique:utilisateurs,email',
-                'telephone' => 'required|string|max:20',
+                'telephone' => ['required', 'string', 'max:20', new MaliPhone()],
                 'genre' => 'required|string|max:20',
                 'fonction' => 'nullable|string|max:50',
                 'id_cap' => 'required|integer|exists:cap,id_cap',

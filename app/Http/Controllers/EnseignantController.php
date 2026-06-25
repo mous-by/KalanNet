@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Enseignant;
+use App\Rules\MaliPhone;
 use App\Models\LigneClasse;
 use App\Models\Salaire;
 use App\Models\AnneeScolaire;
@@ -222,7 +223,7 @@ class EnseignantController extends Controller
             ],
             'telephone' => [
                 'required',
-                'digits:8',
+                new MaliPhone(),
                 Rule::unique('enseignants', 'telephone_enseignant')
                     ->where(fn ($query) => $query->where('id_ecole', $schoolId))
                     ->ignore($ignoreId, 'id_enseignant'),

@@ -170,5 +170,144 @@
         </div>
     </div>
 </form>
+
+{{-- ── Overlay de progression envoi mail (même style que bulletins) ── --}}
+<div id="kn-notify-overlay" style="
+    display:none; position:fixed; inset:0; z-index:9999;
+    background:rgba(10,25,14,.88); backdrop-filter:blur(4px);
+    align-items:center; justify-content:center; flex-direction:column; gap:0;">
+
+    <div style="background:#112a1b; border:1px solid #1e4330; border-radius:18px;
+                padding:32px 40px 28px; width:min(92vw,440px); text-align:center;">
+
+        {{-- Spinner SVG tri-couleur identique au bulletin --}}
+        <svg style="width:80px;height:80px;display:block;margin:0 auto 20px;" viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
+            <style>
+                @keyframes kn-cw  { to { transform: rotate( 360deg); } }
+                @keyframes kn-ccw { to { transform: rotate(-360deg); } }
+                .kn-arc-g { animation: kn-cw  1.6s linear infinite; transform-origin:70px 70px; }
+                .kn-arc-a { animation: kn-ccw 1.1s linear infinite; transform-origin:70px 70px; }
+                .kn-arc-r { animation: kn-cw  0.7s linear infinite; transform-origin:70px 70px; }
+            </style>
+            <circle class="kn-arc-g" cx="70" cy="70" r="60"
+                fill="none" stroke="#16a34a" stroke-width="12"
+                stroke-dasharray="265 112" stroke-linecap="round"/>
+            <circle class="kn-arc-a" cx="70" cy="70" r="46"
+                fill="none" stroke="#f59e0b" stroke-width="12"
+                stroke-dasharray="185 103" stroke-linecap="round"/>
+            <circle class="kn-arc-r" cx="70" cy="70" r="32"
+                fill="none" stroke="#ef4444" stroke-width="12"
+                stroke-dasharray="115 87" stroke-linecap="round"/>
+            <circle cx="70" cy="70" r="18" fill="#0a3d20"/>
+            <text x="70" y="75" text-anchor="middle" fill="#fff"
+                font-size="12" font-weight="900"
+                font-family="Arial Black, Arial, sans-serif">KN</text>
+        </svg>
+
+        <div id="kn-notify-label" style="
+            font-size:14px; font-weight:700; color:#e8f5ee;
+            margin-bottom:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+            Enregistrement de l'appel…
+        </div>
+
+        {{-- Barre de progression --}}
+        <div style="height:13px; background:rgba(255,255,255,.08); border-radius:99px; overflow:hidden; margin-bottom:8px;">
+            <div id="kn-notify-fill" style="
+                height:100%; width:0%; border-radius:99px;
+                background: linear-gradient(90deg,#16a34a 0%,#f59e0b 55%,#ef4444 100%);
+                transition: width .45s ease; position:relative; overflow:hidden;">
+                <div style="
+                    position:absolute; inset:0;
+                    background:linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent);
+                    background-size:200% 100%;
+                    animation:kn-shimmer 1.6s infinite;">
+                </div>
+            </div>
+        </div>
+        <style>
+            @keyframes kn-shimmer {
+                0%   { background-position:-200% 0; }
+                100% { background-position: 200% 0; }
+            }
+        </style>
+
+        <div style="display:flex; justify-content:space-between; font-size:11px; color:#7eaa8e;">
+            <span id="kn-notify-count">Préparation…</span>
+            <span id="kn-notify-pct">0%</span>
+        </div>
+    </div>
+</div>
+
+@push('scripts')
+<script>
+(function () {
+    const form      = document.querySelector('form[action="{{ route('appels-epreuves.store') }}"]');
+    const checkbox  = document.getElementById('notifier-parent');
+    const overlay   = document.getElementById('kn-notify-overlay');
+    const fill      = document.getElementById('kn-notify-fill');
+    const label     = document.getElementById('kn-notify-label');
+    const count     = document.getElementById('kn-notify-count');
+    const pct       = document.getElementById('kn-notify-pct');
+
+    if (!form) return;
+
+    function setProgress(p, msg, detail) {
+        p = Math.min(100, Math.max(0, p));
+        fill.style.width  = p + '%';
+        pct.textContent   = Math.round(p) + '%';
+        if (msg)    label.textContent  = msg;
+        if (detail) count.textContent  = detail;
+    }
+
+    form.addEventListener('submit', function () {
+        const notify   = checkbox && checkbox.checked;
+        const nbEleves = document.querySelectorAll('tbody tr[data-student], tbody tr:has(select[name^="statuts"])').length
+                      || document.querySelectorAll('select[name^="statuts"]').length;
+
+        overlay.style.display = 'flex';
+        setProgress(5, 'Enregistrement de l\'appel…', 'Sauvegarde en base de données…');
+
+        if (!notify || nbEleves === 0) {
+            // Juste l'enregistrement, pas d'emails
+            let p = 5;
+            const t = setInterval(function () {
+                p = Math.min(90, p + 15);
+                setProgress(p, 'Enregistrement en cours…', '');
+                if (p >= 90) clearInterval(t);
+            }, 200);
+            return;
+        }
+
+        // Simulation de progression : enregistrement (0→30%) + emails (30→95%)
+        // Durée estimée : ~0.4s/email + 1s pour la BDD
+        const emailDuration = Math.max(2000, nbEleves * 400);
+        const startTime     = Date.now();
+
+        function tick() {
+            const elapsed = Date.now() - startTime;
+            const ratio   = Math.min(1, elapsed / emailDuration);
+
+            if (ratio < 0.15) {
+                // Phase 1 : sauvegarde BDD (0 → 30%)
+                const p = ratio / 0.15 * 30;
+                setProgress(p, 'Enregistrement de l\'appel…', 'Sauvegarde en base de données…');
+            } else {
+                // Phase 2 : envoi emails (30 → 95%)
+                const emailRatio  = (ratio - 0.15) / 0.85;
+                const p           = 30 + emailRatio * 65;
+                const nbDone      = Math.round(emailRatio * nbEleves);
+                setProgress(p,
+                    'Envoi des notifications aux parents…',
+                    nbDone + ' / ' + nbEleves + ' e-mail' + (nbEleves > 1 ? 's' : '') + ' envoyé' + (nbDone > 1 ? 's' : ''));
+            }
+
+            if (ratio < 1) requestAnimationFrame(tick);
+        }
+
+        requestAnimationFrame(tick);
+    });
+})();
+</script>
+@endpush
 @endif
 @endsection
