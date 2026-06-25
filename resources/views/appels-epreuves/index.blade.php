@@ -54,10 +54,10 @@
         <a href="{{ route('appels-epreuves.create') }}" class="btn appels-theme-btn"><i class="bi bi-plus-lg me-1"></i>Nouvel appel</a>
     </div>
     <div class="card-body">
-        <form method="GET" action="{{ route('appels-epreuves.index') }}" class="row g-3" data-auto-filter="true">
+        <form method="GET" action="{{ route('appels-epreuves.index') }}" class="row g-3" id="appels-filter-form">
             <div class="col-md-3">
                 <label class="form-label small fw-bold">Classe</label>
-                <select name="id_classe" class="form-select">
+                <select name="id_classe" class="form-select appel-auto-filter">
                     <option value="">Toutes</option>
                     @foreach($classes as $classe)
                         <option value="{{ $classe->id_classe }}" @selected(($filters['id_classe'] ?? null) == $classe->id_classe)>{{ $classe->nom_classe }}</option>
@@ -66,7 +66,7 @@
             </div>
             <div class="col-md-3">
                 <label class="form-label small fw-bold">Matière</label>
-                <select name="id_matiere" class="form-select">
+                <select name="id_matiere" class="form-select appel-auto-filter">
                     <option value="">Toutes</option>
                     @foreach($matieres as $matiere)
                         <option value="{{ $matiere->id_matiere }}" @selected(($filters['id_matiere'] ?? null) == $matiere->id_matiere)>{{ $matiere->nom_matiere }}</option>
@@ -75,7 +75,7 @@
             </div>
             <div class="col-md-3">
                 <label class="form-label small fw-bold">Année</label>
-                <select name="id_annee_scolaire" class="form-select">
+                <select name="id_annee_scolaire" class="form-select appel-auto-filter">
                     <option value="">Toutes</option>
                     @foreach($annees as $annee)
                         <option value="{{ $annee->id_anneeScolaire }}" @selected(($filters['id_annee_scolaire'] ?? null) == $annee->id_anneeScolaire)>{{ $annee->annee }}</option>
@@ -84,14 +84,46 @@
             </div>
             <div class="col-md-3">
                 <label class="form-label small fw-bold">Période</label>
-                <select name="id_trimestre" class="form-select">
+                <select name="id_trimestre" class="form-select appel-auto-filter">
                     <option value="">Toutes</option>
                     @foreach($trimestres as $trimestre)
                         <option value="{{ $trimestre->id_trimestre }}" @selected(($filters['id_trimestre'] ?? null) == $trimestre->id_trimestre)>{{ $trimestre->nom_trimestre }}</option>
                     @endforeach
                 </select>
             </div>
+
+            {{-- Deuxième ligne de filtres --}}
+            <div class="col-md-4">
+                <label class="form-label small fw-bold"><i class="bi bi-search me-1"></i>Rechercher un élève</label>
+                <input type="text" name="nom_eleve" class="form-control"
+                    placeholder="Nom ou prénom..."
+                    value="{{ $filters['nom_eleve'] ?? '' }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-bold"><i class="bi bi-calendar-event me-1"></i>Du</label>
+                <input type="date" name="date_debut" class="form-control" value="{{ $filters['date_debut'] ?? '' }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-bold"><i class="bi bi-calendar-event me-1"></i>Au</label>
+                <input type="date" name="date_fin" class="form-control" value="{{ $filters['date_fin'] ?? '' }}">
+            </div>
+            <div class="col-md-2 d-flex align-items-end gap-2">
+                <button type="submit" class="btn appels-theme-btn flex-fill">
+                    <i class="bi bi-search me-1"></i>Filtrer
+                </button>
+                <a href="{{ route('appels-epreuves.index') }}" class="btn btn-outline-secondary" title="Réinitialiser">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            </div>
         </form>
+
+        <script>
+        document.querySelectorAll('.appel-auto-filter').forEach(function(sel) {
+            sel.addEventListener('change', function() {
+                document.getElementById('appels-filter-form').submit();
+            });
+        });
+        </script>
     </div>
 </div>
 

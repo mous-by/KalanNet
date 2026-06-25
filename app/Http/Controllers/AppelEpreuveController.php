@@ -17,6 +17,7 @@ use App\Services\ConductNoteService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Mail\AppelNotification;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
 
@@ -28,19 +29,29 @@ class AppelEpreuveController extends Controller
         $this->authorizeAccess(['controle_apercu', 'controle_creation', 'controle_création']);
 
         $schoolId = session('idEcole') ?: $user->idEcole;
-        $filters = $request->only(['id_classe', 'id_matiere', 'id_annee_scolaire', 'id_trimestre']);
+        $filters = $request->only(['id_classe', 'id_matiere', 'id_annee_scolaire', 'id_trimestre', 'nom_eleve', 'date_debut', 'date_fin']);
         $formData = $this->formData($user, $schoolId);
         $hasFilters = collect($filters)->filter(fn ($value) => filled($value))->isNotEmpty();
 
         if ($hasFilters) {
-            $appels = AppelEpreuve::with(['eleve', 'classe', 'matiere', 'annee', 'trimestre', 'statutControle'])
-                ->when($schoolId && $user->droit !== 'SupAdmin', fn ($query) => $query->where('id_ecole', $schoolId))
-                ->when($filters['id_classe'] ?? null, fn ($query, $value) => $query->where('id_classe', $value))
-                ->when($filters['id_matiere'] ?? null, fn ($query, $value) => $query->where('id_matiere', $value))
-                ->when($filters['id_annee_scolaire'] ?? null, fn ($query, $value) => $query->where('id_annee_scolaire', $value))
-                ->when($filters['id_trimestre'] ?? null, fn ($query, $value) => $query->where('id_trimestre', $value))
-                ->orderByDesc('date')
-                ->orderByDesc('id_controle_eleve')
+            $appels = AppelEpreuve::withoutGlobalScope('school')
+                ->with(['eleve', 'classe', 'matiere', 'annee', 'trimestre', 'statutControle'])
+                ->join('eleve', 'eleve.id_eleve', '=', 'controle_eleve.id_eleve')
+                ->when($schoolId && $user->droit !== 'SupAdmin', fn ($query) => $query->where('controle_eleve.id_ecole', $schoolId))
+                ->when($filters['id_classe'] ?? null, fn ($query, $value) => $query->where('controle_eleve.id_classe', $value))
+                ->when($filters['id_matiere'] ?? null, fn ($query, $value) => $query->where('controle_eleve.id_matiere', $value))
+                ->when($filters['id_annee_scolaire'] ?? null, fn ($query, $value) => $query->where('controle_eleve.id_annee_scolaire', $value))
+                ->when($filters['id_trimestre'] ?? null, fn ($query, $value) => $query->where('controle_eleve.id_trimestre', $value))
+                ->when(filled($filters['date_debut'] ?? null), fn ($query) => $query->whereDate('controle_eleve.date', '>=', $filters['date_debut']))
+                ->when(filled($filters['date_fin'] ?? null), fn ($query) => $query->whereDate('controle_eleve.date', '<=', $filters['date_fin']))
+                ->when(filled($filters['nom_eleve'] ?? null), function ($query) use ($filters) {
+                    $term = '%' . $filters['nom_eleve'] . '%';
+                    $query->where(fn ($q) => $q->where('eleve.nom_eleve', 'like', $term)->orWhere('eleve.prenom_eleve', 'like', $term));
+                })
+                ->orderBy('eleve.nom_eleve')
+                ->orderBy('eleve.prenom_eleve')
+                ->orderByDesc('controle_eleve.date')
+                ->select('controle_eleve.*')
                 ->paginate(30)
                 ->withQueryString();
             $this->attachConductProgress($appels, $schoolId);
@@ -67,7 +78,7 @@ class AppelEpreuveController extends Controller
                 ->where('id_annee', $selectedAnnee)
                 ->where('etat_dossier', 0)
                 ->when($schoolId && $user->droit !== 'SupAdmin', fn ($query) => $query->where('id_ecole', $schoolId))
-                ->orderBy('prenom_eleve')->orderBy('nom_eleve')
+                ->orderBy('nom_eleve')->orderBy('prenom_eleve')
                 ->get();
         }
 
@@ -211,9 +222,14 @@ class AppelEpreuveController extends Controller
 
             if ($emailEnabled && $parent->email_parent) {
                 try {
-                    Mail::raw($message, function ($mail) use ($parent) {
-                        $mail->to($parent->email_parent)->subject('Notification appel de présence');
-                    });
+                    Mail::to($parent->email_parent)->send(new AppelNotification(
+                        prenomEleve:    $eleve->prenom_eleve,
+                        nomEleve:       $eleve->nom_eleve,
+                        statutControle: $status->type_controle,
+                        libelleAppel:   $data['libelle'],
+                        dateAppel:      date('d/m/Y', strtotime($data['date'])),
+                        nomEcole:       session('nomEcole', 'KalanNet'),
+                    ));
                 } catch (\Throwable $exception) {
                     report($exception);
                 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ParentModel;
 use App\Models\Eleve;
 use App\Models\Classe;
+use App\Rules\MaliPhone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -65,11 +66,14 @@ class ParentController extends Controller
     {
         $this->authorizePermission('parents_creation');
 
+        $classes = Classe::where('idEcole', session('idEcole'))->orderBy('nom_classe')->get();
+
         return view('pedagogie.parents_form', [
-            'parent' => new ParentModel(),
-            'eleves' => $this->elevesDisponibles(),
+            'parent'       => new ParentModel(),
+            'eleves'       => $this->elevesDisponibles(),
+            'classes'      => $classes,
             'selectedRows' => $this->selectedRowsFromOldInput(),
-            'mode' => 'create',
+            'mode'         => 'create',
         ]);
     }
 
@@ -78,15 +82,16 @@ class ParentController extends Controller
         $this->authorizePermission('parents_creation');
 
         $data = $this->validateParent($request);
+        $this->assertElevesLibres($data['id_eleve']);
 
         DB::transaction(function () use ($data) {
             $parent = ParentModel::create([
                 'nom_prenom_parent' => $data['nom_prenom_parent'],
-                'telephone_parent' => $data['telephone_parent'],
-                'email_parent' => $data['email_parent'] ?? null,
-                'genre' => $data['genre'] ?? null,
-                'idEcole' => session('idEcole'),
-                'pwd' => Hash::make('123456'),
+                'telephone_parent'  => MaliPhone::normalize($data['telephone_parent']),
+                'email_parent'      => $data['email_parent'] ?? null,
+                'genre'             => $data['genre'] ?? null,
+                'idEcole'           => session('idEcole'),
+                'pwd'               => Hash::make('123456'),
             ]);
 
             $this->syncEleves($parent, $data);
@@ -100,22 +105,25 @@ class ParentController extends Controller
         $this->authorizePermission('parents_modification');
 
         $parent = ParentModel::with('eleves.classe')->where('idEcole', session('idEcole'))->findOrFail($id);
+        $classes = Classe::where('idEcole', session('idEcole'))->orderBy('nom_classe')->get();
+
         $selectedRows = old('id_eleve')
             ? $this->selectedRowsFromOldInput()
             : $parent->eleves->map(fn ($eleve) => [
-                'id_eleve' => $eleve->id_eleve,
-                'nom' => trim($eleve->prenom_eleve . ' ' . $eleve->nom_eleve),
-                'matricule' => $eleve->matricule,
-                'classe' => $eleve->classe->nom_classe ?? 'N/A',
-                'informer' => $eleve->pivot->informer,
+                'id_eleve'    => $eleve->id_eleve,
+                'nom'         => trim($eleve->prenom_eleve . ' ' . $eleve->nom_eleve),
+                'matricule'   => $eleve->matricule,
+                'classe'      => $eleve->classe->nom_classe ?? 'N/A',
+                'informer'    => $eleve->pivot->informer,
                 'lien_parent' => $eleve->pivot->lien_parent,
             ]);
 
         return view('pedagogie.parents_form', [
-            'parent' => $parent,
-            'eleves' => $this->elevesDisponibles(),
+            'parent'       => $parent,
+            'eleves'       => $this->elevesDisponibles($parent->id_parent),
+            'classes'      => $classes,
             'selectedRows' => $selectedRows,
-            'mode' => 'edit',
+            'mode'         => 'edit',
         ]);
     }
 
@@ -125,13 +133,14 @@ class ParentController extends Controller
 
         $parent = ParentModel::where('idEcole', session('idEcole'))->findOrFail($id);
         $data = $this->validateParent($request);
+        $this->assertElevesLibres($data['id_eleve'], $parent->id_parent);
 
         DB::transaction(function () use ($parent, $data) {
             $parent->update([
                 'nom_prenom_parent' => $data['nom_prenom_parent'],
-                'telephone_parent' => $data['telephone_parent'],
-                'email_parent' => $data['email_parent'] ?? null,
-                'genre' => $data['genre'] ?? null,
+                'telephone_parent'  => MaliPhone::normalize($data['telephone_parent']),
+                'email_parent'      => $data['email_parent'] ?? null,
+                'genre'             => $data['genre'] ?? null,
             ]);
 
             $this->syncEleves($parent, $data);
@@ -154,28 +163,57 @@ class ParentController extends Controller
         return redirect()->route('pedagogie.parents')->with('success', 'Parent supprimé avec succès.');
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // Private helpers
+    // ─────────────────────────────────────────────────────────────────────────
+
     private function validateParent(Request $request): array
     {
         return $request->validate([
             'nom_prenom_parent' => 'required|string|max:255',
-            'telephone_parent' => 'required|string|max:100',
-            'email_parent' => 'nullable|email|max:255',
-            'genre' => 'nullable|string|max:50',
-            'id_eleve' => 'required|array|min:1',
-            'id_eleve.*' => [
+            'telephone_parent'  => ['required', 'string', 'max:20', new MaliPhone()],
+            'email_parent'      => 'nullable|email|max:255',
+            'genre'             => 'nullable|string|max:50',
+            'id_eleve'          => 'required|array|min:1',
+            'id_eleve.*'        => [
                 'required',
                 'integer',
                 'distinct',
                 Rule::exists('eleve', 'id_eleve')->where('id_ecole', session('idEcole')),
             ],
-            'lien_parent' => 'required|array|min:1',
+            'lien_parent'   => 'required|array|min:1',
             'lien_parent.*' => 'required|string|max:100',
-            'informer' => 'required|array|min:1',
-            'informer.*' => 'required|string|in:Oui,Non',
+            'informer'      => 'required|array|min:1',
+            'informer.*'    => 'required|string|in:Oui,Non',
         ], [
-            'id_eleve.required' => 'Veuillez sélectionner au moins un élève.',
-            'id_eleve.*.distinct' => 'Un élève ne doit être ajouté qu’une seule fois pour le même parent.',
+            'id_eleve.required'   => 'Veuillez sélectionner au moins un élève.',
+            'id_eleve.*.distinct' => 'Un élève ne doit être ajouté qu\'une seule fois.',
         ]);
+    }
+
+    /**
+     * Ensure none of the submitted students is already linked to a DIFFERENT parent.
+     *
+     * @param array    $idEleves  IDs submitted in the form
+     * @param int|null $ownParentId  ID of the parent being edited (null on create)
+     */
+    private function assertElevesLibres(array $idEleves, ?int $ownParentId = null): void
+    {
+        $conflicts = DB::table('ligneparents_eleves')
+            ->join('eleve',   'eleve.id_eleve',     '=', 'ligneparents_eleves.id_eleve')
+            ->join('parents', 'parents.id_parent',  '=', 'ligneparents_eleves.id_parent')
+            ->whereIn('ligneparents_eleves.id_eleve', $idEleves)
+            ->where('parents.idEcole', session('idEcole'))
+            ->when($ownParentId, fn ($q) => $q->where('ligneparents_eleves.id_parent', '!=', $ownParentId))
+            ->select('eleve.prenom_eleve', 'eleve.nom_eleve')
+            ->get();
+
+        if ($conflicts->isNotEmpty()) {
+            $names = $conflicts->map(fn ($e) => trim($e->prenom_eleve . ' ' . $e->nom_eleve))->join(', ');
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'id_eleve' => "Les élèves suivants sont déjà rattachés à un autre parent : {$names}.",
+            ]);
+        }
     }
 
     private function syncEleves(ParentModel $parent, array $data): void
@@ -184,19 +222,34 @@ class ParentController extends Controller
         foreach ($data['id_eleve'] as $index => $idEleve) {
             $sync[$idEleve] = [
                 'lien_parent' => $data['lien_parent'][$index] ?? 'Parent',
-                'informer' => $data['informer'][$index] ?? 'Non',
+                'informer'    => $data['informer'][$index] ?? 'Non',
             ];
         }
 
         $parent->eleves()->sync($sync);
     }
 
-    private function elevesDisponibles()
+    /**
+     * Return students available to be attached to a parent.
+     * Excludes students already linked to a DIFFERENT parent.
+     *
+     * @param int|null $ownParentId  When editing, keep the parent's own students visible
+     */
+    private function elevesDisponibles(?int $ownParentId = null)
     {
         return Eleve::with('classe')
             ->where('id_ecole', session('idEcole'))
             ->where('etat_dossier', 0)
-            ->orderBy('prenom_eleve')->orderBy('nom_eleve')
+            ->where(function ($q) use ($ownParentId) {
+                // Not linked to any parent at all
+                $q->whereDoesntHave('parents');
+                // OR linked only to this parent (edit mode)
+                if ($ownParentId) {
+                    $q->orWhereHas('parents', fn ($pq) => $pq->where('ligneparents_eleves.id_parent', $ownParentId));
+                }
+            })
+            ->orderBy('nom_eleve')
+            ->orderBy('prenom_eleve')
             ->get();
     }
 
@@ -218,7 +271,7 @@ class ParentController extends Controller
             ->get()
             ->keyBy('id_eleve');
 
-        $liens = old('lien_parent', []);
+        $liens    = old('lien_parent', []);
         $informers = old('informer', []);
 
         return $ids->map(function ($id, $index) use ($eleves, $liens, $informers) {
@@ -229,11 +282,11 @@ class ParentController extends Controller
             }
 
             return [
-                'id_eleve' => $eleve->id_eleve,
-                'nom' => trim($eleve->prenom_eleve . ' ' . $eleve->nom_eleve),
-                'matricule' => $eleve->matricule,
-                'classe' => $eleve->classe->nom_classe ?? 'N/A',
-                'informer' => $informers[$index] ?? 'Oui',
+                'id_eleve'    => $eleve->id_eleve,
+                'nom'         => trim($eleve->prenom_eleve . ' ' . $eleve->nom_eleve),
+                'matricule'   => $eleve->matricule,
+                'classe'      => $eleve->classe->nom_classe ?? 'N/A',
+                'informer'    => $informers[$index] ?? 'Oui',
                 'lien_parent' => $liens[$index] ?? 'Parent',
             ];
         })->filter()->values();
