@@ -136,6 +136,8 @@ class AuthController extends Controller
 
         Auth::login($user);
 
+        $request->session()->put('show_pwa_install_modal', true);
+
         $user->loadMissing(['enseignant', 'parent']);
         $idEcole = $user->idEcole ?: $user->enseignant?->id_ecole ?: $user->parent?->idEcole;
 

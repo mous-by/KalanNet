@@ -98,6 +98,7 @@
             @include('partials.footer')
             @include('annonces._unread-modal')
             @include('components.assistant')
+            @include('components.pwa-install-modal')
         @endauth
 
         <!--start overlay-->
@@ -130,6 +131,13 @@
     @include('partials.localized-inputs-script')
     @include('partials.ui-translator-script')
     @stack('scripts')
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('/sw.js').catch(function () {});
+            });
+        }
+    </script>
 </body>
 
 </html>
