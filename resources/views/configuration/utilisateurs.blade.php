@@ -84,7 +84,17 @@
                     <h5 class="mb-0 fw-bold"><i class="bx bx-group me-2"></i>Liste des utilisateurs</h5>
                     <div class="d-flex align-items-center gap-2 flex-wrap">
                         <form action="{{ route('configuration.utilisateurs') }}" method="GET" data-auto-filter="true">
-                            <input type="text" name="search" class="form-control" placeholder="Nom, email, fonction..." value="{{ request('search') }}">
+                            <div class="d-flex flex-wrap gap-2">
+                                <input type="text" name="search" class="form-control" placeholder="Nom, email, fonction..." value="{{ request('search') }}" style="max-width: 220px;">
+                                @if($connectedUser->droit === 'SupAdmin')
+                                    <select name="idEcole" class="form-select" style="max-width: 260px;">
+                                        <option value="">Toutes les écoles</option>
+                                        @foreach($availableSchools as $school)
+                                            <option value="{{ $school->idEcole }}" @selected((int) $schoolFilter === (int) $school->idEcole)>{{ $school->nomEcole }}</option>
+                                        @endforeach
+                                    </select>
+                                @endif
+                            </div>
                         </form>
                         @if(in_array($connectedUser->droit, ['SupAdmin', 'Admin'], true) || $connectedUser->userHasPermission('utilisateurs_creation'))
                             <a href="{{ route('configuration.utilisateurs.create') }}"
@@ -117,6 +127,7 @@
                                         'columns' => ['name', 'email', 'fonction', 'telephone', 'academie'],
                                         'showActions' => $canSeeDaeActions || $canAssignPermissions,
                                         'permissionAllowed' => $canAssignPermissions || $connectedUser->userHasPermission('dae_permission'),
+                                        'editAllowed' => $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('utilisateurs_modification'),
                                         'statusAllowed' => $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('dae_activer'),
                                         'deleteAllowed' => $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('utilisateurs_supprimer'),
                                     ])
@@ -126,6 +137,7 @@
                                         'columns' => ['name', 'email', 'fonction', 'telephone', 'cap'],
                                         'showActions' => $canSeeDcapActions || $canAssignPermissions,
                                         'permissionAllowed' => $canAssignPermissions || $connectedUser->userHasPermission('dcap_permission'),
+                                        'editAllowed' => $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('utilisateurs_modification'),
                                         'statusAllowed' => $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('dcap_activer'),
                                         'deleteAllowed' => $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('utilisateurs_supprimer'),
                                     ])
@@ -135,6 +147,7 @@
                                         'columns' => ['name', 'email', 'ecole', 'telephone'],
                                         'showActions' => true,
                                         'permissionAllowed' => $canAssignPermissions,
+                                        'editAllowed' => in_array($connectedUser->droit, ['SupAdmin', 'Admin'], true) || $connectedUser->userHasPermission('utilisateurs_modification'),
                                         'statusAllowed' => $connectedUser->droit === 'SupAdmin' || $connectedUser->droit === 'Admin',
                                         'deleteAllowed' => $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('utilisateurs_supprimer'),
                                     ])
@@ -144,6 +157,7 @@
                                         'columns' => ['name', 'email', 'ecole', 'fonction', 'genre', 'telephone'],
                                         'showActions' => true,
                                         'permissionAllowed' => $canAssignPermissions,
+                                        'editAllowed' => in_array($connectedUser->droit, ['SupAdmin', 'Admin'], true) || $connectedUser->userHasPermission('utilisateurs_modification'),
                                         'statusAllowed' => $connectedUser->droit === 'SupAdmin' || $connectedUser->droit === 'Admin',
                                         'deleteAllowed' => $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('utilisateurs_supprimer'),
                                     ])
@@ -160,6 +174,12 @@
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('select[name="idEcole"]').forEach(function (select) {
+                select.addEventListener('change', function () {
+                    select.closest('form')?.submit();
+                });
+            });
+
             document.querySelectorAll('[data-confirm-delete]').forEach(function (form) {
                 form.addEventListener('submit', function (event) {
                     event.preventDefault();

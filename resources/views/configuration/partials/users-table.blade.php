@@ -63,7 +63,16 @@
                         <td class="text-center">
                             <div class="d-flex justify-content-center align-items-center gap-2">
                                 @php($deleteAllowed = $deleteAllowed ?? false)
-                                @if(($permissionAllowed ?? false) && Auth::id() !== $utilisateur->idUtilisateur && $utilisateur->droit !== 'SupAdmin')
+                                @php($isCurrentUser = Auth::id() === $utilisateur->idUtilisateur)
+                                @php($isSuperAdminTarget = $utilisateur->droit === 'SupAdmin')
+                                @php($isAdminTarget = $utilisateur->droit === 'Admin')
+                                @php($connectedUser = Auth::user())
+                                @if(($editAllowed ?? false) && !$isCurrentUser && !$isSuperAdminTarget && ($connectedUser->droit === 'SupAdmin' || !$isAdminTarget))
+                                    <a href="{{ route('configuration.utilisateurs.edit', $utilisateur->idUtilisateur) }}" class="btn btn-light btn-sm p-2" title="Modifier l'utilisateur">
+                                        <i class="bx bx-edit text-warning fs-5"></i>
+                                    </a>
+                                @endif
+                                @if(($permissionAllowed ?? false) && !$isCurrentUser && !$isSuperAdminTarget && ($connectedUser->droit === 'SupAdmin' || !$isAdminTarget))
                                     <a href="{{ route('configuration.utilisateurs.permissions.assigner', ['user_id' => $utilisateur->idUtilisateur]) }}" class="btn btn-light btn-sm p-2" title="Assigner les permissions">
                                         <i class="bx bx-user-check text-primary fs-5"></i>
                                     </a>

@@ -238,6 +238,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/configuration/utilisateurs/create', [ConfigurationController::class, 'createUtilisateur'])->name('configuration.utilisateurs.create');
     Route::post('/configuration/utilisateurs', [ConfigurationController::class, 'storeUtilisateur'])->name('configuration.utilisateurs.store');
     Route::get('/configuration/utilisateurs/permissions/assigner', [ConfigurationController::class, 'assignUserPermissions'])->name('configuration.utilisateurs.permissions.assigner');
+    Route::get('/configuration/utilisateurs/{id}/edit', [ConfigurationController::class, 'editUtilisateur'])->name('configuration.utilisateurs.edit');
+    Route::put('/configuration/utilisateurs/{id}', [ConfigurationController::class, 'updateUtilisateur'])->name('configuration.utilisateurs.update');
     Route::patch('/configuration/utilisateurs/{id}/status', [ConfigurationController::class, 'updateUserStatus'])->name('configuration.utilisateurs.status');
     Route::delete('/configuration/utilisateurs/{id}', [ConfigurationController::class, 'destroyUtilisateur'])->name('configuration.utilisateurs.destroy');
     Route::get('/configuration/utilisateurs/{id}/permissions', [ConfigurationController::class, 'editUserPermissions'])->name('configuration.utilisateurs.permissions');

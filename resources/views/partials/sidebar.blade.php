@@ -14,6 +14,7 @@
         'parents_tabsConfig',
         'utilisateurs_apercu',
         'utilisateurs_creation',
+        'utilisateurs_modification',
         'utilisateurs_supprimer',
         'dae_permission',
         'dcap_permission',

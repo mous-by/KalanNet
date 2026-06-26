@@ -1,6 +1,10 @@
 @extends('layouts.app')
 
 @php
+    $permissionsReadOnly = $permissionsReadOnly ?? false;
+    $availableSchools = $availableSchools ?? collect();
+    $schoolFilter = $schoolFilter ?? null;
+    $connectedUser = Auth::user();
     $icons = [
         'enseignants' => 'bx-user',
         'matieres' => 'bx-book',
@@ -63,7 +67,18 @@
                     <div class="card-body">
                         <form method="GET" action="{{ route('configuration.utilisateurs.permissions.assigner') }}" id="selectUserPermissionForm">
                             <div class="row g-3 align-items-end">
-                                <div class="col-md-8">
+                                @if($connectedUser->droit === 'SupAdmin')
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold">École</label>
+                                        <select name="idEcole" id="permission_school_id" class="form-select">
+                                            <option value="">Toutes les écoles</option>
+                                            @foreach($availableSchools as $school)
+                                                <option value="{{ $school->idEcole }}" @selected((int) $schoolFilter === (int) $school->idEcole)>{{ $school->nomEcole }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                @endif
+                                <div class="{{ $connectedUser->droit === 'SupAdmin' ? 'col-md-4' : 'col-md-8' }}">
                                     <label class="form-label fw-bold">Utilisateur</label>
                                     <input type="text" id="userFilter" class="form-control mb-2" placeholder="Filtrer les utilisateurs...">
                                     <select name="user_id" id="permission_user_id" class="form-select" required>
@@ -89,6 +104,15 @@
                                     <div class="text-muted">
                                         {{ $utilisateur->email ?? 'Email non renseigné' }} - {{ $utilisateur->droit ?? 'Droit non renseigné' }} - {{ $utilisateur->ecole->nomEcole ?? 'Toutes les écoles' }}
                                     </div>
+                                    @if($utilisateur->droit === 'SupAdmin')
+                                        <div class="alert alert-info py-2 px-3 mt-3 mb-0">
+                                            Le SuperAdmin possède automatiquement toutes les permissions, même sans affectation enregistrée dans la table utilisateur-permission.
+                                        </div>
+                                    @elseif($permissionsReadOnly)
+                                        <div class="alert alert-info py-2 px-3 mt-3 mb-0">
+                                            Ce profil est consultable ici, mais ses permissions ne sont pas modifiables depuis cet écran.
+                                        </div>
+                                    @endif
                                 </div>
                                 <div class="text-end">
                                     <span class="badge theme-icon-soft fs-6 px-3 py-2">{{ count($userPermissionIds) }} / {{ $totalPermissions }} cochées</span>
@@ -112,7 +136,7 @@
                                     @foreach($complexeOrders as $orderKey => $orderLabel)
                                         <div class="col-md-6">
                                             <div class="form-check theme-permission-check">
-                                                <input class="form-check-input" type="checkbox" name="managed_orders[]" value="{{ $orderKey }}" id="managed_permission_order_{{ $orderKey }}" @checked(in_array($orderKey, $utilisateur->managed_orders ?? [], true))>
+                                                <input class="form-check-input" type="checkbox" name="managed_orders[]" value="{{ $orderKey }}" id="managed_permission_order_{{ $orderKey }}" @checked(in_array($orderKey, $utilisateur->managed_orders ?? [], true)) @disabled($permissionsReadOnly)>
                                                 <label class="form-check-label" for="managed_permission_order_{{ $orderKey }}">{{ $orderLabel }}</label>
                                             </div>
                                         </div>
@@ -131,12 +155,14 @@
                             </div>
                             <div class="d-flex align-items-center gap-3">
                                 <div class="form-check m-0">
-                                    <input class="form-check-input" type="checkbox" id="select_all_permissions">
+                                    <input class="form-check-input" type="checkbox" id="select_all_permissions" @disabled($permissionsReadOnly)>
                                     <label class="form-check-label fw-bold" for="select_all_permissions">Tout cocher/décocher</label>
                                 </div>
-                                <button type="submit" class="btn btn-primary shadow-sm" style="background-color: var(--theme-accent) !important; border-color: var(--theme-accent) !important;">
-                                    <i class="bx bx-save me-2"></i>Enregistrer
-                                </button>
+                                @unless($permissionsReadOnly)
+                                    <button type="submit" class="btn btn-primary shadow-sm" style="background-color: var(--theme-accent) !important; border-color: var(--theme-accent) !important;">
+                                        <i class="bx bx-save me-2"></i>Enregistrer
+                                    </button>
+                                @endunless
                             </div>
                         </div>
                     </div>
@@ -153,7 +179,7 @@
                                         <span class="badge theme-header-badge ms-2">{{ count($permissions) }}</span>
                                     </div>
                                     <div class="form-check m-0">
-                                        <input class="form-check-input module-checkbox" type="checkbox" id="module_{{ $module }}" data-module="{{ $module }}">
+                                        <input class="form-check-input module-checkbox" type="checkbox" id="module_{{ $module }}" data-module="{{ $module }}" @disabled($permissionsReadOnly)>
                                         <label class="form-check-label" for="module_{{ $module }}">Tout le module</label>
                                     </div>
                                 </div>
@@ -166,7 +192,7 @@
                                             @endphp
                                             <div class="col-md-4 col-xl-3">
                                                 <div class="form-check theme-permission-check">
-                                                    <input class="form-check-input permission-checkbox" type="checkbox" name="permissions[]" value="{{ $permission->id }}" id="{{ $inputId }}" data-module="{{ $module }}" @checked($checked)>
+                                                    <input class="form-check-input permission-checkbox" type="checkbox" name="permissions[]" value="{{ $permission->id }}" id="{{ $inputId }}" data-module="{{ $module }}" @checked($checked) @disabled($permissionsReadOnly)>
                                                     <label class="form-check-label" for="{{ $inputId }}">
                                                         {{ ucfirst(str_replace('_', ' ', $permission->action)) }}
                                                         <small class="d-block text-muted">{{ $permission->name }}</small>
@@ -182,9 +208,11 @@
                 </div>
 
                 <div class="text-end mt-4 mb-5 pb-5">
-                    <button type="submit" class="btn btn-primary px-5 shadow-sm" style="background-color: var(--theme-accent) !important; border-color: var(--theme-accent) !important;">
-                        <i class="bx bx-save me-2"></i>Enregistrer
-                    </button>
+                    @unless($permissionsReadOnly)
+                        <button type="submit" class="btn btn-primary px-5 shadow-sm" style="background-color: var(--theme-accent) !important; border-color: var(--theme-accent) !important;">
+                            <i class="bx bx-save me-2"></i>Enregistrer
+                        </button>
+                    @endunless
                 </div>
             </form>
                 @else
@@ -224,11 +252,19 @@
             const moduleBoxes = Array.from(document.querySelectorAll('.module-checkbox'));
             const userSelect = document.getElementById('permission_user_id');
             const userFilter = document.getElementById('userFilter');
+            const schoolSelect = document.getElementById('permission_school_id');
 
             userSelect?.addEventListener('change', function () {
                 if (userSelect.value) {
                     document.getElementById('selectUserPermissionForm').submit();
                 }
+            });
+
+            schoolSelect?.addEventListener('change', function () {
+                if (userSelect) {
+                    userSelect.value = '';
+                }
+                document.getElementById('selectUserPermissionForm').submit();
             });
 
             function normalize(value) {

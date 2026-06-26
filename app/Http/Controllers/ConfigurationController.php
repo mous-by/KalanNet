@@ -298,12 +298,23 @@ class ConfigurationController extends Controller
 
         $idEcole = session('idEcole');
         $search = $request->get('search');
+        $availableSchools = $user->droit === 'SupAdmin'
+            ? $this->ecoleScope(Ecole::query(), $user, $idEcole)->orderBy('nomEcole')->get()
+            : collect();
+        $schoolFilter = $user->droit === 'SupAdmin' ? ($request->integer('idEcole') ?: null) : null;
 
         $utilisateurs = $this->userScope(
             User::with(['ecole', 'academie', 'cap', 'enseignant.ecole', 'parent.ecole'])->withCount('permissions'),
             $user,
             $idEcole
         )
+            ->when($schoolFilter && $availableSchools->contains('idEcole', $schoolFilter), function ($query) use ($schoolFilter) {
+                $query->where(function ($inner) use ($schoolFilter) {
+                    $inner->where('idEcole', $schoolFilter)
+                        ->orWhereHas('enseignant', fn ($enseignant) => $enseignant->where('id_ecole', $schoolFilter))
+                        ->orWhereHas('parent', fn ($parent) => $parent->where('idEcole', $schoolFilter));
+                });
+            })
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($inner) use ($search) {
                     $inner->where('nomPrenom', 'like', "%{$search}%")
@@ -315,7 +326,7 @@ class ConfigurationController extends Controller
             ->orderBy('nomPrenom')
             ->get();
 
-        return view('configuration.utilisateurs', compact('utilisateurs'));
+        return view('configuration.utilisateurs', compact('utilisateurs', 'availableSchools', 'schoolFilter'));
     }
 
     public function createUtilisateur()
@@ -416,9 +427,92 @@ class ConfigurationController extends Controller
             return $user;
         });
 
+        $redirectRoute = $this->canAssignPermissionsToTarget($authUser, $createdUser)
+            ? 'configuration.utilisateurs.permissions.assigner'
+            : 'configuration.utilisateurs';
+        $redirectParameters = $redirectRoute === 'configuration.utilisateurs.permissions.assigner'
+            ? ['user_id' => $createdUser->idUtilisateur]
+            : [];
+
         return redirect()
-            ->route('configuration.utilisateurs.permissions.assigner', ['user_id' => $createdUser->idUtilisateur])
+            ->route($redirectRoute, $redirectParameters)
             ->with('success', 'Utilisateur créé. Les permissions de base ont été attribuées.');
+    }
+
+    public function editUtilisateur(int $id)
+    {
+        $authUser = Auth::user();
+        $idEcole = session('idEcole');
+
+        $utilisateur = $this->userScope(User::with(['enseignant', 'parent', 'ecole']), $authUser, $idEcole)
+            ->where('idUtilisateur', $id)
+            ->firstOrFail();
+
+        $this->authorizeTargetUserEdit($authUser, $utilisateur);
+
+        return view('configuration.utilisateur-form', [
+            'utilisateur' => $utilisateur,
+            'selectedType' => $this->userFormType($utilisateur),
+            'ecoles' => $this->ecoleScope(Ecole::query(), $authUser, $idEcole)->orderBy('nomEcole')->get(),
+            'enseignants' => $this->enseignantsScope(Enseignant::query(), $authUser, $idEcole)->orderBy('nom_prenom_enseignant')->get(),
+            'parents' => $this->parentsScope(ParentModel::query(), $authUser, $idEcole)->orderBy('nom_prenom_parent')->get(),
+            'academies' => Academie::orderBy('nom_academie')->get(),
+            'caps' => Cap::with('academie')->orderBy('nom_cap')->get(),
+            'complexeOrders' => SchoolOrderAccess::ORDERS,
+        ]);
+    }
+
+    public function updateUtilisateur(Request $request, int $id)
+    {
+        $authUser = Auth::user();
+        $idEcole = session('idEcole');
+
+        $utilisateur = $this->userScope(User::query(), $authUser, $idEcole)
+            ->where('idUtilisateur', $id)
+            ->firstOrFail();
+
+        $this->authorizeTargetUserEdit($authUser, $utilisateur);
+
+        $type = $this->userFormType($utilisateur);
+        $data = $this->validateUtilisateurByType($request, $type, $utilisateur);
+        $this->validateManagedOrdersForUser($authUser, $type, $data, $idEcole);
+
+        $payload = [
+            'telephone' => $data['telephone'] ?? $utilisateur->telephone,
+        ];
+
+        if (!empty($data['pwd'])) {
+            $payload['pwd'] = Hash::make($data['pwd']);
+        }
+
+        if ($type === 3 || $type === 4) {
+            $payload += [
+                'nomPrenom' => $data['nomPrenom'],
+                'email' => $data['email'],
+                'fonction' => $data['fonction'] ?? ($type === 3 ? 'DAE' : 'DCAP'),
+                'genre' => $data['genre'],
+                'droit' => $type === 3 ? 'DAE' : 'DCAP',
+                'id_academie' => $type === 3 ? $data['id_academie'] : null,
+                'id_cap' => $type === 4 ? $data['id_cap'] : null,
+                'idEcole' => null,
+            ];
+        } elseif ($type === 1) {
+            $payload += [
+                'nomPrenom' => $data['nomPrenom'],
+                'email' => $data['email'],
+                'fonction' => $data['fonction'] ?? null,
+                'genre' => $data['genre'],
+                'droit' => $data['droit'],
+                'idEcole' => $authUser->droit === 'SupAdmin' ? ($data['idEcole'] ?? null) : ($idEcole ?: $authUser->idEcole),
+                'managed_orders' => $data['droit'] === 'Gestionnaire' ? SchoolOrderAccess::normalizeMany($data['managed_orders'] ?? []) : null,
+            ];
+        }
+
+        $utilisateur->update($payload);
+
+        return redirect()
+            ->route('configuration.utilisateurs')
+            ->with('success', 'Utilisateur modifié avec succès.');
     }
 
     public function updateUserStatus(Request $request, int $id)
@@ -494,14 +588,21 @@ class ConfigurationController extends Controller
             ->where('idUtilisateur', $id)
             ->firstOrFail();
 
-        $this->authorizeTargetUserGovernance($authUser, $utilisateur);
+        $this->authorizeTargetPermissionView($authUser, $utilisateur);
 
         $groupedPermissions = Permission::groupedByModule();
-        $userPermissionIds = $utilisateur->permissions->pluck('id')->map(fn ($id) => (int) $id)->all();
-        $userPermissionNames = $utilisateur->permissions
-            ->pluck('name')
-            ->map(fn ($name) => Permission::canonicalName($name))
-            ->all();
+        $permissionsReadOnly = !$this->canAssignPermissionsToTarget($authUser, $utilisateur);
+        if ($utilisateur->droit === 'SupAdmin') {
+            $allPermissions = collect($groupedPermissions)->flatten(1);
+            $userPermissionIds = $allPermissions->pluck('id')->map(fn ($id) => (int) $id)->all();
+            $userPermissionNames = $allPermissions->pluck('name')->map(fn ($name) => Permission::canonicalName($name))->all();
+        } else {
+            $userPermissionIds = $utilisateur->permissions->pluck('id')->map(fn ($id) => (int) $id)->all();
+            $userPermissionNames = $utilisateur->permissions
+                ->pluck('name')
+                ->map(fn ($name) => Permission::canonicalName($name))
+                ->all();
+        }
 
         $availableUsers = $this->permissionAssignableUsers($authUser, $idEcole);
         $complexeOrders = SchoolOrderAccess::ORDERS;
@@ -512,6 +613,7 @@ class ConfigurationController extends Controller
             'groupedPermissions',
             'userPermissionIds',
             'userPermissionNames',
+            'permissionsReadOnly',
             'complexeOrders'
         ));
     }
@@ -524,26 +626,42 @@ class ConfigurationController extends Controller
         }
 
         $idEcole = session('idEcole');
-        $availableUsers = $this->permissionAssignableUsers($authUser, $idEcole);
+        $availableSchools = $authUser->droit === 'SupAdmin'
+            ? $this->ecoleScope(Ecole::query(), $authUser, $idEcole)->orderBy('nomEcole')->get()
+            : collect();
+        $schoolFilter = $authUser->droit === 'SupAdmin' ? ($request->integer('idEcole') ?: null) : null;
+        $availableUsers = $this->permissionAssignableUsers($authUser, $idEcole, $schoolFilter);
         $selectedUserId = (int) $request->query('user_id');
         $utilisateur = null;
         $groupedPermissions = Permission::groupedByModule();
         $userPermissionIds = [];
         $userPermissionNames = [];
         $complexeOrders = SchoolOrderAccess::ORDERS;
+        $permissionsReadOnly = false;
 
         if ($selectedUserId > 0) {
+            if (!$availableUsers->contains('idUtilisateur', $selectedUserId)) {
+                abort(404);
+            }
+
             $utilisateur = $this->userScope(User::with(['ecole', 'permissions']), $authUser, $idEcole)
                 ->where('idUtilisateur', $selectedUserId)
                 ->firstOrFail();
 
-            $this->authorizeTargetPermissionAssignment($authUser, $utilisateur);
+            $this->authorizeTargetPermissionView($authUser, $utilisateur);
+            $permissionsReadOnly = !$this->canAssignPermissionsToTarget($authUser, $utilisateur);
 
-            $userPermissionIds = $utilisateur->permissions->pluck('id')->map(fn ($id) => (int) $id)->all();
-            $userPermissionNames = $utilisateur->permissions
-                ->pluck('name')
-                ->map(fn ($name) => Permission::canonicalName($name))
-                ->all();
+            if ($utilisateur->droit === 'SupAdmin') {
+                $allPermissions = collect($groupedPermissions)->flatten(1);
+                $userPermissionIds = $allPermissions->pluck('id')->map(fn ($id) => (int) $id)->all();
+                $userPermissionNames = $allPermissions->pluck('name')->map(fn ($name) => Permission::canonicalName($name))->all();
+            } else {
+                $userPermissionIds = $utilisateur->permissions->pluck('id')->map(fn ($id) => (int) $id)->all();
+                $userPermissionNames = $utilisateur->permissions
+                    ->pluck('name')
+                    ->map(fn ($name) => Permission::canonicalName($name))
+                    ->all();
+            }
         }
 
         return view('configuration.user-permissions', compact(
@@ -552,6 +670,9 @@ class ConfigurationController extends Controller
             'groupedPermissions',
             'userPermissionIds',
             'userPermissionNames',
+            'permissionsReadOnly',
+            'availableSchools',
+            'schoolFilter',
             'complexeOrders'
         ));
     }
@@ -569,7 +690,9 @@ class ConfigurationController extends Controller
             ->where('idUtilisateur', $id)
             ->firstOrFail();
 
-        $this->authorizeTargetPermissionAssignment($authUser, $utilisateur);
+        if (!$this->canAssignPermissionsToTarget($authUser, $utilisateur)) {
+            abort(403);
+        }
 
         $permissionIds = collect($request->input('permissions', []))
             ->map(fn ($permissionId) => (int) $permissionId)
@@ -770,17 +893,36 @@ class ConfigurationController extends Controller
         return $query->where('idEcole', $idEcole ?: $user->idEcole);
     }
 
-    private function permissionAssignableUsers(User $user, ?int $idEcole)
+    private function permissionAssignableUsers(User $user, ?int $idEcole, ?int $schoolFilter = null)
     {
-        return $this->userScope(
+        $query = $this->userScope(
             User::with(['ecole', 'academie', 'cap'])->withCount('permissions'),
             $user,
             $idEcole
-        )
-            ->where('idUtilisateur', '!=', $user->idUtilisateur)
-            ->where('droit', '!=', 'SupAdmin')
-            ->orderBy('nomPrenom')
-            ->get();
+        );
+
+        if ($user->droit === 'SupAdmin') {
+            $query->where(function ($inner) use ($user) {
+                $inner->where('idUtilisateur', $user->idUtilisateur)
+                    ->orWhere('droit', '!=', 'SupAdmin');
+            });
+
+            if ($schoolFilter) {
+                $query->where(function ($inner) use ($user, $schoolFilter) {
+                    $inner->where('idUtilisateur', $user->idUtilisateur)
+                        ->orWhere(function ($schoolUsers) use ($schoolFilter) {
+                            $schoolUsers->where('idEcole', $schoolFilter)
+                                ->orWhereHas('enseignant', fn ($enseignant) => $enseignant->where('id_ecole', $schoolFilter))
+                                ->orWhereHas('parent', fn ($parent) => $parent->where('idEcole', $schoolFilter));
+                        });
+                });
+            }
+        } else {
+            $query->where('idUtilisateur', '!=', $user->idUtilisateur)
+                ->whereNotIn('droit', ['SupAdmin', 'Admin']);
+        }
+
+        return $query->orderBy('nomPrenom')->get();
     }
 
     private function authorizeSupAdminOnly(): void
@@ -891,19 +1033,89 @@ class ConfigurationController extends Controller
 
     private function authorizeTargetPermissionAssignment(User $authUser, User $target): void
     {
-        if ($target->idUtilisateur === $authUser->idUtilisateur || in_array($target->droit, ['SupAdmin', 'Admin'], true)) {
+        if (!$this->canAssignPermissionsToTarget($authUser, $target)) {
             abort(403);
         }
 
         $this->authorizeTargetUserGovernance($authUser, $target);
     }
 
-    private function validateUtilisateurByType(Request $request, int $type): array
+    private function authorizeTargetPermissionView(User $authUser, User $target): void
+    {
+        if ($target->idUtilisateur === $authUser->idUtilisateur && $authUser->droit === 'SupAdmin') {
+            return;
+        }
+
+        $this->authorizeTargetPermissionAssignment($authUser, $target);
+    }
+
+    private function canAssignPermissionsToTarget(User $authUser, User $target): bool
+    {
+        if ($target->idUtilisateur === $authUser->idUtilisateur) {
+            return false;
+        }
+
+        if ($target->droit === 'SupAdmin') {
+            return false;
+        }
+
+        if ($authUser->droit === 'SupAdmin') {
+            return true;
+        }
+
+        return $target->droit !== 'Admin';
+    }
+
+    private function authorizeTargetUserEdit(User $authUser, User $target): void
+    {
+        if (!in_array($authUser->droit, ['SupAdmin', 'Admin'], true) && !$authUser->userHasPermission('utilisateurs_modification')) {
+            abort(403);
+        }
+
+        if ($target->idUtilisateur === $authUser->idUtilisateur || $target->droit === 'SupAdmin') {
+            abort(403);
+        }
+
+        if ($authUser->droit !== 'SupAdmin' && $target->droit === 'Admin') {
+            abort(403);
+        }
+    }
+
+    private function canEditTargetUser(User $authUser, User $target): bool
+    {
+        if ($target->idUtilisateur === $authUser->idUtilisateur || $target->droit === 'SupAdmin') {
+            return false;
+        }
+
+        if (!in_array($authUser->droit, ['SupAdmin', 'Admin'], true) && !$authUser->userHasPermission('utilisateurs_modification')) {
+            return false;
+        }
+
+        return $authUser->droit === 'SupAdmin' || $target->droit !== 'Admin';
+    }
+
+    private function userFormType(User $user): int
+    {
+        return match (true) {
+            !empty($user->id_enseignant) => 0,
+            !empty($user->id_parent) => 2,
+            $user->droit === 'DAE' => 3,
+            $user->droit === 'DCAP' => 4,
+            default => 1,
+        };
+    }
+
+    private function validateUtilisateurByType(Request $request, int $type, ?User $existingUser = null): array
     {
         $base = [
             'type_utilisateur' => 'required|integer|in:0,1,2,3,4',
             'pwd' => 'nullable|string|min:4',
         ];
+
+        $emailRule = Rule::unique('utilisateurs', 'email');
+        if ($existingUser) {
+            $emailRule->ignore($existingUser->idUtilisateur, 'idUtilisateur');
+        }
 
         if ($type === 0) {
             return $request->validate($base + [
@@ -920,7 +1132,7 @@ class ConfigurationController extends Controller
         if ($type === 3) {
             return $request->validate($base + [
                 'nomPrenom' => 'required|string|max:150',
-                'email' => 'required|email|max:150|unique:utilisateurs,email',
+                'email' => ['required', 'email', 'max:150', $emailRule],
                 'telephone' => ['required', 'string', 'max:20', new MaliPhone()],
                 'genre' => 'required|string|max:20',
                 'fonction' => 'nullable|string|max:50',
@@ -931,7 +1143,7 @@ class ConfigurationController extends Controller
         if ($type === 4) {
             return $request->validate($base + [
                 'nomPrenom' => 'required|string|max:150',
-                'email' => 'required|email|max:150|unique:utilisateurs,email',
+                'email' => ['required', 'email', 'max:150', $emailRule],
                 'telephone' => ['required', 'string', 'max:20', new MaliPhone()],
                 'genre' => 'required|string|max:20',
                 'fonction' => 'nullable|string|max:50',
@@ -941,7 +1153,7 @@ class ConfigurationController extends Controller
 
         return $request->validate($base + [
             'nomPrenom' => 'required|string|max:150',
-            'email' => 'required|email|max:150|unique:utilisateurs,email',
+            'email' => ['required', 'email', 'max:150', $emailRule],
             'telephone' => 'required|string|max:20',
             'genre' => 'required|string|max:20',
             'fonction' => 'nullable|string|max:50',
