@@ -139,11 +139,19 @@ class ConfigurationController extends Controller
 
     public function academies(Request $request)
     {
-        $this->authorizeAnyPermission(Auth::user(), ['academies_apercu']);
+        $user = Auth::user();
+        $this->authorizeAnyPermission($user, ['academies_apercu']);
 
+        $idEcole = session('idEcole') ?: $user->idEcole;
         $search = $request->get('search');
 
+        $ecole = !in_array($user->droit, ['SupAdmin', 'DAE', 'DCAP']) && $idEcole
+            ? Ecole::find($idEcole)
+            : null;
+
         $academies = Academie::withCount(['caps', 'ecoles'])
+            ->when($user->droit === 'DAE' && $user->id_academie, fn ($q) => $q->where('id_academie', $user->id_academie))
+            ->when($ecole?->id_academie, fn ($q) => $q->where('id_academie', $ecole->id_academie))
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($inner) use ($search) {
                     $inner->where('nom_academie', 'like', "%{$search}%")
@@ -194,11 +202,20 @@ class ConfigurationController extends Controller
 
     public function caps(Request $request)
     {
-        $this->authorizeAnyPermission(Auth::user(), ['dcap_apercu']);
+        $user = Auth::user();
+        $this->authorizeAnyPermission($user, ['dcap_apercu']);
 
+        $idEcole = session('idEcole') ?: $user->idEcole;
         $search = $request->get('search');
 
+        $ecole = !in_array($user->droit, ['SupAdmin', 'DAE', 'DCAP']) && $idEcole
+            ? Ecole::find($idEcole)
+            : null;
+
         $caps = Cap::with(['academie'])->withCount('ecoles')
+            ->when($user->droit === 'DCAP' && $user->id_cap, fn ($q) => $q->where('id_cap', $user->id_cap))
+            ->when($user->droit === 'DAE' && $user->id_academie, fn ($q) => $q->where('id_academie', $user->id_academie))
+            ->when($ecole?->id_cap, fn ($q) => $q->where('id_cap', $ecole->id_cap))
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($inner) use ($search) {
                     $inner->where('nom_cap', 'like', "%{$search}%")
@@ -1219,12 +1236,19 @@ class ConfigurationController extends Controller
                 ->whereNotIn('name', [
                     'matieres_creation',
                     'matieres_action',
+                    'dae_voiraction',
                     'dae_activer',
                     'dae_modifier',
                     'dae_permission',
+                    'dcap_voiraction',
                     'dcap_activer',
                     'dcap_modifier',
                     'dcap_permission',
+                    'academies_apercu',
+                    'classes_officielles_apercu',
+                    'permissions_apercu',
+                    'permission_voir',
+                    'permission_apercu',
                     'programmes_pdf',
                     'programme_pdf',
                     'programmes_creation',
@@ -1236,10 +1260,8 @@ class ConfigurationController extends Controller
                     'programme_supprimer',
                     'programmes_suppression',
                     'programme_suppression',
-                    'finances_planifications_apercu',
-                    'finances_planifications_creation',
-                    'finances_planifications_modification',
-                    'finances_planifications_supprimer',
+                    'abonnements_configuration',
+                    'abonnements_validation',
                 ])
                 ->distinct()
                 ->pluck('name')
