@@ -255,6 +255,9 @@ Route::middleware(['auth'])->group(function () {
 
     // Classes officielles
     Route::get('/configuration/classes-officielles', [ConfigurationController::class, 'classesOfficielles'])->name('configuration.classes-officielles');
+    Route::post('/configuration/classes-officielles', [ConfigurationController::class, 'storeClasseOfficielle'])->name('configuration.classes-officielles.store');
+    Route::put('/configuration/classes-officielles/{id}', [ConfigurationController::class, 'updateClasseOfficielle'])->name('configuration.classes-officielles.update');
+    Route::delete('/configuration/classes-officielles/{id}', [ConfigurationController::class, 'destroyClasseOfficielle'])->name('configuration.classes-officielles.destroy');
 
     // Status Controles
     Route::get('/configuration/status-controles', [ConfigurationController::class, 'statusControles'])->name('configuration.status-controles');

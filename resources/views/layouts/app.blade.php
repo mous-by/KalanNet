@@ -9,8 +9,14 @@
 
 <head>
     <script>
-        // Force clear any old Rocker themes from localStorage if they exist
+        // Appliquer le thème depuis localStorage avant le chargement CSS (évite le flash)
         localStorage.removeItem('theme');
+        (function () {
+            var saved = localStorage.getItem('kalannet_theme');
+            if (saved) {
+                document.documentElement.setAttribute('data-theme', saved);
+            }
+        })();
     </script>
     <!-- Required meta tags -->
     <meta charset="utf-8">

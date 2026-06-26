@@ -272,6 +272,11 @@
               } else {
                   console.error('Erreur lors de la sauvegarde du thème');
               }
+          })
+          .catch(() => {
+              // En cas d'erreur réseau, le thème est déjà dans localStorage
+              // La prochaine page l'appliquera automatiquement
+              console.warn('Sauvegarde thème échouée — localStorage maintenu');
           });
     }
 

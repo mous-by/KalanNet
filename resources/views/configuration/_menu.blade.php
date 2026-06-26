@@ -1,100 +1,114 @@
-@php($connectedUser = Auth::user())
+@php
+    $connectedUser = Auth::user();
+    $showUsers  = in_array($connectedUser->droit, ['SupAdmin', 'Admin'], true)
+                  || $connectedUser->userHasAnyPermission(['utilisateurs_apercu', 'administrateur_tabsConfig', 'enseignants_tabsConfig', 'parents_tabsConfig', 'dae_apercu', 'dcap_apercu']);
+    $showAssign = in_array($connectedUser->droit, ['SupAdmin', 'Admin'], true)
+                  || $connectedUser->userHasAnyPermission(['permissions_assigner', 'permission_assigner', 'dae_permission', 'dcap_permission']);
+    $showEcoles    = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('ecoles_apercu');
+    $showAcademies = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('academies_apercu');
+    $showCaps      = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('dcap_apercu');
+    $showAnnees    = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('annees_scolaires_apercu');
+    $showNotes     = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('types_notes_apercu');
+    $showClasses   = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('classes_officielles_apercu');
+    $showStatus    = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('status_controles_apercu');
+    $showPerms     = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasAnyPermission(['permissions_apercu', 'permission_voir']);
+@endphp
 
 <div class="card theme-card shadow-sm h-100">
-    <div class="card-header theme-header d-flex align-items-center">
-        <i class="bi bi-gear-fill me-2"></i>
-        <span class="fw-bold">Menu Configuration</span>
+    <div class="card-header theme-header d-flex align-items-center gap-2 py-3">
+        <i class="bi bi-gear-fill fs-5"></i>
+        <span class="fw-semibold">Configuration</span>
     </div>
     <div class="card-body p-2">
-        <ul class="nav flex-column gap-2">
-            @if($connectedUser->droit === 'SupAdmin')
+
+        {{-- Aperçu général (SupAdmin) --}}
+        @if($connectedUser->droit === 'SupAdmin')
+            <ul class="nav flex-column mb-1">
                 <li class="nav-item">
-                    <a class="nav-link d-flex align-items-center py-2 {{ request()->routeIs('configuration.index') ? 'theme-pill-active fw-bold' : '' }}" href="{{ route('configuration.index') }}">
-                        <span class="me-2"><i class="bi bi-grid"></i></span>
-                        <span>Aperçu</span>
-                    </a>
+                    @include('configuration._menu_link', ['route' => 'configuration.index', 'icon' => 'bi-grid-fill', 'label' => 'Aperçu'])
                 </li>
-            @endif
-            @if(in_array($connectedUser->droit, ['SupAdmin', 'Admin'], true) || $connectedUser->userHasAnyPermission(['utilisateurs_apercu', 'administrateur_tabsConfig', 'enseignants_tabsConfig', 'parents_tabsConfig', 'dae_apercu', 'dcap_apercu']))
+            </ul>
+            <hr class="my-2 opacity-25">
+        @endif
+
+        {{-- Utilisateurs --}}
+        @if($showUsers || $showAssign)
+            <p class="text-uppercase fw-bold px-2 mb-1" class="config-menu-section-label">Utilisateurs</p>
+            <ul class="nav flex-column mb-1">
+                @if($showUsers)
+                    <li class="nav-item">
+                        @include('configuration._menu_link', ['route' => 'configuration.utilisateurs', 'icon' => 'bi-people-fill', 'label' => 'Utilisateurs'])
+                    </li>
+                @endif
+                @if($showAssign)
+                    <li class="nav-item">
+                        @include('configuration._menu_link', ['route' => 'configuration.utilisateurs.permissions.assigner', 'icon' => 'bi-person-check-fill', 'label' => 'Assigner permissions'])
+                    </li>
+                @endif
+            </ul>
+            <hr class="my-2 opacity-25">
+        @endif
+
+        {{-- Structure scolaire --}}
+        @if($showEcoles || $showAcademies || $showCaps)
+            <p class="text-uppercase fw-bold px-2 mb-1" class="config-menu-section-label">Structure</p>
+            <ul class="nav flex-column mb-1">
+                @if($showEcoles)
+                    <li class="nav-item">
+                        @include('configuration._menu_link', ['route' => 'configuration.ecoles', 'icon' => 'bi-building-fill', 'label' => 'Écoles'])
+                    </li>
+                @endif
+                @if($showAcademies)
+                    <li class="nav-item">
+                        @include('configuration._menu_link', ['route' => 'configuration.academies', 'icon' => 'bi-bank2', 'label' => 'Académies'])
+                    </li>
+                @endif
+                @if($showCaps)
+                    <li class="nav-item">
+                        @include('configuration._menu_link', ['route' => 'configuration.caps', 'icon' => 'bi-diagram-3-fill', 'label' => 'CAP'])
+                    </li>
+                @endif
+            </ul>
+            <hr class="my-2 opacity-25">
+        @endif
+
+        {{-- Paramètres pédagogiques --}}
+        @if($showAnnees || $showNotes || $showClasses || $showStatus)
+            <p class="text-uppercase fw-bold px-2 mb-1" class="config-menu-section-label">Paramètres</p>
+            <ul class="nav flex-column mb-1">
+                @if($showAnnees)
+                    <li class="nav-item">
+                        @include('configuration._menu_link', ['route' => 'configuration.annees', 'icon' => 'bi-calendar3', 'label' => 'Années scolaires'])
+                    </li>
+                @endif
+                @if($showNotes)
+                    <li class="nav-item">
+                        @include('configuration._menu_link', ['route' => 'configuration.types-notes', 'icon' => 'bi-clipboard2-check-fill', 'label' => 'Types de notes'])
+                    </li>
+                @endif
+                @if($showClasses)
+                    <li class="nav-item">
+                        @include('configuration._menu_link', ['route' => 'configuration.classes-officielles', 'icon' => 'bi-building-check', 'label' => 'Classes officielles'])
+                    </li>
+                @endif
+                @if($showStatus)
+                    <li class="nav-item">
+                        @include('configuration._menu_link', ['route' => 'configuration.status-controles', 'icon' => 'bi-check2-circle', 'label' => 'Statuts de contrôle'])
+                    </li>
+                @endif
+            </ul>
+            <hr class="my-2 opacity-25">
+        @endif
+
+        {{-- Sécurité --}}
+        @if($showPerms)
+            <p class="text-uppercase fw-bold px-2 mb-1" class="config-menu-section-label">Sécurité</p>
+            <ul class="nav flex-column mb-1">
                 <li class="nav-item">
-                    <a class="nav-link d-flex align-items-center py-2 {{ request()->routeIs('configuration.utilisateurs') ? 'theme-pill-active fw-bold' : '' }}" href="{{ route('configuration.utilisateurs') }}">
-                        <span class="me-2"><i class="bi bi-people"></i></span>
-                        <span>Utilisateurs</span>
-                    </a>
+                    @include('configuration._menu_link', ['route' => 'configuration.permissions', 'icon' => 'bi-shield-lock-fill', 'label' => 'Permissions'])
                 </li>
-            @endif
-            @if($connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('ecoles_apercu'))
-                <li class="nav-item">
-                    <a class="nav-link d-flex align-items-center py-2 {{ request()->routeIs('configuration.ecoles') ? 'theme-pill-active fw-bold' : '' }}" href="{{ route('configuration.ecoles') }}">
-                        <span class="me-2"><i class="bi bi-building"></i></span>
-                        <span>Écoles</span>
-                    </a>
-                </li>
-            @endif
-            @if($connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('academies_apercu'))
-                <li class="nav-item">
-                    <a class="nav-link d-flex align-items-center py-2 {{ request()->routeIs('configuration.academies') ? 'theme-pill-active fw-bold' : '' }}" href="{{ route('configuration.academies') }}">
-                        <span class="me-2"><i class="bi bi-bank"></i></span>
-                        <span>Académies</span>
-                    </a>
-                </li>
-            @endif
-            @if($connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('dcap_apercu'))
-                <li class="nav-item">
-                    <a class="nav-link d-flex align-items-center py-2 {{ request()->routeIs('configuration.caps') ? 'theme-pill-active fw-bold' : '' }}" href="{{ route('configuration.caps') }}">
-                        <span class="me-2"><i class="bi bi-diagram-3"></i></span>
-                        <span>CAP</span>
-                    </a>
-                </li>
-            @endif
-            @if($connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('annees_scolaires_apercu'))
-                <li class="nav-item">
-                    <a class="nav-link d-flex align-items-center py-2 {{ request()->routeIs('configuration.annees') ? 'theme-pill-active fw-bold' : '' }}" href="{{ route('configuration.annees') }}">
-                        <span class="me-2"><i class="bi bi-calendar3"></i></span>
-                        <span>Années scolaires</span>
-                    </a>
-                </li>
-            @endif
-            @if($connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('types_notes_apercu'))
-                <li class="nav-item">
-                    <a class="nav-link d-flex align-items-center py-2 {{ request()->routeIs('configuration.types-notes') ? 'theme-pill-active fw-bold' : '' }}" href="{{ route('configuration.types-notes') }}">
-                        <span class="me-2"><i class="bi bi-clipboard"></i></span>
-                        <span>Type de notes</span>
-                    </a>
-                </li>
-            @endif
-            @if($connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('classes_officielles_apercu'))
-                <li class="nav-item">
-                    <a class="nav-link d-flex align-items-center py-2 {{ request()->routeIs('configuration.classes-officielles') ? 'theme-pill-active fw-bold' : '' }}" href="{{ route('configuration.classes-officielles') }}">
-                        <span class="me-2"><i class="bi bi-building-check"></i></span>
-                        <span>Classes officielles</span>
-                    </a>
-                </li>
-            @endif
-            @if($connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('status_controles_apercu'))
-                <li class="nav-item">
-                    <a class="nav-link d-flex align-items-center py-2 {{ request()->routeIs('configuration.status-controles') ? 'theme-pill-active fw-bold' : '' }}" href="{{ route('configuration.status-controles') }}">
-                        <span class="me-2"><i class="bi bi-check"></i></span>
-                        <span>Status Controle</span>
-                    </a>
-                </li>
-            @endif
-            @if($connectedUser->droit === 'SupAdmin' || $connectedUser->userHasAnyPermission(['permissions_apercu', 'permission_voir']))
-                <li class="nav-item">
-                    <a class="nav-link d-flex align-items-center py-2 {{ request()->routeIs('configuration.permissions') ? 'theme-pill-active fw-bold' : '' }}" href="{{ route('configuration.permissions') }}">
-                        <span class="me-2"><i class="bi bi-shield-lock"></i></span>
-                        <span>Permissions</span>
-                    </a>
-                </li>
-            @endif
-            @if(in_array($connectedUser->droit, ['SupAdmin', 'Admin'], true) || $connectedUser->userHasAnyPermission(['permissions_assigner', 'permission_assigner', 'dae_permission', 'dcap_permission']))
-                <li class="nav-item">
-                    <a class="nav-link d-flex align-items-center py-2 {{ request()->routeIs('configuration.utilisateurs.permissions.assigner') ? 'theme-pill-active fw-bold' : '' }}" href="{{ route('configuration.utilisateurs.permissions.assigner') }}">
-                        <span class="me-2"><i class="bx bx-user-check"></i></span>
-                        <span>Assigner permission</span>
-                    </a>
-                </li>
-            @endif
-        </ul>
+            </ul>
+        @endif
+
     </div>
 </div>

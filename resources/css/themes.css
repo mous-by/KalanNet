@@ -177,6 +177,16 @@ html[data-theme] .dropdown-menu .dropdown-item:hover i {
     transition: transform 0.2s ease;
 }
 
+/* Configuration sidebar menu links */
+html[data-theme] .config-menu-link {
+    color: var(--text-main) !important;
+    transition: background .15s, color .15s;
+}
+html[data-theme] .config-menu-link:hover {
+    background: var(--accent-light) !important;
+    color: var(--theme-accent) !important;
+}
+
 /* Ensure buttons in table headers and action forms use theme accents */
 html[data-theme] .theme-pill-active,
 html[data-theme] .btn-outline-primary {
