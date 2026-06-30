@@ -80,7 +80,7 @@
                                             @endif
                                             <li><hr class="dropdown-divider"></li>
                                             <li>
-                                                <form action="{{ route('classes.destroy', $classe->id_classe) }}" method="POST" onsubmit="return confirm('Supprimer cette classe ?');">
+                                                <form action="{{ route('classes.destroy', $classe->id_classe) }}" method="POST" data-confirm-delete data-confirm-title="Supprimer cette classe ?" data-confirm-text="La classe « {{ $classe->nom_classe }} » sera définitivement supprimée.">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="dropdown-item py-2 text-danger">
@@ -107,3 +107,33 @@
         .bg-light-primary { background-color: rgba(var(--bs-primary-rgb), 0.1) !important; }
     </style>
 @endsection
+
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('[data-confirm-delete]').forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    event.preventDefault();
+                    const title = form.dataset.confirmTitle || 'Confirmer la suppression ?';
+                    const text = form.dataset.confirmText || '';
+                    if (!window.Swal) {
+                        if (confirm(title)) form.submit();
+                        return;
+                    }
+                    Swal.fire({
+                        title,
+                        text,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Oui, supprimer',
+                        cancelButtonText: 'Annuler',
+                        confirmButtonColor: '#dc3545',
+                        cancelButtonColor: '#6c757d',
+                    }).then(function (result) {
+                        if (result.isConfirmed) form.submit();
+                    });
+                });
+            });
+        });
+    </script>
+@endpush
