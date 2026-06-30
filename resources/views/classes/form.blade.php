@@ -1,5 +1,30 @@
 @extends('layouts.app')
 
+@push('styles')
+    <style>
+        .matiere-check-card {
+            cursor: pointer;
+            user-select: none;
+            background-color: #fff;
+            transition: background-color .15s ease, border-color .15s ease;
+        }
+        .matiere-check-card:hover {
+            background-color: #f8f9fa;
+            border-color: var(--theme-accent) !important;
+        }
+        .matiere-check-card.is-checked {
+            background-color: #eef6ff;
+            border-color: var(--theme-accent) !important;
+            border-width: 2px;
+        }
+        .matiere-checkbox-lg {
+            width: 1.9em;
+            height: 1.9em;
+            cursor: pointer;
+        }
+    </style>
+@endpush
+
 @section('content')
     @php
         $isEdit = $mode === 'edit';
@@ -98,16 +123,10 @@
                 <div class="alert alert-info border-0 border-start border-info border-4 py-2" id="matiere-order-help">
                     Choisissez l’ordre d’enseignement pour afficher automatiquement les matières correspondantes.
                 </div>
-                <div class="row justify-content-center mb-3">
-                    <div class="col-md-7">
-                        <label class="form-label" for="matiere_picker">Ajouter une matière</label>
-                        <select class="form-select" id="matiere_picker">
-                            <option value="">Choisir une matière</option>
-                            @foreach($matieres as $matiere)
-                                <option value="{{ $matiere->id_matiere }}" data-ordres="{{ $matiere->ordres->pluck('ordre_enseignement')->implode('|') }}">{{ $matiere->nom_matiere }}</option>
-                            @endforeach
-                        </select>
-                    </div>
+                <div class="d-flex justify-content-center mb-3">
+                    <button type="button" class="btn btn-primary px-4" data-bs-toggle="modal" data-bs-target="#matieresModal">
+                        <i class="bi bi-plus-circle me-2"></i>Ajouter une matière
+                    </button>
                 </div>
 
                 <div class="table-responsive">
@@ -158,6 +177,46 @@
             </div>
         </div>
     </form>
+
+    <!-- Modal Ajouter des matières -->
+    <div class="modal fade" id="matieresModal" tabindex="-1" aria-labelledby="matieresModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header text-white" style="background-color: var(--theme-accent) !important;">
+                    <h5 class="modal-title fw-bold" id="matieresModalLabel">
+                        <i class="bi bi-journal-plus me-2"></i>Choisir les matières
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <input type="text" class="form-control form-control-lg" id="matiere_search" placeholder="Rechercher une matière...">
+                    </div>
+                    <label class="matiere-check-card d-flex align-items-center gap-3 border rounded-3 p-3 mb-3" for="matiere_select_all">
+                        <input type="checkbox" class="form-check-input matiere-checkbox-lg flex-shrink-0" id="matiere_select_all">
+                        <span class="fw-bold">Tout sélectionner</span>
+                    </label>
+                    <div id="matiere_checkbox_list" class="row row-cols-1 row-cols-md-2 g-3" style="max-height: 420px; overflow-y: auto;">
+                        @foreach($matieres as $matiere)
+                            <div class="col matiere-option" data-id="{{ $matiere->id_matiere }}" data-nom="{{ strtolower($matiere->nom_matiere) }}" data-ordres="{{ $matiere->ordres->pluck('ordre_enseignement')->implode('|') }}">
+                                <label class="matiere-check-card d-flex align-items-center gap-3 border rounded-3 p-3" for="matiere_chk_{{ $matiere->id_matiere }}">
+                                    <input type="checkbox" class="form-check-input matiere-checkbox-lg matiere-checkbox flex-shrink-0" id="matiere_chk_{{ $matiere->id_matiere }}" value="{{ $matiere->id_matiere }}">
+                                    <span class="fw-semibold fs-6">{{ $matiere->nom_matiere }}</span>
+                                </label>
+                            </div>
+                        @endforeach
+                    </div>
+                    <p class="text-muted small mb-0 mt-3" id="matiere_empty_msg" style="display:none;">Aucune matière disponible.</p>
+                </div>
+                <div class="modal-footer bg-light px-4 py-3">
+                    <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn text-white px-4 fw-semibold" id="matiere_add_selection" style="background-color: var(--theme-accent) !important;">
+                        <i class="bi bi-check2-circle me-1"></i>Ajouter la sélection
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
@@ -166,11 +225,16 @@
             const ordreMatiereMap = @json($ordreMatiereMap);
             const matieres = @json($matieresJson);
             const enseignants = @json($enseignantsJson);
-            const picker = document.getElementById('matiere_picker');
             const tbody = document.getElementById('table-matieres');
             const nomClasse = document.getElementById('nom_classe');
             const ordreSelect = document.getElementById('ordre_enseignement');
             const help = document.getElementById('matiere-order-help');
+            const matieresModalEl = document.getElementById('matieresModal');
+            const matiereList = document.getElementById('matiere_checkbox_list');
+            const matiereSearch = document.getElementById('matiere_search');
+            const matiereSelectAll = document.getElementById('matiere_select_all');
+            const matiereAddSelection = document.getElementById('matiere_add_selection');
+            const matiereEmptyMsg = document.getElementById('matiere_empty_msg');
 
             function enseignantOptions() {
                 return '<option value="">Aucun</option>' + enseignants.map(function (enseignant) {
@@ -184,12 +248,8 @@
                 });
             }
 
-            picker.addEventListener('change', function () {
-                const id = Number(this.value);
-                if (!id || tbody.querySelector('[data-matiere-id="' + id + '"]')) {
-                    this.value = '';
-                    return;
-                }
+            function addMatiereRow(id) {
+                if (!id || tbody.querySelector('[data-matiere-id="' + id + '"]')) return;
 
                 const matiere = matieres.find(function (item) { return Number(item.id) === id; });
                 if (!matiere) return;
@@ -202,24 +262,45 @@
                     '<td class="text-center"><button type="button" class="btn btn-light btn-sm remove-row" title="Supprimer"><i class="bi bi-trash text-danger"></i></button></td>' +
                     '</tr>'
                 );
-                this.value = '';
-            });
+            }
+
+            function syncCardState(option) {
+                const checkbox = option.querySelector('.matiere-checkbox');
+                const card = option.querySelector('.matiere-check-card');
+                card.classList.toggle('is-checked', checkbox.checked);
+            }
+
+            function filterMatiereCheckboxes() {
+                const selectedOrder = ordreSelect.value;
+                const expectedOrder = ordreMatiereMap[selectedOrder] || '';
+                const search = matiereSearch.value.trim().toLowerCase();
+                let visibleCount = 0;
+
+                matiereList.querySelectorAll('.matiere-option').forEach(function (option) {
+                    const id = Number(option.dataset.id);
+                    const ordres = (option.dataset.ordres || '').split('|').filter(Boolean);
+                    const alreadyAdded = !!tbody.querySelector('[data-matiere-id="' + id + '"]');
+                    const matchesOrder = !expectedOrder || ordres.includes(expectedOrder);
+                    const matchesSearch = !search || option.dataset.nom.includes(search);
+                    const visible = matchesOrder && matchesSearch && !alreadyAdded;
+
+                    option.style.display = visible ? '' : 'none';
+                    if (!visible) {
+                        option.querySelector('.matiere-checkbox').checked = false;
+                    } else {
+                        visibleCount++;
+                    }
+                    syncCardState(option);
+                });
+
+                matiereEmptyMsg.style.display = visibleCount === 0 ? '' : 'none';
+                matiereSelectAll.checked = false;
+                matiereSelectAll.closest('.matiere-check-card').classList.remove('is-checked');
+            }
 
             function filterMatieresByOrder() {
                 const selectedOrder = ordreSelect.value;
                 const expectedOrder = ordreMatiereMap[selectedOrder] || '';
-                Array.from(picker.options).forEach(function (option) {
-                    if (!option.value) {
-                        option.hidden = false;
-                        return;
-                    }
-                    const ordres = (option.dataset.ordres || '').split('|').filter(Boolean);
-                    option.hidden = expectedOrder && !ordres.includes(expectedOrder);
-                });
-
-                if (picker.value && picker.options[picker.selectedIndex]?.hidden) {
-                    picker.value = '';
-                }
 
                 tbody.querySelectorAll('tr[data-matiere-id]').forEach(function (row) {
                     const matiere = matieres.find(item => Number(item.id) === Number(row.dataset.matiereId));
@@ -227,6 +308,8 @@
                         row.remove();
                     }
                 });
+
+                filterMatiereCheckboxes();
 
                 help.textContent = expectedOrder
                     ? 'Matières affichées pour : ' + expectedOrder
@@ -236,9 +319,47 @@
             ordreSelect.addEventListener('change', filterMatieresByOrder);
             filterMatieresByOrder();
 
+            matiereSearch.addEventListener('input', filterMatiereCheckboxes);
+
+            matiereList.addEventListener('change', function (event) {
+                const checkbox = event.target.closest('.matiere-checkbox');
+                if (!checkbox) return;
+                syncCardState(checkbox.closest('.matiere-option'));
+            });
+
+            matiereSelectAll.addEventListener('change', function () {
+                matiereSelectAll.closest('.matiere-check-card').classList.toggle('is-checked', matiereSelectAll.checked);
+                matiereList.querySelectorAll('.matiere-option').forEach(function (option) {
+                    if (option.style.display !== 'none') {
+                        option.querySelector('.matiere-checkbox').checked = matiereSelectAll.checked;
+                        syncCardState(option);
+                    }
+                });
+            });
+
+            matiereAddSelection.addEventListener('click', function () {
+                matiereList.querySelectorAll('.matiere-checkbox:checked').forEach(function (checkbox) {
+                    addMatiereRow(Number(checkbox.value));
+                    checkbox.checked = false;
+                });
+                matiereSelectAll.checked = false;
+                filterMatiereCheckboxes();
+                bootstrap.Modal.getInstance(matieresModalEl)?.hide();
+            });
+
+            matieresModalEl.addEventListener('show.bs.modal', filterMatiereCheckboxes);
+            matieresModalEl.addEventListener('hidden.bs.modal', function () {
+                matiereSearch.value = '';
+                matiereSelectAll.checked = false;
+                filterMatiereCheckboxes();
+            });
+
             tbody.addEventListener('click', function (event) {
                 const button = event.target.closest('.remove-row');
-                if (button) button.closest('tr').remove();
+                if (button) {
+                    button.closest('tr').remove();
+                    filterMatiereCheckboxes();
+                }
             });
 
             nomClasse.addEventListener('input', function () {
