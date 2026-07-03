@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rule;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
 
@@ -69,7 +70,7 @@ class InscriptionController extends Controller
             'id_classe' => 'required|exists:classe,id_classe',
             'id_annee' => 'required|exists:anneescolaire,id_anneeScolaire',
             'id_planification' => [$this->schoolRequiresPlanification() ? 'required' : 'nullable', 'integer', 'exists:planification,id_planification'],
-            'date_inscription' => 'nullable|date',
+            'date_inscription' => ['nullable', 'date_format:Y-m-d'],
         ]);
 
         $idEcole = session('idEcole');
@@ -114,7 +115,13 @@ class InscriptionController extends Controller
                     continue;
                 }
 
-                $dateNaissance = $this->normalizeExcelDate($worksheet->getCell('C' . $row)->getValue());
+                try {
+                    $dateNaissance = $this->normalizeExcelDate($worksheet->getCell('C' . $row)->getValue());
+                } catch (ValidationException $e) {
+                    throw ValidationException::withMessages([
+                        'fichier_excel' => "Date de naissance invalide a la ligne {$row}. Utilisez le format AAAA-MM-JJ, par exemple 2009-04-22.",
+                    ]);
+                }
                 $lieuNaiss = trim((string) $worksheet->getCell('D' . $row)->getValue()) ?: 'Non renseigné';
                 $adresse = trim((string) $worksheet->getCell('E' . $row)->getValue()) ?: null;
                 $genre = ucfirst(strtolower(trim((string) $worksheet->getCell('F' . $row)->getValue())));
@@ -221,12 +228,17 @@ class InscriptionController extends Controller
         }
 
         $normalized = trim((string) $value);
-        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $normalized)) {
+        if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $normalized, $matches)) {
+            if (!checkdate((int) $matches[2], (int) $matches[3], (int) $matches[1])) {
+                throw ValidationException::withMessages([
+                    'date_naissance' => 'La date de naissance est invalide.',
+                ]);
+            }
+
             return $normalized;
         }
 
-        $timestamp = strtotime($normalized);
-        return $timestamp !== false ? date('Y-m-d', $timestamp) : null;
+        return null;
     }
 
     public function store(Request $request)
@@ -234,15 +246,15 @@ class InscriptionController extends Controller
         $data = $request->validate([
             'prenom_eleve' => 'required',
             'nom_eleve' => 'required',
-            'id_classe' => 'required',
-            'id_annee' => 'required',
-            'genre_eleve' => 'required',
-            'date_naissance' => 'nullable',
+            'id_classe' => 'required|integer|exists:classe,id_classe',
+            'id_annee' => 'required|integer|exists:anneescolaire,id_anneeScolaire',
+            'genre_eleve' => ['required', Rule::in(['Masculin', 'Féminin'])],
+            'date_naissance' => ['nullable', 'date_format:Y-m-d'],
             'lieu_naiss' => 'nullable',
             'adresse_eleve' => 'nullable',
             'cas_social' => 'nullable',
             'mode_paiement' => 'nullable',
-            'date_inscription' => 'nullable|date',
+            'date_inscription' => ['nullable', 'date_format:Y-m-d'],
             'matricule' => 'nullable|string|max:50',
             'image' => 'nullable|image|max:5120',
             'parent_id' => 'nullable|exists:parents,id_parent',
@@ -262,7 +274,7 @@ class InscriptionController extends Controller
             $eleve = new Eleve();
             $eleve->prenom_eleve = $data['prenom_eleve'];
             $eleve->nom_eleve = $data['nom_eleve'];
-            $eleve->date_naissance = $data['date_naissance'] ?? null;
+            $eleve->date_naissance = $this->validDateOrNull($data['date_naissance'] ?? null, 'date_naissance');
             $eleve->lieu_naiss = $data['lieu_naiss'] ?: 'Non renseigné';
             $eleve->adresse_eleve = $data['adresse_eleve'] ?? null;
             $eleve->id_classe = $data['id_classe'];
@@ -303,12 +315,12 @@ class InscriptionController extends Controller
             'id_classe' => 'required|exists:classe,id_classe',
             'id_annee' => 'required|exists:anneescolaire,id_anneeScolaire',
             'id_planification' => [$this->schoolRequiresPlanification() ? 'required' : 'nullable', 'integer', 'exists:planification,id_planification'],
-            'date_inscription' => 'nullable|date',
+            'date_inscription' => ['nullable', 'date_format:Y-m-d'],
             'eleves' => 'required|array|min:1',
             'eleves.*.prenom_eleve' => 'required|string|max:255',
             'eleves.*.nom_eleve' => 'required|string|max:255',
-            'eleves.*.genre_eleve' => 'required|string',
-            'eleves.*.date_naissance' => 'nullable|date',
+            'eleves.*.genre_eleve' => ['required', Rule::in(['Masculin', 'Féminin'])],
+            'eleves.*.date_naissance' => ['nullable', 'date_format:Y-m-d'],
             'eleves.*.lieu_naiss' => 'nullable|string|max:255',
             'eleves.*.matricule' => 'nullable|string|max:50',
         ]);
@@ -328,7 +340,7 @@ class InscriptionController extends Controller
                 $eleve = Eleve::create([
                     'prenom_eleve' => $row['prenom_eleve'],
                     'nom_eleve' => $row['nom_eleve'],
-                    'date_naissance' => $row['date_naissance'] ?? null,
+                    'date_naissance' => $this->validDateOrNull($row['date_naissance'] ?? null, 'date_naissance'),
                     'lieu_naiss' => $row['lieu_naiss'] ?? 'Non renseigné',
                     'adresse_eleve' => null,
                     'id_classe' => $data['id_classe'],
@@ -888,6 +900,23 @@ class InscriptionController extends Controller
         $statut = Str::lower(Str::ascii((string) ($ecole->statut ?? '')));
 
         return $statut !== 'public';
+    }
+
+    private function validDateOrNull(?string $value, string $field): ?string
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return null;
+        }
+
+        if (!preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $value, $matches)
+            || !checkdate((int) $matches[2], (int) $matches[3], (int) $matches[1])) {
+            throw ValidationException::withMessages([
+                $field => 'La date de naissance est invalide.',
+            ]);
+        }
+
+        return $value;
     }
 
     private function generateMatricule(array $data): string
