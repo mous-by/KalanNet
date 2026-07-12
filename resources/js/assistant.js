@@ -25,6 +25,9 @@
     let recognizing = false;
     let lastMessageWasVoice = false;
     let voiceOutputEnabled = localStorage.getItem('kalanbot-voice-output') !== 'off';
+    // Chrome supprime parfois l'utterance par le ramasse-miettes avant la fin de la
+    // lecture si rien ne la référence en dehors de speak() : on la garde ici.
+    let currentUtterance = null;
 
     function updateVoiceToggleIcon() {
         if (!voiceToggle) return;
@@ -34,13 +37,38 @@
         voiceToggle.title = voiceOutputEnabled ? 'Désactiver la réponse vocale' : 'Activer la réponse vocale';
     }
 
-    function speak(text) {
-        if (!speechSynthesisAvailable || !voiceOutputEnabled || !text) return;
+    function pickFrenchVoice() {
+        const voices = window.speechSynthesis.getVoices();
+        return voices.find((v) => v.lang === 'fr-FR')
+            || voices.find((v) => v.lang && v.lang.startsWith('fr'))
+            || null;
+    }
+
+    function speakNow(text) {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'fr-FR';
         utterance.rate = 1;
+        const voice = pickFrenchVoice();
+        if (voice) utterance.voice = voice;
+        utterance.onerror = () => { currentUtterance = null; };
+        utterance.onend = () => { currentUtterance = null; };
+        currentUtterance = utterance;
         window.speechSynthesis.speak(utterance);
+    }
+
+    function speak(text) {
+        if (!speechSynthesisAvailable || !voiceOutputEnabled || !text) return;
+
+        // Au premier chargement de la page, la liste des voix de Chrome est parfois
+        // encore vide (chargement asynchrone) : on attend l'évènement une seule fois
+        // plutôt que de parler sans voix française sélectionnée.
+        if (window.speechSynthesis.getVoices().length === 0) {
+            window.speechSynthesis.addEventListener('voiceschanged', () => speakNow(text), { once: true });
+            return;
+        }
+
+        speakNow(text);
     }
 
     function setRecognizing(state) {
