@@ -446,7 +446,9 @@ class EnseignantController extends Controller
             'type_contrat_enseignant' => $data['type_contrat'],
             'matricule' => $data['matricule'],
             'salaire_enseignant' => $isSalariedPrivateContract ? ($data['salaire'] ?? null) : null,
-            'salaire_mois_mode' => $isSalariedPrivateContract ? (int) ($data['salaire_mois_mode'] ?? 12) : null,
+            // Colonne NOT NULL (défaut 12 en base) : on garde une valeur même hors CDI/CDD,
+            // où le champ n'est simplement pas exploité ailleurs (cf. monthlySalaryDue()).
+            'salaire_mois_mode' => $isSalariedPrivateContract ? (int) ($data['salaire_mois_mode'] ?? 12) : 12,
             'duree_contrat' => (!$isPublic && $data['type_contrat'] === 'CDD') ? ($data['duree_contrat'] ?? null) : null,
             'nombre_heure' => (!$isPublic && $data['type_contrat'] === 'VCT') ? ($data['nombre_heure'] ?? null) : null,
             'prix_heure' => (!$isPublic && $data['type_contrat'] === 'VCT') ? ($data['prix_heure'] ?? null) : null,

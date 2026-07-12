@@ -18,6 +18,9 @@
                 <div class="kalanbot-subtitle">Assistant <span style="color:#4ade80;font-weight:700;">Kal</span><span style="color:#eab308;font-weight:700;">an</span><span style="color:#f87171;font-weight:700;">Net</span></div>
             </div>
             <div class="kalanbot-actions">
+                <button type="button" class="kalanbot-icon-btn d-none" data-kalanbot-voice-toggle title="Désactiver la réponse vocale" aria-label="Activer/désactiver la réponse vocale" aria-pressed="true">
+                    <i class="bi bi-volume-up-fill"></i>
+                </button>
                 <button type="button" class="kalanbot-icon-btn" data-kalanbot-clear title="Effacer la conversation" aria-label="Effacer">
                     <i class="bi bi-trash"></i>
                 </button>
@@ -29,7 +32,7 @@
 
         <div class="kalanbot-messages">
             <div class="kalanbot-message assistant">
-                <div class="kalanbot-bubble">Bonjour, je suis KalanBot. Posez-moi une question sur l'utilisation de <span style="color:#4ade80;font-weight:700;">Kal</span><span style="color:#eab308;font-weight:700;">an</span><span style="color:#f87171;font-weight:700;">Net</span>.</div>
+                <div class="kalanbot-bubble">Bonjour, je suis KalanBot. Posez-moi une question sur l'utilisation de <span style="color:#4ade80;font-weight:700;">Kal</span><span style="color:#eab308;font-weight:700;">an</span><span style="color:#f87171;font-weight:700;">Net</span>, ou donnez-moi une instruction à exécuter (au clavier ou au micro 🎤).</div>
             </div>
         </div>
 
@@ -37,7 +40,15 @@
             <span></span><span></span><span></span>
         </div>
 
+        <div class="kalanbot-voice-status d-none" data-kalanbot-voice-status>
+            <span class="kalanbot-voice-dot"></span>
+            <span data-kalanbot-voice-status-text>Je vous écoute…</span>
+        </div>
+
         <form class="kalanbot-form">
+            <button type="button" class="kalanbot-icon-btn kalanbot-mic d-none" data-kalanbot-mic title="Dicter un message" aria-label="Dicter un message" aria-pressed="false">
+                <i class="bi bi-mic-fill"></i>
+            </button>
             <input type="text" class="kalanbot-input" maxlength="1200" placeholder="Écrire un message..." autocomplete="off">
             <button type="submit" class="kalanbot-send d-none" aria-label="Envoyer">
                 <i class="bi bi-arrow-up-circle-fill"></i>

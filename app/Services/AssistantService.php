@@ -118,7 +118,10 @@ TEXT;
                 'contents' => $contents,
                 'generationConfig' => [
                     'temperature' => 0.3,
-                    'maxOutputTokens' => 700,
+                    'maxOutputTokens' => 1024,
+                    // Le "thinking" de Gemini 2.5 consomme le budget de tokens de sortie et peut
+                    // tronquer la réponse (finishReason=MAX_TOKENS) si on ne le désactive pas.
+                    'thinkingConfig' => ['thinkingBudget' => 0],
                 ],
             ]);
 
