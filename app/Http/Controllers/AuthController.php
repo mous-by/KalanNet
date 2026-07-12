@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Abonnement;
 use App\Models\User;
+use App\Rules\MaliPhone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
@@ -26,7 +27,18 @@ class AuthController extends Controller
 
     private function throttleKey(Request $request): string
     {
-        return 'login:' . strtolower(trim($request->input('identifier', ''))) . '|' . $request->ip();
+        return 'login:' . $this->normalizedLoginIdentifier((string) $request->input('identifier', '')) . '|' . $request->ip();
+    }
+
+    private function normalizedLoginIdentifier(string $identifier): string
+    {
+        $identifier = strtolower(trim($identifier));
+
+        if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
+            return $identifier;
+        }
+
+        return MaliPhone::normalize($identifier);
     }
 
     public function login(Request $request)
@@ -49,14 +61,15 @@ class AuthController extends Controller
         }
 
         $identifier = trim($credentials['identifier']);
+        $phoneIdentifier = MaliPhone::normalize($identifier);
 
         // Eager load ecole relationship without global scope restrictions during lookup
         $users = User::with(['ecole' => function ($q) {
             $q->withoutGlobalScopes();
         }])
-            ->where(function ($query) use ($identifier) {
+            ->where(function ($query) use ($identifier, $phoneIdentifier) {
                 $query->where('email', $identifier)
-                    ->orWhere('telephone', $identifier);
+                    ->orWhere('telephone', $phoneIdentifier);
             })
             ->get();
 
