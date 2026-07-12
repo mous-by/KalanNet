@@ -27,6 +27,7 @@ use App\Services\Paiements\EcheanceService;
 use App\Services\Paiements\PaiementEleveReportService;
 use App\Services\Paiements\PaiementEleveService;
 use App\Services\Paiements\ReferencePaiementService;
+use App\Rules\MaliPhone;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -135,6 +136,10 @@ class FinanceController extends Controller
     public function storePaiement(Request $request)
     {
         $this->ensurePermission('paiements_faire');
+        if ($request->filled('telephone')) {
+            $request->merge(['telephone' => MaliPhone::normalize($request->input('telephone'))]);
+        }
+
         $data = $request->validate([
             'echeance_id' => 'required|exists:echeances_paiement,id',
             'date_paiement' => 'required|date',
@@ -143,7 +148,7 @@ class FinanceController extends Controller
             'mode_reglement' => 'required|string|max:40',
             'parent_id' => 'nullable|exists:parents,id_parent',
             'nom_payeur' => 'nullable|string|max:100',
-            'telephone' => 'nullable|string|max:50',
+            'telephone' => ['nullable', 'string', 'max:20', new MaliPhone()],
         ]);
 
         try {
@@ -1484,11 +1489,15 @@ class FinanceController extends Controller
         }
 
         $otherName = trim((string) $otherName);
-        $otherPhone = trim((string) $otherPhone);
+        $otherPhone = MaliPhone::normalize(trim((string) $otherPhone));
         if ($otherName === '' || $otherPhone === '') {
             throw ValidationException::withMessages(['nom_payeur' => 'Le nom et le téléphone du payeur sont obligatoires.']);
         }
-        if (!preg_match('/^[0-9 +().-]{6,30}$/', $otherPhone)) {
+        $phoneRuleFailed = false;
+        (new MaliPhone())->validate('telephone', $otherPhone, function () use (&$phoneRuleFailed) {
+            $phoneRuleFailed = true;
+        });
+        if ($phoneRuleFailed) {
             throw ValidationException::withMessages(['telephone' => 'Le téléphone du payeur est invalide.']);
         }
 

@@ -12,6 +12,7 @@ use App\Models\Paiement;
 use App\Models\ParentModel;
 use App\Models\PlanPaiement;
 use App\Models\ReductionPaiementConfig;
+use App\Rules\MaliPhone;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -319,13 +320,17 @@ class PaiementEleveService
         }
 
         $nom = trim((string) ($payload['nom_payeur'] ?? ''));
-        $telephone = preg_replace('/\D/', '', (string) ($payload['telephone'] ?? ''));
+        $telephone = MaliPhone::normalize((string) ($payload['telephone'] ?? ''));
 
         if ($nom === '' || $telephone === '') {
             throw ValidationException::withMessages(['nom_payeur' => 'Le nom et le téléphone du payeur sont obligatoires.']);
         }
 
-        if (!preg_match('/^[0-9]{8,15}$/', $telephone)) {
+        $phoneRuleFailed = false;
+        (new MaliPhone())->validate('telephone', $telephone, function () use (&$phoneRuleFailed) {
+            $phoneRuleFailed = true;
+        });
+        if ($phoneRuleFailed) {
             throw ValidationException::withMessages(['telephone' => 'Le numéro de téléphone du payeur est invalide.']);
         }
 

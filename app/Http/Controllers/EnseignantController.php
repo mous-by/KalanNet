@@ -205,6 +205,10 @@ class EnseignantController extends Controller
 
     private function validateEnseignant(Request $request, ?int $ignoreId = null): array
     {
+        if ($request->filled('telephone')) {
+            $request->merge(['telephone' => MaliPhone::normalize($request->input('telephone'))]);
+        }
+
         $contratsAutorises = implode(',', array_keys($this->contratsAutorises(Auth::user()->ecole)));
         $schoolId = $ignoreId
             ? Enseignant::withoutGlobalScopes()->where('id_enseignant', $ignoreId)->value('id_ecole')

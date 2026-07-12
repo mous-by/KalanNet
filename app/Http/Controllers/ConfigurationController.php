@@ -1124,6 +1124,10 @@ class ConfigurationController extends Controller
 
     private function validateUtilisateurByType(Request $request, int $type, ?User $existingUser = null): array
     {
+        if ($request->filled('telephone')) {
+            $request->merge(['telephone' => MaliPhone::normalize($request->input('telephone'))]);
+        }
+
         $base = [
             'type_utilisateur' => 'required|integer|in:0,1,2,3,4',
             'pwd' => 'nullable|string|min:4',
@@ -1171,7 +1175,7 @@ class ConfigurationController extends Controller
         return $request->validate($base + [
             'nomPrenom' => 'required|string|max:150',
             'email' => ['required', 'email', 'max:150', $emailRule],
-            'telephone' => 'required|string|max:20',
+            'telephone' => ['required', 'string', 'max:20', new MaliPhone()],
             'genre' => 'required|string|max:20',
             'fonction' => 'nullable|string|max:50',
             'droit' => 'required|string|in:' . (Auth::user()->droit === 'SupAdmin' ? 'SupAdmin,Admin,Gestionnaire' : 'Gestionnaire'),
@@ -1353,6 +1357,10 @@ class ConfigurationController extends Controller
 
     private function validateEcole(Request $request): array
     {
+        if ($request->filled('telephone')) {
+            $request->merge(['telephone' => MaliPhone::normalize($request->input('telephone'))]);
+        }
+
         $data = $request->validate([
             'nomEcole' => 'required|string|max:100',
             'typeEcole' => 'required|string|in:Complexe Scolaire,Fondamentale I,Fondamentale II,Secondaire Generale,Secondaire Technique et Professionnel',
@@ -1360,7 +1368,7 @@ class ConfigurationController extends Controller
             'id_academie' => 'required|integer|exists:academie,id_academie',
             'id_cap' => 'nullable|integer|exists:cap,id_cap',
             'adresse' => 'nullable|string|max:1000',
-            'telephone' => 'nullable|string|max:20',
+            'telephone' => ['nullable', 'string', 'max:20', new MaliPhone()],
             'email' => 'nullable|email|max:100',
             'nomFondamental' => 'nullable|string|max:255',
             'nomLycee' => 'nullable|string|max:255',

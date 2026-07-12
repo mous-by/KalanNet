@@ -61,7 +61,7 @@
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Téléphone <span class="text-danger">*</span></label>
-                                <input name="telephone" type="text" class="form-control" maxlength="8" value="{{ old('telephone', $enseignant->telephone_enseignant) }}" required>
+                                <input name="telephone" type="tel" class="form-control" maxlength="20" inputmode="tel" placeholder="76 12 34 56" value="{{ old('telephone', $enseignant->telephone_enseignant) }}" required>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Date de naissance <span class="text-danger">*</span></label>
