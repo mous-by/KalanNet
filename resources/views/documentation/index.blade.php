@@ -15,6 +15,11 @@
         table.doc-catalogue th, table.doc-catalogue td { border: 1px solid var(--border-color, rgba(148, 163, 184, 0.4)); padding: 0.6rem 0.8rem; text-align: left; }
         table.doc-catalogue th { background: color-mix(in srgb, var(--theme-accent, #2563eb) 10%, transparent); font-weight: 700; }
         @media (max-width: 575.98px) { .doc-toc ol { columns: 1; } }
+        .doc-shot { margin: 1.5rem 0; text-align: center; }
+        .doc-shot img { max-width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--border-color, rgba(148, 163, 184, 0.4)); box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+        .doc-shot figcaption { margin-top: 0.6rem; font-size: 0.9rem; color: var(--bs-secondary-color, #6c757d); }
+        .doc-shot-row { display: flex; flex-wrap: wrap; gap: 1.5rem; justify-content: center; }
+        .doc-shot-row .doc-shot { flex: 1 1 320px; max-width: 420px; margin: 1.5rem 0; }
     </style>
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
         <div class="breadcrumb-title pe-3">Support</div>

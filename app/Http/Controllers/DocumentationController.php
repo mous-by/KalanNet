@@ -12,7 +12,7 @@ class DocumentationController extends Controller
         $title = 'Documentation_Utilisateur_KalanNet';
 
         if ($format === 'pdf') {
-            $pdf = Pdf::loadView('pdf.documentation');
+            $pdf = Pdf::loadView('pdf.documentation', ['isPdfExport' => true]);
             return $pdf->download($title . '.pdf');
         }
 

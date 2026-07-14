@@ -51,6 +51,10 @@
         table.doc-catalogue { width: 100%; border-collapse: collapse; margin-top: 10px; }
         table.doc-catalogue th, table.doc-catalogue td { border: 1px solid #ccc; padding: 6px 10px; text-align: left; font-size: 12px; }
         table.doc-catalogue th { background: #dbeafe; font-weight: bold; }
+        .doc-shot { margin: 16px 0; text-align: center; }
+        .doc-shot img { max-width: 100%; border: 1px solid #ccc; border-radius: 6px; }
+        .doc-shot figcaption { margin-top: 6px; font-size: 11px; color: #666; }
+        .doc-shot-row .doc-shot { display: inline-block; width: 47%; vertical-align: top; margin: 16px 1%; }
     </style>
 </head>
 <body>

@@ -1,5 +1,11 @@
 <div class="documentation-content" style="max-width: 900px; margin: 0 auto; line-height: 1.85;">
 
+    @php
+        $docImg = fn (string $file) => !empty($isPdfExport)
+            ? public_path('assets/images/documentation/' . $file)
+            : asset('assets/images/documentation/' . $file);
+    @endphp
+
     <div class="doc-tip">
         <strong>Vous n'aimez pas naviguer dans les menus ?</strong> Cliquez sur la bulle de discussion
         <strong>KalanBot</strong> en bas à droite de votre écran, appuyez sur le micro et dites simplement ce que
@@ -46,6 +52,11 @@
     responsable de l'abonnement (voir la partie « Abonnement de l'école ») : l'accès sera limité tant que
     l'abonnement n'est pas renouvelé.</div>
 
+    <figure class="doc-shot">
+        <img src="{{ $docImg('doc-connexion.jpg') }}" alt="Capture d'écran : page de connexion KalanNet, avec les champs identifiant et mot de passe">
+        <figcaption>La page de connexion : identifiant, mot de passe, puis Connexion.</figcaption>
+    </figure>
+
     <h5 class="fw-bold mt-4">Le menu de gauche</h5>
     <p>Sur le côté gauche de l'écran se trouve une colonne de menu (sur téléphone, elle apparaît en appuyant sur
     l'icône de menu en haut). Chaque ligne représente un module. Certaines lignes ont une petite flèche : cliquez
@@ -57,6 +68,12 @@
     financiers, activité récente. C'est un bon point de départ pour vérifier que tout va bien, mais vous n'avez
     pas besoin de tout comprendre ici pour commencer à travailler — les autres parties de ce guide vous
     expliquent chaque action précisément.</p>
+
+    <figure class="doc-shot">
+        <img src="{{ $docImg('doc-dashboard.jpg') }}" alt="Capture d'écran : tableau de bord avec le menu à gauche et la bulle KalanBot en bas à droite">
+        <figcaption>Le tableau de bord : le menu à gauche donne accès à tous vos modules, et la bulle KalanBot
+        (en bas à droite) répond à vos questions à voix ou à l'écrit.</figcaption>
+    </figure>
 
     <h4 id="doc-2" class="fw-bold text-uppercase mt-5 mb-3 border-bottom pb-2">2. Avant de commencer : la Configuration</h4>
     <p>Cette étape concerne surtout les administrateurs de l'école, en général une seule fois par année scolaire.
@@ -78,6 +95,11 @@
     <div class="doc-note">Vous n'avez pas besoin de tout configurer avant de commencer : si un champ obligatoire
     manque quelque part, KalanNet vous l'indiquera clairement au bon moment.</div>
 
+    <figure class="doc-shot">
+        <img src="{{ $docImg('doc-configuration.jpg') }}" alt="Capture d'écran : page Configuration, onglet Utilisateurs">
+        <figcaption>Le module Configuration, ici sur l'onglet Utilisateurs.</figcaption>
+    </figure>
+
     <h4 id="doc-3" class="fw-bold text-uppercase mt-5 mb-3 border-bottom pb-2">3. Élèves &amp; Parents</h4>
     <p>Menu : <strong>Élèves &amp; Parents</strong>.</p>
 
@@ -88,8 +110,14 @@
         d'une étoile sont obligatoires, le reste peut être complété plus tard).</li>
         <li>Le <strong>matricule</strong> (numéro unique de l'élève) peut être laissé vide : KalanNet le génère
         automatiquement.</li>
-        <li>Cliquez sur <strong>Enregistrer</strong>.</li>
+        <li>Cliquez sur <strong>Valider l'inscription</strong>.</li>
     </ol>
+
+    <figure class="doc-shot">
+        <img src="{{ $docImg('doc-inscription.jpg') }}" alt="Capture d'écran : formulaire d'inscription individuelle avec le bouton Valider l'inscription en surbrillance">
+        <figcaption>Le formulaire d'inscription : une fois les champs remplis, cliquez sur « Valider l'inscription ».</figcaption>
+    </figure>
+
     <p>Pour inscrire plusieurs élèves d'un coup, utilisez <strong>Inscription par groupe</strong> : téléchargez le
     modèle Excel proposé, remplissez une ligne par élève, puis renvoyez le fichier. Pour faire passer une classe
     entière à l'année suivante en une seule fois (élèves admis, redoublants...), utilisez
@@ -105,10 +133,26 @@
         modèles au choix et un QR code contenant les informations de l'élève.</li>
     </ul>
 
+    <div class="doc-shot-row">
+        <figure class="doc-shot">
+            <img src="{{ $docImg('doc-eleves-liste.jpg') }}" alt="Capture d'écran : liste des élèves">
+            <figcaption>Liste des Élèves.</figcaption>
+        </figure>
+        <figure class="doc-shot">
+            <img src="{{ $docImg('doc-cartes-scolaires.jpg') }}" alt="Capture d'écran : génération des cartes scolaires">
+            <figcaption>Cartes scolaires.</figcaption>
+        </figure>
+    </div>
+
     <h5 class="fw-bold mt-4">Les parents</h5>
     <p>Dans <strong>Parents d'élèves</strong>, créez un compte parent et rattachez-le à un ou plusieurs élèves.
     Une fois connecté, ce parent ne voit que les informations concernant ses propres enfants (montant à payer,
     retards, reçus de paiement) — jamais celles des autres familles.</p>
+
+    <figure class="doc-shot">
+        <img src="{{ $docImg('doc-parents.jpg') }}" alt="Capture d'écran : page Parents d'élèves">
+        <figcaption>Parents d'élèves : créer et rattacher un compte parent.</figcaption>
+    </figure>
 
     <h4 id="doc-4" class="fw-bold text-uppercase mt-5 mb-3 border-bottom pb-2">4. Enseignants</h4>
     <p>Menu : <strong>Enseignants</strong>.</p>
@@ -117,6 +161,12 @@
         (type de contrat, spécialité...). Un nouveau compte reçoit un mot de passe temporaire à communiquer à
         l'enseignant.</li>
     </ul>
+
+    <figure class="doc-shot">
+        <img src="{{ $docImg('doc-enseignants.jpg') }}" alt="Capture d'écran : liste des enseignants avec le lien Ajouter Enseignant en surbrillance">
+        <figcaption>Liste des Enseignants : le lien « Ajouter Enseignant » se trouve dans le sous-menu.</figcaption>
+    </figure>
+
     <div class="doc-tip">
         <strong>Émargements</strong> et <strong>Cahier de présence</strong> servent au même objectif — déclarer
         les heures de cours faites par un enseignant — mais l'un des deux est utilisé selon le niveau de la
@@ -142,6 +192,17 @@
         directement sur les créneaux.</li>
     </ul>
 
+    <div class="doc-shot-row">
+        <figure class="doc-shot">
+            <img src="{{ $docImg('doc-classes.jpg') }}" alt="Capture d'écran : liste des classes">
+            <figcaption>Classes.</figcaption>
+        </figure>
+        <figure class="doc-shot">
+            <img src="{{ $docImg('doc-emploi-du-temps.jpg') }}" alt="Capture d'écran : emploi du temps d'une classe">
+            <figcaption>Emploi du temps.</figcaption>
+        </figure>
+    </div>
+
     <h4 id="doc-6" class="fw-bold text-uppercase mt-5 mb-3 border-bottom pb-2">6. Contrôles &amp; Évaluations</h4>
     <p>Menu : <strong>Contrôles &amp; Évaluations</strong>.</p>
     <div class="doc-tip">
@@ -150,15 +211,32 @@
         déduit automatiquement des points sur la <strong>note de conduite</strong> de l'élève (qui commence à
         18/20), et peut envoyer une notification aux parents.
     </div>
+
+    <figure class="doc-shot">
+        <img src="{{ $docImg('doc-appel-presence.jpg') }}" alt="Capture d'écran : historique des appels avec le bouton Nouvel appel en surbrillance">
+        <figcaption>Appel de Présence : cliquez sur « Nouvel appel » pour commencer.</figcaption>
+    </figure>
+
     <p><strong>Notes &amp; Évaluations</strong> : programmez une évaluation (composition, devoir...) pour une
     classe et une matière, puis revenez sur cette même évaluation pour saisir la note de chaque élève. Selon le
     type d'école, les notes saisies peuvent nécessiter une <strong>validation</strong> par un responsable
     pédagogique avant d'apparaître sur les bulletins.</p>
+
+    <figure class="doc-shot">
+        <img src="{{ $docImg('doc-evaluations.jpg') }}" alt="Capture d'écran : liste des évaluations avec le bouton Préparer une évaluation en surbrillance">
+        <figcaption>Notes &amp; Évaluations : « Préparer une évaluation » pour en programmer une nouvelle.</figcaption>
+    </figure>
+
     <p><strong>Résultats nationaux</strong> : enregistrez les résultats du DEF ou du BAC pour les classes
     concernées. <strong>Générer Bulletins</strong> : choisissez une classe puis une période (mois ou trimestre) ;
     KalanNet calcule automatiquement les moyennes et le classement, et vous pouvez imprimer un bulletin individuel
     ou toute une classe d'un coup. Un bouton <strong>Publier</strong> rend les bulletins visibles pour les parents
     dans leur propre espace.</p>
+
+    <figure class="doc-shot">
+        <img src="{{ $docImg('doc-bulletins.jpg') }}" alt="Capture d'écran : page Générer les bulletins par classe">
+        <figcaption>Générer Bulletins : un bouton « Générer » par classe.</figcaption>
+    </figure>
 
     <h4 id="doc-7" class="fw-bold text-uppercase mt-5 mb-3 border-bottom pb-2">7. Annonces</h4>
     <p>Menu : <strong>Annonces</strong>. Rédigez un message à destination de tous, des parents, des enseignants ou
@@ -166,20 +244,32 @@
     encore) ou de le <strong>publier</strong> (visible immédiatement par le public choisi). Une annonce publiée
     peut ensuite être archivée ou supprimée à tout moment.</p>
 
+    <figure class="doc-shot">
+        <img src="{{ $docImg('doc-annonces.jpg') }}" alt="Capture d'écran : formulaire Nouvelle publication avec le bouton Enregistrer en surbrillance">
+        <figcaption>Annonces : rédigez, choisissez le public, puis Enregistrer.</figcaption>
+    </figure>
+
     <h4 id="doc-8" class="fw-bold text-uppercase mt-5 mb-3 border-bottom pb-2">8. Finances</h4>
     <p>Menu : <strong>Finances</strong>. C'est le module qui suit l'argent de l'école — prenez votre temps ici, et
     n'hésitez pas à demander de l'aide la première fois.</p>
     <h5 class="fw-bold mt-4">Enregistrer un paiement de scolarité</h5>
     <ol>
-        <li>Allez dans <strong>Paiements Élèves</strong>, recherchez l'élève concerné.</li>
-        <li>KalanNet affiche automatiquement ce qui est dû et ce qui reste à payer, échéance par échéance.</li>
-        <li>Indiquez le montant reçu (il ne peut pas dépasser le reste à payer) et le mode de paiement.</li>
-        <li>Cliquez sur <strong>Enregistrer</strong> : un reçu est généré automatiquement, imprimable en format
-        normal ou en format ticket de caisse (imprimante thermique).</li>
+        <li>Allez dans <strong>Paiements Élèves</strong>, puis choisissez la <strong>classe</strong> et
+        l'<strong>année scolaire</strong> concernées.</li>
+        <li>KalanNet affiche automatiquement la liste des élèves de la classe avec ce qui est dû et ce qui reste
+        à payer.</li>
+        <li>Indiquez le montant reçu pour chaque élève (il ne peut pas dépasser le reste à payer).</li>
+        <li>Cliquez sur <strong>valide les paiements</strong> : un reçu est généré automatiquement, imprimable en
+        format normal ou en format ticket de caisse (imprimante thermique).</li>
     </ol>
     <div class="doc-note">Chaque paiement doit être associé à une <strong>caisse active</strong>. Si aucune caisse
     n'existe encore pour votre école, un administrateur doit d'abord en créer une dans <strong>Journal de
     Caisse</strong>.</div>
+
+    <figure class="doc-shot">
+        <img src="{{ $docImg('doc-paiements.jpg') }}" alt="Capture d'écran : page Paiements Élèves avec la classe et le bouton valide les paiements en surbrillance">
+        <figcaption>Paiements Élèves : choisissez la classe (1), puis validez les paiements (2).</figcaption>
+    </figure>
     <ul>
         <li><strong>Planification</strong> : préparez à l'avance les échéanciers de paiement (mensualités,
         trimestres...) pour une ou plusieurs classes.</li>
@@ -194,6 +284,11 @@
         transferts entre la caisse et la banque.</li>
     </ul>
 
+    <figure class="doc-shot">
+        <img src="{{ $docImg('doc-caisse.jpg') }}" alt="Capture d'écran : Journal de Caisse">
+        <figcaption>Journal de Caisse : solde et mouvements de la caisse.</figcaption>
+    </figure>
+
     <h4 id="doc-9" class="fw-bold text-uppercase mt-5 mb-3 border-bottom pb-2">9. Espace Parents</h4>
     <p>Un parent qui se connecte à KalanNet voit une version simplifiée de l'application, limitée à ses propres
     enfants : dossier scolaire, montant à payer et échéances, bulletins publiés, reçus de paiement à télécharger,
@@ -205,6 +300,11 @@
     soumettre la preuve d'un paiement manuel (photo du reçu Orange Money, Wave...), qui sera ensuite validée par
     l'équipe KalanNet. Une alerte apparaît automatiquement une semaine avant l'expiration pour vous laisser le
     temps de renouveler.</p>
+
+    <figure class="doc-shot">
+        <img src="{{ $docImg('doc-abonnements.jpg') }}" alt="Capture d'écran : page Abonnements avec le bouton Envoyer la demande en surbrillance">
+        <figcaption>Abonnements : joignez la preuve de paiement puis « Envoyer la demande ».</figcaption>
+    </figure>
 
     <h4 id="doc-11" class="fw-bold text-uppercase mt-5 mb-3 border-bottom pb-2">11. Catalogue rapide : « où trouver quoi »</h4>
     <p>Un tableau pour retrouver rapidement où se trouve une action, sans avoir à relire tout le guide.</p>
