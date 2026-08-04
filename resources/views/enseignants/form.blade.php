@@ -56,8 +56,8 @@
                                 </select>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">Email</label>
-                                <input name="email" type="email" class="form-control" value="{{ old('email', $enseignant->email_enseignant) }}">
+                                <label class="form-label">Email <span class="text-danger">*</span></label>
+                                <input name="email" type="email" class="form-control" value="{{ old('email', $enseignant->email_enseignant) }}" required>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Téléphone <span class="text-danger">*</span></label>

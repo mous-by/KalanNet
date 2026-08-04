@@ -218,7 +218,7 @@ class EnseignantController extends Controller
             'nom_prenom' => 'required|string|max:200',
             'genre' => 'required|string|in:Feminin,Masculin,Féminin',
             'email' => [
-                'nullable',
+                'required',
                 'email',
                 'max:255',
                 Rule::unique('enseignants', 'email_enseignant')
