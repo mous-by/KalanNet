@@ -193,6 +193,17 @@ class AuthController extends Controller
             return false;
         }
 
+        // Licence à vie (offre ACHAT) : abonnement actif SANS date de fin => jamais bloqué.
+        $hasLifetime = Abonnement::query()
+            ->where('ecole_id', $schoolId)
+            ->where('statut', 'actif')
+            ->whereNull('fin_at')
+            ->exists();
+
+        if ($hasLifetime) {
+            return false;
+        }
+
         $subscription = Abonnement::query()
             ->where('ecole_id', $schoolId)
             ->where('statut', 'actif')

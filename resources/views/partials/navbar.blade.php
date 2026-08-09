@@ -14,11 +14,14 @@
                 ->orderByDesc('id')
                 ->first();
 
+            // Licence à vie (offre ACHAT) : abonnement actif sans date de fin => aucun rappel/notification.
+            $isLifetime = $subscription && $subscription->statut === 'actif' && is_null($subscription->fin_at);
+
             $daysRemaining = $subscription?->fin_at
                 ? now()->startOfDay()->diffInDays($subscription->fin_at->copy()->startOfDay(), false)
                 : -1;
 
-            if (!$subscription || $daysRemaining <= 7) {
+            if (!$isLifetime && (!$subscription || $daysRemaining <= 7)) {
                 $message = !$subscription || $daysRemaining < 0
                     ? "Votre abonnement a expiré. Veuillez renouveler l'abonnement pour continuer."
                     : "Votre abonnement expire bientôt ({$daysRemaining} jour(s) restant(s)).";
