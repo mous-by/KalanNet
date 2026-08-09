@@ -130,7 +130,9 @@ class AbonnementPaymentService
                 $start = Carbon::parse($latestEnd)->startOfDay();
             }
 
-            $end = $start->copy()->addDays((int) $paiement->offre->duree_jours);
+            // duree_jours <= 0 (ex: offre ACHAT) => licence à vie : pas de date de fin.
+            $dureeJours = (int) $paiement->offre->duree_jours;
+            $end = $dureeJours > 0 ? $start->copy()->addDays($dureeJours) : null;
 
             $abonnement = Abonnement::create([
                 'ecole_id' => $paiement->ecole_id,
@@ -190,7 +192,9 @@ class AbonnementPaymentService
                 $start = $currentEnd->copy();
             }
 
-            $end = Carbon::parse($start)->addDays((int) $paiement->offre->duree_jours);
+            // duree_jours <= 0 (ex: offre ACHAT) => licence à vie : pas de date de fin.
+            $dureeJours = (int) $paiement->offre->duree_jours;
+            $end = $dureeJours > 0 ? Carbon::parse($start)->addDays($dureeJours) : null;
 
             $abonnement = $paiement->abonnement ?: Abonnement::create([
                 'ecole_id' => $paiement->ecole_id,

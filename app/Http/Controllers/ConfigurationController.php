@@ -1478,12 +1478,15 @@ class ConfigurationController extends Controller
             $start = Carbon::parse($latestEnd)->startOfDay();
         }
 
+        // duree_jours <= 0 (ex: offre ACHAT) => licence à vie : pas de date de fin.
+        $dureeJours = (int) $offre->duree_jours;
+
         Abonnement::create([
             'ecole_id' => $ecole->idEcole,
             'offre_id' => $offre->id,
             'statut' => 'actif',
             'debut_at' => $start,
-            'fin_at' => $start->copy()->addDays((int) $offre->duree_jours),
+            'fin_at' => $dureeJours > 0 ? $start->copy()->addDays($dureeJours) : null,
         ]);
     }
 

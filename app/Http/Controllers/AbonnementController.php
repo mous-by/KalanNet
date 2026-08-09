@@ -24,7 +24,9 @@ class AbonnementController extends Controller
         }
 
         $allOffres = AbonnementOffre::orderBy('montant')->get();
-        $offres = $allOffres->where('actif', true)->values();
+        // Self-service (réabonnement école) : on exclut les offres à vie (duree_jours = 0, ex: ACHAT),
+        // attribuées par le SuperAdmin uniquement. $allOffres reste complet pour la configuration admin.
+        $offres = $allOffres->where('actif', true)->where('duree_jours', '>', 0)->values();
         $abonnement = Abonnement::with('offre')
             ->where('ecole_id', $schoolId)
             ->orderByDesc('id')
@@ -68,6 +70,8 @@ class AbonnementController extends Controller
         ]);
 
         $offre = AbonnementOffre::where('actif', true)->findOrFail($data['offre_id']);
+        // La licence à vie (duree_jours = 0, ex: ACHAT) est attribuée par le SuperAdmin uniquement.
+        abort_if($offre->duree_jours <= 0, 422, "Cette offre n'est pas disponible à la souscription en ligne.");
         $paiement = $payments->initiate($schoolId, $offre, $data['fournisseur'], $data['numero_payeur'] ?? null);
 
         if ($paiement->checkout_url) {
@@ -96,6 +100,8 @@ class AbonnementController extends Controller
         ]);
 
         $offre = AbonnementOffre::where('actif', true)->findOrFail($data['offre_id']);
+        // La licence à vie (duree_jours = 0, ex: ACHAT) est attribuée par le SuperAdmin uniquement.
+        abort_if($offre->duree_jours <= 0, 422, "Cette offre n'est pas disponible à la souscription en ligne.");
         $data['preuve_url'] = $this->storeReceipt($request);
 
         try {
@@ -260,9 +266,10 @@ class AbonnementController extends Controller
             ],
             'nom' => 'required|string|max:120',
             'description' => 'nullable|string|max:1000',
-            'montant' => 'required|numeric|min:1',
+            // montant=0 et duree_jours=0 autorisés = licence à vie (offre ACHAT).
+            'montant' => 'required|numeric|min:0',
             'devise' => 'required|string|max:8',
-            'duree_jours' => 'required|integer|min:1|max:3650',
+            'duree_jours' => 'required|integer|min:0|max:3650',
             'actif' => 'nullable|boolean',
         ]);
 

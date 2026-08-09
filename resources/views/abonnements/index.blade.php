@@ -244,7 +244,7 @@
             <div class="col-md-3"><label class="form-label small fw-bold">Libellé</label><input name="nom" class="form-control" placeholder="Abonnement mensuel" required></div>
             <div class="col-md-2"><label class="form-label small fw-bold">Prix</label><input name="montant" type="number" min="1" step="1" class="form-control" required></div>
             <div class="col-md-1"><label class="form-label small fw-bold">Devise</label><input name="devise" class="form-control" value="XOF" required></div>
-            <div class="col-md-2"><label class="form-label small fw-bold">Durée (jours)</label><input name="duree_jours" type="number" min="1" class="form-control" value="30" required></div>
+            <div class="col-md-2"><label class="form-label small fw-bold">Durée (jours)</label><input name="duree_jours" type="number" min="0" class="form-control" value="30" required></div>
             <div class="col-md-1"><div class="form-check mb-2"><input class="form-check-input" type="checkbox" name="actif" value="1" id="new-offre-active" checked><label class="form-check-label small fw-bold" for="new-offre-active">Actif</label></div></div>
             <div class="col-md-1"><button class="btn theme-action-btn w-100" type="submit"><i class="bi bi-plus-lg"></i></button></div>
             <div class="col-12"><label class="form-label small fw-bold">Description</label><input name="description" class="form-control" placeholder="Accès complet à KalanNet pendant la durée choisie."></div>
@@ -277,7 +277,7 @@
                                 </div>
                                 <div class="col-md-2"><input name="montant" type="number" min="1" step="1" class="form-control form-control-sm text-end" value="{{ (int) $offre->montant }}" required></div>
                                 <div class="col-md-1"><input name="devise" class="form-control form-control-sm" value="{{ $offre->devise }}" required></div>
-                                <div class="col-md-2"><input name="duree_jours" type="number" min="1" class="form-control form-control-sm" value="{{ $offre->duree_jours }}" required></div>
+                                <div class="col-md-2"><input name="duree_jours" type="number" min="0" class="form-control form-control-sm" value="{{ $offre->duree_jours }}" required></div>
                                 <div class="col-md-1">
                                     <select name="actif" class="form-select form-select-sm">
                                         <option value="1" @selected($offre->actif)>Oui</option>
