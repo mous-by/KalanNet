@@ -140,6 +140,11 @@
                                     @endif
                                 </td>
                                 @if($abonnementRow)
+                                    @if(is_null($abonnementRow->fin_at) && $abonnementRow->statut === 'actif')
+                                    <td colspan="4" class="text-center">
+                                        <span class="badge bg-info text-dark"><i class="bi bi-infinity me-1"></i>Licence à vie — accès illimité</span>
+                                    </td>
+                                    @else
                                     @php
                                         $subscriptionFormId = 'subscription-dates-'.$abonnementRow->id;
                                     @endphp
@@ -165,6 +170,7 @@
                                             <button class="btn btn-sm btn-primary" type="submit">Sauver</button>
                                         </form>
                                     </td>
+                                    @endif
                                 @else
                                     <td>-</td>
                                     <td>-</td>
