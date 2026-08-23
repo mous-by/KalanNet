@@ -29,7 +29,7 @@
     </script>
 
     <link href="{{ asset('assets/css/bootstrap.min.css') }}" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="{{ asset('assets/css/bootstrap-icons.css') }}" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
@@ -646,7 +646,7 @@
             </div>
 
             <div class="d-grid">
-                <button type="submit" class="btn login-button">
+                <button type="submit" class="btn login-button" id="login-submit-button">
                     <i class="bi bi-box-arrow-in-right me-2"></i>{{ __('messages.auth.login') }}
                 </button>
             </div>
@@ -695,6 +695,7 @@
 @endif
 
 <script src="{{ asset('assets/js/bootstrap.bundle.min.js') }}"></script>
+<script src="{{ asset('assets/mon_js/save-button-spinner.js') }}?v={{ filemtime(public_path('assets/mon_js/save-button-spinner.js')) }}"></script>
 @include('partials.localized-inputs-script')
 
 <script>
@@ -769,6 +770,37 @@ document.addEventListener('DOMContentLoaded', function () {
     /* ── SCHOOL MODAL ── */
     @if(isset($ecoles_modal))
     new bootstrap.Modal(document.getElementById('schoolModal')).show();
+    @endif
+
+    /* ── LOGIN THROTTLE COUNTDOWN ── */
+    @if (session('login_retry_after'))
+    (function () {
+        let remaining = {{ (int) session('login_retry_after') }};
+        const button = document.getElementById('login-submit-button');
+        if (!button || remaining <= 0) return;
+
+        const originalHTML = button.innerHTML;
+        button.disabled = true;
+        button.classList.add('disabled');
+
+        const retryTemplate = @json(__('messages.auth.retry_in'));
+        function render() {
+            button.textContent = retryTemplate.replace(':seconds', remaining);
+        }
+        render();
+
+        const interval = setInterval(function () {
+            remaining--;
+            if (remaining <= 0) {
+                clearInterval(interval);
+                button.disabled = false;
+                button.classList.remove('disabled');
+                button.innerHTML = originalHTML;
+                return;
+            }
+            render();
+        }, 1000);
+    })();
     @endif
 });
 </script>

@@ -57,7 +57,7 @@ class AuthController extends Controller
             $seconds = RateLimiter::availableIn($throttleKey);
             return back()->withErrors([
                 'identifier' => __('messages.auth.too_many_attempts', ['seconds' => $seconds]),
-            ])->onlyInput('identifier');
+            ])->with('login_retry_after', $seconds)->onlyInput('identifier');
         }
 
         $identifier = trim($credentials['identifier']);

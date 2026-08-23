@@ -47,7 +47,7 @@
     <link href="{{ asset('assets/css/style.css') }}" rel="stylesheet" />
     <link href="{{ asset('assets/css/icons.css') }}" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ asset('assets/css/bootstrap-icons.css') }}">
     
     <title>{{ config('app.name', 'KalanNet') }} - Alliance Team</title>
     
@@ -137,6 +137,7 @@
     @include('partials.localized-inputs-script')
     @include('partials.ui-translator-script')
     @stack('scripts')
+    <script src="{{ asset('assets/mon_js/save-button-spinner.js') }}?v={{ filemtime(public_path('assets/mon_js/save-button-spinner.js')) }}"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function () {
