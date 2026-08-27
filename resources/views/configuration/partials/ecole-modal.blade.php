@@ -159,10 +159,41 @@
                 const capSelect = form.querySelector('.js-cap-select');
                 const nomFondamental = form.querySelector('.js-nom-fondamental');
                 const typeFields = Array.from(form.querySelectorAll('.js-type-field'));
-                const capOptions = Array.from(capSelect?.querySelectorAll('option[data-academie]') || []);
                 const logoInput = form.querySelector('.js-logo-input');
                 const logoPreview = form.querySelector('.js-logo-preview');
                 const logoPlaceholder = form.querySelector('.js-logo-placeholder');
+                const modalEl = form.closest('.modal');
+                const $modal = modalEl ? jQuery(modalEl) : undefined;
+
+                // Snapshot of every CAP option as originally rendered by the server,
+                // used to rebuild the select whenever the Academie changes (rather than
+                // just toggling `hidden`, which Select2 does not react to).
+                const allCapOptions = capSelect
+                    ? Array.from(capSelect.querySelectorAll('option[data-academie]')).map((opt) => ({
+                        value: opt.value,
+                        text: opt.textContent,
+                        academieId: opt.dataset.academie,
+                    }))
+                    : [];
+
+                if (academieSelect) {
+                    jQuery(academieSelect).select2({
+                        theme: 'bootstrap4',
+                        width: '100%',
+                        dropdownParent: $modal,
+                        placeholder: 'Sélectionner une académie',
+                        allowClear: true,
+                    });
+                }
+                if (capSelect) {
+                    jQuery(capSelect).select2({
+                        theme: 'bootstrap4',
+                        width: '100%',
+                        dropdownParent: $modal,
+                        placeholder: 'Sélectionner un CAP',
+                        allowClear: true,
+                    });
+                }
 
                 function selectedType() {
                     return typeSelect?.value || '';
@@ -181,14 +212,26 @@
                 }
 
                 function filterCaps() {
-                    const academieId = academieSelect?.value || '';
-                    capOptions.forEach((option) => {
-                        option.hidden = academieId !== '' && option.dataset.academie !== academieId;
-                    });
+                    if (!capSelect) return;
 
-                    if (capSelect?.selectedOptions[0]?.hidden) {
+                    const academieId = academieSelect?.value || '';
+                    const currentValue = capSelect.value;
+
+                    capSelect.innerHTML = '';
+                    capSelect.appendChild(new Option('Sélectionner', '', false, false));
+
+                    allCapOptions
+                        .filter((opt) => academieId === '' || opt.academieId === academieId)
+                        .forEach((opt) => {
+                            const isSelected = opt.value === currentValue;
+                            capSelect.appendChild(new Option(opt.text, opt.value, isSelected, isSelected));
+                        });
+
+                    if (!Array.from(capSelect.options).some((o) => o.value === currentValue)) {
                         capSelect.value = '';
                     }
+
+                    jQuery(capSelect).trigger('change.select2');
                 }
 
                 function updateFields() {
@@ -205,7 +248,7 @@
                     capField?.classList.toggle('d-none', !capVisible);
                     if (capSelect) {
                         capSelect.required = capVisible;
-                        capSelect.disabled = !capVisible;
+                        jQuery(capSelect).prop('disabled', !capVisible);
                         if (!capVisible) capSelect.value = '';
                     }
 
@@ -213,7 +256,7 @@
                 }
 
                 typeSelect?.addEventListener('change', updateFields);
-                academieSelect?.addEventListener('change', filterCaps);
+                jQuery(academieSelect).on('change', filterCaps);
                 logoInput?.addEventListener('change', () => {
                     const file = logoInput.files?.[0];
                     if (!file || !logoPreview) return;
