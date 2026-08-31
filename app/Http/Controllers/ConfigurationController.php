@@ -1251,6 +1251,7 @@ class ConfigurationController extends Controller
                     'dcap_activer',
                     'dcap_modifier',
                     'dcap_permission',
+                    'dcap_apercu',
                     'academies_apercu',
                     'classes_officielles_apercu',
                     'permissions_apercu',
