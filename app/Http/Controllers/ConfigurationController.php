@@ -47,9 +47,12 @@ class ConfigurationController extends Controller
             'permissions' => Permission::count(),
         ];
 
+        $onlineThreshold = now()->subMinutes(15);
+
         $recentUsers = $this->userScope(User::with('ecole'), $user, $idEcole)
-            ->latest('idUtilisateur')
-            ->limit(6)
+            ->orderByRaw('CASE WHEN last_activity IS NOT NULL AND last_activity >= ? THEN 0 ELSE 1 END', [$onlineThreshold])
+            ->orderByDesc('last_activity')
+            ->orderBy('nomPrenom')
             ->get();
 
         $annees = $this->anneeScope(AnneeScolaire::with('ecole'), $user, $idEcole)
@@ -57,7 +60,7 @@ class ConfigurationController extends Controller
             ->limit(6)
             ->get();
 
-        return view('configuration.index', compact('stats', 'recentUsers', 'annees'));
+        return view('configuration.index', compact('stats', 'recentUsers', 'annees', 'onlineThreshold'));
     }
 
     public function ecoles(Request $request)

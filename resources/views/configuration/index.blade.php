@@ -49,29 +49,45 @@
                 <div class="col-lg-7">
                     <div class="card theme-card shadow-sm">
                         <div class="card-header theme-header">
-                            <h5 class="mb-0 fw-bold">Utilisateurs récents</h5>
+                            <h5 class="mb-0 fw-bold">Utilisateurs &mdash; État des connexions</h5>
                         </div>
                         <div class="card-body">
-                            <div class="table-responsive">
+                            <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
                                 <table class="table table-striped table-bordered align-middle mb-0">
                                     <thead>
                                         <tr>
                                             <th>Nom</th>
                                             <th>Fonction</th>
-                                            <th>Droit</th>
                                             <th>École</th>
+                                            <th>Statut</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @forelse($recentUsers as $utilisateur)
+                                            @php
+                                                $isOnline = $utilisateur->last_activity && $utilisateur->last_activity->gte($onlineThreshold);
+                                                $lastSeen = $utilisateur->last_activity ?? $utilisateur->last_login_at;
+                                            @endphp
                                             <tr>
                                                 <td>
                                                     <div class="fw-bold">{{ $utilisateur->nomPrenom }}</div>
                                                     <small class="text-muted">{{ $utilisateur->email }}</small>
                                                 </td>
                                                 <td>{{ $utilisateur->fonction ?? 'N/A' }}</td>
-                                                <td><span class="badge bg-light text-primary">{{ $utilisateur->droit ?? 'N/A' }}</span></td>
                                                 <td>{{ $utilisateur->ecole->nomEcole ?? 'Toutes' }}</td>
+                                                <td>
+                                                    @if($isOnline)
+                                                        <span class="badge bg-success">Connecté</span>
+                                                        <div><small class="text-muted">à {{ $utilisateur->last_activity->format('d/m/Y H:i') }}</small></div>
+                                                    @else
+                                                        <span class="badge bg-secondary">Hors ligne</span>
+                                                        <div>
+                                                            <small class="text-muted">
+                                                                {{ $lastSeen ? 'Dernière connexion : '.$lastSeen->format('d/m/Y H:i') : 'Jamais connecté' }}
+                                                            </small>
+                                                        </div>
+                                                    @endif
+                                                </td>
                                             </tr>
                                         @empty
                                             <tr><td colspan="4" class="text-center py-4 text-muted">Aucun utilisateur trouvé.</td></tr>
