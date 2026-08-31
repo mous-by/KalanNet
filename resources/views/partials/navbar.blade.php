@@ -120,6 +120,19 @@
                         <li><a class="dropdown-item theme-option d-flex align-items-center gap-2 rounded-2 mb-1 {{ ($user->theme_preference ?? '') == 'orange' ? 'active-theme' : '' }}" href="javascript:;" onclick="changeTheme('orange')" style="color: #ea580c !important;">
                             <span class="theme-swatch swatch-orange"></span> Crépuscule
                         </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item theme-option d-flex align-items-center gap-2 rounded-2 mb-1 {{ ($user->theme_preference ?? '') == 'ocean' ? 'active-theme' : '' }}" href="javascript:;" onclick="changeTheme('ocean')" style="color: #0d9488 !important;">
+                            <span class="theme-swatch swatch-ocean"></span> Océan
+                        </a></li>
+                        <li><a class="dropdown-item theme-option d-flex align-items-center gap-2 rounded-2 mb-1 {{ ($user->theme_preference ?? '') == 'ambre' ? 'active-theme' : '' }}" href="javascript:;" onclick="changeTheme('ambre')" style="color: #d97706 !important;">
+                            <span class="theme-swatch swatch-ambre"></span> Ambre
+                        </a></li>
+                        <li><a class="dropdown-item theme-option d-flex align-items-center gap-2 rounded-2 mb-1 {{ ($user->theme_preference ?? '') == 'ardoise' ? 'active-theme' : '' }}" href="javascript:;" onclick="changeTheme('ardoise')" style="color: #6366f1 !important;">
+                            <span class="theme-swatch swatch-ardoise"></span> Ardoise
+                        </a></li>
+                        <li><a class="dropdown-item theme-option d-flex align-items-center gap-2 rounded-2 mb-1 {{ ($user->theme_preference ?? '') == 'brume' ? 'active-theme' : '' }}" href="javascript:;" onclick="changeTheme('brume')" style="color: #059669 !important;">
+                            <span class="theme-swatch swatch-brume"></span> Brume
+                        </a></li>
                     </ul>
                 </li>
 

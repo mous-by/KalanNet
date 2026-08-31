@@ -366,7 +366,7 @@
             gap: 8px;
             text-decoration: none;
         }
-        .quick-action-btn:hover { border-color: var(--theme-primary); color: var(--theme-primary); }
+        .quick-action-btn:hover { border-color: var(--theme-accent); color: var(--theme-accent); }
         .widget-icon { width: 54px; height: 54px; display: flex; align-items: center; justify-content: center; }
         .info-row span { color: #6b7280; font-size: .82rem; }
         .info-row, .result-row, .timeline-row {
@@ -386,7 +386,7 @@
         }
         .contact-actions { float: right; display: flex; gap: 6px; }
         .payment-ring { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-        .payment-percent { font-weight: 800; font-size: 1.2rem; color: var(--theme-primary); width: 54px; }
+        .payment-percent { font-weight: 800; font-size: 1.2rem; color: var(--theme-accent); width: 54px; }
         .timeline-row { align-items: flex-start; }
         .timeline-dot {
             width: 12px;

@@ -242,7 +242,7 @@
             width: 76px;
             height: 76px;
             border-radius: 50%;
-            color: var(--theme-primary);
+            color: var(--theme-accent);
             background: var(--accent-light);
         }
         .card-template-option {
@@ -254,7 +254,7 @@
             background: #fff;
         }
         .card-template-option:has(input:checked) {
-            border-color: var(--theme-primary);
+            border-color: var(--theme-accent);
             box-shadow: 0 0 0 3px rgba(13, 110, 253, .12);
         }
         .cards-students-table thead th {

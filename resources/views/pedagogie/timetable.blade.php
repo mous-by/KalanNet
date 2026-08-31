@@ -227,7 +227,7 @@
                                                         
                                                         {{-- Matière Select (Large and Prominent) --}}
                                                         <div class="mb-2">
-                                                            <select name="slots[{{ $jour }}][{{ $heure }}][id_matiere]" class="form-select quick-select-matiere border-primary-subtle fw-semibold" style="font-size: 12px; font-weight: 600; padding: 6px 10px; border-radius: 6px; border: 2px solid var(--theme-primary) !important;" onchange="onMatiereChange(this)">
+                                                            <select name="slots[{{ $jour }}][{{ $heure }}][id_matiere]" class="form-select quick-select-matiere border-primary-subtle fw-semibold" style="font-size: 12px; font-weight: 600; padding: 6px 10px; border-radius: 6px; border: 2px solid var(--theme-accent) !important;" onchange="onMatiereChange(this)">
                                                                 <option value="" class="fw-bold">+ Cours (Libre)</option>
                                                                 @foreach($matieresForGrid as $matiere)
                                                                     <option value="{{ $matiere->id_matiere }}" data-preferred-teacher="{{ $teacherSuggestionMap[(string) $matiere->id_matiere] ?? '' }}" @selected($matiereId == $matiere->id_matiere)>
@@ -445,7 +445,7 @@
 
         /* Premium Magic Button Styling */
         .btn-magic-recess {
-            background: linear-gradient(135deg, var(--theme-primary) 0%, #4f46e5 100%) !important;
+            background: linear-gradient(135deg, var(--theme-accent) 0%, #4f46e5 100%) !important;
             color: white !important;
             border: 2px solid white !important;
             font-size: 11px !important;

@@ -15,7 +15,7 @@ class ThemeController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'theme' => 'required|string|in:bleu-sombre,light,dark,vert,violet,rouge,orange',
+            'theme' => 'required|string|in:bleu-sombre,light,dark,vert,violet,rouge,orange,ocean,ambre,ardoise,brume',
         ]);
 
         $user = Auth::user();

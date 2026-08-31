@@ -246,7 +246,7 @@
         }
         html[data-theme] .theme-status {
             background-color: var(--accent-light) !important;
-            color: var(--theme-primary) !important;
+            color: var(--theme-accent) !important;
             border: 1px solid var(--border-color);
         }
         html[data-theme] .theme-status-valid::before {

@@ -8,9 +8,9 @@
         border-radius: 8px;
     }
     .finance-menu .nav-link.active {
-        border-left: 4px solid var(--theme-primary);
+        border-left: 4px solid var(--theme-accent);
         background: var(--accent-light);
-        color: var(--theme-primary);
+        color: var(--theme-accent);
         font-weight: 700;
     }
     .finance-menu .menu-icon {

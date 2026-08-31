@@ -46,7 +46,7 @@ class AuthController extends Controller
         $credentials = $request->validate([
             'identifier' => ['required', 'string', 'max:255'],
             'pwd' => ['required'],
-            'theme_preference' => ['nullable', 'string', 'in:bleu-sombre,light,dark,vert,violet,rouge,orange'],
+            'theme_preference' => ['nullable', 'string', 'in:bleu-sombre,light,dark,vert,violet,rouge,orange,ocean,ambre,ardoise,brume'],
         ], [
             'identifier.required' => 'Veuillez saisir votre email ou votre numéro de téléphone.',
         ]);
@@ -112,7 +112,7 @@ class AuthController extends Controller
         $request->validate([
             'idUtilisateur' => 'required|exists:utilisateurs,idUtilisateur',
             'idEcole' => 'required|exists:ecole,idEcole',
-            'theme_preference' => ['nullable', 'string', 'in:bleu-sombre,light,dark,vert,violet,rouge,orange'],
+            'theme_preference' => ['nullable', 'string', 'in:bleu-sombre,light,dark,vert,violet,rouge,orange,ocean,ambre,ardoise,brume'],
         ]);
 
         $user = User::withoutGlobalScopes()

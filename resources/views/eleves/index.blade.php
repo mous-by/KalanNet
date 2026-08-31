@@ -274,7 +274,7 @@
             width: 76px;
             height: 76px;
             border-radius: 50%;
-            color: var(--theme-primary);
+            color: var(--theme-accent);
             background: var(--accent-light);
         }
     </style>

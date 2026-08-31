@@ -601,6 +601,10 @@
             <button type="button" class="theme-dot" data-theme-key="rouge"       style="background:#450a0a" title="Rouge"></button>
             <button type="button" class="theme-dot" data-theme-key="orange"      style="background:#431407" title="Orange"></button>
             <button type="button" class="theme-dot" data-theme-key="light"       style="background:#475569" title="Clair"></button>
+            <button type="button" class="theme-dot" data-theme-key="ocean"       style="background:#0d9488" title="Océan"></button>
+            <button type="button" class="theme-dot" data-theme-key="ambre"       style="background:#d97706" title="Ambre"></button>
+            <button type="button" class="theme-dot" data-theme-key="ardoise"     style="background:#1e293b" title="Ardoise"></button>
+            <button type="button" class="theme-dot" data-theme-key="brume"       style="background:#059669" title="Brume"></button>
         </div>
 
         @if ($errors->any())

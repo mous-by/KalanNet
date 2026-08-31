@@ -241,7 +241,7 @@
         }
         html[data-theme] .theme-permission-check:has(.form-check-input:checked) {
             background: var(--accent-light);
-            border-color: var(--theme-primary);
+            border-color: var(--theme-accent);
         }
     </style>
 
