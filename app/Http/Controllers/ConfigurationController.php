@@ -1367,7 +1367,7 @@ class ConfigurationController extends Controller
 
         $data = $request->validate([
             'nomEcole' => 'required|string|max:100',
-            'typeEcole' => 'required|string|in:Complexe Scolaire,Fondamentale I,Fondamentale II,Secondaire Generale,Secondaire Technique et Professionnel',
+            'typeEcole' => 'required|string|in:Complexe Scolaire,Fondamentale I,Fondamentale II,Collège,Secondaire Generale,Secondaire Technique et Professionnel',
             'statut' => 'required|in:public,prive',
             'id_academie' => 'required|integer|exists:academie,id_academie',
             'id_cap' => 'nullable|integer|exists:cap,id_cap',
@@ -1386,7 +1386,7 @@ class ConfigurationController extends Controller
 
         unset($data['abonnement_offre_id']);
 
-        $needsCap = in_array($data['typeEcole'], ['Fondamentale I', 'Fondamentale II'], true)
+        $needsCap = in_array($data['typeEcole'], ['Fondamentale I', 'Fondamentale II', 'Collège'], true)
             || ($data['typeEcole'] === 'Complexe Scolaire' && !empty($data['nomFondamental']));
 
         if ($needsCap && empty($data['id_cap'])) {
@@ -1395,7 +1395,7 @@ class ConfigurationController extends Controller
             ]);
         }
 
-        if ($data['typeEcole'] === 'Fondamentale I' || $data['typeEcole'] === 'Fondamentale II') {
+        if ($data['typeEcole'] === 'Fondamentale I' || $data['typeEcole'] === 'Fondamentale II' || $data['typeEcole'] === 'Collège') {
             $data['nomFondamental'] = $data['nomEcole'];
             $data['nomLycee'] = null;
             $data['nomProfessionnel'] = null;

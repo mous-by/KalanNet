@@ -126,7 +126,7 @@ class MatiereController extends Controller
             return array_keys($this->allOrdres());
         }
 
-        if ($typeEcole === 'Fondamentale') {
+        if ($typeEcole === 'Fondamentale' || $typeEcole === 'Collège') {
             return ['Fondamentale I', 'Fondamentale II'];
         }
 

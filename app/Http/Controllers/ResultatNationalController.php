@@ -257,7 +257,7 @@ class ResultatNationalController extends Controller
             return ['DEF', 'BAC'];
         }
 
-        if (str_contains($type, 'fondamentale ii')) {
+        if (str_contains($type, 'fondamentale ii') || str_contains($type, 'college')) {
             return ['DEF'];
         }
 

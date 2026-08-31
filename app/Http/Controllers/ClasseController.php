@@ -287,6 +287,13 @@ class ClasseController extends Controller
             return $orders;
         }
 
+        if ($typeEcole === 'Collège') {
+            return [
+                'fondamentale1' => 'Fondamentale I (1 à 6)',
+                'fondamentale2' => 'Fondamentale II (7 à 9)',
+            ];
+        }
+
         if ($typeEcole === 'Fondamentale I') {
             return ['fondamentale1' => 'Fondamentale I (1 à 6)'];
         }

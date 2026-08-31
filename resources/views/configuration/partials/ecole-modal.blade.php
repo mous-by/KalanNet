@@ -20,7 +20,7 @@
                             <label class="form-label">Type</label>
                             <select name="typeEcole" class="form-select js-ecole-type" required>
                                 <option value="">Sélectionnez le type d'établissement</option>
-                                @foreach(['Complexe Scolaire', 'Fondamentale I', 'Fondamentale II', 'Secondaire Generale', 'Secondaire Technique et Professionnel'] as $type)
+                                @foreach(['Complexe Scolaire', 'Fondamentale I', 'Fondamentale II', 'Collège', 'Secondaire Generale', 'Secondaire Technique et Professionnel'] as $type)
                                     <option value="{{ $type }}" @selected(old('typeEcole', $ecole->typeEcole ?? '') === $type)>{{ $type }}</option>
                                 @endforeach
                             </select>
@@ -203,6 +203,7 @@
                     const type = selectedType();
                     return type === 'Fondamentale I'
                         || type === 'Fondamentale II'
+                        || type === 'Collège'
                         || type === 'Complexe Scolaire';
                 }
 

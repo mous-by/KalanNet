@@ -246,7 +246,7 @@
                 <li><a href="{{ route('finances.paiements') }}"><i class="bi bi-circle"></i>{{ __('messages.menu.student_payments') }}</a></li>
                 @endif
                 @php
-                    $isFondamentale = $user->ecole && in_array($user->ecole->typeEcole, ['Fondamentale I', 'Fondamentale II', 'Fondamental I', 'Fondamental II']);
+                    $isFondamentale = $user->ecole && in_array($user->ecole->typeEcole, ['Fondamentale I', 'Fondamentale II', 'Fondamental I', 'Fondamental II', 'Collège']);
                 @endphp
                 @if (!$isFondamentale && ($user->droit === 'SupAdmin' || $user->userHasAnyPermission(['subventions_etat_apercu', 'paiements_apercu'])))
                 <li><a href="{{ route('finances.subventions-etat') }}"><i class="bi bi-circle"></i>{{ __('messages.menu.state_subsidies') }}</a></li>
