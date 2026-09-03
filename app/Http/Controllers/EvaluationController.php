@@ -477,7 +477,7 @@ class EvaluationController extends Controller
                 ->where('type', 'notes_validation')
                 ->where(function ($query) use ($evaluation) {
                     $query->where('data->id_evaluation', $evaluation->id_evaluation)
-                        ->orWhere('link', route('evaluations.show', $evaluation->id_evaluation));
+                        ->orWhere('link', route('evaluations.show', $evaluation->id_evaluation, false));
                 })
                 ->exists();
 
@@ -493,7 +493,7 @@ class EvaluationController extends Controller
                     . ' a saisi des notes'
                     . ' - ' . ($firstLine->classe?->nom_classe ?? 'Classe')
                     . ' / ' . ($firstLine->matiere?->nom_matiere ?? 'Matière')),
-                'link' => route('evaluations.show', $evaluation->id_evaluation),
+                'link' => route('evaluations.show', $evaluation->id_evaluation, false),
                 'data' => [
                     'id_evaluation' => $evaluation->id_evaluation,
                     'id_classe' => $firstLine->id_classe,

@@ -322,7 +322,7 @@ class DashboardController extends Controller
                 'type' => 'abonnement',
                 'title' => 'Abonnement mis à jour',
                 'message' => $message,
-                'link' => route('abonnements.index'),
+                'link' => route('abonnements.index', [], false),
                 'data' => [
                     'event' => 'SUBSCRIPTION_DATES_UPDATED',
                     'abonnement_id' => $abonnement->id,

@@ -49,7 +49,7 @@
                         'type' => 'abonnement',
                         'title' => 'Avertissement abonnement',
                         'message' => $message,
-                        'link' => route('abonnements.index'),
+                        'link' => route('abonnements.index', [], false),
                         'data' => [
                             'event' => $subscriptionReminderState['blocked'] ? 'SUBSCRIPTION_BLOCKED' : 'SUBSCRIPTION_REMINDER',
                             'ecole_id' => $idEcole,

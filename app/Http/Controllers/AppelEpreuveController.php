@@ -214,7 +214,7 @@ class AppelEpreuveController extends Controller
                         'type' => 'controle',
                         'title' => 'Appel de présence',
                         'message' => $message,
-                        'link' => route('dashboard') . '#appel-presence-parent',
+                        'link' => route('dashboard', [], false) . '#appel-presence-parent',
                         'data' => ['event' => 'EXAM_CALL_STATUS', 'id_eleve' => $eleve->id_eleve],
                     ]);
                 });

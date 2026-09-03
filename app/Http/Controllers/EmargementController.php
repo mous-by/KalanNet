@@ -585,7 +585,7 @@ class EmargementController extends Controller
                     . ' a émargé'
                     . ' - ' . ($emargement->classe?->nom_classe ?? 'Classe')
                     . ' / ' . ($emargement->matiere?->nom_matiere ?? 'Matière')),
-                'link' => route('enseignants.emargements', ['valide' => 0]),
+                'link' => route('enseignants.emargements', ['valide' => 0], false),
                 'data' => [
                     'id_emargement' => $emargement->id_emargement,
                     'id_enseignant' => $emargement->id_enseignant,

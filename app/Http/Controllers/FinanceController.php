@@ -1543,7 +1543,7 @@ class FinanceController extends Controller
                 ->where('type', 'decaissement_validation')
                 ->where(function ($query) use ($decaissement) {
                     $query->where('data->id_decaissement', $decaissement->id_decaissement)
-                        ->orWhere('link', route('finances.depenses') . '#decaissement-' . $decaissement->id_decaissement);
+                        ->orWhere('link', route('finances.depenses', [], false) . '#decaissement-' . $decaissement->id_decaissement);
                 })
                 ->exists();
 
@@ -1558,7 +1558,7 @@ class FinanceController extends Controller
                 'message' => 'Une sortie de caisse de '
                     . number_format((float) $decaissement->montant_decaissement, 0, ',', ' ')
                     . ' FCFA attend votre validation.',
-                'link' => route('finances.depenses') . '#decaissement-' . $decaissement->id_decaissement,
+                'link' => route('finances.depenses', [], false) . '#decaissement-' . $decaissement->id_decaissement,
                 'data' => [
                     'id_decaissement' => $decaissement->id_decaissement,
                     'id_caisse' => $decaissement->id_caisse,
