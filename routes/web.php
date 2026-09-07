@@ -35,6 +35,11 @@ Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 Route::post('/login/select-school', [AuthController::class, 'selectSchool'])->name('login.select-school');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+// Public payment-provider callback (server-to-server) — no auth, CSRF-exempt
+// via bootstrap/app.php ('abonnements/webhook/*'). Signature is verified
+// inside AbonnementController::webhook()/AbonnementPaymentService for Wave.
+Route::post('/abonnements/webhook/{provider}', [AbonnementController::class, 'webhook'])->name('abonnements.webhook');
+
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/documentation', function () {
@@ -163,6 +168,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/finances/paiements/{id}/thermique', [FinanceController::class, 'downloadRecuThermique'])->name('finances.paiements.thermique');
     Route::get('/finances/paiements/{id}/download', [FinanceController::class, 'downloadRecu'])->name('finances.paiements.download');
     Route::get('/abonnements', [AbonnementController::class, 'index'])->name('abonnements.index');
+    Route::post('/abonnements/payer', [AbonnementController::class, 'payer'])->name('abonnements.payer');
     Route::post('/abonnements/paiements/manual-submit', [AbonnementController::class, 'manualSubmit'])->name('abonnements.paiements.manual');
     Route::post('/abonnements/paiements/{paiement}/approve', [AbonnementController::class, 'approvePaiement'])->name('abonnements.paiements.approve');
     Route::post('/abonnements/paiements/{paiement}/reject', [AbonnementController::class, 'rejectPaiement'])->name('abonnements.paiements.reject');
