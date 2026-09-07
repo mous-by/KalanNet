@@ -39,6 +39,11 @@ export default function PlusLayout() {
       <Stack.Screen name="appels-epreuves/new" options={{ title: "Nouvel appel d'épreuve" }} />
 
       <Stack.Screen name="abonnement/index" options={{ title: 'Abonnement' }} />
+
+      <Stack.Screen name="configuration/utilisateurs/index" options={{ title: 'Utilisateurs' }} />
+      <Stack.Screen name="configuration/utilisateurs/new" options={{ title: 'Nouvel utilisateur' }} />
+      <Stack.Screen name="configuration/utilisateurs/[id]/permissions" options={{ title: 'Permissions' }} />
+      <Stack.Screen name="configuration/ecoles" options={{ title: 'Écoles' }} />
     </Stack>
   );
 }

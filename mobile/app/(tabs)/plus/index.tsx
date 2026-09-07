@@ -39,7 +39,11 @@ const SECTIONS: { title: string; items: MenuItem[] }[] = [
   },
   {
     title: 'Administration',
-    items: [{ label: 'Abonnement', icon: 'star-circle', href: '/plus/abonnement', roles: ['SupAdmin', 'Admin'] }],
+    items: [
+      { label: 'Utilisateurs', icon: 'account-group', href: '/plus/configuration/utilisateurs', roles: ['SupAdmin', 'Admin', 'DAE', 'DCAP'] },
+      { label: 'Écoles', icon: 'domain', href: '/plus/configuration/ecoles', roles: ['SupAdmin'] },
+      { label: 'Abonnement', icon: 'star-circle', href: '/plus/abonnement', roles: ['SupAdmin', 'Admin'] },
+    ],
   },
 ];
 
