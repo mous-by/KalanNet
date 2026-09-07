@@ -44,6 +44,13 @@ export default function PlusLayout() {
       <Stack.Screen name="configuration/utilisateurs/new" options={{ title: 'Nouvel utilisateur' }} />
       <Stack.Screen name="configuration/utilisateurs/[id]/permissions" options={{ title: 'Permissions' }} />
       <Stack.Screen name="configuration/ecoles" options={{ title: 'Écoles' }} />
+      <Stack.Screen name="configuration/annees" options={{ title: 'Années scolaires' }} />
+      <Stack.Screen name="configuration/permissions" options={{ title: 'Permissions' }} />
+      <Stack.Screen name="configuration/academies" options={{ title: 'Académies' }} />
+      <Stack.Screen name="configuration/caps" options={{ title: 'CAP' }} />
+      <Stack.Screen name="configuration/types-notes" options={{ title: 'Types de notes' }} />
+      <Stack.Screen name="configuration/classes-officielles" options={{ title: 'Classes officielles' }} />
+      <Stack.Screen name="configuration/status-controles" options={{ title: 'Statuts de contrôle' }} />
     </Stack>
   );
 }
