@@ -8,6 +8,7 @@ import { PaperProvider } from 'react-native-paper';
 import 'react-native-reanimated';
 
 import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { OnboardingProvider, useOnboarding } from '@/context/OnboardingContext';
 import { ThemeProvider as AppThemeProvider, useAppTheme } from '@/context/ThemeContext';
 import { buildPaperTheme } from '@/lib/paperTheme';
 import { SURFACE } from '@/lib/themes';
@@ -37,32 +38,36 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AuthProvider>
-        <AppThemeProvider>
-          <SplashScreenController />
-          <RootLayoutNav />
-        </AppThemeProvider>
+        <OnboardingProvider>
+          <AppThemeProvider>
+            <SplashScreenController />
+            <RootLayoutNav />
+          </AppThemeProvider>
+        </OnboardingProvider>
       </AuthProvider>
     </GestureHandlerRootView>
   );
 }
 
 function SplashScreenController() {
-  const { isLoading } = useAuth();
+  const { isLoading: authLoading } = useAuth();
+  const { isLoading: onboardingLoading } = useOnboarding();
 
   useEffect(() => {
-    if (!isLoading) {
+    if (!authLoading && !onboardingLoading) {
       SplashScreen.hideAsync();
     }
-  }, [isLoading]);
+  }, [authLoading, onboardingLoading]);
 
   return null;
 }
 
 function RootLayoutNav() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
+  const { hasOnboarded, isLoading: onboardingLoading } = useOnboarding();
   const { theme } = useAppTheme();
 
-  if (isLoading) {
+  if (authLoading || onboardingLoading) {
     return null;
   }
 
@@ -92,7 +97,11 @@ function RootLayoutNav() {
             <Stack.Screen name="notifications" options={{ title: 'Notifications' }} />
           </Stack.Protected>
 
-          <Stack.Protected guard={!user}>
+          <Stack.Protected guard={!user && !hasOnboarded}>
+            <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+          </Stack.Protected>
+
+          <Stack.Protected guard={!user && hasOnboarded}>
             <Stack.Screen name="login" options={{ headerShown: false }} />
           </Stack.Protected>
         </Stack>
