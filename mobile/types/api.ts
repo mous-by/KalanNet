@@ -80,6 +80,11 @@ export interface Matiere {
   [key: string]: unknown;
 }
 
+export interface Trimestre {
+  id_trimestre: number;
+  [key: string]: unknown;
+}
+
 export interface AnneeScolaire {
   id_anneeScolaire: number;
   annee: string;

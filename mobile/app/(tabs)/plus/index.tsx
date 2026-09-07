@@ -17,6 +17,8 @@ const SECTIONS: { title: string; items: MenuItem[] }[] = [
     title: 'Pédagogie',
     items: [
       { label: 'Enseignants', icon: 'account-tie', href: '/plus/enseignants', roles: ['SupAdmin', 'Admin', 'Gestionnaire', 'DAE', 'DCAP'] },
+      { label: 'Emploi du temps', icon: 'calendar-clock', href: '/plus/timetable' },
+      { label: 'Évaluations', icon: 'clipboard-text', href: '/plus/evaluations' },
     ],
   },
 ];

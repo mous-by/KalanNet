@@ -4,7 +4,7 @@ import { clearToken, getToken } from './storage';
 // Set EXPO_PUBLIC_API_URL in mobile/.env for a real device/emulator (it
 // must be reachable from the phone, so "localhost" only works for the web
 // preview — use your machine's LAN IP or a tunnel for Android/iOS).
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8000/api/v1';
+export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8000/api/v1';
 
 export const api = axios.create({
   baseURL: API_URL,
