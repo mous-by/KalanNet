@@ -55,6 +55,15 @@ export default function EleveDetailScreen() {
         </View>
       ) : null}
 
+      {canManage ? (
+        <Button
+          mode="contained-tonal"
+          onPress={() => router.push(`/plus/finances/new?id_eleve=${eleve.id_eleve}`)}
+          style={styles.paymentButton}>
+          Enregistrer un paiement
+        </Button>
+      ) : null}
+
       <Card style={styles.card}>
         <Card.Title title="Informations" />
         <Card.Content>
@@ -151,6 +160,9 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
+  },
+  paymentButton: {
+    marginBottom: 16,
   },
   card: {
     marginBottom: 14,

@@ -21,7 +21,12 @@ const SECTIONS: { title: string; items: MenuItem[] }[] = [
       { label: 'Évaluations', icon: 'clipboard-text', href: '/plus/evaluations' },
       { label: 'Émargements', icon: 'notebook-check', href: '/plus/emargements', roles: ['SupAdmin', 'Admin', 'Gestionnaire', 'enseignant'] },
       { label: 'Présences', icon: 'account-check', href: '/plus/presences', roles: ['SupAdmin', 'Admin', 'Gestionnaire', 'enseignant'] },
+      { label: 'Bulletins', icon: 'file-document', href: '/plus/bulletins', roles: ['SupAdmin', 'Admin', 'Gestionnaire', 'DAE', 'DCAP'] },
     ],
+  },
+  {
+    title: 'Finances',
+    items: [{ label: 'Paiements', icon: 'cash-multiple', href: '/plus/finances', roles: ['SupAdmin', 'Admin', 'Gestionnaire'] }],
   },
 ];
 

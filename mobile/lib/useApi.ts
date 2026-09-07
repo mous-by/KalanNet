@@ -100,7 +100,10 @@ export function useApiGet<T>(endpoint: string | null, deps: unknown[] = []) {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    if (!endpoint) return;
+    if (!endpoint) {
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     setError(null);
     try {
