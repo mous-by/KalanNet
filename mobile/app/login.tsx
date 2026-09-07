@@ -1,15 +1,19 @@
 import { useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Dimensions, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Card, List, Text, TextInput } from 'react-native-paper';
 
 import BrandLogo from '@/components/BrandLogo';
 import BrandTitle from '@/components/BrandTitle';
+import LoginCarousel from '@/components/LoginCarousel';
 import ThemeDots from '@/components/ThemeDots';
 import { useAuth } from '@/context/AuthContext';
 import { apiErrorMessage } from '@/lib/api';
 import { ThemeKey, getTheme } from '@/lib/themes';
 import { AccountChoice } from '@/types/api';
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const HERO_HEIGHT = Math.min(Math.round(SCREEN_HEIGHT * 0.42), 420);
 
 export default function LoginScreen() {
   const { login, selectSchool, pendingAccounts, cancelSchoolSelection } = useAuth();
@@ -48,19 +52,21 @@ export default function LoginScreen() {
   }
 
   return (
-    <View style={[styles.background, { backgroundColor: previewTheme.chrome }]}>
+    <View style={styles.screen}>
+      <View style={styles.hero}>
+        <LoginCarousel />
+        <LinearGradient colors={['rgba(255,255,255,0)', '#ffffff']} style={styles.heroFade} />
+      </View>
+
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <View style={styles.card}>
-            <View style={styles.topBar} />
-
-            <View style={styles.brand}>
-              <BrandLogo size={72} />
-              <BrandTitle fontSize={26} />
-              <Text style={styles.subtitle}>SYSTÈME DE GESTION SCOLAIRE</Text>
+          <View style={styles.sheet}>
+            <View style={styles.brandRow}>
+              <BrandLogo size={40} />
+              <BrandTitle fontSize={20} />
             </View>
 
-            <ThemeDots value={previewThemeKey} onChange={setPreviewThemeKey} size={18} />
+            <ThemeDots value={previewThemeKey} onChange={setPreviewThemeKey} size={16} />
 
             {pendingAccounts ? (
               <View style={styles.schoolPicker}>
@@ -138,52 +144,53 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  background: {
+  screen: {
     flex: 1,
+    backgroundColor: '#ffffff',
+  },
+  hero: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: HERO_HEIGHT,
+    overflow: 'hidden',
+  },
+  heroFade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 120,
   },
   flex: {
     flex: 1,
   },
   content: {
     flexGrow: 1,
-    justifyContent: 'center',
-    padding: 24,
+    paddingTop: HERO_HEIGHT - 40,
   },
-  card: {
+  sheet: {
     backgroundColor: '#ffffff',
-    borderRadius: 20,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     padding: 24,
-    maxWidth: 420,
-    width: '100%',
-    alignSelf: 'center',
-    overflow: 'hidden',
+    paddingBottom: 32,
     shadowColor: '#0a1223',
-    shadowOpacity: 0.3,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 16 },
-    elevation: 8,
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: -6 },
+    elevation: 6,
   },
-  topBar: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 4,
-    backgroundColor: '#2563eb',
-  },
-  brand: {
+  brandRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
     marginBottom: 16,
   },
-  subtitle: {
-    marginTop: 8,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    color: '#64748b',
-  },
   schoolPicker: {
-    marginTop: 8,
+    marginTop: 16,
   },
   schoolPickerTitle: {
     fontWeight: '600',
@@ -203,7 +210,7 @@ const styles = StyleSheet.create({
     color: '#1f8a4c',
   },
   form: {
-    marginTop: 20,
+    marginTop: 16,
   },
   input: {
     marginBottom: 14,
