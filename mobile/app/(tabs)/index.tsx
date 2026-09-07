@@ -2,11 +2,14 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 
+import AdminDashboardView, { AdminDashboardData } from '@/components/dashboard/AdminDashboardView';
 import { useAuth } from '@/context/AuthContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { SURFACE } from '@/lib/themes';
 
 type DashboardData = Record<string, unknown>;
+
+const STAFF_ROLES = ['SupAdmin', 'Admin', 'Gestionnaire', 'DAE', 'DCAP'];
 
 function humanizeKey(key: string): string {
   return key.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase());
@@ -19,11 +22,9 @@ function formatValue(value: unknown): string {
   return String(value);
 }
 
-// The web dashboard's shape differs a lot by role (SupAdmin/Admin/enseignant/
-// parent) and isn't fixed — see docs/API.md. This renders whatever comes
-// back generically as a starting point; each role will get a dedicated,
-// hand-designed screen once the mobile UI work moves past this scaffold.
-function DashboardFields({ data }: { data: DashboardData }) {
+// Fallback for roles without a dedicated dashboard view yet (enseignant,
+// parent) — renders whatever the API returns generically.
+function GenericDashboardFields({ data }: { data: DashboardData }) {
   const entries = Object.entries(data);
 
   if (entries.length === 0) {
@@ -72,13 +73,18 @@ export default function DashboardScreen() {
     load({ silent: true });
   }
 
+  const isStaff = user?.droit && STAFF_ROLES.includes(user.droit);
+
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}>
-      <Text style={styles.greeting}>Bonjour, {user?.nom_prenom ?? ''}</Text>
-      <Text style={styles.school}>{user?.ecole?.nom ?? user?.droit}</Text>
+      <Text style={styles.greeting}>Bonjour, {user?.nom_prenom ?? ''} 👋</Text>
+      <Text style={styles.school}>
+        {user?.fonction ?? user?.droit}
+        {user?.ecole?.nom ? ` · ${user.ecole.nom}` : ''}
+      </Text>
 
       {subscriptionBlocked ? (
         <View style={styles.warningBanner}>
@@ -92,8 +98,10 @@ export default function DashboardScreen() {
         <ActivityIndicator style={styles.spinner} size="large" />
       ) : error ? (
         <Text style={styles.error}>{error}</Text>
+      ) : isStaff ? (
+        <AdminDashboardView data={data as unknown as AdminDashboardData} />
       ) : (
-        <DashboardFields data={data ?? {}} />
+        <GenericDashboardFields data={data ?? {}} />
       )}
     </ScrollView>
   );
