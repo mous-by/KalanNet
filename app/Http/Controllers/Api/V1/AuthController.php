@@ -11,6 +11,7 @@ use App\Support\SubscriptionGate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Validation\Rule;
 
 class AuthController extends Controller
 {
@@ -134,6 +135,19 @@ class AuthController extends Controller
 
         $user = $request->user();
         $user->theme_preference = $data['theme'];
+        $user->save();
+
+        return response()->json(['user' => new UserResource($user)]);
+    }
+
+    public function updateLocale(Request $request)
+    {
+        $data = $request->validate([
+            'locale' => ['required', 'string', Rule::in(array_keys(config('app.supported_locales', [])))],
+        ]);
+
+        $user = $request->user();
+        $user->locale_preference = $data['locale'];
         $user->save();
 
         return response()->json(['user' => new UserResource($user)]);
