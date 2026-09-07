@@ -19,6 +19,8 @@ const SECTIONS: { title: string; items: MenuItem[] }[] = [
       { label: 'Enseignants', icon: 'account-tie', href: '/plus/enseignants', roles: ['SupAdmin', 'Admin', 'Gestionnaire', 'DAE', 'DCAP'] },
       { label: 'Emploi du temps', icon: 'calendar-clock', href: '/plus/timetable' },
       { label: 'Évaluations', icon: 'clipboard-text', href: '/plus/evaluations' },
+      { label: 'Émargements', icon: 'notebook-check', href: '/plus/emargements', roles: ['SupAdmin', 'Admin', 'Gestionnaire', 'enseignant'] },
+      { label: 'Présences', icon: 'account-check', href: '/plus/presences', roles: ['SupAdmin', 'Admin', 'Gestionnaire', 'enseignant'] },
     ],
   },
 ];
