@@ -1,15 +1,16 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { DefaultTheme, Stack, ThemeProvider as NavigationThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { PaperProvider } from 'react-native-paper';
 import 'react-native-reanimated';
 
-import { useColorScheme } from '@/components/useColorScheme';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
-import { paperDarkTheme, paperLightTheme } from '@/lib/paperTheme';
+import { ThemeProvider as AppThemeProvider, useAppTheme } from '@/context/ThemeContext';
+import { buildPaperTheme } from '@/lib/paperTheme';
+import { SURFACE } from '@/lib/themes';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -36,8 +37,10 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AuthProvider>
-        <SplashScreenController />
-        <RootLayoutNav />
+        <AppThemeProvider>
+          <SplashScreenController />
+          <RootLayoutNav />
+        </AppThemeProvider>
       </AuthProvider>
     </GestureHandlerRootView>
   );
@@ -56,20 +59,34 @@ function SplashScreenController() {
 }
 
 function RootLayoutNav() {
-  const colorScheme = useColorScheme();
   const { user, isLoading } = useAuth();
+  const { theme } = useAppTheme();
 
   if (isLoading) {
     return null;
   }
 
-  const navTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
-  const paperTheme = colorScheme === 'dark' ? paperDarkTheme : paperLightTheme;
+  const paperTheme = buildPaperTheme(theme);
+  const navTheme = {
+    ...DefaultTheme,
+    colors: {
+      ...DefaultTheme.colors,
+      primary: theme.accent,
+      background: SURFACE.background,
+      card: theme.chrome,
+      text: SURFACE.text,
+      border: SURFACE.border,
+    },
+  };
 
   return (
     <PaperProvider theme={paperTheme} settings={{ icon: (props) => <MaterialCommunityIcons {...props} /> }}>
-      <ThemeProvider value={navTheme}>
-        <Stack>
+      <NavigationThemeProvider value={navTheme}>
+        <Stack
+          screenOptions={{
+            headerStyle: { backgroundColor: theme.chrome },
+            headerTintColor: theme.onChrome,
+          }}>
           <Stack.Protected guard={!!user}>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="notifications" options={{ title: 'Notifications' }} />
@@ -79,7 +96,7 @@ function RootLayoutNav() {
             <Stack.Screen name="login" options={{ headerShown: false }} />
           </Stack.Protected>
         </Stack>
-      </ThemeProvider>
+      </NavigationThemeProvider>
     </PaperProvider>
   );
 }

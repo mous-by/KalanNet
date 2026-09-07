@@ -5,7 +5,7 @@ import { Badge, IconButton } from 'react-native-paper';
 
 import { api } from '@/lib/api';
 
-export default function NotificationBell() {
+export default function NotificationBell({ color }: { color?: string }) {
   const [count, setCount] = useState(0);
 
   const load = useCallback(() => {
@@ -23,7 +23,7 @@ export default function NotificationBell() {
 
   return (
     <View style={{ marginRight: 4 }}>
-      <IconButton icon="bell-outline" onPress={() => router.push('/notifications')} />
+      <IconButton icon="bell-outline" iconColor={color} onPress={() => router.push('/notifications')} />
       {count > 0 ? (
         <Badge style={{ position: 'absolute', top: 4, right: 4 }} size={16}>
           {count > 99 ? '99+' : count}

@@ -1,20 +1,22 @@
 import { SymbolView } from 'expo-symbols';
 import { Tabs } from 'expo-router';
 
-import Colors from '@/constants/Colors';
 import NotificationBell from '@/components/NotificationBell';
-import { useColorScheme } from '@/components/useColorScheme';
-import { useClientOnlyValue } from '@/components/useClientOnlyValue';
+import { useAppTheme } from '@/context/ThemeContext';
+import { withOpacity } from '@/lib/themes';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const { theme } = useAppTheme();
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme].tint,
-        headerShown: useClientOnlyValue(false, true),
-        headerRight: () => <NotificationBell />,
+        headerStyle: { backgroundColor: theme.chrome },
+        headerTintColor: theme.onChrome,
+        headerRight: () => <NotificationBell color={theme.onChrome} />,
+        tabBarStyle: { backgroundColor: theme.chrome },
+        tabBarActiveTintColor: theme.onChrome,
+        tabBarInactiveTintColor: withOpacity(theme.onChrome, 0.55),
       }}>
       <Tabs.Screen
         name="index"

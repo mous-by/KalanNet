@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet } from 'react-native';
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from 'react-native-paper';
 
-import { Text, View } from '@/components/Themed';
 import { useAuth } from '@/context/AuthContext';
 import { api, apiErrorMessage } from '@/lib/api';
+import { SURFACE } from '@/lib/themes';
 
 type DashboardData = Record<string, unknown>;
 
@@ -101,6 +102,7 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: SURFACE.background,
   },
   content: {
     padding: 20,
@@ -108,10 +110,11 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: 22,
     fontWeight: 'bold',
+    color: SURFACE.text,
   },
   school: {
     fontSize: 14,
-    opacity: 0.6,
+    color: SURFACE.muted,
     marginTop: 4,
     marginBottom: 20,
   },
@@ -133,7 +136,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   muted: {
-    opacity: 0.6,
+    color: SURFACE.muted,
   },
   grid: {
     flexDirection: 'row',
@@ -142,18 +145,20 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '47%',
+    backgroundColor: SURFACE.card,
     borderWidth: 1,
-    borderColor: 'rgba(128,128,128,0.25)',
+    borderColor: SURFACE.border,
     borderRadius: 12,
     padding: 14,
   },
   cardLabel: {
     fontSize: 12,
-    opacity: 0.6,
+    color: SURFACE.muted,
     marginBottom: 6,
   },
   cardValue: {
     fontSize: 18,
     fontWeight: '600',
+    color: SURFACE.text,
   },
 });

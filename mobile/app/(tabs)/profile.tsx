@@ -1,7 +1,9 @@
-import { Pressable, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { Button, Text } from 'react-native-paper';
 
-import { Text, View } from '@/components/Themed';
+import ThemeSwitcher from '@/components/ThemeSwitcher';
 import { useAuth } from '@/context/AuthContext';
+import { SURFACE } from '@/lib/themes';
 
 function Row({ label, value }: { label: string; value: string | null | undefined }) {
   if (!value) return null;
@@ -17,7 +19,7 @@ export default function ProfileScreen() {
   const { user, logout } = useAuth();
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.name}>{user?.nom_prenom}</Text>
       <Text style={styles.role}>{user?.droit}</Text>
 
@@ -28,55 +30,63 @@ export default function ProfileScreen() {
         <Row label="Téléphone" value={user?.telephone} />
       </View>
 
-      <Pressable style={styles.logoutButton} onPress={logout}>
-        <Text style={styles.logoutText}>Se déconnecter</Text>
-      </Pressable>
-    </View>
+      <Text style={styles.sectionTitle}>Thème de l'application</Text>
+      <ThemeSwitcher />
+
+      <Button mode="contained" buttonColor="#d33" onPress={logout} style={styles.logoutButton}>
+        Se déconnecter
+      </Button>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: SURFACE.background,
+  },
+  content: {
     padding: 24,
+    paddingBottom: 48,
   },
   name: {
     fontSize: 22,
     fontWeight: 'bold',
+    color: SURFACE.text,
   },
   role: {
     fontSize: 14,
-    opacity: 0.6,
+    color: SURFACE.muted,
     marginTop: 4,
     marginBottom: 24,
   },
   section: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(128,128,128,0.4)',
+    borderColor: SURFACE.border,
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(128,128,128,0.4)',
+    borderColor: SURFACE.border,
   },
   rowLabel: {
-    opacity: 0.6,
+    color: SURFACE.muted,
   },
   rowValue: {
     fontWeight: '500',
+    color: SURFACE.text,
+  },
+  sectionTitle: {
+    fontWeight: '600',
+    fontSize: 16,
+    color: SURFACE.text,
+    marginTop: 32,
+    marginBottom: 16,
   },
   logoutButton: {
     marginTop: 32,
-    backgroundColor: '#d33',
     borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  logoutText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });
