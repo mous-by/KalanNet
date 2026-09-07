@@ -8,6 +8,7 @@ import { PaperProvider } from 'react-native-paper';
 import 'react-native-reanimated';
 
 import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { LocaleProvider, useLocale } from '@/context/LocaleContext';
 import { OnboardingProvider, useOnboarding } from '@/context/OnboardingContext';
 import { ThemeProvider as AppThemeProvider, useAppTheme } from '@/context/ThemeContext';
 import { buildPaperTheme } from '@/lib/paperTheme';
@@ -38,12 +39,14 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AuthProvider>
-        <OnboardingProvider>
-          <AppThemeProvider>
-            <SplashScreenController />
-            <RootLayoutNav />
-          </AppThemeProvider>
-        </OnboardingProvider>
+        <LocaleProvider>
+          <OnboardingProvider>
+            <AppThemeProvider>
+              <SplashScreenController />
+              <RootLayoutNav />
+            </AppThemeProvider>
+          </OnboardingProvider>
+        </LocaleProvider>
       </AuthProvider>
     </GestureHandlerRootView>
   );
@@ -66,6 +69,7 @@ function RootLayoutNav() {
   const { user, isLoading: authLoading } = useAuth();
   const { hasOnboarded, isLoading: onboardingLoading } = useOnboarding();
   const { theme } = useAppTheme();
+  const { t } = useLocale();
 
   if (authLoading || onboardingLoading) {
     return null;
@@ -94,7 +98,7 @@ function RootLayoutNav() {
           }}>
           <Stack.Protected guard={!!user}>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="notifications" options={{ title: 'Notifications' }} />
+            <Stack.Screen name="notifications" options={{ title: t('notifications.title') }} />
           </Stack.Protected>
 
           <Stack.Protected guard={!user && !hasOnboarded}>

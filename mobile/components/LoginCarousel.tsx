@@ -10,7 +10,11 @@ const SLIDES = [
 const INTERVAL_MS = 4500;
 const FADE_MS = 700;
 
-export default function LoginCarousel() {
+interface Props {
+  onIndexChange?: (index: number) => void;
+}
+
+export default function LoginCarousel({ onIndexChange }: Props) {
   const [index, setIndex] = useState(0);
   const opacities = useRef(SLIDES.map((_, i) => new Animated.Value(i === 0 ? 1 : 0))).current;
 
@@ -22,6 +26,7 @@ export default function LoginCarousel() {
           Animated.timing(opacities[current], { toValue: 0, duration: FADE_MS, useNativeDriver: true }),
           Animated.timing(opacities[next], { toValue: 1, duration: FADE_MS, useNativeDriver: true }),
         ]).start();
+        onIndexChange?.(next);
         return next;
       });
     }, INTERVAL_MS);

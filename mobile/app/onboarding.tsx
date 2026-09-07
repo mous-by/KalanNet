@@ -6,44 +6,48 @@ import { Button, Text } from 'react-native-paper';
 import BrandLogo from '@/components/BrandLogo';
 import BrandTitle from '@/components/BrandTitle';
 import { useOnboarding } from '@/context/OnboardingContext';
+import { useLocale } from '@/context/LocaleContext';
+import { TranslationKey } from '@/lib/i18n';
 
 const { width } = Dimensions.get('window');
 
 interface ModuleItem {
   icon: keyof typeof MaterialCommunityIcons.glyphMap;
   color: string;
-  label: string;
+  labelKey: TranslationKey;
 }
 
 const MODULES: ModuleItem[] = [
-  { icon: 'account-group', color: '#16a34a', label: 'Élèves et inscriptions' },
-  { icon: 'clipboard-text', color: '#2563eb', label: 'Notes et bulletins' },
-  { icon: 'calendar-check', color: '#d97706', label: 'Présences et emploi du temps' },
-  { icon: 'cash-multiple', color: '#7c3aed', label: 'Finances et paiements' },
-  { icon: 'message-text', color: '#dc2626', label: 'Communication avec les parents' },
+  { icon: 'account-group', color: '#16a34a', labelKey: 'onboarding.module.students' },
+  { icon: 'clipboard-text', color: '#2563eb', labelKey: 'onboarding.module.grades' },
+  { icon: 'calendar-check', color: '#d97706', labelKey: 'onboarding.module.attendance' },
+  { icon: 'cash-multiple', color: '#7c3aed', labelKey: 'onboarding.module.finances' },
+  { icon: 'message-text', color: '#dc2626', labelKey: 'onboarding.module.communication' },
 ];
 
 function Slide1() {
+  const { t } = useLocale();
   return (
     <View style={styles.slide}>
       <BrandLogo size={96} />
       <BrandTitle fontSize={32} />
-      <Text style={styles.tagline}>La vie de votre école réunie en un seul endroit.</Text>
+      <Text style={styles.tagline}>{t('onboarding.tagline')}</Text>
     </View>
   );
 }
 
 function Slide2() {
+  const { t } = useLocale();
   return (
     <View style={styles.slide}>
-      <Text style={styles.slideTitle}>Une gestion scolaire{'\n'}plus simple, plus efficace.</Text>
+      <Text style={styles.slideTitle}>{t('onboarding.modules_title')}</Text>
       <View style={styles.moduleList}>
         {MODULES.map((item) => (
-          <View key={item.label} style={styles.moduleRow}>
+          <View key={item.labelKey} style={styles.moduleRow}>
             <View style={[styles.moduleIcon, { backgroundColor: item.color }]}>
               <MaterialCommunityIcons name={item.icon} size={22} color="#fff" />
             </View>
-            <Text style={styles.moduleLabel}>{item.label}</Text>
+            <Text style={styles.moduleLabel}>{t(item.labelKey)}</Text>
           </View>
         ))}
       </View>
@@ -52,13 +56,14 @@ function Slide2() {
 }
 
 function Slide3() {
+  const { t } = useLocale();
   return (
     <View style={styles.slide}>
       <View style={[styles.moduleIcon, styles.closingIcon]}>
         <MaterialCommunityIcons name="account-group" size={40} color="#fff" />
       </View>
-      <Text style={styles.slideTitle}>Ensemble pour une école{'\n'}plus performante !</Text>
-      <Text style={styles.tagline}>Administrateurs, enseignants et parents réunis sur une seule application.</Text>
+      <Text style={styles.slideTitle}>{t('onboarding.closing_title')}</Text>
+      <Text style={styles.tagline}>{t('onboarding.closing_tagline')}</Text>
     </View>
   );
 }
@@ -69,6 +74,7 @@ export default function OnboardingScreen() {
   const [index, setIndex] = useState(0);
   const listRef = useRef<FlatList>(null);
   const { markOnboarded } = useOnboarding();
+  const { t } = useLocale();
 
   function finish() {
     // No explicit navigation: the root layout's Stack.Protected guard
@@ -93,7 +99,7 @@ export default function OnboardingScreen() {
   return (
     <View style={styles.container}>
       <Pressable style={styles.skip} onPress={finish}>
-        <Text style={styles.skipText}>Passer</Text>
+        <Text style={styles.skipText}>{t('onboarding.skip')}</Text>
       </Pressable>
 
       <FlatList
@@ -120,7 +126,7 @@ export default function OnboardingScreen() {
         </View>
 
         <Button mode="contained" onPress={handleNext} style={styles.nextButton} contentStyle={styles.nextButtonContent}>
-          {index === SLIDES.length - 1 ? 'Commencer maintenant' : 'Suivant'}
+          {index === SLIDES.length - 1 ? t('onboarding.start') : t('onboarding.next')}
         </Button>
       </View>
     </View>

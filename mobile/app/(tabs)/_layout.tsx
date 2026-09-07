@@ -2,13 +2,16 @@ import { SymbolView } from 'expo-symbols';
 import { Tabs } from 'expo-router';
 import { View } from 'react-native';
 
+import LanguageMenuButton from '@/components/LanguageMenuButton';
 import NotificationBell from '@/components/NotificationBell';
 import ThemeMenuButton from '@/components/ThemeMenuButton';
+import { useLocale } from '@/context/LocaleContext';
 import { useAppTheme } from '@/context/ThemeContext';
 import { withOpacity } from '@/lib/themes';
 
 export default function TabLayout() {
   const { theme } = useAppTheme();
+  const { t } = useLocale();
 
   return (
     <Tabs
@@ -17,6 +20,7 @@ export default function TabLayout() {
         headerTintColor: theme.onChrome,
         headerRight: () => (
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <LanguageMenuButton color={theme.onChrome} />
             <ThemeMenuButton color={theme.onChrome} />
             <NotificationBell color={theme.onChrome} />
           </View>
@@ -28,7 +32,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Accueil',
+          title: t('tabs.home'),
           tabBarIcon: ({ color }) => (
             <SymbolView
               name={{ ios: 'house.fill', android: 'home', web: 'home' }}
@@ -41,7 +45,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="eleves"
         options={{
-          title: 'Élèves',
+          title: t('tabs.students'),
           headerShown: false,
           tabBarIcon: ({ color }) => (
             <SymbolView
@@ -55,7 +59,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="classes"
         options={{
-          title: 'Classes',
+          title: t('tabs.classes'),
           headerShown: false,
           tabBarIcon: ({ color }) => (
             <SymbolView
@@ -69,7 +73,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="plus"
         options={{
-          title: 'Plus',
+          title: t('tabs.more'),
           headerShown: false,
           tabBarIcon: ({ color }) => (
             <SymbolView
@@ -83,7 +87,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profil',
+          title: t('tabs.profile'),
           tabBarIcon: ({ color }) => (
             <SymbolView
               name={{ ios: 'person.fill', android: 'person', web: 'person' }}

@@ -5,23 +5,37 @@ import { ActivityIndicator, Card, List, Text, TextInput } from 'react-native-pap
 
 import BrandLogo from '@/components/BrandLogo';
 import BrandTitle from '@/components/BrandTitle';
+import LanguageRow from '@/components/LanguageRow';
 import LoginCarousel from '@/components/LoginCarousel';
 import ThemeDots from '@/components/ThemeDots';
 import { useAuth } from '@/context/AuthContext';
+import { useLocale } from '@/context/LocaleContext';
 import { apiErrorMessage } from '@/lib/api';
+import { TranslationKey } from '@/lib/i18n';
 import { ThemeKey, getTheme } from '@/lib/themes';
 import { AccountChoice } from '@/types/api';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const HERO_HEIGHT = Math.min(Math.round(SCREEN_HEIGHT * 0.42), 420);
 
+// Captions matched to each background photo, one per slide index — mirrors
+// the rotating quote shown on the web login page (lang/*/messages.php
+// auth.slideN_title/quote), reusing the same three slides' wording.
+const SLIDE_CAPTIONS: [TranslationKey, TranslationKey][] = [
+  ['auth.slide1_title', 'auth.slide1_quote'],
+  ['auth.slide2_title', 'auth.slide2_quote'],
+  ['auth.slide3_title', 'auth.slide3_quote'],
+];
+
 export default function LoginScreen() {
   const { login, selectSchool, pendingAccounts, cancelSchoolSelection } = useAuth();
+  const { t, locale, setLocale } = useLocale();
   const [identifier, setIdentifier] = useState('');
   const [pwd, setPwd] = useState('');
   const [secure, setSecure] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [slideIndex, setSlideIndex] = useState(0);
   // No account is signed in yet, so this only previews the look — the real
   // preference (saved server-side) takes over right after login.
   const [previewThemeKey, setPreviewThemeKey] = useState<ThemeKey>('vert');
@@ -33,7 +47,7 @@ export default function LoginScreen() {
     try {
       await login(identifier.trim(), pwd);
     } catch (err) {
-      setError(apiErrorMessage(err, 'Identifiant ou mot de passe incorrect.'));
+      setError(apiErrorMessage(err, t('auth.invalid_credentials')));
     } finally {
       setIsSubmitting(false);
     }
@@ -45,16 +59,18 @@ export default function LoginScreen() {
     try {
       await selectSchool(account.id_utilisateur, account.id_ecole!);
     } catch (err) {
-      setError(apiErrorMessage(err, 'Impossible de se connecter à cette école.'));
+      setError(apiErrorMessage(err, t('auth.school_selection_error')));
     } finally {
       setIsSubmitting(false);
     }
   }
 
+  const [captionTitleKey, captionQuoteKey] = SLIDE_CAPTIONS[slideIndex];
+
   return (
     <View style={styles.screen}>
       <View style={styles.hero}>
-        <LoginCarousel />
+        <LoginCarousel onIndexChange={setSlideIndex} />
         <LinearGradient colors={['rgba(255,255,255,0)', '#ffffff']} style={styles.heroFade} />
       </View>
 
@@ -67,10 +83,11 @@ export default function LoginScreen() {
             </View>
 
             <ThemeDots value={previewThemeKey} onChange={setPreviewThemeKey} size={16} />
+            <LanguageRow value={locale} onChange={setLocale} />
 
             {pendingAccounts ? (
               <View style={styles.schoolPicker}>
-                <Text style={styles.schoolPickerTitle}>Choisissez une école</Text>
+                <Text style={styles.schoolPickerTitle}>{t('auth.choose_school')}</Text>
                 <Card style={styles.schoolCard}>
                   {pendingAccounts.map((account, index) => (
                     <List.Item
@@ -86,15 +103,15 @@ export default function LoginScreen() {
                 </Card>
                 {error ? <Text style={styles.error}>{error}</Text> : null}
                 <Text style={styles.backLink} onPress={cancelSchoolSelection}>
-                  Retour
+                  {t('auth.back')}
                 </Text>
               </View>
             ) : (
               <View style={styles.form}>
                 <TextInput
                   mode="outlined"
-                  label="Identifiant"
-                  placeholder="Email ou téléphone"
+                  label={t('auth.identifier')}
+                  placeholder={t('auth.identifier_placeholder')}
                   autoCapitalize="none"
                   keyboardType="email-address"
                   value={identifier}
@@ -104,7 +121,7 @@ export default function LoginScreen() {
                 />
                 <TextInput
                   mode="outlined"
-                  label="Mot de passe"
+                  label={t('auth.password')}
                   secureTextEntry={secure}
                   value={pwd}
                   onChangeText={setPwd}
@@ -124,12 +141,17 @@ export default function LoginScreen() {
                     {isSubmitting ? (
                       <ActivityIndicator color="#fff" size="small" />
                     ) : (
-                      <Text style={styles.submitButtonText}>Se connecter</Text>
+                      <Text style={styles.submitButtonText}>{t('auth.login')}</Text>
                     )}
                   </LinearGradient>
                 </Pressable>
               </View>
             )}
+
+            <View style={styles.caption}>
+              <Text style={styles.captionTitle}>{t(captionTitleKey)}</Text>
+              <Text style={styles.captionQuote}>{t(captionQuoteKey)}</Text>
+            </View>
 
             <Text style={styles.footer}>
               © {new Date().getFullYear()} <Text style={styles.footerKal}>Kal</Text>
@@ -210,7 +232,7 @@ const styles = StyleSheet.create({
     color: '#1f8a4c',
   },
   form: {
-    marginTop: 16,
+    marginTop: 4,
   },
   input: {
     marginBottom: 14,
@@ -235,9 +257,26 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 8,
   },
+  caption: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  captionTitle: {
+    fontWeight: '700',
+    fontSize: 13,
+    color: '#0f172a',
+    textAlign: 'center',
+  },
+  captionQuote: {
+    fontSize: 12,
+    color: '#64748b',
+    textAlign: 'center',
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
   footer: {
     textAlign: 'center',
-    marginTop: 20,
+    marginTop: 16,
     fontSize: 12,
     color: '#64748b',
   },

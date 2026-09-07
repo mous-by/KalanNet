@@ -2,6 +2,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 
 import { useAuth } from '@/context/AuthContext';
+import { useLocale } from '@/context/LocaleContext';
 import { SURFACE } from '@/lib/themes';
 
 function Row({ label, value }: { label: string; value: string | null | undefined }) {
@@ -16,6 +17,7 @@ function Row({ label, value }: { label: string; value: string | null | undefined
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
+  const { t } = useLocale();
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -23,14 +25,14 @@ export default function ProfileScreen() {
       <Text style={styles.role}>{user?.droit}</Text>
 
       <View style={styles.section}>
-        <Row label="École" value={user?.ecole?.nom} />
-        <Row label="Fonction" value={user?.fonction} />
-        <Row label="Email" value={user?.email} />
-        <Row label="Téléphone" value={user?.telephone} />
+        <Row label={t('profile.school')} value={user?.ecole?.nom} />
+        <Row label={t('profile.function')} value={user?.fonction} />
+        <Row label={t('profile.email')} value={user?.email} />
+        <Row label={t('profile.phone')} value={user?.telephone} />
       </View>
 
       <Button mode="contained" buttonColor="#d33" onPress={logout} style={styles.logoutButton}>
-        Se déconnecter
+        {t('profile.logout')}
       </Button>
     </ScrollView>
   );

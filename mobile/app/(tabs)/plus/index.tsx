@@ -3,52 +3,55 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { Divider, List } from 'react-native-paper';
 
 import { useAuth } from '@/context/AuthContext';
+import { useLocale } from '@/context/LocaleContext';
+import { TranslationKey } from '@/lib/i18n';
 import { Droit } from '@/types/api';
 
 interface MenuItem {
-  label: string;
+  labelKey: TranslationKey;
   icon: string;
   href: string;
   roles?: Droit[];
 }
 
-const SECTIONS: { title: string; items: MenuItem[] }[] = [
+const SECTIONS: { titleKey: TranslationKey; items: MenuItem[] }[] = [
   {
-    title: 'Pédagogie',
+    titleKey: 'plus.section_pedagogy',
     items: [
-      { label: 'Enseignants', icon: 'account-tie', href: '/plus/enseignants', roles: ['SupAdmin', 'Admin', 'Gestionnaire', 'DAE', 'DCAP'] },
-      { label: 'Emploi du temps', icon: 'calendar-clock', href: '/plus/timetable' },
-      { label: 'Évaluations', icon: 'clipboard-text', href: '/plus/evaluations' },
-      { label: 'Émargements', icon: 'notebook-check', href: '/plus/emargements', roles: ['SupAdmin', 'Admin', 'Gestionnaire', 'enseignant'] },
-      { label: 'Présences', icon: 'account-check', href: '/plus/presences', roles: ['SupAdmin', 'Admin', 'Gestionnaire', 'enseignant'] },
-      { label: 'Bulletins', icon: 'file-document', href: '/plus/bulletins', roles: ['SupAdmin', 'Admin', 'Gestionnaire', 'DAE', 'DCAP'] },
-      { label: 'Résultats nationaux', icon: 'school', href: '/plus/resultats-nationaux', roles: ['SupAdmin', 'Admin', 'Gestionnaire', 'DAE', 'DCAP'] },
-      { label: "Appels d'épreuves", icon: 'alert-circle-outline', href: '/plus/appels-epreuves/new', roles: ['SupAdmin', 'Admin', 'Gestionnaire', 'enseignant'] },
+      { labelKey: 'plus.teachers', icon: 'account-tie', href: '/plus/enseignants', roles: ['SupAdmin', 'Admin', 'Gestionnaire', 'DAE', 'DCAP'] },
+      { labelKey: 'plus.timetable', icon: 'calendar-clock', href: '/plus/timetable' },
+      { labelKey: 'plus.evaluations', icon: 'clipboard-text', href: '/plus/evaluations' },
+      { labelKey: 'plus.emargements', icon: 'notebook-check', href: '/plus/emargements', roles: ['SupAdmin', 'Admin', 'Gestionnaire', 'enseignant'] },
+      { labelKey: 'plus.presences', icon: 'account-check', href: '/plus/presences', roles: ['SupAdmin', 'Admin', 'Gestionnaire', 'enseignant'] },
+      { labelKey: 'plus.bulletins', icon: 'file-document', href: '/plus/bulletins', roles: ['SupAdmin', 'Admin', 'Gestionnaire', 'DAE', 'DCAP'] },
+      { labelKey: 'plus.national_results', icon: 'school', href: '/plus/resultats-nationaux', roles: ['SupAdmin', 'Admin', 'Gestionnaire', 'DAE', 'DCAP'] },
+      { labelKey: 'plus.exam_calls', icon: 'alert-circle-outline', href: '/plus/appels-epreuves/new', roles: ['SupAdmin', 'Admin', 'Gestionnaire', 'enseignant'] },
     ],
   },
   {
-    title: 'Finances',
+    titleKey: 'plus.section_finances',
     items: [
-      { label: 'Paiements', icon: 'cash-multiple', href: '/plus/finances', roles: ['SupAdmin', 'Admin', 'Gestionnaire'] },
-      { label: 'Salaires enseignants', icon: 'wallet', href: '/plus/salaires', roles: ['SupAdmin', 'Admin', 'Gestionnaire'] },
+      { labelKey: 'plus.payments', icon: 'cash-multiple', href: '/plus/finances', roles: ['SupAdmin', 'Admin', 'Gestionnaire'] },
+      { labelKey: 'plus.salaries', icon: 'wallet', href: '/plus/salaires', roles: ['SupAdmin', 'Admin', 'Gestionnaire'] },
     ],
   },
   {
-    title: 'Communication',
-    items: [{ label: 'Annonces', icon: 'bullhorn', href: '/plus/annonces' }],
+    titleKey: 'plus.section_communication',
+    items: [{ labelKey: 'plus.announcements', icon: 'bullhorn', href: '/plus/annonces' }],
   },
   {
-    title: 'Administration',
+    titleKey: 'plus.section_admin',
     items: [
-      { label: 'Utilisateurs', icon: 'account-group', href: '/plus/configuration/utilisateurs', roles: ['SupAdmin', 'Admin', 'DAE', 'DCAP'] },
-      { label: 'Écoles', icon: 'domain', href: '/plus/configuration/ecoles', roles: ['SupAdmin'] },
-      { label: 'Abonnement', icon: 'star-circle', href: '/plus/abonnement', roles: ['SupAdmin', 'Admin'] },
+      { labelKey: 'plus.users', icon: 'account-group', href: '/plus/configuration/utilisateurs', roles: ['SupAdmin', 'Admin', 'DAE', 'DCAP'] },
+      { labelKey: 'plus.schools', icon: 'domain', href: '/plus/configuration/ecoles', roles: ['SupAdmin'] },
+      { labelKey: 'plus.subscription', icon: 'star-circle', href: '/plus/abonnement', roles: ['SupAdmin', 'Admin'] },
     ],
   },
 ];
 
 export default function PlusMenuScreen() {
   const { user } = useAuth();
+  const { t } = useLocale();
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
@@ -57,12 +60,12 @@ export default function PlusMenuScreen() {
         if (items.length === 0) return null;
 
         return (
-          <List.Section key={section.title}>
-            <List.Subheader>{section.title}</List.Subheader>
+          <List.Section key={section.titleKey}>
+            <List.Subheader>{t(section.titleKey)}</List.Subheader>
             {items.map((item, index) => (
               <View key={item.href}>
                 <List.Item
-                  title={item.label}
+                  title={t(item.labelKey)}
                   left={(props) => <List.Icon {...props} icon={item.icon} />}
                   right={(props) => <List.Icon {...props} icon="chevron-right" />}
                   onPress={() => router.push(item.href as never)}
