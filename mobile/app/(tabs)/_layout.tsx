@@ -44,6 +44,34 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="classes"
+        options={{
+          title: 'Classes',
+          headerShown: false,
+          tabBarIcon: ({ color }) => (
+            <SymbolView
+              name={{ ios: 'building.2.fill', android: 'school', web: 'school' }}
+              tintColor={color}
+              size={26}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="plus"
+        options={{
+          title: 'Plus',
+          headerShown: false,
+          tabBarIcon: ({ color }) => (
+            <SymbolView
+              name={{ ios: 'ellipsis.circle', android: 'more_horiz', web: 'more_horiz' }}
+              tintColor={color}
+              size={26}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: 'Profil',

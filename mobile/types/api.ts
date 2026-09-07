@@ -70,6 +70,7 @@ export interface LigneClasse {
   coefficient: number;
   matiere?: Matiere;
   enseignant?: Enseignant;
+  classe?: Classe;
   [key: string]: unknown;
 }
 
