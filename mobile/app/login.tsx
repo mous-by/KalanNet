@@ -16,7 +16,7 @@ import { ThemeKey, getTheme } from '@/lib/themes';
 import { AccountChoice } from '@/types/api';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const HERO_HEIGHT = Math.min(Math.round(SCREEN_HEIGHT * 0.42), 420);
+const HERO_HEIGHT = Math.min(Math.round(SCREEN_HEIGHT * 0.56), 520);
 
 // Captions matched to each background photo, one per slide index — mirrors
 // the rotating quote shown on the web login page (lang/*/messages.php
