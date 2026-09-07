@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Abonnement;
 use App\Models\User;
 use App\Rules\MaliPhone;
+use App\Support\SubscriptionGate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
@@ -189,29 +189,7 @@ class AuthController extends Controller
 
     private function subscriptionIsBlocked(User $user, int $schoolId): bool
     {
-        if ($schoolId <= 0 || in_array($user->droit, ['SupAdmin', 'DAE', 'DCAP'], true) || !Schema::hasTable('abonnements')) {
-            return false;
-        }
-
-        // Licence à vie (offre ACHAT) : abonnement actif SANS date de fin => jamais bloqué.
-        $hasLifetime = Abonnement::query()
-            ->where('ecole_id', $schoolId)
-            ->where('statut', 'actif')
-            ->whereNull('fin_at')
-            ->exists();
-
-        if ($hasLifetime) {
-            return false;
-        }
-
-        $subscription = Abonnement::query()
-            ->where('ecole_id', $schoolId)
-            ->where('statut', 'actif')
-            ->whereNotNull('fin_at')
-            ->orderByDesc('fin_at')
-            ->first();
-
-        return !$subscription || $subscription->fin_at->copy()->endOfDay()->isPast();
+        return SubscriptionGate::isBlockedForUser($user, $schoolId);
     }
 
     public function logout(Request $request)

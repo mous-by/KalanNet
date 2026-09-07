@@ -451,7 +451,7 @@ class EleveController extends Controller
         return [$eleves, $classe, $annee, $ecole];
     }
 
-    private function filteredEleves(Request $request)
+    protected function filteredEleves(Request $request)
     {
         $query = Eleve::with(['classe', 'parents'])
             ->where('id_ecole', session('idEcole'))
@@ -566,7 +566,7 @@ class EleveController extends Controller
         return file_exists($path) ? $path : null;
     }
 
-    private function studentPaymentSummary(Eleve $eleve, $paiements): array
+    protected function studentPaymentSummary(Eleve $eleve, $paiements): array
     {
         $plan = $eleve->plansPaiement->sortByDesc('id')->first();
         $legacyPlanifications = $this->studentLegacyPlanifications($eleve);
@@ -599,7 +599,7 @@ class EleveController extends Controller
         ];
     }
 
-    private function studentEcheancesResume(Eleve $eleve, $paiements): array
+    protected function studentEcheancesResume(Eleve $eleve, $paiements): array
     {
         $plan = $eleve->plansPaiement->sortByDesc('id')->first();
         if (!$plan) {
@@ -647,7 +647,7 @@ class EleveController extends Controller
             ->all();
     }
 
-    private function studentRecentEvaluations(Eleve $eleve)
+    protected function studentRecentEvaluations(Eleve $eleve)
     {
         if (!Schema::hasTable('ligne_evaluation')) {
             return collect();
@@ -676,7 +676,7 @@ class EleveController extends Controller
             ->get();
     }
 
-    private function studentMoyennes(Eleve $eleve)
+    protected function studentMoyennes(Eleve $eleve)
     {
         if (!Schema::hasTable('moyenne_eleve')) {
             return collect();
@@ -692,7 +692,7 @@ class EleveController extends Controller
             ->get();
     }
 
-    private function studentTransfers(Eleve $eleve)
+    protected function studentTransfers(Eleve $eleve)
     {
         if (!Schema::hasTable('transfert')) {
             return collect();
@@ -705,7 +705,7 @@ class EleveController extends Controller
             ->get();
     }
 
-    private function transferOptionalColumns(array $values): array
+    protected function transferOptionalColumns(array $values): array
     {
         if (!Schema::hasTable('transfert')) {
             return [];
@@ -716,7 +716,7 @@ class EleveController extends Controller
             ->all();
     }
 
-    private function studentDossierAlerts(Eleve $eleve, array $paymentSummary, array $echeancesResume): array
+    protected function studentDossierAlerts(Eleve $eleve, array $paymentSummary, array $echeancesResume): array
     {
         $alerts = [];
 
@@ -766,7 +766,7 @@ class EleveController extends Controller
             ->get();
     }
 
-    private function canOpenStudentDossiers($user): bool
+    protected function canOpenStudentDossiers($user): bool
     {
         return $user
             && ($user->droit === 'SupAdmin'

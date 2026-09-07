@@ -31,17 +31,22 @@ class DashboardController extends Controller
         $schoolId = session('idEcole') ?: ($user->idEcole ?? null);
 
         if ($user->droit === 'enseignant') {
-            return $this->teacherDashboard($user, $schoolId);
+            return view('dashboards.teacher', $this->teacherDashboardData($user, $schoolId));
         }
 
         if ($user->droit === 'parent') {
-            return $this->parentDashboard($user, $schoolId);
+            return view('dashboards.parent', $this->parentDashboardData($user, $schoolId));
         }
 
         if ($user->droit === 'SupAdmin') {
-            return $this->supAdminDashboard($user);
+            return view('dashboards.supadmin', $this->supAdminDashboardData($user));
         }
 
+        return view('dashboard', $this->adminDashboardData($user, $schoolId));
+    }
+
+    protected function adminDashboardData($user, ?int $schoolId): array
+    {
         $anneeEnCours = AnneeScolaire::when($schoolId, function ($query, $schoolId) {
             $query->where('id_ecole', $schoolId);
         })->orderBy('id_anneeScolaire', 'desc')->first();
@@ -115,11 +120,11 @@ class DashboardController extends Controller
         $presenceProgressRows = $this->schoolPresenceProgress($schoolId, $idAnnee);
         $subscriptionOverview = $user->droit === 'SupAdmin' ? $this->subscriptionOverview() : collect();
 
-        return view('dashboard', compact(
-            'totalEleves', 
-            'totalGarcons', 
-            'totalFilles', 
-            'totalEnseignants', 
+        return compact(
+            'totalEleves',
+            'totalGarcons',
+            'totalFilles',
+            'totalEnseignants',
             'totalClasses',
             'totalRecettes',
             'soldeCaisse',
@@ -131,7 +136,7 @@ class DashboardController extends Controller
             'teacherProgressRows',
             'presenceProgressRows',
             'subscriptionOverview'
-        ));
+        );
     }
 
     public function updateSubscriptionDates(Request $request, Abonnement $abonnement)
@@ -156,7 +161,7 @@ class DashboardController extends Controller
         return back()->with('success', 'Dates de l’abonnement mises à jour.');
     }
 
-    private function teacherDashboard($user, ?int $schoolId)
+    protected function teacherDashboardData($user, ?int $schoolId): array
     {
         $teacherId = $user->id_enseignant;
         $enseignant = $user->enseignant;
@@ -217,7 +222,7 @@ class DashboardController extends Controller
             'timetable' => $user->droit === 'enseignant' || $user->userHasPermission('enseignants_emploi') || $user->userHasPermission('classes_apercu'),
         ];
 
-        return view('dashboards.teacher', compact(
+        return compact(
             'enseignant',
             'assignments',
             'totalClasses',
@@ -232,10 +237,10 @@ class DashboardController extends Controller
             'recentEvaluations',
             'teacherPresenceProgressRows',
             'teacherPermissions'
-        ));
+        );
     }
 
-    private function supAdminDashboard($user)
+    protected function supAdminDashboardData($user): array
     {
         $subscriptionOverview = $this->subscriptionOverview();
         
@@ -268,12 +273,12 @@ class DashboardController extends Controller
             ->orderByDesc('id')
             ->get();
 
-        return view('dashboards.supadmin', compact(
+        return compact(
             'subscriptionOverview',
             'connectedUsers',
             'health',
             'pendingValidations'
-        ));
+        );
     }
 
     private function subscriptionOverview()
@@ -332,7 +337,7 @@ class DashboardController extends Controller
         }
     }
 
-    private function parentDashboard($user, ?int $schoolId)
+    protected function parentDashboardData($user, ?int $schoolId): array
     {
         $parent = $user->parent ?: ParentModel::with('ecole')->find($user->id_parent);
 
@@ -383,7 +388,7 @@ class DashboardController extends Controller
         $callPeriod = request('appel_presence_periode', 'today');
         $childrenCallRows = $this->parentChildrenCallRows($children, $callPeriod);
 
-        return view('dashboards.parent', compact(
+        return compact(
             'parent',
             'children',
             'payments',
@@ -399,7 +404,7 @@ class DashboardController extends Controller
             'totalPaid',
             'totalRemaining',
             'latePlans'
-        ));
+        );
     }
 
     private function schoolTeacherProgress(?int $schoolId, ?int $idAnnee)

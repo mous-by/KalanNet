@@ -222,25 +222,25 @@ class AbonnementController extends Controller
         return back()->with('success', $active ? 'Formule activée.' : 'Formule désactivée.');
     }
 
-    private function canManageAbonnements($user): bool
+    protected function canManageAbonnements($user): bool
     {
         return in_array($user?->droit, ['SupAdmin', 'Admin', 'Gestionnaire'], true)
             || $user?->userHasAnyPermission(['abonnements_apercu', 'abonnements_paiement']);
     }
 
-    private function canConfigureAbonnements($user): bool
+    protected function canConfigureAbonnements($user): bool
     {
         return $user?->droit === 'SupAdmin'
             || $user?->userHasPermission('abonnements_configuration');
     }
 
-    private function canReviewAbonnements($user): bool
+    protected function canReviewAbonnements($user): bool
     {
         return $user?->droit === 'SupAdmin'
             || $user?->userHasPermission('abonnements_validation');
     }
 
-    private function storeReceipt(Request $request): string
+    protected function storeReceipt(Request $request): string
     {
         $file = $request->file('receipt');
         $directory = public_path('uploads/subscription_receipts');
@@ -255,7 +255,7 @@ class AbonnementController extends Controller
         return '/uploads/subscription_receipts/' . $filename;
     }
 
-    private function validatedOffre(Request $request, ?int $ignoreId = null): array
+    protected function validatedOffre(Request $request, ?int $ignoreId = null): array
     {
         $data = $request->validate([
             'code' => [

@@ -42,6 +42,8 @@ class Enseignant extends Model
         'anciennete_annees',
     ];
 
+    protected $hidden = ['pwd'];
+
     public function ecole()
     {
         return $this->belongsTo(Ecole::class, 'id_ecole', 'idEcole');

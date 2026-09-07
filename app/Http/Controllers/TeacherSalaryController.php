@@ -91,7 +91,7 @@ class TeacherSalaryController extends Controller
         return view('enseignants.salaires', $this->salaryViewData($request, $mode));
     }
 
-    private function salaryViewData(Request $request, string $mode): array
+    protected function salaryViewData(Request $request, string $mode): array
     {
         $user = Auth::user();
         $schoolId = session('idEcole') ?: $user->idEcole;
@@ -187,7 +187,7 @@ class TeacherSalaryController extends Controller
             ->with('success', 'Versement de salaire enregistré avec succès.');
     }
 
-    private function storeBulkPayment(Request $request)
+    protected function storeBulkPayment(Request $request)
     {
         $data = $request->validate([
             'date_paiement' => 'required|date',
@@ -285,7 +285,7 @@ class TeacherSalaryController extends Controller
             ->with('success', count($payments) . ' salaire(s) payé(s) pour un total de ' . number_format($total, 0, ',', ' ') . ' FCFA.');
     }
 
-    private function recordSalaryPayment(Enseignant $enseignant, array $filters, array $row, float $amount, string $paymentDate): void
+    protected function recordSalaryPayment(Enseignant $enseignant, array $filters, array $row, float $amount, string $paymentDate): void
     {
         $salaire = Salaire::query()
             ->where('reference', $row['reference'])
@@ -316,7 +316,7 @@ class TeacherSalaryController extends Controller
         ]);
     }
 
-    private function recordSalaryDisbursement(?int $schoolId, float $amount, string $paymentDate, array $filters, string $label): void
+    protected function recordSalaryDisbursement(?int $schoolId, float $amount, string $paymentDate, array $filters, string $label): void
     {
         if ($amount <= 0) {
             return;
@@ -581,7 +581,7 @@ class TeacherSalaryController extends Controller
         return $date ? Carbon::parse($date)->startOfMonth() : null;
     }
 
-    private function salaryRow(Enseignant $enseignant, array $filters, array $period): array
+    protected function salaryRow(Enseignant $enseignant, array $filters, array $period): array
     {
         $hours = $this->validatedHours($enseignant, $filters['source'], $period);
         $contract = $enseignant->type_contrat_enseignant ?: 'N/A';
@@ -662,7 +662,7 @@ class TeacherSalaryController extends Controller
             ->sum('nombre_heure');
     }
 
-    private function teachersQuery($user, ?int $schoolId)
+    protected function teachersQuery($user, ?int $schoolId)
     {
         $query = Enseignant::query()
             ->where('is_deleted', 0)
@@ -675,7 +675,7 @@ class TeacherSalaryController extends Controller
         return $query->where('id_ecole', $schoolId);
     }
 
-    private function isSchoolPayableTeacher(Enseignant $enseignant): bool
+    protected function isSchoolPayableTeacher(Enseignant $enseignant): bool
     {
         return in_array(strtoupper((string) $enseignant->type_contrat_enseignant), $this->schoolPayableContracts(), true);
     }
@@ -685,7 +685,7 @@ class TeacherSalaryController extends Controller
         return ['CDI', 'CDD', 'VCT'];
     }
 
-    private function periodBounds(int $year, int $month): array
+    protected function periodBounds(int $year, int $month): array
     {
         $start = Carbon::create($year, $month, 1)->startOfDay();
 
@@ -742,7 +742,7 @@ class TeacherSalaryController extends Controller
         ];
     }
 
-    private function availableSources($user, ?Ecole $school, string $mode): array
+    protected function availableSources($user, ?Ecole $school, string $mode): array
     {
         $permissionBySource = $mode === 'pay'
             ? [
@@ -787,7 +787,7 @@ class TeacherSalaryController extends Controller
             : 'emargement';
     }
 
-    private function authorizeSalaryAccess(?int $teacherId = null): void
+    protected function authorizeSalaryAccess(?int $teacherId = null): void
     {
         $user = Auth::user();
         if ($user->droit === 'SupAdmin') {
@@ -811,7 +811,7 @@ class TeacherSalaryController extends Controller
         }
     }
 
-    private function authorizeSalaryPayment(): void
+    protected function authorizeSalaryPayment(): void
     {
         $user = Auth::user();
         if ($user->droit !== 'SupAdmin' && !$user->userHasAnyPermission(['emargement_paiement enseignant', 'presence_paiement enseignant', 'paiements_faire'])) {

@@ -307,12 +307,12 @@ class TimetableController extends Controller
         return $pdf->download('Emploi_du_temps_' . str_replace(' ', '_', $selectedClasse->nom_classe) . '.pdf');
     }
 
-    private function hoursSessionKey(int|string $idClasse, int|string $idAnnee): string
+    protected function hoursSessionKey(int|string $idClasse, int|string $idAnnee): string
     {
         return 'timetable_hours_' . $idClasse . '_' . $idAnnee;
     }
 
-    private function ensureCanManageTimetable(): void
+    protected function ensureCanManageTimetable(): void
     {
         $user = Auth::user();
         if (!$user || $user->droit === 'enseignant' || ($user->droit !== 'SupAdmin' && !$user->userHasPermission('planning_creation'))) {
@@ -320,7 +320,7 @@ class TimetableController extends Controller
         }
     }
 
-    private function pdfHours($storedHours, $courses): array
+    protected function pdfHours($storedHours, $courses): array
     {
         if (is_array($storedHours) && !empty($storedHours)) {
             return collect($storedHours)

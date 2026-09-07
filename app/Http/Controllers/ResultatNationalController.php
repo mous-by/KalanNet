@@ -199,7 +199,7 @@ class ResultatNationalController extends Controller
         ])->with($saved > 0 ? 'success' : 'error', $saved > 0 ? $message : 'Aucun résultat importé. Vérifiez les matricules et les décisions.');
     }
 
-    private function examClasses(?int $schoolId, $user)
+    protected function examClasses(?int $schoolId, $user)
     {
         $allowed = $this->allowedExamLevels($schoolId);
 
@@ -211,7 +211,7 @@ class ResultatNationalController extends Controller
             ->values();
     }
 
-    private function examLevel(Classe $classe): ?string
+    protected function examLevel(Classe $classe): ?string
     {
         return match ($this->extractClasseLevel($classe->nom_classe)) {
             9 => 'DEF',
@@ -225,7 +225,7 @@ class ResultatNationalController extends Controller
         return $name && preg_match('/\d+/', Str::ascii($name), $matches) ? (int) $matches[0] : null;
     }
 
-    private function normalizeDecision(string $decision): ?string
+    protected function normalizeDecision(string $decision): ?string
     {
         $normalized = Str::lower(Str::ascii($decision));
         if (str_contains($normalized, 'admis') || str_contains($normalized, 'admit')) {
@@ -239,7 +239,7 @@ class ResultatNationalController extends Controller
         return null;
     }
 
-    private function ensureExamAllowed(?int $schoolId, string $niveau, Classe $classe): void
+    protected function ensureExamAllowed(?int $schoolId, string $niveau, Classe $classe): void
     {
         if (!in_array($niveau, $this->allowedExamLevels($schoolId), true) || $this->examLevel($classe) !== $niveau) {
             throw ValidationException::withMessages([
@@ -248,7 +248,7 @@ class ResultatNationalController extends Controller
         }
     }
 
-    private function allowedExamLevels(?int $schoolId): array
+    protected function allowedExamLevels(?int $schoolId): array
     {
         $ecole = $schoolId ? Ecole::withoutGlobalScopes()->find($schoolId) : null;
         $type = Str::lower(Str::ascii((string) ($ecole->typeEcole ?? '')));
@@ -268,7 +268,7 @@ class ResultatNationalController extends Controller
         return ['DEF', 'BAC'];
     }
 
-    private function rowsFromSpreadsheet(string $path, string $extension): array
+    protected function rowsFromSpreadsheet(string $path, string $extension): array
     {
         if (!class_exists(IOFactory::class)) {
             throw ValidationException::withMessages(['fichier_resultats' => 'La bibliothèque Excel n’est pas disponible.']);
@@ -303,7 +303,7 @@ class ResultatNationalController extends Controller
         return $rows;
     }
 
-    private function rowsFromPdf(string $path, $students): array
+    protected function rowsFromPdf(string $path, $students): array
     {
         if (!class_exists(PdfParser::class)) {
             throw ValidationException::withMessages(['fichier_resultats' => 'La lecture PDF n’est pas disponible sur ce serveur.']);
@@ -364,7 +364,7 @@ class ResultatNationalController extends Controller
         return null;
     }
 
-    private function authorizeAccess(): void
+    protected function authorizeAccess(): void
     {
         $user = Auth::user();
         if (!$user || ($user->droit !== 'SupAdmin' && !$user->userHasAnyPermission([

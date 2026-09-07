@@ -86,7 +86,7 @@ class MatiereController extends Controller
         return redirect()->route('pedagogie.matieres')->with('success', 'La matière a été supprimée avec succès.');
     }
 
-    private function validateMatiere(Request $request): array
+    protected function validateMatiere(Request $request): array
     {
         return $request->validate([
             'nom_matiere' => 'required|string|max:50',
@@ -97,7 +97,7 @@ class MatiereController extends Controller
         ]);
     }
 
-    private function syncOrdres(Matiere $matiere, array $ordres): void
+    protected function syncOrdres(Matiere $matiere, array $ordres): void
     {
         foreach (array_unique($ordres) as $ordre) {
             MatiereOrdre::create([
@@ -107,7 +107,7 @@ class MatiereController extends Controller
         }
     }
 
-    private function allOrdres(): array
+    protected function allOrdres(): array
     {
         return [
             'Fondamentale I' => 'Fondamentale I',
@@ -117,7 +117,7 @@ class MatiereController extends Controller
         ];
     }
 
-    private function ordresAutorises(): array
+    protected function ordresAutorises(): array
     {
         $user = Auth::user();
         $typeEcole = $user->ecole->typeEcole ?? null;

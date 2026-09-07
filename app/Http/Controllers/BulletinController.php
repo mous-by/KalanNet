@@ -322,7 +322,7 @@ class BulletinController extends Controller
                 'id_ecole' => $classe->idEcole,
                 'id_classe' => $classe->id_classe,
                 'id_annee' => $data['id_annee'],
-                'id_trimestre' => $data['mois'] ? null : ($data['id_trimestre'] ?? null),
+                'id_trimestre' => ($data['mois'] ?? null) ? null : ($data['id_trimestre'] ?? null),
                 'mois' => $data['mois'] ?? null,
             ],
             [
@@ -353,7 +353,7 @@ class BulletinController extends Controller
                 ->where('id_ecole', $classe->idEcole)
                 ->where('id_classe', $classe->id_classe)
                 ->where('id_annee', $data['id_annee'])
-                ->where('id_trimestre', $data['mois'] ? null : ($data['id_trimestre'] ?? null))
+                ->where('id_trimestre', ($data['mois'] ?? null) ? null : ($data['id_trimestre'] ?? null))
                 ->where('mois', $data['mois'] ?? null)
                 ->delete();
         }
@@ -361,7 +361,7 @@ class BulletinController extends Controller
         return back()->with('success', 'Publication des bulletins retirée pour cette période.');
     }
 
-    private function getBulletinData($id, $id_annee, $id_trimestre = null, $mois = null, bool $withRank = true)
+    protected function getBulletinData($id, $id_annee, $id_trimestre = null, $mois = null, bool $withRank = true)
     {
         // 1. Basic Info
         $eleve = Eleve::with('classe')->findOrFail($id);
@@ -560,7 +560,7 @@ class BulletinController extends Controller
         });
     }
 
-    private function authorizeClasse(Classe $classe): void
+    protected function authorizeClasse(Classe $classe): void
     {
         $user = auth()->user();
         if ($user->droit !== 'SupAdmin' && (int) $classe->idEcole !== (int) (session('idEcole') ?: $user->idEcole)) {
@@ -568,7 +568,7 @@ class BulletinController extends Controller
         }
     }
 
-    private function authorizeBulletinGeneration(): void
+    protected function authorizeBulletinGeneration(): void
     {
         $user = Auth::user();
 
@@ -586,7 +586,7 @@ class BulletinController extends Controller
         }
     }
 
-    private function moisOptions(): array
+    protected function moisOptions(): array
     {
         return [1 => "Janvier", 2 => "Février", 3 => "Mars", 4 => "Avril", 5 => "Mai", 6 => "Juin", 7 => "Juillet", 8 => "Août", 9 => "Septembre", 10 => "Octobre", 11 => "Novembre", 12 => "Décembre"];
     }
@@ -597,7 +597,7 @@ class BulletinController extends Controller
             && strtolower(trim((string) $ecole->statut)) === 'prive';
     }
 
-    private function authorizeBulletinPublication(): void
+    protected function authorizeBulletinPublication(): void
     {
         $user = Auth::user();
 
@@ -606,7 +606,7 @@ class BulletinController extends Controller
         }
     }
 
-    private function authorizeParentBulletinAccess(int $idEleve, int $idAnnee, ?int $idTrimestre, ?int $mois): void
+    protected function authorizeParentBulletinAccess(int $idEleve, int $idAnnee, ?int $idTrimestre, ?int $mois): void
     {
         $user = Auth::user();
         if ($user?->droit !== 'parent') {

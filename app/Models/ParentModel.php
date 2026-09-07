@@ -21,6 +21,8 @@ class ParentModel extends Model
         'pwd'
     ];
 
+    protected $hidden = ['pwd'];
+
     public function eleves()
     {
         return $this->belongsToMany(Eleve::class, 'ligneparents_eleves', 'id_parent', 'id_eleve')

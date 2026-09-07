@@ -128,7 +128,7 @@ class PresenceController extends Controller
         return redirect()->route('enseignants.presences')->with('success', 'Présence supprimée avec succès.');
     }
 
-    private function validatedData(Request $request): array
+    protected function validatedData(Request $request): array
     {
         $data = $request->validate([
             'id_enseignant' => 'required|integer|exists:enseignants,id_enseignant',
@@ -162,7 +162,7 @@ class PresenceController extends Controller
         return $data;
     }
 
-    private function syncLecons(Presence $presence, Request $request): void
+    protected function syncLecons(Presence $presence, Request $request): void
     {
         $totalHours = 0;
 
@@ -180,7 +180,7 @@ class PresenceController extends Controller
         }
     }
 
-    private function scopeForUser($query, $user, ?int $idEcole)
+    protected function scopeForUser($query, $user, ?int $idEcole)
     {
         if ($user->droit === 'SupAdmin') {
             return $query;
@@ -193,7 +193,7 @@ class PresenceController extends Controller
         return $query->where('id_ecole', $idEcole);
     }
 
-    private function enseignantsForUser($user, ?int $idEcole)
+    protected function enseignantsForUser($user, ?int $idEcole)
     {
         $query = Enseignant::query();
 
@@ -208,7 +208,7 @@ class PresenceController extends Controller
         return $query->where('id_ecole', $idEcole);
     }
 
-    private function classesForUser($user, ?int $idEcole)
+    protected function classesForUser($user, ?int $idEcole)
     {
         $query = Classe::query();
 
@@ -219,7 +219,7 @@ class PresenceController extends Controller
         return $query->where('idEcole', $idEcole);
     }
 
-    private function authorizePresence(Presence $presence, bool $validation = false): void
+    protected function authorizePresence(Presence $presence, bool $validation = false): void
     {
         $user = Auth::user();
 
@@ -265,7 +265,7 @@ class PresenceController extends Controller
         ];
     }
 
-    private function presenceSummary($query): array
+    protected function presenceSummary($query): array
     {
         $rows = $query->with('lecons')->get();
 
@@ -278,7 +278,7 @@ class PresenceController extends Controller
         ];
     }
 
-    private function currentAcademicYearId(): ?int
+    protected function currentAcademicYearId(): ?int
     {
         $today = now()->toDateString();
 
@@ -288,7 +288,7 @@ class PresenceController extends Controller
             ->value('id_anneeScolaire');
     }
 
-    private function presencePermissions($user): array
+    protected function presencePermissions($user): array
     {
         return [
             'create' => $this->hasPermission($user, 'presence_apercu'),
@@ -298,7 +298,7 @@ class PresenceController extends Controller
         ];
     }
 
-    private function presenceActionPermission(string $action): string
+    protected function presenceActionPermission(string $action): string
     {
         $permission = [
             'validate' => 'presence_validation_admin',
@@ -309,7 +309,7 @@ class PresenceController extends Controller
         return Permission::where('name', $permission)->exists() ? $permission : 'presence_apercu';
     }
 
-    private function hasPermission($user, string $permission): bool
+    protected function hasPermission($user, string $permission): bool
     {
         if ($user->droit === 'enseignant' && $permission === 'presence_apercu') {
             return true;
@@ -318,7 +318,7 @@ class PresenceController extends Controller
         return $user->droit === 'SupAdmin' || $user->userHasPermission($permission);
     }
 
-    private function authorizePermission(string $permission): void
+    protected function authorizePermission(string $permission): void
     {
         if (!$this->hasPermission(Auth::user(), $permission)) {
             abort(403);

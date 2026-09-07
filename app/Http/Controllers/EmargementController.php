@@ -145,7 +145,7 @@ class EmargementController extends Controller
         return redirect()->route('enseignants.emargements')->with('success', 'Émargement supprimé avec succès.');
     }
 
-    private function validatedData(Request $request, ?int $ignoreId = null): array
+    protected function validatedData(Request $request, ?int $ignoreId = null): array
     {
         $data = $request->validate([
             'id_enseignant' => 'required|integer|exists:enseignants,id_enseignant',
@@ -209,7 +209,7 @@ class EmargementController extends Controller
         }
     }
 
-    private function scopeForUser($query, $user, ?int $idEcole)
+    protected function scopeForUser($query, $user, ?int $idEcole)
     {
         if ($user->droit === 'SupAdmin') {
             return $query;
@@ -222,7 +222,7 @@ class EmargementController extends Controller
         return $query->where('id_ecole', $idEcole);
     }
 
-    private function enseignantsForUser($user, ?int $idEcole)
+    protected function enseignantsForUser($user, ?int $idEcole)
     {
         $query = Enseignant::query();
 
@@ -237,7 +237,7 @@ class EmargementController extends Controller
         return $query->where('id_ecole', $idEcole);
     }
 
-    private function classesForUser($user, ?int $idEcole)
+    protected function classesForUser($user, ?int $idEcole)
     {
         $query = Classe::query();
 
@@ -248,7 +248,7 @@ class EmargementController extends Controller
         return $query->where('idEcole', $idEcole);
     }
 
-    private function matieresForUser($user, ?int $idEcole)
+    protected function matieresForUser($user, ?int $idEcole)
     {
         $query = Matiere::query();
 
@@ -263,7 +263,7 @@ class EmargementController extends Controller
         return $query->whereIn('id_matiere', LigneClasse::whereHas('classe', fn ($classe) => $classe->where('idEcole', $idEcole))->pluck('id_matiere'));
     }
 
-    private function authorizeEmargement(Emargement $emargement, bool $validation = false): void
+    protected function authorizeEmargement(Emargement $emargement, bool $validation = false): void
     {
         $user = Auth::user();
 
@@ -391,7 +391,7 @@ class EmargementController extends Controller
         return $query;
     }
 
-    private function currentAcademicYearId(): ?int
+    protected function currentAcademicYearId(): ?int
     {
         $today = now()->toDateString();
 
@@ -550,7 +550,7 @@ class EmargementController extends Controller
         ][(int) now()->isoWeekday()];
     }
 
-    private function emargementPermissions($user): array
+    protected function emargementPermissions($user): array
     {
         return [
             'create' => $this->hasPermission($user, 'emargement_faire'),
@@ -562,7 +562,7 @@ class EmargementController extends Controller
         ];
     }
 
-    private function notifyEmargementValidators(Emargement $emargement): void
+    protected function notifyEmargementValidators(Emargement $emargement): void
     {
         if (!Schema::hasTable('app_notifications')) {
             return;
@@ -596,7 +596,7 @@ class EmargementController extends Controller
         }
     }
 
-    private function emargementActionPermission(string $action): string
+    protected function emargementActionPermission(string $action): string
     {
         $permission = [
             'edit' => 'emargement_modification',
@@ -610,7 +610,7 @@ class EmargementController extends Controller
         return 'emargement_faire';
     }
 
-    private function hasPermission($user, string $permission): bool
+    protected function hasPermission($user, string $permission): bool
     {
         if ($user->droit === 'enseignant' && $permission === 'emargement_faire') {
             return true;
@@ -619,7 +619,7 @@ class EmargementController extends Controller
         return $user->droit === 'SupAdmin' || $user->userHasPermission($permission);
     }
 
-    private function authorizePermission(string $permission): void
+    protected function authorizePermission(string $permission): void
     {
         if (!$this->hasPermission(Auth::user(), $permission)) {
             abort(403);

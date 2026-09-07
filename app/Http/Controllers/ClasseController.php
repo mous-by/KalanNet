@@ -206,7 +206,7 @@ class ClasseController extends Controller
         return redirect()->route('classes.index')->with('success', 'Classe supprimée avec succès.');
     }
 
-    private function validateClasse(Request $request): array
+    protected function validateClasse(Request $request): array
     {
         return $request->validate([
             'nom_classe' => 'required|string|max:50',
@@ -223,7 +223,7 @@ class ClasseController extends Controller
         ]);
     }
 
-    private function syncLignesClasse(Classe $classe, array $data): void
+    protected function syncLignesClasse(Classe $classe, array $data): void
     {
         $expectedOrdre = $this->ordreMatiereMap()[$classe->ordreEnseignement] ?? null;
         foreach ($data['id_matiere'] as $index => $idMatiere) {
@@ -244,7 +244,7 @@ class ClasseController extends Controller
         }
     }
 
-    private function matieresDisponibles($user, ?int $idEcole)
+    protected function matieresDisponibles($user, ?int $idEcole)
     {
         return Matiere::query()
             ->with('ordres')
@@ -257,7 +257,7 @@ class ClasseController extends Controller
             ->get();
     }
 
-    private function enseignantsDisponibles($user, ?int $idEcole)
+    protected function enseignantsDisponibles($user, ?int $idEcole)
     {
         return Enseignant::query()
             ->where('is_deleted', 0)
@@ -266,7 +266,7 @@ class ClasseController extends Controller
             ->get();
     }
 
-    private function ordresDisponibles($user, ?int $idEcole = null): array
+    protected function ordresDisponibles($user, ?int $idEcole = null): array
     {
         $ecole = $this->resolveEcole($user, $idEcole);
         $typeEcole = $ecole->typeEcole ?? null;
@@ -319,7 +319,7 @@ class ClasseController extends Controller
         ];
     }
 
-    private function ensureOrdreAllowed(string $ordre, $user, ?int $idEcole = null): void
+    protected function ensureOrdreAllowed(string $ordre, $user, ?int $idEcole = null): void
     {
         if (!array_key_exists($ordre, $this->ordresDisponibles($user, $idEcole))) {
             abort(422, "L'ordre d'enseignement sélectionné ne correspond pas au type de l'école.");
@@ -327,7 +327,7 @@ class ClasseController extends Controller
     }
 
 
-    private function resolveEcole($user, ?int $idEcole = null): ?Ecole
+    protected function resolveEcole($user, ?int $idEcole = null): ?Ecole
     {
         $resolvedId = $idEcole ?: session('idEcole') ?: $user->idEcole;
 
@@ -338,7 +338,7 @@ class ClasseController extends Controller
         return $user->ecole;
     }
 
-    private function ordreMatiereMap(): array
+    protected function ordreMatiereMap(): array
     {
         return [
             'fondamentale1' => 'Fondamentale I',

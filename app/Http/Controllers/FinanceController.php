@@ -38,9 +38,9 @@ use Illuminate\Validation\ValidationException;
 class FinanceController extends Controller
 {
     public function __construct(
-        private readonly PaiementEleveService $paiementService,
-        private readonly PaiementEleveReportService $reportService,
-        private readonly ReferencePaiementService $referenceService,
+        protected readonly PaiementEleveService $paiementService,
+        protected readonly PaiementEleveReportService $reportService,
+        protected readonly ReferencePaiementService $referenceService,
     ) {
     }
 
@@ -1468,7 +1468,7 @@ class FinanceController extends Controller
         return '';
     }
 
-    private function isPublicSchool(?Ecole $ecole): bool
+    protected function isPublicSchool(?Ecole $ecole): bool
     {
         return strtolower(trim((string) ($ecole->statut ?? ''))) === 'public';
     }
@@ -1508,7 +1508,7 @@ class FinanceController extends Controller
         ];
     }
 
-    private function canValidateDecaissement(?User $user): bool
+    protected function canValidateDecaissement(?User $user): bool
     {
         if (!$user) {
             return false;
@@ -1519,7 +1519,7 @@ class FinanceController extends Controller
             || $user->userHasPermission('decaissements_validation');
     }
 
-    private function notifyDecaissementValidators(Decaissement $decaissement): void
+    protected function notifyDecaissementValidators(Decaissement $decaissement): void
     {
         if (!Schema::hasTable('app_notifications')) {
             return;
@@ -1629,7 +1629,7 @@ class FinanceController extends Controller
         return 'SUBV-ETAT-' . now()->format('Ymd-His');
     }
 
-    private function getOwnedCaisse(int $id): Caisse
+    protected function getOwnedCaisse(int $id): Caisse
     {
         return Caisse::where('id_ecole', session('idEcole'))->findOrFail($id);
     }
@@ -1641,7 +1641,7 @@ class FinanceController extends Controller
             ->firstOrFail();
     }
 
-    private function nextPaiementReference(): string
+    protected function nextPaiementReference(): string
     {
         $lastReference = Paiement::where('reference', 'like', 'PAIEMENT-%')
             ->orderByDesc('id_paiement')
@@ -1655,7 +1655,7 @@ class FinanceController extends Controller
         return 'PAIEMENT-' . str_pad((string) ($lastNumber + 1), 3, '0', STR_PAD_LEFT);
     }
 
-    private function ensurePermission(string $permission): void
+    protected function ensurePermission(string $permission): void
     {
         $user = Auth::user();
         if (!$user) {
@@ -1687,7 +1687,7 @@ class FinanceController extends Controller
         abort(403, 'Permission insuffisante.');
     }
 
-    private function ensureAnyPermission(array $permissions): void
+    protected function ensureAnyPermission(array $permissions): void
     {
         $user = Auth::user();
         if (!$user) {

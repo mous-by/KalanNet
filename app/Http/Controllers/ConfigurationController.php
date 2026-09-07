@@ -799,7 +799,7 @@ class ConfigurationController extends Controller
         return redirect()->route('configuration.permissions')->with('success', 'Permission ajoutée avec succès.');
     }
 
-    private function ecoleScope($query, User $user, ?int $idEcole)
+    protected function ecoleScope($query, User $user, ?int $idEcole)
     {
         if ($user->droit === 'SupAdmin') {
             return $query;
@@ -819,7 +819,7 @@ class ConfigurationController extends Controller
         return $query->where('idEcole', $idEcole ?: $user->idEcole);
     }
 
-    private function anneeScope($query, User $user, ?int $idEcole)
+    protected function anneeScope($query, User $user, ?int $idEcole)
     {
         if ($user->droit === 'SupAdmin') {
             return $query;
@@ -831,7 +831,7 @@ class ConfigurationController extends Controller
         });
     }
 
-    private function userScope($query, User $user, ?int $idEcole)
+    protected function userScope($query, User $user, ?int $idEcole)
     {
         if ($user->droit === 'SupAdmin') {
             return $query->where(function ($inner) use ($user) {
@@ -873,7 +873,7 @@ class ConfigurationController extends Controller
         return $query;
     }
 
-    private function enseignantsScope($query, User $user, ?int $idEcole)
+    protected function enseignantsScope($query, User $user, ?int $idEcole)
     {
         if ($user->droit === 'SupAdmin') {
             return $query;
@@ -893,7 +893,7 @@ class ConfigurationController extends Controller
         return $query->where('id_ecole', $idEcole ?: $user->idEcole);
     }
 
-    private function parentsScope($query, User $user, ?int $idEcole)
+    protected function parentsScope($query, User $user, ?int $idEcole)
     {
         if ($user->droit === 'SupAdmin') {
             return $query;
@@ -913,7 +913,7 @@ class ConfigurationController extends Controller
         return $query->where('idEcole', $idEcole ?: $user->idEcole);
     }
 
-    private function permissionAssignableUsers(User $user, ?int $idEcole, ?int $schoolFilter = null)
+    protected function permissionAssignableUsers(User $user, ?int $idEcole, ?int $schoolFilter = null)
     {
         $query = $this->userScope(
             User::with(['ecole', 'academie', 'cap'])->withCount('permissions'),
@@ -945,14 +945,14 @@ class ConfigurationController extends Controller
         return $query->orderBy('nomPrenom')->get();
     }
 
-    private function authorizeSupAdminOnly(): void
+    protected function authorizeSupAdminOnly(): void
     {
         if (Auth::user()->droit !== 'SupAdmin') {
             abort(403);
         }
     }
 
-    private function authorizeAnyPermission(User $user, array $permissions): void
+    protected function authorizeAnyPermission(User $user, array $permissions): void
     {
         if ($user->droit === 'SupAdmin') {
             return;
@@ -1000,7 +1000,7 @@ class ConfigurationController extends Controller
         abort(403);
     }
 
-    private function ensureCurrentAcademicYearExists(): void
+    protected function ensureCurrentAcademicYearExists(): void
     {
         $today = now();
         $startYear = (int) $today->format('m') >= 9 ? (int) $today->format('Y') : (int) $today->format('Y') - 1;
@@ -1016,7 +1016,7 @@ class ConfigurationController extends Controller
         );
     }
 
-    private function currentAcademicYear(): ?AnneeScolaire
+    protected function currentAcademicYear(): ?AnneeScolaire
     {
         $today = now()->toDateString();
 
@@ -1028,7 +1028,7 @@ class ConfigurationController extends Controller
             ->first();
     }
 
-    private function authorizeUserCreation(User $authUser, int $type, array $data): void
+    protected function authorizeUserCreation(User $authUser, int $type, array $data): void
     {
         if (!in_array($authUser->droit, ['SupAdmin', 'Admin'], true) && !$authUser->userHasPermission('utilisateurs_creation')) {
             abort(403);
@@ -1044,14 +1044,14 @@ class ConfigurationController extends Controller
         }
     }
 
-    private function authorizeTargetUserGovernance(User $authUser, User $target): void
+    protected function authorizeTargetUserGovernance(User $authUser, User $target): void
     {
         if ($target->droit === 'SupAdmin' && $target->idUtilisateur !== $authUser->idUtilisateur) {
             abort(403);
         }
     }
 
-    private function authorizeTargetPermissionAssignment(User $authUser, User $target): void
+    protected function authorizeTargetPermissionAssignment(User $authUser, User $target): void
     {
         if (!$this->canAssignPermissionsToTarget($authUser, $target)) {
             abort(403);
@@ -1060,7 +1060,7 @@ class ConfigurationController extends Controller
         $this->authorizeTargetUserGovernance($authUser, $target);
     }
 
-    private function authorizeTargetPermissionView(User $authUser, User $target): void
+    protected function authorizeTargetPermissionView(User $authUser, User $target): void
     {
         if ($target->idUtilisateur === $authUser->idUtilisateur && $authUser->droit === 'SupAdmin') {
             return;
@@ -1069,7 +1069,7 @@ class ConfigurationController extends Controller
         $this->authorizeTargetPermissionAssignment($authUser, $target);
     }
 
-    private function canAssignPermissionsToTarget(User $authUser, User $target): bool
+    protected function canAssignPermissionsToTarget(User $authUser, User $target): bool
     {
         if ($target->idUtilisateur === $authUser->idUtilisateur) {
             return false;
@@ -1086,7 +1086,7 @@ class ConfigurationController extends Controller
         return $target->droit !== 'Admin';
     }
 
-    private function authorizeTargetUserEdit(User $authUser, User $target): void
+    protected function authorizeTargetUserEdit(User $authUser, User $target): void
     {
         if (!in_array($authUser->droit, ['SupAdmin', 'Admin'], true) && !$authUser->userHasPermission('utilisateurs_modification')) {
             abort(403);
@@ -1101,7 +1101,7 @@ class ConfigurationController extends Controller
         }
     }
 
-    private function canEditTargetUser(User $authUser, User $target): bool
+    protected function canEditTargetUser(User $authUser, User $target): bool
     {
         if ($target->idUtilisateur === $authUser->idUtilisateur || $target->droit === 'SupAdmin') {
             return false;
@@ -1114,7 +1114,7 @@ class ConfigurationController extends Controller
         return $authUser->droit === 'SupAdmin' || $target->droit !== 'Admin';
     }
 
-    private function userFormType(User $user): int
+    protected function userFormType(User $user): int
     {
         return match (true) {
             !empty($user->id_enseignant) => 0,
@@ -1125,7 +1125,7 @@ class ConfigurationController extends Controller
         };
     }
 
-    private function validateUtilisateurByType(Request $request, int $type, ?User $existingUser = null): array
+    protected function validateUtilisateurByType(Request $request, int $type, ?User $existingUser = null): array
     {
         if ($request->filled('telephone')) {
             $request->merge(['telephone' => MaliPhone::normalize($request->input('telephone'))]);
@@ -1188,7 +1188,7 @@ class ConfigurationController extends Controller
         ]);
     }
 
-    private function validateManagedOrdersForUser(User $authUser, int $type, array $data, ?int $idEcole): void
+    protected function validateManagedOrdersForUser(User $authUser, int $type, array $data, ?int $idEcole): void
     {
         if ($type !== 1 || ($data['droit'] ?? null) !== 'Gestionnaire') {
             return;
@@ -1204,7 +1204,7 @@ class ConfigurationController extends Controller
         }
     }
 
-    private function ensureUniqueLinkedUser(string $column, int $id, ?int $idEcole = null): void
+    protected function ensureUniqueLinkedUser(string $column, int $id, ?int $idEcole = null): void
     {
         $query = User::where($column, $id);
         if ($idEcole) {
@@ -1218,7 +1218,7 @@ class ConfigurationController extends Controller
         }
     }
 
-    private function syncDefaultPermissions(User $user, int $type): void
+    protected function syncDefaultPermissions(User $user, int $type): void
     {
         $names = $this->defaultPermissionNames($user, $type);
 
@@ -1329,7 +1329,7 @@ class ConfigurationController extends Controller
         };
     }
 
-    private function generatePassword(int $length = 10): string
+    protected function generatePassword(int $length = 10): string
     {
         $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*';
         $password = '';
@@ -1340,7 +1340,7 @@ class ConfigurationController extends Controller
         return $password;
     }
 
-    private function validateAcademie(Request $request, ?int $ignoreId = null): array
+    protected function validateAcademie(Request $request, ?int $ignoreId = null): array
     {
         return $request->validate([
             'nom_academie' => 'required|string|max:100',
@@ -1349,7 +1349,7 @@ class ConfigurationController extends Controller
         ]);
     }
 
-    private function validateCap(Request $request, ?int $ignoreId = null): array
+    protected function validateCap(Request $request, ?int $ignoreId = null): array
     {
         return $request->validate([
             'nom_cap' => 'required|string|max:100',
@@ -1359,7 +1359,7 @@ class ConfigurationController extends Controller
         ]);
     }
 
-    private function validateEcole(Request $request): array
+    protected function validateEcole(Request $request): array
     {
         if ($request->filled('telephone')) {
             $request->merge(['telephone' => MaliPhone::normalize($request->input('telephone'))]);
@@ -1417,7 +1417,7 @@ class ConfigurationController extends Controller
         return $data;
     }
 
-    private function storeEcoleLogo(Request $request, ?string $currentLogo = null): ?string
+    protected function storeEcoleLogo(Request $request, ?string $currentLogo = null): ?string
     {
         if (!$request->hasFile('logoEcole')) {
             return $currentLogo;
@@ -1442,7 +1442,7 @@ class ConfigurationController extends Controller
         return 'images_ecoles/' . $name;
     }
 
-    private function hydrateEcoleLegacyLabels(array &$data): void
+    protected function hydrateEcoleLegacyLabels(array &$data): void
     {
         $academie = !empty($data['id_academie']) ? Academie::find($data['id_academie']) : null;
         $cap = !empty($data['id_cap']) ? Cap::find($data['id_cap']) : null;
@@ -1453,12 +1453,12 @@ class ConfigurationController extends Controller
         $data['notification_email'] = !empty($data['notification_email']) ? 1 : 0;
     }
 
-    private function authorizeEcoleMutation(Ecole $ecole): void
+    protected function authorizeEcoleMutation(Ecole $ecole): void
     {
         $this->authorizeSupAdminOnly();
     }
 
-    private function activateInitialSubscription(Request $request, Ecole $ecole): void
+    protected function activateInitialSubscription(Request $request, Ecole $ecole): void
     {
         $offreId = $request->input('abonnement_offre_id');
 
@@ -1620,7 +1620,7 @@ class ConfigurationController extends Controller
         return redirect()->route('configuration.types-notes')->with('success', 'Type de note supprimé avec succès.');
     }
 
-    private function validateClasseOfficielle(Request $request): array
+    protected function validateClasseOfficielle(Request $request): array
     {
         return $request->validate([
             'nom_classe_officielle' => 'required|string|max:255',
@@ -1628,7 +1628,7 @@ class ConfigurationController extends Controller
         ]);
     }
 
-    private function ordresClassesOfficielles(): array
+    protected function ordresClassesOfficielles(): array
     {
         return [
             'Fondamentale I' => 'Fondamentale I',

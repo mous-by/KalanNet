@@ -19,6 +19,8 @@ class ParentEleve extends Model
         'pwd',
     ];
 
+    protected $hidden = ['pwd'];
+
     public function ecole()
     {
         return $this->belongsTo(Ecole::class, 'idEcole', 'idEcole');

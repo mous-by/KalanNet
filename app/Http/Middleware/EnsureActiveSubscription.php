@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Abonnement;
+use App\Support\SubscriptionGate;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -64,28 +64,6 @@ class EnsureActiveSubscription
 
     private function isSubscriptionBlocked(int $schoolId): bool
     {
-        if ($schoolId <= 0) {
-            return false;
-        }
-
-        // Licence à vie (offre ACHAT) : abonnement actif SANS date de fin => jamais bloqué.
-        $hasLifetime = Abonnement::query()
-            ->where('ecole_id', $schoolId)
-            ->where('statut', 'actif')
-            ->whereNull('fin_at')
-            ->exists();
-
-        if ($hasLifetime) {
-            return false;
-        }
-
-        $subscription = Abonnement::query()
-            ->where('ecole_id', $schoolId)
-            ->where('statut', 'actif')
-            ->whereNotNull('fin_at')
-            ->orderByDesc('fin_at')
-            ->first();
-
-        return !$subscription || $subscription->fin_at->copy()->endOfDay()->isPast();
+        return SubscriptionGate::isBlocked($schoolId);
     }
 }

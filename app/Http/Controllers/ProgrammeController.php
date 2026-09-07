@@ -137,7 +137,7 @@ class ProgrammeController extends Controller
         return $pdf->download('Programme_officiel' . $suffix . '.pdf');
     }
 
-    private function validateProgramme(Request $request): array
+    protected function validateProgramme(Request $request): array
     {
         return $request->validate([
             'id_classe_officielle' => 'required|integer|exists:classes_officielles,id_classe_officielle',
@@ -148,7 +148,7 @@ class ProgrammeController extends Controller
         ]);
     }
 
-    private function syncProgramme(ProgrammeOfficiel $programme, array $data): void
+    protected function syncProgramme(ProgrammeOfficiel $programme, array $data): void
     {
         foreach ($data['matieres'] as $matiereData) {
             $programmeClasse = ProgrammeClasse::create([
@@ -168,7 +168,7 @@ class ProgrammeController extends Controller
         }
     }
 
-    private function authorizeProgrammesView(): void
+    protected function authorizeProgrammesView(): void
     {
         $user = Auth::user();
         if ($user->droit !== 'SupAdmin' && !$user->userHasAnyPermission($this->programmesViewPermissions())) {
@@ -183,43 +183,43 @@ class ProgrammeController extends Controller
         }
     }
 
-    private function canDownloadProgrammePdf($user): bool
+    protected function canDownloadProgrammePdf($user): bool
     {
         return $user->droit === 'SupAdmin' || $user->userHasAnyPermission(['programmes_pdf', 'programme_pdf', 'voir_pdf_programme']);
     }
 
-    private function authorizeProgrammesCreation(): void
+    protected function authorizeProgrammesCreation(): void
     {
         if (!$this->canCreateProgramme(Auth::user())) {
             abort(403, 'Vous n’avez pas la permission de créer un programme officiel.');
         }
     }
 
-    private function authorizeProgrammesUpdate(): void
+    protected function authorizeProgrammesUpdate(): void
     {
         if (!$this->canUpdateProgramme(Auth::user())) {
             abort(403, 'Vous n’avez pas la permission de modifier un programme officiel.');
         }
     }
 
-    private function authorizeProgrammesDelete(): void
+    protected function authorizeProgrammesDelete(): void
     {
         if (!$this->canDeleteProgramme(Auth::user())) {
             abort(403, 'Vous n’avez pas la permission de supprimer un programme officiel.');
         }
     }
 
-    private function canCreateProgramme($user): bool
+    protected function canCreateProgramme($user): bool
     {
         return $user->droit === 'SupAdmin' || $user->userHasAnyPermission(['programmes_creation', 'programme_creation', 'programme_création']);
     }
 
-    private function canUpdateProgramme($user): bool
+    protected function canUpdateProgramme($user): bool
     {
         return $user->droit === 'SupAdmin' || $user->userHasAnyPermission(['programmes_modification', 'programme_modification', 'programme_modifier']);
     }
 
-    private function canDeleteProgramme($user): bool
+    protected function canDeleteProgramme($user): bool
     {
         return $user->droit === 'SupAdmin' || $user->userHasAnyPermission(['programmes_supprimer', 'programme_supprimer', 'programmes_suppression', 'programme_suppression']);
     }
@@ -254,7 +254,7 @@ class ProgrammeController extends Controller
             ->get(['id_classe', 'nom_classe', 'id_classe_officielle']);
     }
 
-    private function programmesData(?int $idClasseOfficielle = null): array
+    protected function programmesData(?int $idClasseOfficielle = null): array
     {
         $user = Auth::user();
         $allowedClasses = $this->allowedClasses();

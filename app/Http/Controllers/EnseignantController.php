@@ -66,7 +66,7 @@ class EnseignantController extends Controller
         $data = $this->validateEnseignant($request);
         $data['avatar_enseignant'] = $this->storeAvatar($request);
         $data['pwd'] = Hash::make('123456');
-        $data['id_ecole'] = session('idEcole');
+        $data['id_ecole'] = session('idEcole') ?: Auth::user()->idEcole;
         $data['matricule'] = $data['matricule'] ?: $this->generateMatricule($data);
 
         Enseignant::create($this->mapFields($data));
@@ -203,7 +203,7 @@ class EnseignantController extends Controller
         return redirect()->route('enseignants.index')->with('success', 'Enseignant réactivé avec succès.');
     }
 
-    private function validateEnseignant(Request $request, ?int $ignoreId = null): array
+    protected function validateEnseignant(Request $request, ?int $ignoreId = null): array
     {
         if ($request->filled('telephone')) {
             $request->merge(['telephone' => MaliPhone::normalize($request->input('telephone'))]);
@@ -253,7 +253,7 @@ class EnseignantController extends Controller
         ]);
     }
 
-    private function contratsAutorises($ecole): array
+    protected function contratsAutorises($ecole): array
     {
         $statut = strtolower((string) ($ecole->statut ?? ''));
         $type = strtolower((string) ($ecole->typeEcole ?? ''));
@@ -430,7 +430,7 @@ class EnseignantController extends Controller
             ->exists();
     }
 
-    private function mapFields(array $data): array
+    protected function mapFields(array $data): array
     {
         $isPublic = $data['type_contrat'] === 'FONCTIONNAIRE';
         $isSalariedPrivateContract = in_array($data['type_contrat'], ['CDI', 'CDD'], true);
@@ -470,7 +470,7 @@ class EnseignantController extends Controller
         return $mapped;
     }
 
-    private function generateMatricule(array $data): string
+    protected function generateMatricule(array $data): string
     {
         $age = now()->diffInYears(\Carbon\Carbon::parse($data['date_naissance']));
         $genre = strtoupper(substr($data['genre'], 0, 1));
@@ -480,7 +480,7 @@ class EnseignantController extends Controller
         return 'Mle' . $age . $genre . '-' . $lieu . '-' . $contrat;
     }
 
-    private function storeAvatar(Request $request, ?string $currentAvatar = null): ?string
+    protected function storeAvatar(Request $request, ?string $currentAvatar = null): ?string
     {
         if (!$request->hasFile('avatar')) {
             return $currentAvatar ?: 'assets/images/avatars/avatar-1.png';
@@ -498,7 +498,7 @@ class EnseignantController extends Controller
         return 'images_enseignant/' . $name;
     }
 
-    private function authorizeEnseignant(Enseignant $enseignant): void
+    protected function authorizeEnseignant(Enseignant $enseignant): void
     {
         $user = Auth::user();
         if ($user->droit === 'SupAdmin') {
@@ -523,14 +523,14 @@ class EnseignantController extends Controller
             return;
         }
 
-        if (in_array($user->droit, ['Admin', 'Gestionnaire'], true) && session('idEcole') === $enseignant->id_ecole) {
+        if (in_array($user->droit, ['Admin', 'Gestionnaire'], true) && (session('idEcole') ?: $user->idEcole) === $enseignant->id_ecole) {
             return;
         }
 
         abort(403, 'Accès non autorisé');
     }
 
-    private function authorizeTeacherManagement(string $action): void
+    protected function authorizeTeacherManagement(string $action): void
     {
         $user = Auth::user();
 

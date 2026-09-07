@@ -303,7 +303,7 @@ class EvaluationController extends Controller
         return response()->json(['eleves' => $students]);
     }
 
-    private function evaluationContext(): array
+    protected function evaluationContext(): array
     {
         $user = Auth::user();
         $idEcole = session('idEcole') ?: $user->idEcole;
@@ -324,7 +324,7 @@ class EvaluationController extends Controller
         ];
     }
 
-    private function validateProgramme(Request $request): array
+    protected function validateProgramme(Request $request): array
     {
         $data = $request->validate([
             'libeller' => 'required|string|max:150',
@@ -357,7 +357,7 @@ class EvaluationController extends Controller
         return $data;
     }
 
-    private function studentsForEvaluation(int $idClasse, int $idAnnee)
+    protected function studentsForEvaluation(int $idClasse, int $idAnnee)
     {
         $classe = Classe::findOrFail($idClasse);
         $this->authorizeClasse($classe);
@@ -370,7 +370,7 @@ class EvaluationController extends Controller
             ->get();
     }
 
-    private function authorizeClasse(Classe $classe): void
+    protected function authorizeClasse(Classe $classe): void
     {
         $user = Auth::user();
         if ($user->droit !== 'SupAdmin' && (int) $classe->idEcole !== (int) (session('idEcole') ?: $user->idEcole)) {
@@ -378,7 +378,7 @@ class EvaluationController extends Controller
         }
     }
 
-    private function authorizeEvaluationLines($details): void
+    protected function authorizeEvaluationLines($details): void
     {
         abort_if($details->isEmpty(), 404);
 
@@ -393,7 +393,7 @@ class EvaluationController extends Controller
         }
     }
 
-    private function ensureTeacherCanEvaluate(int $classId, int $subjectId): void
+    protected function ensureTeacherCanEvaluate(int $classId, int $subjectId): void
     {
         $teacherId = Auth::user()->id_enseignant;
         if (!$teacherId) {
@@ -413,7 +413,7 @@ class EvaluationController extends Controller
         }
     }
 
-    private function normalizeNote($value): ?float
+    protected function normalizeNote($value): ?float
     {
         if ($value === null || $value === '') {
             return null;
@@ -422,14 +422,14 @@ class EvaluationController extends Controller
         return (float) str_replace(',', '.', (string) $value);
     }
 
-    private function maxNoteFor(?Note $note): float
+    protected function maxNoteFor(?Note $note): float
     {
         $value = (float) ($note?->valeur ?? 20);
 
         return $value > 0 ? $value : 20;
     }
 
-    private function validationColumns(string $status): array
+    protected function validationColumns(string $status): array
     {
         if (!Schema::hasColumn('ligne_evaluation', 'validation_status')) {
             return [];
@@ -442,14 +442,14 @@ class EvaluationController extends Controller
         ];
     }
 
-    private function requiresPrivateNoteValidation(?Classe $classe): bool
+    protected function requiresPrivateNoteValidation(?Classe $classe): bool
     {
         $statut = strtolower(trim((string) ($classe?->ecole?->statut ?? '')));
 
         return $statut === 'prive';
     }
 
-    private function notifyNoteValidators(Evaluation $evaluation): void
+    protected function notifyNoteValidators(Evaluation $evaluation): void
     {
         if (!Schema::hasTable('app_notifications') || !Schema::hasColumn('ligne_evaluation', 'validation_status')) {
             return;
@@ -504,7 +504,7 @@ class EvaluationController extends Controller
         }
     }
 
-    private function authorizeNoteValidation(): void
+    protected function authorizeNoteValidation(): void
     {
         $user = Auth::user();
 

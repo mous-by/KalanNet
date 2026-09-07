@@ -163,7 +163,7 @@ class AnnouncementController extends Controller
         return back()->with('success', 'Annonce supprimée.');
     }
 
-    private function authorizeAnnouncementAccess(string $permission): void
+    protected function authorizeAnnouncementAccess(string $permission): void
     {
         $user = Auth::user();
         if ($user->droit === 'SupAdmin' || $user->userHasPermission($permission)) {
@@ -173,7 +173,7 @@ class AnnouncementController extends Controller
         abort(403);
     }
 
-    private function ownedAnnouncementQuery(int $id)
+    protected function ownedAnnouncementQuery(int $id)
     {
         $schoolId = session('idEcole') ?: Auth::user()->idEcole;
 
@@ -182,7 +182,7 @@ class AnnouncementController extends Controller
             ->where('id_ecole', $schoolId);
     }
 
-    private function storeAttachments(Request $request): array
+    protected function storeAttachments(Request $request): array
     {
         if (!$request->hasFile('fichiers')) {
             return [];
@@ -214,7 +214,7 @@ class AnnouncementController extends Controller
         return $stored;
     }
 
-    private function insertAttachmentRows(int $announcementId, array $files): void
+    protected function insertAttachmentRows(int $announcementId, array $files): void
     {
         if (empty($files) || !Schema::hasTable('annonces_fichiers')) {
             return;
@@ -232,7 +232,7 @@ class AnnouncementController extends Controller
         ], $files));
     }
 
-    private function filesByAnnouncement(array $ids)
+    protected function filesByAnnouncement(array $ids)
     {
         if (empty($ids) || !Schema::hasTable('annonces_fichiers')) {
             return collect();
@@ -246,14 +246,14 @@ class AnnouncementController extends Controller
             ->groupBy('id_annonce');
     }
 
-    private function optionalAnnouncementColumns(array $values): array
+    protected function optionalAnnouncementColumns(array $values): array
     {
         return collect($values)
             ->filter(fn ($value, $column) => Schema::hasColumn('annonces_admin_gestionnaire', $column))
             ->all();
     }
 
-    private function visibleUnreadAnnouncementIds()
+    protected function visibleUnreadAnnouncementIds()
     {
         $user = Auth::user();
         $schoolId = session('idEcole') ?: $user->idEcole;

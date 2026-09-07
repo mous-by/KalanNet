@@ -139,7 +139,7 @@ class AppelEpreuveController extends Controller
             ->with('success', 'Appel d’épreuve enregistré. Les notes de conduite ont été recalculées.');
     }
 
-    private function formData($user, ?int $schoolId): array
+    protected function formData($user, ?int $schoolId): array
     {
         $classes = Classe::query()
             ->when($schoolId && $user->droit !== 'SupAdmin', fn ($query) => $query->where('idEcole', $schoolId))
@@ -165,7 +165,7 @@ class AppelEpreuveController extends Controller
         ];
     }
 
-    private function attachConductProgress($appels, ?int $schoolId): void
+    protected function attachConductProgress($appels, ?int $schoolId): void
     {
         $service = app(ConductNoteService::class);
         foreach ($appels->getCollection() as $appel) {
@@ -190,7 +190,7 @@ class AppelEpreuveController extends Controller
         }
     }
 
-    private function notifyParents(int $studentId, int $controlStatusId, array $data, ?int $schoolId): void
+    protected function notifyParents(int $studentId, int $controlStatusId, array $data, ?int $schoolId): void
     {
         $eleve = Eleve::with('parents')->find($studentId);
         $status = Controle::find($controlStatusId);
@@ -237,7 +237,7 @@ class AppelEpreuveController extends Controller
         }
     }
 
-    private function schoolAllowsParentEmails(?int $schoolId): bool
+    protected function schoolAllowsParentEmails(?int $schoolId): bool
     {
         if (!$schoolId || !Schema::hasColumn('ecole', 'notification_email')) {
             return true;
@@ -248,7 +248,7 @@ class AppelEpreuveController extends Controller
             ->value('notification_email');
     }
 
-    private function authorizeAccess(array $permissions): void
+    protected function authorizeAccess(array $permissions): void
     {
         $user = Auth::user();
         if (!$user || ($user->droit !== 'SupAdmin' && !$user->userHasAnyPermission($permissions))) {
@@ -256,7 +256,7 @@ class AppelEpreuveController extends Controller
         }
     }
 
-    private function authorizeClass(int $classId, ?int $schoolId, $user): void
+    protected function authorizeClass(int $classId, ?int $schoolId, $user): void
     {
         $classe = Classe::findOrFail($classId);
 
