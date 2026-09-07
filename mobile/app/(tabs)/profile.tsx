@@ -1,7 +1,6 @@
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 
-import ThemeSwitcher from '@/components/ThemeSwitcher';
 import { useAuth } from '@/context/AuthContext';
 import { SURFACE } from '@/lib/themes';
 
@@ -29,9 +28,6 @@ export default function ProfileScreen() {
         <Row label="Email" value={user?.email} />
         <Row label="Téléphone" value={user?.telephone} />
       </View>
-
-      <Text style={styles.sectionTitle}>Thème de l'application</Text>
-      <ThemeSwitcher />
 
       <Button mode="contained" buttonColor="#d33" onPress={logout} style={styles.logoutButton}>
         Se déconnecter
@@ -77,13 +73,6 @@ const styles = StyleSheet.create({
   rowValue: {
     fontWeight: '500',
     color: SURFACE.text,
-  },
-  sectionTitle: {
-    fontWeight: '600',
-    fontSize: 16,
-    color: SURFACE.text,
-    marginTop: 32,
-    marginBottom: 16,
   },
   logoutButton: {
     marginTop: 32,

@@ -1,7 +1,9 @@
 import { SymbolView } from 'expo-symbols';
 import { Tabs } from 'expo-router';
+import { View } from 'react-native';
 
 import NotificationBell from '@/components/NotificationBell';
+import ThemeMenuButton from '@/components/ThemeMenuButton';
 import { useAppTheme } from '@/context/ThemeContext';
 import { withOpacity } from '@/lib/themes';
 
@@ -13,7 +15,12 @@ export default function TabLayout() {
       screenOptions={{
         headerStyle: { backgroundColor: theme.chrome },
         headerTintColor: theme.onChrome,
-        headerRight: () => <NotificationBell color={theme.onChrome} />,
+        headerRight: () => (
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <ThemeMenuButton color={theme.onChrome} />
+            <NotificationBell color={theme.onChrome} />
+          </View>
+        ),
         tabBarStyle: { backgroundColor: theme.chrome },
         tabBarActiveTintColor: theme.onChrome,
         tabBarInactiveTintColor: withOpacity(theme.onChrome, 0.55),
