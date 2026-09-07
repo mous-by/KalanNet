@@ -1,0 +1,116 @@
+import { useEffect, useState } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import { ScrollView, StyleSheet } from 'react-native';
+import { ActivityIndicator, Text, TextInput } from 'react-native-paper';
+
+import DateField from '@/components/DateField';
+import SelectField from '@/components/SelectField';
+import SubmitButton from '@/components/SubmitButton';
+import { api, apiErrorMessage } from '@/lib/api';
+import { useApiGet } from '@/lib/useApi';
+import { AnneeScolaire, Classe, Eleve } from '@/types/api';
+
+const GENRE_OPTIONS = [
+  { value: 'Masculin', label: 'Masculin' },
+  { value: 'Féminin', label: 'Féminin' },
+];
+
+const STATUT_PAIEMENT_OPTIONS = [
+  { value: 'normal', label: 'Normal' },
+  { value: 'subventionne', label: 'Subventionné' },
+  { value: 'boursier', label: 'Boursier' },
+  { value: 'gratuit', label: 'Gratuit' },
+];
+
+export default function EditEleveScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { data, isLoading: isLoadingEleve } = useApiGet<{ eleve: Eleve }>(`/eleves/${id}`, [id]);
+  const { data: options } = useApiGet<{ classes: Classe[]; annees: AnneeScolaire[] }>('/eleves/cartes-scolaires');
+
+  const [form, setForm] = useState<Partial<Eleve>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (data?.eleve) setForm(data.eleve);
+  }, [data]);
+
+  function set<K extends keyof Eleve>(key: K, value: Eleve[K]) {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  async function handleSubmit() {
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      await api.put(`/eleves/${id}`, {
+        prenom_eleve: form.prenom_eleve,
+        nom_eleve: form.nom_eleve,
+        matricule: form.matricule,
+        genre_eleve: form.genre_eleve,
+        date_naissance: form.date_naissance,
+        lieu_naiss: form.lieu_naiss,
+        adresse_eleve: form.adresse_eleve,
+        cas_social: form.cas_social,
+        mode_paiement: form.mode_paiement,
+        statut_paiement: form.statut_paiement,
+        id_classe: form.id_classe,
+        id_annee: form.id_annee,
+        date_inscription: form.date_inscription,
+      });
+      router.back();
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Impossible de sauvegarder cet élève.'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  if (isLoadingEleve || !form.id_eleve) {
+    return <ActivityIndicator style={styles.spinner} size="large" />;
+  }
+
+  const classeOptions = (options?.classes ?? []).map((c) => ({ value: c.id_classe, label: c.nom_classe }));
+  const anneeOptions = (options?.annees ?? []).map((a) => ({ value: a.id_anneeScolaire, label: a.annee }));
+
+  return (
+    <ScrollView contentContainerStyle={styles.content}>
+      <TextInput mode="outlined" label="Prénom" value={form.prenom_eleve ?? ''} onChangeText={(v) => set('prenom_eleve', v)} style={styles.input} />
+      <TextInput mode="outlined" label="Nom" value={form.nom_eleve ?? ''} onChangeText={(v) => set('nom_eleve', v)} style={styles.input} />
+      <TextInput mode="outlined" label="Matricule" value={form.matricule ?? ''} onChangeText={(v) => set('matricule', v)} style={styles.input} />
+      <SelectField label="Genre" value={form.genre_eleve ?? null} options={GENRE_OPTIONS} onChange={(v) => set('genre_eleve', v as string)} />
+      <DateField label="Date de naissance" value={form.date_naissance ?? null} onChange={(v) => set('date_naissance', v)} />
+      <TextInput mode="outlined" label="Lieu de naissance" value={form.lieu_naiss ?? ''} onChangeText={(v) => set('lieu_naiss', v)} style={styles.input} />
+      <TextInput mode="outlined" label="Adresse" value={form.adresse_eleve ?? ''} onChangeText={(v) => set('adresse_eleve', v)} style={styles.input} />
+      <SelectField
+        label="Statut de paiement"
+        value={form.statut_paiement ?? null}
+        options={STATUT_PAIEMENT_OPTIONS}
+        onChange={(v) => set('statut_paiement', v as string)}
+      />
+      <SelectField label="Classe" value={form.id_classe ?? null} options={classeOptions} onChange={(v) => set('id_classe', v as number)} />
+      <SelectField label="Année scolaire" value={form.id_annee ?? null} options={anneeOptions} onChange={(v) => set('id_annee', v as number)} />
+      <DateField label="Date d'inscription" value={form.date_inscription ?? null} onChange={(v) => set('date_inscription', v)} />
+
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+
+      <SubmitButton label="Enregistrer" onPress={handleSubmit} loading={isSubmitting} />
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  content: {
+    padding: 20,
+  },
+  input: {
+    marginBottom: 12,
+  },
+  spinner: {
+    marginTop: 40,
+  },
+  error: {
+    color: '#d33',
+    marginBottom: 12,
+  },
+});

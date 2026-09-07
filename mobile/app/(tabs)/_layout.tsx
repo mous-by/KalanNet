@@ -2,6 +2,7 @@ import { SymbolView } from 'expo-symbols';
 import { Tabs } from 'expo-router';
 
 import Colors from '@/constants/Colors';
+import NotificationBell from '@/components/NotificationBell';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
 
@@ -13,6 +14,7 @@ export default function TabLayout() {
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme].tint,
         headerShown: useClientOnlyValue(false, true),
+        headerRight: () => <NotificationBell />,
       }}>
       <Tabs.Screen
         name="index"
@@ -21,6 +23,20 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <SymbolView
               name={{ ios: 'house.fill', android: 'home', web: 'home' }}
+              tintColor={color}
+              size={26}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="eleves"
+        options={{
+          title: 'Élèves',
+          headerShown: false,
+          tabBarIcon: ({ color }) => (
+            <SymbolView
+              name={{ ios: 'person.2.fill', android: 'people', web: 'people' }}
               tintColor={color}
               size={26}
             />

@@ -1,11 +1,15 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { PaperProvider } from 'react-native-paper';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { paperDarkTheme, paperLightTheme } from '@/lib/paperTheme';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -30,10 +34,12 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthProvider>
-      <SplashScreenController />
-      <RootLayoutNav />
-    </AuthProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AuthProvider>
+        <SplashScreenController />
+        <RootLayoutNav />
+      </AuthProvider>
+    </GestureHandlerRootView>
   );
 }
 
@@ -57,17 +63,23 @@ function RootLayoutNav() {
     return null;
   }
 
-  return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Protected guard={!!user}>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        </Stack.Protected>
+  const navTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
+  const paperTheme = colorScheme === 'dark' ? paperDarkTheme : paperLightTheme;
 
-        <Stack.Protected guard={!user}>
-          <Stack.Screen name="login" options={{ headerShown: false }} />
-        </Stack.Protected>
-      </Stack>
-    </ThemeProvider>
+  return (
+    <PaperProvider theme={paperTheme} settings={{ icon: (props) => <MaterialCommunityIcons {...props} /> }}>
+      <ThemeProvider value={navTheme}>
+        <Stack>
+          <Stack.Protected guard={!!user}>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="notifications" options={{ title: 'Notifications' }} />
+          </Stack.Protected>
+
+          <Stack.Protected guard={!user}>
+            <Stack.Screen name="login" options={{ headerShown: false }} />
+          </Stack.Protected>
+        </Stack>
+      </ThemeProvider>
+    </PaperProvider>
   );
 }
