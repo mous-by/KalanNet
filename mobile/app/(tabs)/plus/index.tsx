@@ -22,11 +22,24 @@ const SECTIONS: { title: string; items: MenuItem[] }[] = [
       { label: 'Émargements', icon: 'notebook-check', href: '/plus/emargements', roles: ['SupAdmin', 'Admin', 'Gestionnaire', 'enseignant'] },
       { label: 'Présences', icon: 'account-check', href: '/plus/presences', roles: ['SupAdmin', 'Admin', 'Gestionnaire', 'enseignant'] },
       { label: 'Bulletins', icon: 'file-document', href: '/plus/bulletins', roles: ['SupAdmin', 'Admin', 'Gestionnaire', 'DAE', 'DCAP'] },
+      { label: 'Résultats nationaux', icon: 'school', href: '/plus/resultats-nationaux', roles: ['SupAdmin', 'Admin', 'Gestionnaire', 'DAE', 'DCAP'] },
+      { label: "Appels d'épreuves", icon: 'alert-circle-outline', href: '/plus/appels-epreuves/new', roles: ['SupAdmin', 'Admin', 'Gestionnaire', 'enseignant'] },
     ],
   },
   {
     title: 'Finances',
-    items: [{ label: 'Paiements', icon: 'cash-multiple', href: '/plus/finances', roles: ['SupAdmin', 'Admin', 'Gestionnaire'] }],
+    items: [
+      { label: 'Paiements', icon: 'cash-multiple', href: '/plus/finances', roles: ['SupAdmin', 'Admin', 'Gestionnaire'] },
+      { label: 'Salaires enseignants', icon: 'wallet', href: '/plus/salaires', roles: ['SupAdmin', 'Admin', 'Gestionnaire'] },
+    ],
+  },
+  {
+    title: 'Communication',
+    items: [{ label: 'Annonces', icon: 'bullhorn', href: '/plus/annonces' }],
+  },
+  {
+    title: 'Administration',
+    items: [{ label: 'Abonnement', icon: 'star-circle', href: '/plus/abonnement', roles: ['SupAdmin', 'Admin'] }],
   },
 ];
 

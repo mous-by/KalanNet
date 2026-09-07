@@ -28,6 +28,17 @@ export default function PlusLayout() {
       <Stack.Screen name="finances/index" options={{ title: 'Paiements' }} />
       <Stack.Screen name="finances/new" options={{ title: 'Nouveau paiement' }} />
       <Stack.Screen name="finances/caisse" options={{ title: 'Caisse' }} />
+
+      <Stack.Screen name="salaires/index" options={{ title: 'Salaires' }} />
+
+      <Stack.Screen name="annonces/index" options={{ title: 'Annonces' }} />
+      <Stack.Screen name="annonces/new" options={{ title: 'Nouvelle annonce' }} />
+
+      <Stack.Screen name="resultats-nationaux/index" options={{ title: 'Résultats nationaux' }} />
+
+      <Stack.Screen name="appels-epreuves/new" options={{ title: "Nouvel appel d'épreuve" }} />
+
+      <Stack.Screen name="abonnement/index" options={{ title: 'Abonnement' }} />
     </Stack>
   );
 }
