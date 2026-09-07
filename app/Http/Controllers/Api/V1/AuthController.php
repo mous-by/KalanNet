@@ -126,6 +126,19 @@ class AuthController extends Controller
         ]);
     }
 
+    public function updateTheme(Request $request)
+    {
+        $data = $request->validate([
+            'theme' => 'required|string|in:bleu-sombre,light,dark,vert,violet,rouge,orange,ocean,ambre,ardoise,brume',
+        ]);
+
+        $user = $request->user();
+        $user->theme_preference = $data['theme'];
+        $user->save();
+
+        return response()->json(['user' => new UserResource($user)]);
+    }
+
     private function issueToken(User $user, Request $request)
     {
         $user->last_login_at = now();

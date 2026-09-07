@@ -37,6 +37,7 @@ Route::prefix('v1')->group(function () {
     Route::middleware(['auth:sanctum', BridgeSanctumAuth::class, SeedSchoolSession::class, EnsureActiveSubscriptionApi::class])->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::get('/auth/me', [AuthController::class, 'me']);
+        Route::put('/auth/theme', [AuthController::class, 'updateTheme']);
 
         Route::get('/dashboard', [DashboardController::class, 'index']);
 
