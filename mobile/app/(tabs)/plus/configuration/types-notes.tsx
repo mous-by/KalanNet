@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
+import { FlatList, StyleSheet, View } from 'react-native';
 import { Button, Dialog, FAB, Portal, Text, TextInput } from 'react-native-paper';
 
 import requiredLabel from '@/components/RequiredLabel';
@@ -7,6 +7,7 @@ import SelectField from '@/components/SelectField';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useAllPaginated, usePaginatedApi } from '@/lib/useApi';
+import { useKeyboardHeight } from '@/lib/useKeyboardHeight';
 
 interface TypeNote {
   id_note: number;
@@ -26,6 +27,7 @@ const TYPE_LABELS: Record<string, string> = { devoir: 'Devoir', composition: 'Co
 export default function TypesNotesScreen() {
   const list = usePaginatedApi<TypeNote>('/configuration/types-notes');
   const { items: allTypesNotes } = useAllPaginated<TypeNote>('/configuration/types-notes');
+  const keyboardHeight = useKeyboardHeight();
   const [editing, setEditing] = useState<TypeNote | null>(null);
   const [dialogVisible, setDialogVisible] = useState(false);
   const [typeNote, setTypeNote] = useState<string | null>(null);
@@ -121,22 +123,20 @@ export default function TypesNotesScreen() {
       <FAB icon="plus" style={styles.fab} onPress={() => openDialog()} />
 
       <Portal>
-        <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-            <Dialog.Title>{editing ? 'Modifier le type de note' : 'Nouveau type de note'}</Dialog.Title>
-            <Dialog.Content>
-              <SelectField label={requiredLabel('Type')} value={typeNote} options={TYPE_OPTIONS} onChange={(v) => handleTypeChange(v as string)} />
-              <TextInput mode="outlined" label={requiredLabel('Code')} value={codeNote} onChangeText={setCodeNote} style={styles.input} />
-              <TextInput mode="outlined" label={requiredLabel('Note maximale')} keyboardType="numeric" value={valeur} onChangeText={setValeur} style={styles.input} />
-              {error ? <Text style={styles.error}>{error}</Text> : null}
-            </Dialog.Content>
-            <Dialog.Actions>
-              <Button onPress={() => setDialogVisible(false)}>Annuler</Button>
-              <Button loading={isSubmitting} onPress={handleSubmit}>
-                Enregistrer
-              </Button>
-            </Dialog.Actions>
-          </KeyboardAvoidingView>
+        <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)} style={{ marginBottom: keyboardHeight }}>
+          <Dialog.Title>{editing ? 'Modifier le type de note' : 'Nouveau type de note'}</Dialog.Title>
+          <Dialog.Content>
+            <SelectField label={requiredLabel('Type')} value={typeNote} options={TYPE_OPTIONS} onChange={(v) => handleTypeChange(v as string)} />
+            <TextInput mode="outlined" label={requiredLabel('Code')} value={codeNote} onChangeText={setCodeNote} style={styles.input} />
+            <TextInput mode="outlined" label={requiredLabel('Note maximale')} keyboardType="numeric" value={valeur} onChangeText={setValeur} style={styles.input} />
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setDialogVisible(false)}>Annuler</Button>
+            <Button loading={isSubmitting} onPress={handleSubmit}>
+              Enregistrer
+            </Button>
+          </Dialog.Actions>
         </Dialog>
       </Portal>
 
