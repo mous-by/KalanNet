@@ -98,6 +98,7 @@
                 </thead>
                 <tbody>
                     @foreach($details as $line)
+                        @continue(!$line->eleve)
                         <tr>
                             <td class="px-4 py-3 text-muted">{{ $line->eleve->matricule }}</td>
                             <td class="fw-bold">{{ $line->eleve->nom_eleve }} {{ $line->eleve->prenom_eleve }}</td>

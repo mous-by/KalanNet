@@ -100,12 +100,14 @@ class EvaluationController extends WebEvaluationController
         $this->authorizeEvaluationLines($details);
 
         $firstLine = $details->first();
+        $classe = $firstLine?->classe ?? new Classe(['nom_classe' => 'Non renseignée']);
+        $this->authorizeClasse($classe);
 
         return response()->json([
             'evaluation' => $evaluation,
             'details' => $details,
             'matiere' => $firstLine?->matiere ?? new Matiere(['nom_matiere' => 'Non renseignée']),
-            'classe' => $firstLine?->classe ?? new Classe(['nom_classe' => 'Non renseignée']),
+            'classe' => $classe,
         ]);
     }
 

@@ -114,6 +114,7 @@ class EvaluationController extends Controller
         $firstLine = $details->first();
         $matiere = $firstLine?->matiere ?? new Matiere(['nom_matiere' => 'Non renseignée']);
         $classe = $firstLine?->classe ?? new Classe(['nom_classe' => 'Non renseignée']);
+        $this->authorizeClasse($classe);
 
         return view('evaluations.show', compact('evaluation', 'details', 'matiere', 'classe'));
     }
