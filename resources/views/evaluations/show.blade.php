@@ -27,7 +27,7 @@
                     <button type="submit" class="btn btn-primary me-2"><i class="bi bi-check2-circle me-1"></i>Valider les notes</button>
                 </form>
             @endif
-            <button type="button" class="btn theme-action-btn" onclick="window.print()"><i class="bi bi-printer me-1"></i>Imprimer</button>
+            <a href="{{ route('evaluations.pdf', $first->id_evaluation) }}" class="btn theme-action-btn"><i class="bi bi-printer me-1"></i>Imprimer</a>
         </div>
     </div>
 
@@ -137,15 +137,6 @@
         .widget-icon { width: 54px; height: 54px; display: flex; align-items: center; justify-content: center; }
     </style>
 @endsection
-
-@push('styles')
-    <style>
-        @media print {
-            .sidebar-wrapper, .top-header, .page-breadcrumb, .back-to-top, .overlay { display: none !important; }
-            .page-content { margin: 0 !important; padding: 0 !important; }
-        }
-    </style>
-@endpush
 
 @push('scripts')
     <script>

@@ -6,6 +6,7 @@ import { ActivityIndicator, Button, Text, TextInput } from 'react-native-paper';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
 import { api, apiErrorMessage } from '@/lib/api';
+import { downloadAndShare } from '@/lib/downloadFile';
 import { hasPermission } from '@/lib/permissions';
 import { useApiGet } from '@/lib/useApi';
 import { Eleve, Matiere } from '@/types/api';
@@ -33,6 +34,7 @@ export default function EvaluationDetailScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
     if (data?.details) {
@@ -90,6 +92,18 @@ export default function EvaluationDetailScreen() {
     }
   }
 
+  async function handleDownloadPdf() {
+    if (!data) return;
+    setIsDownloading(true);
+    try {
+      await downloadAndShare(`/evaluations/${id}/pdf`, `Notes_${data.evaluation.libeller}.pdf`);
+    } catch (err) {
+      setSaveError(apiErrorMessage(err, 'Impossible de télécharger le PDF.'));
+    } finally {
+      setIsDownloading(false);
+    }
+  }
+
   if (isLoading) return <ActivityIndicator style={styles.spinner} size="large" />;
   if (error || !data) return <Text style={styles.error}>{error ?? 'Évaluation introuvable.'}</Text>;
 
@@ -100,20 +114,21 @@ export default function EvaluationDetailScreen() {
         {data.classe?.nom_classe ?? '—'} · {data.matiere?.nom_matiere ?? '—'} · {data.evaluation.date_evaluation}
       </Text>
 
-      {canValidate || canDelete ? (
-        <View style={styles.actions}>
-          {canValidate ? (
-            <Button mode="outlined" onPress={handleValidate} style={styles.actionButton}>
-              Valider
-            </Button>
-          ) : null}
-          {canDelete ? (
-            <Button mode="outlined" textColor="#d33" onPress={handleDelete} style={styles.actionButton}>
-              Supprimer
-            </Button>
-          ) : null}
-        </View>
-      ) : null}
+      <View style={styles.actions}>
+        <Button mode="outlined" icon="printer" loading={isDownloading} onPress={handleDownloadPdf} style={styles.actionButton}>
+          Fiche PDF
+        </Button>
+        {canValidate ? (
+          <Button mode="outlined" onPress={handleValidate} style={styles.actionButton}>
+            Valider
+          </Button>
+        ) : null}
+        {canDelete ? (
+          <Button mode="outlined" textColor="#d33" onPress={handleDelete} style={styles.actionButton}>
+            Supprimer
+          </Button>
+        ) : null}
+      </View>
 
       {data.details.map((line) => (
         <View key={line.id_ligneEvaluation} style={styles.studentRow}>

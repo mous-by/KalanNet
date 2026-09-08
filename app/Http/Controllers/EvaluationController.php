@@ -6,12 +6,14 @@ use App\Models\Evaluation;
 use App\Models\AppNotification;
 use App\Models\LigneEvaluation;
 use App\Models\Classe;
+use App\Models\Ecole;
 use App\Models\Eleve;
 use App\Models\User;
 use App\Models\Matiere;
 use App\Models\AnneeScolaire;
 use App\Models\Note;
 use App\Models\Trimestre;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -117,6 +119,31 @@ class EvaluationController extends Controller
         $this->authorizeClasse($classe);
 
         return view('evaluations.show', compact('evaluation', 'details', 'matiere', 'classe'));
+    }
+
+    public function downloadNotesPdf($id)
+    {
+        $evaluation = Evaluation::findOrFail($id);
+
+        $details = LigneEvaluation::with(['eleve', 'matiere', 'classe', 'noteType'])
+            ->where('id_evaluation', $evaluation->id_evaluation)
+            ->orderBy('id_eleve')
+            ->get();
+        $this->authorizeEvaluationLines($details);
+
+        $firstLine = $details->first();
+        $matiere = $firstLine?->matiere ?? new Matiere(['nom_matiere' => 'Non renseignée']);
+        $classe = $firstLine?->classe ?? new Classe(['nom_classe' => 'Non renseignée']);
+        $this->authorizeClasse($classe);
+
+        $details = $details->sortBy(fn ($line) => trim(($line->eleve?->nom_eleve ?? '') . ($line->eleve?->prenom_eleve ?? '')))->values();
+        $maxNote = $this->maxNoteFor($firstLine?->noteType);
+        $ecole = Ecole::withoutGlobalScopes()->find($classe->idEcole ?: session('idEcole'));
+
+        $pdf = Pdf::loadView('pdf.evaluation_notes', compact('evaluation', 'details', 'matiere', 'classe', 'maxNote', 'ecole'))
+            ->setPaper('a4', 'portrait');
+
+        return $pdf->download('Notes_' . str_replace(' ', '_', $classe->nom_classe) . '_' . str_replace(' ', '_', $matiere->nom_matiere) . '.pdf');
     }
 
     public function edit(int $id)

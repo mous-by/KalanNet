@@ -131,6 +131,7 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/evaluations/{id}', [EvaluationController::class, 'update'])->name('evaluations.update');
     Route::patch('/evaluations/{id}/validate-notes', [EvaluationController::class, 'validateNotes'])->name('evaluations.validate-notes');
     Route::delete('/evaluations/{id}', [EvaluationController::class, 'destroy'])->name('evaluations.destroy');
+    Route::get('/evaluations/{id}/pdf', [EvaluationController::class, 'downloadNotesPdf'])->name('evaluations.pdf');
     Route::get('/evaluations/{id}', [EvaluationController::class, 'show'])->name('evaluations.show');
 
     // Finances

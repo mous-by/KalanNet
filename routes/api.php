@@ -102,6 +102,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/evaluations/students', [EvaluationController::class, 'students']);
         Route::get('/evaluations/classes/{idClasse}/matieres', [EvaluationController::class, 'matieresByClasse']);
         Route::get('/evaluations/{id}', [EvaluationController::class, 'show']);
+        Route::get('/evaluations/{id}/pdf', [EvaluationController::class, 'downloadNotesPdf']);
         Route::put('/evaluations/{id}/notes', [EvaluationController::class, 'update']);
         Route::post('/evaluations/{id}/validate', [EvaluationController::class, 'validateNotes']);
         Route::delete('/evaluations/{id}', [EvaluationController::class, 'destroy']);
