@@ -132,6 +132,7 @@ class AbonnementController extends WebAbonnementController
         if (!$this->canReviewAbonnements($request->user())) {
             abort(403);
         }
+        $this->authorizePaiementReview($request->user(), $paiement);
 
         $data = $request->validate(['review_note' => 'nullable|string|max:1000']);
 
@@ -149,6 +150,7 @@ class AbonnementController extends WebAbonnementController
         if (!$this->canReviewAbonnements($request->user())) {
             abort(403);
         }
+        $this->authorizePaiementReview($request->user(), $paiement);
 
         $data = $request->validate(['review_note' => 'nullable|string|max:1000']);
 

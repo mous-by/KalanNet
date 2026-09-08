@@ -133,9 +133,11 @@ class AbonnementController extends Controller
 
     public function approvePaiement(Request $request, AbonnementPaiement $paiement, AbonnementPaymentService $payments)
     {
-        if (!$this->canReviewAbonnements(Auth::user())) {
+        $user = Auth::user();
+        if (!$this->canReviewAbonnements($user)) {
             abort(403);
         }
+        $this->authorizePaiementReview($user, $paiement);
 
         $data = $request->validate([
             'review_note' => 'nullable|string|max:1000',
@@ -152,9 +154,11 @@ class AbonnementController extends Controller
 
     public function rejectPaiement(Request $request, AbonnementPaiement $paiement, AbonnementPaymentService $payments)
     {
-        if (!$this->canReviewAbonnements(Auth::user())) {
+        $user = Auth::user();
+        if (!$this->canReviewAbonnements($user)) {
             abort(403);
         }
+        $this->authorizePaiementReview($user, $paiement);
 
         $data = $request->validate([
             'review_note' => 'nullable|string|max:1000',
@@ -167,6 +171,25 @@ class AbonnementController extends Controller
         }
 
         return back()->with('success', 'Paiement rejeté.');
+    }
+
+    /**
+     * SupAdmin reviews pending payments across every school by design (the
+     * SupAdmin dashboard's global pending-validations list). But
+     * abonnements_validation is an ordinary assignable permission — an
+     * Admin/Gestionnaire granted it must only review their OWN school's
+     * payments, never one guessed via a foreign AbonnementPaiement id.
+     */
+    protected function authorizePaiementReview($user, AbonnementPaiement $paiement): void
+    {
+        if ($user->droit === 'SupAdmin') {
+            return;
+        }
+
+        $idEcole = session('idEcole') ?: $user->idEcole;
+        if ((int) $paiement->ecole_id !== (int) $idEcole) {
+            abort(403);
+        }
     }
 
     public function webhook(Request $request, string $provider, AbonnementPaymentService $payments)
