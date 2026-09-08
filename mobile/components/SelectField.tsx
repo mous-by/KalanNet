@@ -75,8 +75,8 @@ export default function SelectField({ label, value, options, onChange, disabled 
               />
             </Dialog.Content>
           ) : null}
-          <Dialog.ScrollArea style={styles.scrollArea}>
-            <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+          <View style={styles.listBox}>
+            <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} nestedScrollEnabled>
               {filtered.length === 0 ? (
                 <Text style={styles.empty}>Aucune option disponible.</Text>
               ) : (
@@ -92,7 +92,7 @@ export default function SelectField({ label, value, options, onChange, disabled 
                 ))
               )}
             </ScrollView>
-          </Dialog.ScrollArea>
+          </View>
           <Dialog.Actions>
             <Button onPress={close}>Fermer</Button>
           </Dialog.Actions>
@@ -109,15 +109,16 @@ const styles = StyleSheet.create({
   dialog: {
     maxHeight: '80%',
   },
-  scrollArea: {
-    paddingHorizontal: 0,
+  listBox: {
+    maxHeight: 360,
+    marginTop: 8,
   },
   scrollView: {
     maxHeight: 360,
   },
   scrollContent: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 24,
+    paddingVertical: 8,
   },
   empty: {
     textAlign: 'center',
