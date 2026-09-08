@@ -13,11 +13,13 @@
         </div>
     </div>
 
-    <div class="mb-3 d-flex justify-content-end">
-        <a href="{{ route('classes.create') }}" class="btn border-0 border-start border-primary border-4 bg-light-primary text-primary px-4">
-            <i class="bi bi-plus-lg me-2"></i>Classe
-        </a>
-    </div>
+    @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('classes_creation'))
+        <div class="mb-3 d-flex justify-content-end">
+            <a href="{{ route('classes.create') }}" class="btn border-0 border-start border-primary border-4 bg-light-primary text-primary px-4">
+                <i class="bi bi-plus-lg me-2"></i>Classe
+            </a>
+        </div>
+    @endif
 
     <!-- Main Card (Disposition Alliance-Team) -->
     <div class="card border-top border-4 border-primary shadow-sm mt-3">
@@ -61,11 +63,13 @@
                                                     <i class="bi bi-eye text-info me-2"></i>Aperçu
                                                 </a>
                                             </li>
-                                            <li>
-                                                <a class="dropdown-item py-2" href="{{ route('classes.edit', $classe->id_classe) }}">
-                                                    <i class="bi bi-pencil text-warning me-2"></i>Modifier
-                                                </a>
-                                            </li>
+                                            @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('classes_modification'))
+                                                <li>
+                                                    <a class="dropdown-item py-2" href="{{ route('classes.edit', $classe->id_classe) }}">
+                                                        <i class="bi bi-pencil text-warning me-2"></i>Modifier
+                                                    </a>
+                                                </li>
+                                            @endif
                                             <li>
                                                 <a class="dropdown-item py-2" href="{{ route('pedagogie.timetable', ['id_classe' => $classe->id_classe]) }}">
                                                     <i class="bi bi-calendar-plus text-primary me-2"></i>Emploi du temps
@@ -78,16 +82,18 @@
                                                     </a>
                                                 </li>
                                             @endif
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li>
-                                                <form action="{{ route('classes.destroy', $classe->id_classe) }}" method="POST" data-confirm-delete data-confirm-title="Supprimer cette classe ?" data-confirm-text="La classe « {{ $classe->nom_classe }} » sera définitivement supprimée.">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="dropdown-item py-2 text-danger">
-                                                        <i class="bi bi-trash me-2"></i>Supprimer
-                                                    </button>
-                                                </form>
-                                            </li>
+                                            @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('classes_supprimer'))
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li>
+                                                    <form action="{{ route('classes.destroy', $classe->id_classe) }}" method="POST" data-confirm-delete data-confirm-title="Supprimer cette classe ?" data-confirm-text="La classe « {{ $classe->nom_classe }} » sera définitivement supprimée.">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="dropdown-item py-2 text-danger">
+                                                            <i class="bi bi-trash me-2"></i>Supprimer
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            @endif
                                         </ul>
                                     </div>
                                 </td>

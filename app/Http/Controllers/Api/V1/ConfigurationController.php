@@ -286,6 +286,10 @@ class ConfigurationController extends WebConfigurationController
         $authUser = $request->user();
         $idEcole = session('idEcole');
 
+        if ($authUser->droit !== 'SupAdmin' && !$authUser->userHasPermission('utilisateurs_modification')) {
+            abort(403, 'Permission insuffisante.');
+        }
+
         $utilisateur = $this->userScope(User::query(), $authUser, $idEcole)->where('idUtilisateur', $id)->firstOrFail();
         $this->authorizeTargetUserGovernance($authUser, $utilisateur);
 

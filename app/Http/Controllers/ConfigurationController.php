@@ -540,6 +540,10 @@ class ConfigurationController extends Controller
         $authUser = Auth::user();
         $idEcole = session('idEcole');
 
+        if ($authUser->droit !== 'SupAdmin' && !$authUser->userHasPermission('utilisateurs_modification')) {
+            abort(403, 'Permission insuffisante.');
+        }
+
         $utilisateur = $this->userScope(User::query(), $authUser, $idEcole)
             ->where('idUtilisateur', $id)
             ->firstOrFail();

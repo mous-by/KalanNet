@@ -56,7 +56,7 @@ class PresenceController extends Controller
 
     public function store(Request $request)
     {
-        $this->authorizePermission('presence_apercu');
+        $this->authorizePermission('presence_creation');
         $data = $this->validatedData($request);
         $data['id_ecole'] = session('idEcole') ?: Auth::user()->idEcole;
         $data['valide'] = 0;
@@ -291,7 +291,7 @@ class PresenceController extends Controller
     protected function presencePermissions($user): array
     {
         return [
-            'create' => $this->hasPermission($user, 'presence_apercu'),
+            'create' => $this->hasPermission($user, 'presence_creation'),
             'validate' => $this->hasPermission($user, $this->presenceActionPermission('validate')),
             'edit' => $this->hasPermission($user, $this->presenceActionPermission('edit')),
             'delete' => $this->hasPermission($user, $this->presenceActionPermission('delete')),
@@ -306,12 +306,12 @@ class PresenceController extends Controller
             'delete' => 'presence_supprimer',
         ][$action];
 
-        return Permission::where('name', $permission)->exists() ? $permission : 'presence_apercu';
+        return Permission::where('name', $permission)->exists() ? $permission : 'presence_modification';
     }
 
     protected function hasPermission($user, string $permission): bool
     {
-        if ($user->droit === 'enseignant' && $permission === 'presence_apercu') {
+        if ($user->droit === 'enseignant' && in_array($permission, ['presence_apercu', 'presence_creation'], true)) {
             return true;
         }
 

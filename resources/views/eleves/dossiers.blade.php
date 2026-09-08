@@ -162,7 +162,7 @@
                                     </td>
                                     <td><span class="badge theme-icon-soft">{{ $statusLabel }}</span></td>
                                     <td class="text-end">
-                                        @if((int) $eleve->etat_dossier === 1)
+                                        @if((int) $eleve->etat_dossier === 1 && (auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('eleves_modification')))
                                             <button type="button" class="btn btn-sm btn-outline-success me-1" data-bs-toggle="modal" data-bs-target="#reintegrateModal{{ $eleve->id_eleve }}">
                                                 <i class="bi bi-arrow-counterclockwise me-1"></i>Réintégrer
                                             </button>
@@ -170,7 +170,7 @@
                                         <a href="{{ route('eleves.show', $eleve->id_eleve) }}" class="btn btn-sm btn-primary">
                                             <i class="bi bi-folder2-open me-1"></i>Ouvrir
                                         </a>
-                                        @if((int) $eleve->etat_dossier === 1)
+                                        @if((int) $eleve->etat_dossier === 1 && (auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('eleves_modification')))
                                             <div class="modal fade text-start" id="reintegrateModal{{ $eleve->id_eleve }}" tabindex="-1" aria-hidden="true">
                                                 <div class="modal-dialog modal-dialog-centered">
                                                     <div class="modal-content border-0 rounded-4 shadow">

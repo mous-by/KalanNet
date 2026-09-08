@@ -11,11 +11,13 @@
             </ol>
         </nav>
     </div>
-    <div class="ms-auto">
-        <button class="btn theme-action-btn" data-bs-toggle="modal" data-bs-target="#banqueModal">
-            <i class="bi bi-plus-lg me-1"></i>Ajouter
-        </button>
-    </div>
+    @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('banques_creation'))
+        <div class="ms-auto">
+            <button class="btn theme-action-btn" data-bs-toggle="modal" data-bs-target="#banqueModal">
+                <i class="bi bi-plus-lg me-1"></i>Ajouter
+            </button>
+        </div>
+    @endif
 </div>
 
 @include('finances.paiements.partials.alerts')
@@ -31,7 +33,9 @@
                     <td>{{ $banque->nom_banque }}</td>
                     <td class="text-end text-success fw-bold">{{ number_format($banque->solde, 0, ',', ' ') }} FCFA</td>
                     <td class="text-end px-4">
-                        <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#editBanque{{ $banque->id_banques }}">Modifier</button>
+                        @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('banques_modification'))
+                            <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#editBanque{{ $banque->id_banques }}">Modifier</button>
+                        @endif
                     </td>
                 </tr>
             @empty

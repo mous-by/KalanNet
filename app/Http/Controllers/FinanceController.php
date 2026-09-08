@@ -933,6 +933,7 @@ class FinanceController extends Controller
 
     public function storeCaisse(Request $request)
     {
+        $this->ensurePermission('caisses_creation');
         $idEcole = session('idEcole');
 
         $request->validate([
@@ -966,6 +967,7 @@ class FinanceController extends Controller
 
     public function storeEncaissement(Request $request)
     {
+        $this->ensurePermission('encaissement_creation');
         $data = $request->validate([
             'id_caisse' => 'required|exists:caisse,id_caisse',
             'id_annee_scolaire' => 'required|exists:anneescolaire,id_anneeScolaire',

@@ -58,6 +58,7 @@ class EvaluationController extends Controller
 
     public function store(Request $request)
     {
+        $this->authorizePermission('evaluation_creation');
         $data = $this->validateProgramme($request);
         $user = Auth::user();
         $idEnseignant = $user->id_enseignant;
@@ -149,6 +150,7 @@ class EvaluationController extends Controller
 
     public function updateProgramme(Request $request, int $id)
     {
+        $this->authorizePermission('evaluation_modification');
         $evaluation = Evaluation::findOrFail($id);
         $details = LigneEvaluation::with('classe')->where('id_evaluation', $evaluation->id_evaluation)->get();
 
@@ -198,6 +200,7 @@ class EvaluationController extends Controller
 
     public function update(Request $request, int $id)
     {
+        $this->authorizePermission('evaluation_modification');
         $evaluation = Evaluation::findOrFail($id);
         $details = LigneEvaluation::with(['classe.ecole', 'noteType'])->where('id_evaluation', $evaluation->id_evaluation)->get();
         abort_if($details->isEmpty(), 404);
@@ -252,6 +255,7 @@ class EvaluationController extends Controller
 
     public function destroy(int $id)
     {
+        $this->authorizePermission('evaluation_supprimer');
         $evaluation = Evaluation::findOrFail($id);
         $firstLine = LigneEvaluation::with('classe')->where('id_evaluation', $evaluation->id_evaluation)->first();
         if ($firstLine) {
@@ -510,6 +514,14 @@ class EvaluationController extends Controller
 
         if ($user->droit !== 'SupAdmin' && !$user->userHasAnyPermission(['evaluation_validation_notes', 'valider_note_saisi', 'valider_notes_saisies'])) {
             abort(403);
+        }
+    }
+
+    protected function authorizePermission(string $permission): void
+    {
+        $user = Auth::user();
+        if (!$user || ($user->droit !== 'SupAdmin' && !$user->userHasPermission($permission))) {
+            abort(403, 'Permission insuffisante.');
         }
     }
 }

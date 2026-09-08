@@ -298,6 +298,7 @@ class FinanceController extends WebFinanceController
 
     public function storeEncaissement(Request $request)
     {
+        $this->ensurePermission('encaissement_creation');
         $data = $request->validate([
             'id_caisse' => 'required|exists:caisse,id_caisse',
             'id_annee_scolaire' => 'required|exists:anneescolaire,id_anneeScolaire',

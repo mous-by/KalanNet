@@ -22,12 +22,14 @@
             <div class="card theme-card shadow-sm">
                 <div class="card-header theme-header d-flex align-items-center justify-content-between flex-wrap gap-2">
                     <h5 class="mb-0 fw-bold"><i class="bi bi-diagram-3 me-2"></i>Gestion des CAP</h5>
-                    <button type="button" class="btn btn-sm d-flex align-items-center gap-1 shadow-sm text-white" 
-                            style="background-color: var(--theme-accent) !important; color: var(--text-on-accent) !important; border: none;"
-                            data-bs-toggle="modal" data-bs-target="#capCreateModal">
-                        <i class="bi bi-plus-lg"></i>
-                        <span>Ajouter</span>
-                    </button>
+                    @if(auth()->user()->droit === 'SupAdmin')
+                        <button type="button" class="btn btn-sm d-flex align-items-center gap-1 shadow-sm text-white"
+                                style="background-color: var(--theme-accent) !important; color: var(--text-on-accent) !important; border: none;"
+                                data-bs-toggle="modal" data-bs-target="#capCreateModal">
+                            <i class="bi bi-plus-lg"></i>
+                            <span>Ajouter</span>
+                        </button>
+                    @endif
                 </div>
                 <div class="card-body">
                     <div class="d-flex justify-content-end align-items-center flex-wrap mb-3 gap-3">
@@ -57,16 +59,18 @@
                                         <td>{{ $cap->academie->nom_academie ?? 'N/A' }}</td>
                                         <td>{{ $cap->ecoles_count }}</td>
                                         <td class="text-end">
-                                            <button class="btn btn-light btn-sm p-2" data-bs-toggle="modal" data-bs-target="#capEditModal{{ $cap->id_cap }}" title="Modifier">
-                                                <i class="bi bi-pencil text-warning"></i>
-                                            </button>
-                                            <form action="{{ route('configuration.caps.destroy', $cap->id_cap) }}" method="POST" class="d-inline" onsubmit="return confirm('Supprimer ce CAP ?');">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button class="btn btn-light btn-sm p-2" title="Supprimer">
-                                                    <i class="bi bi-trash text-danger"></i>
+                                            @if(auth()->user()->droit === 'SupAdmin')
+                                                <button class="btn btn-light btn-sm p-2" data-bs-toggle="modal" data-bs-target="#capEditModal{{ $cap->id_cap }}" title="Modifier">
+                                                    <i class="bi bi-pencil text-warning"></i>
                                                 </button>
-                                            </form>
+                                                <form action="{{ route('configuration.caps.destroy', $cap->id_cap) }}" method="POST" class="d-inline" onsubmit="return confirm('Supprimer ce CAP ?');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button class="btn btn-light btn-sm p-2" title="Supprimer">
+                                                        <i class="bi bi-trash text-danger"></i>
+                                                    </button>
+                                                </form>
+                                            @endif
                                         </td>
                                     </tr>
                                 @empty

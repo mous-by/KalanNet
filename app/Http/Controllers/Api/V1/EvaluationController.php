@@ -44,6 +44,7 @@ class EvaluationController extends WebEvaluationController
 
     public function store(Request $request)
     {
+        $this->authorizePermission('evaluation_creation');
         $data = $this->validateProgramme($request);
         $user = $request->user();
         $idEnseignant = $user->id_enseignant;
@@ -110,6 +111,7 @@ class EvaluationController extends WebEvaluationController
 
     public function update(Request $request, int $id)
     {
+        $this->authorizePermission('evaluation_modification');
         $evaluation = Evaluation::findOrFail($id);
         $details = LigneEvaluation::with(['classe.ecole', 'noteType'])->where('id_evaluation', $evaluation->id_evaluation)->get();
         abort_if($details->isEmpty(), 404);
@@ -160,6 +162,7 @@ class EvaluationController extends WebEvaluationController
 
     public function destroy(int $id)
     {
+        $this->authorizePermission('evaluation_supprimer');
         $evaluation = Evaluation::findOrFail($id);
         $firstLine = LigneEvaluation::with('classe')->where('id_evaluation', $evaluation->id_evaluation)->first();
         if ($firstLine) {

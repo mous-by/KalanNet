@@ -38,6 +38,7 @@ class EleveController extends WebEleveController
 
     public function store(Request $request)
     {
+        $this->authorizePermission('inscriptions_inscrire');
         $data = $request->validate([
             'prenom_eleve' => 'required',
             'nom_eleve' => 'required',
@@ -249,6 +250,7 @@ class EleveController extends WebEleveController
 
     public function update(Request $request, $id)
     {
+        $this->authorizePermission('eleves_modification');
         $eleve = Eleve::where('id_ecole', session('idEcole'))->findOrFail($id);
         $data = $request->validate([
             'prenom_eleve' => 'required|string|max:255',
@@ -289,6 +291,7 @@ class EleveController extends WebEleveController
 
     public function destroy($id)
     {
+        $this->authorizePermission('eleves_supprimer');
         $eleve = Eleve::where('id_ecole', session('idEcole'))->findOrFail($id);
         $eleve->etat_dossier = 2;
         $eleve->save();
@@ -314,6 +317,7 @@ class EleveController extends WebEleveController
 
     public function transfer(Request $request, $id)
     {
+        $this->authorizePermission('eleves_modification');
         $eleve = Eleve::where('id_ecole', session('idEcole'))->where('etat_dossier', 0)->findOrFail($id);
         $data = $request->validate([
             'motif' => 'required|string|max:255',
@@ -348,6 +352,7 @@ class EleveController extends WebEleveController
 
     public function reintegrate(Request $request, $id)
     {
+        $this->authorizePermission('eleves_modification');
         $eleve = Eleve::where('id_ecole', session('idEcole'))->where('etat_dossier', 1)->findOrFail($id);
         $data = $request->validate([
             'id_classe' => 'required|integer|exists:classe,id_classe',

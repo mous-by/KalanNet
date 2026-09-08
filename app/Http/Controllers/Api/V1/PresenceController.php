@@ -46,7 +46,7 @@ class PresenceController extends WebPresenceController
 
     public function store(Request $request)
     {
-        $this->authorizePermission('presence_apercu');
+        $this->authorizePermission('presence_creation');
         $data = $this->validatedData($request);
         $data['id_ecole'] = session('idEcole') ?: $request->user()->idEcole;
         $data['valide'] = 0;

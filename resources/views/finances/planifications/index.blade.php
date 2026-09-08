@@ -32,9 +32,11 @@
             </ol>
         </nav>
     </div>
-    <a href="{{ route('finances.planifications.create') }}" class="btn border-0 border-primary border-4 bg-light-primary text-primary">
-        <i class="bi bi-plus-lg"></i> Ajouter
-    </a>
+    @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('finances_planifications_creation'))
+        <a href="{{ route('finances.planifications.create') }}" class="btn border-0 border-primary border-4 bg-light-primary text-primary">
+            <i class="bi bi-plus-lg"></i> Ajouter
+        </a>
+    @endif
 </div>
 
 @if(session('success'))
@@ -142,13 +144,15 @@
                                                 <i class="bi bi-three-dots"></i>
                                             </a>
                                             <div class="dropdown-menu">
-                                                <form method="POST" action="{{ route('finances.planifications.destroy', $planification->id_planification) }}">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="dropdown-item" onclick="return confirm('{{ $isPublicSchool ? 'Supprimer cette coopérative ?' : 'Supprimer cette planification ?' }}')">
-                                                        <i class="bi bi-trash me-1"></i> Supprimer
-                                                    </button>
-                                                </form>
+                                                @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('finances_planifications_supprimer'))
+                                                    <form method="POST" action="{{ route('finances.planifications.destroy', $planification->id_planification) }}">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="dropdown-item" onclick="return confirm('{{ $isPublicSchool ? 'Supprimer cette coopérative ?' : 'Supprimer cette planification ?' }}')">
+                                                            <i class="bi bi-trash me-1"></i> Supprimer
+                                                        </button>
+                                                    </form>
+                                                @endif
                                             </div>
                                         </div>
                                     </td>

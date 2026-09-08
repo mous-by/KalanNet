@@ -47,6 +47,7 @@ class ClasseController extends WebClasseController
 
     public function store(Request $request)
     {
+        $this->authorizePermission('classes_creation');
         $data = $this->validateClasse($request);
         $idEcole = session('idEcole');
         $this->ensureOrdreAllowed($data['ordre_enseignement'], request()->user(), $idEcole);
@@ -68,6 +69,7 @@ class ClasseController extends WebClasseController
 
     public function update(Request $request, $id)
     {
+        $this->authorizePermission('classes_modification');
         $classe = Classe::findOrFail($id);
 
         $user = request()->user();
@@ -93,6 +95,7 @@ class ClasseController extends WebClasseController
 
     public function destroy($id)
     {
+        $this->authorizePermission('classes_supprimer');
         $classe = Classe::withCount('eleves')->findOrFail($id);
 
         $user = request()->user();

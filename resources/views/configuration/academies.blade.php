@@ -59,16 +59,18 @@
                                         <td>{{ $academie->caps_count }}</td>
                                         <td>{{ $academie->ecoles_count }}</td>
                                         <td class="text-end">
-                                            <button class="btn btn-light btn-sm p-2" data-bs-toggle="modal" data-bs-target="#academieEditModal{{ $academie->id_academie }}" title="Modifier">
-                                                <i class="bi bi-pencil text-warning"></i>
-                                            </button>
-                                            <form action="{{ route('configuration.academies.destroy', $academie->id_academie) }}" method="POST" class="d-inline" onsubmit="return confirm('Supprimer cette académie ?');">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button class="btn btn-light btn-sm p-2" title="Supprimer">
-                                                    <i class="bi bi-trash text-danger"></i>
+                                            @if(auth()->user()->droit === 'SupAdmin')
+                                                <button class="btn btn-light btn-sm p-2" data-bs-toggle="modal" data-bs-target="#academieEditModal{{ $academie->id_academie }}" title="Modifier">
+                                                    <i class="bi bi-pencil text-warning"></i>
                                                 </button>
-                                            </form>
+                                                <form action="{{ route('configuration.academies.destroy', $academie->id_academie) }}" method="POST" class="d-inline" onsubmit="return confirm('Supprimer cette académie ?');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button class="btn btn-light btn-sm p-2" title="Supprimer">
+                                                        <i class="bi bi-trash text-danger"></i>
+                                                    </button>
+                                                </form>
+                                            @endif
                                         </td>
                                     </tr>
                                 @empty

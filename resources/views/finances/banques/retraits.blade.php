@@ -11,11 +11,13 @@
             </ol>
         </nav>
     </div>
-    <div class="ms-auto">
-        <button class="btn theme-action-btn" data-bs-toggle="modal" data-bs-target="#retraitModal">
-            <i class="bi bi-plus-lg me-1"></i>Nouveau retrait
-        </button>
-    </div>
+    @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('retraits_creation'))
+        <div class="ms-auto">
+            <button class="btn theme-action-btn" data-bs-toggle="modal" data-bs-target="#retraitModal">
+                <i class="bi bi-plus-lg me-1"></i>Nouveau retrait
+            </button>
+        </div>
+    @endif
 </div>
 
 @include('finances.paiements.partials.alerts')
@@ -33,7 +35,7 @@
                     <td class="text-end fw-bold">{{ number_format($retrait->montant_retrait, 0, ',', ' ') }} FCFA</td>
                     <td><span class="badge bg-{{ $retrait->valide ? 'success' : 'warning' }}">{{ $retrait->valide ? 'Validé' : 'En attente' }}</span></td>
                     <td class="text-end px-4">
-                        @if(!$retrait->valide && auth()->user()->droit === 'Admin')
+                        @if(!$retrait->valide && (auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('retraits_modification')))
                             <form method="POST" action="{{ route('finances.retraits.validate', $retrait->id_retrait) }}">
                                 @csrf @method('PATCH')
                                 <button class="btn btn-sm btn-success">Valider</button>

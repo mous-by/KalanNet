@@ -155,6 +155,7 @@ class EleveController extends Controller
 
     public function edit($id)
     {
+        $this->authorizePermission('eleves_modification');
         $eleve = Eleve::where('id_ecole', session('idEcole'))->findOrFail($id);
         $classes = Classe::where('idEcole', session('idEcole'))->orderBy('nom_classe')->get();
         $annees = AnneeScolaire::orderByDesc('id_anneeScolaire')->get();
@@ -164,6 +165,7 @@ class EleveController extends Controller
 
     public function update(Request $request, $id)
     {
+        $this->authorizePermission('eleves_modification');
         $eleve = Eleve::where('id_ecole', session('idEcole'))->findOrFail($id);
         $data = $request->validate([
             'prenom_eleve' => 'required|string|max:255',
@@ -204,6 +206,7 @@ class EleveController extends Controller
 
     public function destroy($id)
     {
+        $this->authorizePermission('eleves_supprimer');
         $eleve = Eleve::where('id_ecole', session('idEcole'))->findOrFail($id);
         $eleve->etat_dossier = 2;
         $eleve->save();
@@ -213,6 +216,7 @@ class EleveController extends Controller
 
     public function transfer(Request $request, $id)
     {
+        $this->authorizePermission('eleves_modification');
         $eleve = Eleve::where('id_ecole', session('idEcole'))->where('etat_dossier', 0)->findOrFail($id);
         $data = $request->validate([
             'motif' => 'required|string|max:255',
@@ -247,6 +251,7 @@ class EleveController extends Controller
 
     public function reintegrate(Request $request, $id)
     {
+        $this->authorizePermission('eleves_modification');
         $eleve = Eleve::where('id_ecole', session('idEcole'))->where('etat_dossier', 1)->findOrFail($id);
         $data = $request->validate([
             'id_classe' => 'required|integer|exists:classe,id_classe',
@@ -771,6 +776,14 @@ class EleveController extends Controller
         return $user
             && ($user->droit === 'SupAdmin'
                 || $user->userHasAnyPermission(['eleves_dossier', 'dossiers_eleves_apercu']));
+    }
+
+    protected function authorizePermission(string $permission): void
+    {
+        $user = Auth::user();
+        if (!$user || ($user->droit !== 'SupAdmin' && !$user->userHasPermission($permission))) {
+            abort(403, 'Permission insuffisante.');
+        }
     }
 
     private function schoolAdminPhone(?Ecole $ecole): ?string

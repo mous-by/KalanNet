@@ -11,11 +11,13 @@
             </ol>
         </nav>
     </div>
-    <div class="ms-auto">
-        <button class="btn theme-action-btn" data-bs-toggle="modal" data-bs-target="#versementModal">
-            <i class="bi bi-plus-lg me-1"></i>Nouveau versement
-        </button>
-    </div>
+    @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('versements_creation'))
+        <div class="ms-auto">
+            <button class="btn theme-action-btn" data-bs-toggle="modal" data-bs-target="#versementModal">
+                <i class="bi bi-plus-lg me-1"></i>Nouveau versement
+            </button>
+        </div>
+    @endif
 </div>
 
 @include('finances.paiements.partials.alerts')

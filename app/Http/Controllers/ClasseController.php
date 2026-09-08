@@ -106,6 +106,7 @@ class ClasseController extends Controller
 
     public function store(Request $request)
     {
+        $this->authorizePermission('classes_creation');
         $data = $this->validateClasse($request);
         $idEcole = session('idEcole');
         $this->ensureOrdreAllowed($data['ordre_enseignement'], Auth::user(), $idEcole);
@@ -162,6 +163,7 @@ class ClasseController extends Controller
 
     public function update(Request $request, $id)
     {
+        $this->authorizePermission('classes_modification');
         $classe = Classe::findOrFail($id);
 
         $user = Auth::user();
@@ -187,6 +189,7 @@ class ClasseController extends Controller
 
     public function destroy($id)
     {
+        $this->authorizePermission('classes_supprimer');
         $classe = Classe::withCount('eleves')->findOrFail($id);
 
         $user = Auth::user();
@@ -323,6 +326,14 @@ class ClasseController extends Controller
     {
         if (!array_key_exists($ordre, $this->ordresDisponibles($user, $idEcole))) {
             abort(422, "L'ordre d'enseignement sélectionné ne correspond pas au type de l'école.");
+        }
+    }
+
+    protected function authorizePermission(string $permission): void
+    {
+        $user = Auth::user();
+        if (!$user || ($user->droit !== 'SupAdmin' && !$user->userHasPermission($permission))) {
+            abort(403, 'Permission insuffisante.');
         }
     }
 

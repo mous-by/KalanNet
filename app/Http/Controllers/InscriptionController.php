@@ -65,6 +65,7 @@ class InscriptionController extends Controller
 
     public function importGroup(Request $request)
     {
+        $this->authorizePermission('inscriptions_inscrire');
         $data = $request->validate([
             'fichier_excel' => 'required|file|mimes:xls,xlsx',
             'id_classe' => 'required|exists:classe,id_classe',
@@ -243,6 +244,7 @@ class InscriptionController extends Controller
 
     public function store(Request $request)
     {
+        $this->authorizePermission('inscriptions_inscrire');
         $data = $request->validate([
             'prenom_eleve' => 'required',
             'nom_eleve' => 'required',
@@ -311,6 +313,7 @@ class InscriptionController extends Controller
 
     public function storeGroup(Request $request)
     {
+        $this->authorizePermission('inscriptions_inscrire');
         $data = $request->validate([
             'id_classe' => 'required|exists:classe,id_classe',
             'id_annee' => 'required|exists:anneescolaire,id_anneeScolaire',
@@ -371,6 +374,8 @@ class InscriptionController extends Controller
 
     public function storeReinscription(Request $request)
     {
+        $this->authorizePermission('inscriptions_reinscrire');
+
         if ($request->has('preview_reinscription')) {
             return $this->previewReinscription($request);
         }
@@ -966,5 +971,13 @@ class InscriptionController extends Controller
         $file->move($directory, $name);
 
         return 'image_eleves/' . $name;
+    }
+
+    protected function authorizePermission(string $permission): void
+    {
+        $user = \Illuminate\Support\Facades\Auth::user();
+        if (!$user || ($user->droit !== 'SupAdmin' && !$user->userHasPermission($permission))) {
+            abort(403, 'Permission insuffisante.');
+        }
     }
 }
