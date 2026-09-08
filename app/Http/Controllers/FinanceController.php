@@ -554,6 +554,10 @@ class FinanceController extends Controller
                 'nom' => trim($context['eleve']->nom_eleve . ' ' . $context['eleve']->prenom_eleve),
                 'statut_paiement' => $context['eleve']->statut_paiement ?? 'normal',
             ],
+            'parents' => $context['eleve']->parents()->get(['parents.id_parent', 'parents.nom_prenom_parent'])->map(fn ($parent) => [
+                'id_parent' => $parent->id_parent,
+                'nom_prenom_parent' => $parent->nom_prenom_parent,
+            ]),
             'ecole' => [
                 'id' => $context['ecole']?->idEcole,
                 'nom' => $context['ecole']?->nomEcole,
