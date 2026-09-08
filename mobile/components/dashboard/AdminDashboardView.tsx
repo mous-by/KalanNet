@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { ImageBackground, Pressable, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { SURFACE } from '@/lib/themes';
 import { AnneeScolaire, Eleve } from '@/types/api';
@@ -76,10 +77,14 @@ export default function AdminDashboardView({ data }: { data: AdminDashboardData 
         style={styles.banner}
         imageStyle={styles.bannerImage}
         resizeMode="cover">
-        <View style={styles.bannerTextBackdrop}>
+        <LinearGradient
+          colors={['rgba(0,0,0,0.55)', 'rgba(0,0,0,0.15)', 'rgba(0,0,0,0)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.bannerGradient}>
           <Text style={styles.bannerTitle}>Une école mieux gérée{'\n'}pour un meilleur avenir !</Text>
           <Text style={styles.bannerSubtitle}>KalanNet, votre partenaire de gestion scolaire.</Text>
-        </View>
+        </LinearGradient>
       </ImageBackground>
 
       <View style={styles.statsRow}>
@@ -158,28 +163,33 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  bannerTextBackdrop: {
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.82)',
-    borderRadius: 12,
-    marginLeft: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    maxWidth: '75%',
+  bannerGradient: {
+    flex: 1,
+    borderRadius: 16,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
   },
   bannerImage: {
     borderRadius: 16,
   },
   bannerTitle: {
-    color: '#0f172a',
+    color: '#ffffff',
     fontWeight: '800',
     fontSize: 17,
     lineHeight: 22,
+    maxWidth: '75%',
+    textShadowColor: 'rgba(0,0,0,0.45)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
   bannerSubtitle: {
-    color: '#1e293b',
+    color: '#f1f5f9',
     fontSize: 13,
     marginTop: 8,
+    maxWidth: '75%',
+    textShadowColor: 'rgba(0,0,0,0.45)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
   statsRow: {
     flexDirection: 'row',
