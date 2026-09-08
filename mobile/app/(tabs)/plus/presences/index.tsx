@@ -3,9 +3,12 @@ import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { Button, FAB, Text } from 'react-native-paper';
 
+import OfflineBanner from '@/components/OfflineBanner';
 import PaginatedList from '@/components/PaginatedList';
 import { useAuth } from '@/context/AuthContext';
+import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
+import { removeQueueItem } from '@/lib/offlineQueue';
 import { usePaginatedApi } from '@/lib/useApi';
 import { Classe, Enseignant } from '@/types/api';
 
@@ -20,8 +23,10 @@ interface Presence {
 
 export default function PresencesScreen() {
   const { user } = useAuth();
+  const { queue } = useOffline();
   const list = usePaginatedApi<Presence>('/presences', {}, 'presences');
   const [actionError, setActionError] = useState<string | null>(null);
+  const queuedPresences = queue.filter((item) => item.kind === 'presence');
 
   const canValidate = user?.droit && ['SupAdmin', 'Admin', 'Gestionnaire'].includes(user.droit);
   const canDelete = user?.droit && ['SupAdmin', 'Admin', 'Gestionnaire', 'enseignant'].includes(user.droit);
@@ -48,6 +53,7 @@ export default function PresencesScreen() {
 
   return (
     <>
+      <OfflineBanner />
       <PaginatedList
         items={list.items}
         keyExtractor={(item) => String(item.id_presence)}
@@ -58,6 +64,25 @@ export default function PresencesScreen() {
         onRefresh={list.refresh}
         onLoadMore={list.loadMore}
         emptyLabel="Aucune présence."
+        header={
+          queuedPresences.length > 0 ? (
+            <View style={styles.queuedSection}>
+              {queuedPresences.map((item) => (
+                <View key={item.id} style={[styles.row, item.status === 'conflict' ? styles.conflictRow : styles.queuedRow]}>
+                  <Text style={styles.title}>{item.label}</Text>
+                  <Text style={item.status === 'conflict' ? styles.conflictText : styles.queuedText}>
+                    {item.status === 'conflict' ? (item.message ?? 'Conflit à vérifier') : 'En attente de synchronisation'}
+                  </Text>
+                  {item.status === 'conflict' ? (
+                    <Button compact textColor="#d33" onPress={() => removeQueueItem(item.id)}>
+                      Abandonner
+                    </Button>
+                  ) : null}
+                </View>
+              ))}
+            </View>
+          ) : undefined
+        }
         renderItem={(item) => (
           <View style={styles.row}>
             <Text style={styles.title}>{item.classe?.nom_classe ?? '—'}</Text>
@@ -101,4 +126,9 @@ const styles = StyleSheet.create({
   pending: { color: '#b8860b', marginTop: 6, fontSize: 12 },
   actions: { flexDirection: 'row', marginTop: 4 },
   fab: { position: 'absolute', right: 16, bottom: 16 },
+  queuedSection: { marginBottom: 4 },
+  queuedRow: { borderColor: '#b8860b', backgroundColor: 'rgba(184,134,11,0.08)' },
+  conflictRow: { borderColor: '#d33', backgroundColor: 'rgba(211,51,51,0.06)' },
+  queuedText: { color: '#b8860b', marginTop: 6, fontSize: 12 },
+  conflictText: { color: '#d33', marginTop: 6, fontSize: 12 },
 });

@@ -42,6 +42,12 @@ export function isSubscriptionBlockedError(error: unknown): boolean {
   return axios.isAxiosError(error) && error.response?.status === 403 && error.response.data?.subscription_blocked === true;
 }
 
+// No response reached the app at all (offline, DNS/LAN unreachable, timeout)
+// as opposed to a server-returned error (4xx/5xx), which needs a real fix.
+export function isNetworkError(error: unknown): boolean {
+  return axios.isAxiosError(error) && !error.response;
+}
+
 export function apiErrorMessage(error: unknown, fallback = 'Une erreur est survenue.'): string {
   if (axios.isAxiosError(error)) {
     const data = error.response?.data;

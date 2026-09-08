@@ -3,8 +3,10 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Checkbox, Chip, Text, TextInput } from 'react-native-paper';
 
 import DateField from '@/components/DateField';
+import OfflineBanner from '@/components/OfflineBanner';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
+import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
 import { AnneeScolaire, Classe, Trimestre } from '@/types/api';
@@ -56,6 +58,7 @@ const TYPE_TABS_PUBLIC = [
 ];
 
 export default function PaiementClasseScreen() {
+  const { isOnline, enqueueAction } = useOffline();
   const [idClasse, setIdClasse] = useState<number | null>(null);
   const [idAnnee, setIdAnnee] = useState<number | null>(null);
   const [idTrimestre, setIdTrimestre] = useState<number | null>(null);
@@ -75,7 +78,7 @@ export default function PaiementClasseScreen() {
     return query ? `/finances/paiements?${query}` : '/finances/paiements';
   }, [idClasse, idAnnee, typePlanification]);
 
-  const { data, isLoading, error: loadError } = useApiGet<PaiementsContext>(endpoint, [endpoint]);
+  const { data, isLoading, error: loadError } = useApiGet<PaiementsContext>(endpoint, [endpoint], { cacheKey: endpoint });
 
   const classeOptions = (data?.classes ?? []).map((c) => ({ value: c.id_classe, label: c.nom_classe }));
   const anneeOptions = (data?.annees ?? []).map((a) => ({ value: a.id_anneeScolaire, label: a.annee }));
@@ -123,18 +126,33 @@ export default function PaiementClasseScreen() {
       return;
     }
 
+    const payload = {
+      id_classe: idClasse,
+      id_annee: idAnnee,
+      id_trimestre: idTrimestre,
+      date_paiement: date,
+      type_planification: typePlanification || null,
+      rows,
+    };
+
     setError(null);
     setSuccess(null);
     setIsSubmitting(true);
     try {
-      const { data: response } = await api.post('/finances/paiements/groupes', {
-        id_classe: idClasse,
-        id_annee: idAnnee,
-        id_trimestre: idTrimestre,
-        date_paiement: date,
-        type_planification: typePlanification || null,
-        rows,
-      });
+      if (!isOnline) {
+        const classeLabel = data?.classes.find((c) => c.id_classe === idClasse)?.nom_classe ?? '';
+        await enqueueAction({
+          kind: 'paiement_classe',
+          label: `${classeLabel} · ${rows.length} élève(s) · ${date}`,
+          endpoint: '/finances/paiements/groupes',
+          method: 'post',
+          payload,
+        });
+        setSuccess(`${rows.length} paiement(s) enregistré(s) hors ligne. Ils seront envoyés au retour du réseau.`);
+        setEntries({});
+        return;
+      }
+      const { data: response } = await api.post('/finances/paiements/groupes', payload);
       setSuccess(`${response.created} paiement(s) enregistré(s).${response.errors?.length ? ` ${response.errors.length} ligne(s) ignorée(s).` : ''}`);
       setEntries({});
     } catch (err) {
@@ -146,6 +164,7 @@ export default function PaiementClasseScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
+      <OfflineBanner />
       <SelectField label="Classe" value={idClasse} options={classeOptions} onChange={(v) => setIdClasse(v as number)} />
       <SelectField label="Année scolaire" value={idAnnee} options={anneeOptions} onChange={(v) => setIdAnnee(v as number)} />
       <SelectField label="Trimestre" value={idTrimestre} options={trimestreOptions} onChange={(v) => setIdTrimestre(v as number)} />

@@ -4,9 +4,11 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, IconButton, Text, TextInput } from 'react-native-paper';
 
 import DateField from '@/components/DateField';
+import OfflineBanner from '@/components/OfflineBanner';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
 import { useAuth } from '@/context/AuthContext';
+import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
 import { AnneeScolaire, Classe, Enseignant, Trimestre } from '@/types/api';
@@ -26,7 +28,10 @@ interface LeconRow {
 
 export default function NewPresenceScreen() {
   const { user } = useAuth();
-  const { data: context } = useApiGet<PresenceContext>('/presences');
+  const { isOnline, enqueueAction } = useOffline();
+  const { data: context, isLoading: isLoadingContext, error: contextError } = useApiGet<PresenceContext>('/presences', [], {
+    cacheKey: 'presences-context',
+  });
 
   const [idEnseignant, setIdEnseignant] = useState<number | null>(null);
   const [idClasse, setIdClasse] = useState<number | null>(null);
@@ -53,20 +58,33 @@ export default function NewPresenceScreen() {
     }
     setError(null);
     setIsSubmitting(true);
+    const payload = {
+      id_enseignant: idEnseignant,
+      id_classe: idClasse,
+      date_presence: date,
+      nombre_heure: Number(nombreHeure),
+      id_trimestre: idTrimestre,
+      id_anneeScolaire: idAnnee,
+      lecons: validLecons.map((l) => ({
+        titre: l.titre.trim(),
+        nombre_heure: Number(l.nombre_heure) || 0,
+        progression: l.progression ? Number(l.progression) : null,
+      })),
+    };
     try {
-      await api.post('/presences', {
-        id_enseignant: idEnseignant,
-        id_classe: idClasse,
-        date_presence: date,
-        nombre_heure: Number(nombreHeure),
-        id_trimestre: idTrimestre,
-        id_anneeScolaire: idAnnee,
-        lecons: validLecons.map((l) => ({
-          titre: l.titre.trim(),
-          nombre_heure: Number(l.nombre_heure) || 0,
-          progression: l.progression ? Number(l.progression) : null,
-        })),
-      });
+      if (!isOnline) {
+        const classeLabel = context?.classes.find((c) => c.id_classe === idClasse)?.nom_classe ?? '';
+        await enqueueAction({
+          kind: 'presence',
+          label: `${classeLabel} · ${date}`,
+          endpoint: '/presences',
+          method: 'post',
+          payload,
+        });
+        router.back();
+        return;
+      }
+      await api.post('/presences', payload);
       router.back();
     } catch (err) {
       setError(apiErrorMessage(err, 'Impossible d’enregistrer cette présence.'));
@@ -75,7 +93,8 @@ export default function NewPresenceScreen() {
     }
   }
 
-  if (!context) return <ActivityIndicator style={styles.spinner} size="large" />;
+  if (isLoadingContext) return <ActivityIndicator style={styles.spinner} size="large" />;
+  if (!context) return <Text style={styles.error}>{contextError ?? 'Impossible de charger le formulaire.'}</Text>;
 
   const enseignantOptions = context.enseignants.map((e) => ({ value: e.id_enseignant, label: e.nom_prenom_enseignant }));
   const classeOptions = context.classes.map((c) => ({ value: c.id_classe, label: c.nom_classe }));
@@ -84,6 +103,7 @@ export default function NewPresenceScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
+      <OfflineBanner />
       {!isTeacher ? (
         <SelectField label="Enseignant" value={idEnseignant} options={enseignantOptions} onChange={(v) => setIdEnseignant(v as number)} />
       ) : null}

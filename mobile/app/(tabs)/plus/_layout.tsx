@@ -8,6 +8,7 @@ export default function PlusLayout() {
   return (
     <Stack screenOptions={{ headerStyle: { backgroundColor: theme.chrome }, headerTintColor: theme.onChrome }}>
       <Stack.Screen name="index" options={{ title: 'Plus' }} />
+      <Stack.Screen name="synchronisation" options={{ title: 'Synchronisation' }} />
 
       <Stack.Screen name="enseignants/index" options={{ title: 'Enseignants' }} />
       <Stack.Screen name="enseignants/new" options={{ title: 'Nouvel enseignant' }} />

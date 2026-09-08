@@ -9,6 +9,7 @@ import 'react-native-reanimated';
 
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { LocaleProvider, useLocale } from '@/context/LocaleContext';
+import { OfflineProvider } from '@/context/OfflineContext';
 import { OnboardingProvider, useOnboarding } from '@/context/OnboardingContext';
 import { ThemeProvider as AppThemeProvider, useAppTheme } from '@/context/ThemeContext';
 import { buildPaperTheme } from '@/lib/paperTheme';
@@ -42,8 +43,10 @@ export default function RootLayout() {
         <LocaleProvider>
           <OnboardingProvider>
             <AppThemeProvider>
-              <SplashScreenController />
-              <RootLayoutNav />
+              <OfflineProvider>
+                <SplashScreenController />
+                <RootLayoutNav />
+              </OfflineProvider>
             </AppThemeProvider>
           </OnboardingProvider>
         </LocaleProvider>

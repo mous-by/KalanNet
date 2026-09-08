@@ -4,9 +4,11 @@ import { ScrollView, StyleSheet } from 'react-native';
 import { ActivityIndicator, Text, TextInput } from 'react-native-paper';
 
 import DateField from '@/components/DateField';
+import OfflineBanner from '@/components/OfflineBanner';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
 import { useAuth } from '@/context/AuthContext';
+import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
 import { AnneeScolaire, Classe, Enseignant, Matiere, Trimestre } from '@/types/api';
@@ -28,7 +30,10 @@ interface EmargementContext {
 
 export default function NewEmargementScreen() {
   const { user } = useAuth();
-  const { data: context } = useApiGet<EmargementContext>('/emargements');
+  const { isOnline, enqueueAction } = useOffline();
+  const { data: context, isLoading: isLoadingContext, error: contextError } = useApiGet<EmargementContext>('/emargements', [], {
+    cacheKey: 'emargements-context',
+  });
 
   const [idEnseignant, setIdEnseignant] = useState<number | null>(null);
   const [idClasse, setIdClasse] = useState<number | null>(null);
@@ -53,19 +58,33 @@ export default function NewEmargementScreen() {
     }
     setError(null);
     setIsSubmitting(true);
+    const payload = {
+      id_enseignant: idEnseignant,
+      id_classe: idClasse,
+      id_matiere: idMatiere,
+      chapitre: chapitre || null,
+      id_lecon: idLecon,
+      new_lecon_titre: newLeconTitre || null,
+      nombre_heure: Number(nombreHeure),
+      id_trimestre: idTrimestre,
+      id_anneeScolaire: idAnnee,
+      date_emargement: date,
+    };
     try {
-      await api.post('/emargements', {
-        id_enseignant: idEnseignant,
-        id_classe: idClasse,
-        id_matiere: idMatiere,
-        chapitre: chapitre || null,
-        id_lecon: idLecon,
-        new_lecon_titre: newLeconTitre || null,
-        nombre_heure: Number(nombreHeure),
-        id_trimestre: idTrimestre,
-        id_anneeScolaire: idAnnee,
-        date_emargement: date,
-      });
+      if (!isOnline) {
+        const classeLabel = context?.classes.find((c) => c.id_classe === idClasse)?.nom_classe ?? '';
+        const matiereLabel = context?.matieres.find((m) => m.id_matiere === idMatiere)?.nom_matiere ?? '';
+        await enqueueAction({
+          kind: 'emargement',
+          label: `${classeLabel} · ${matiereLabel} · ${date}`,
+          endpoint: '/emargements',
+          method: 'post',
+          payload,
+        });
+        router.back();
+        return;
+      }
+      await api.post('/emargements', payload);
       router.back();
     } catch (err) {
       setError(apiErrorMessage(err, 'Impossible d’enregistrer cet émargement.'));
@@ -74,7 +93,8 @@ export default function NewEmargementScreen() {
     }
   }
 
-  if (!context) return <ActivityIndicator style={styles.spinner} size="large" />;
+  if (isLoadingContext) return <ActivityIndicator style={styles.spinner} size="large" />;
+  if (!context) return <Text style={styles.error}>{contextError ?? 'Impossible de charger le formulaire.'}</Text>;
 
   const enseignantOptions = context.enseignants.map((e) => ({ value: e.id_enseignant, label: e.nom_prenom_enseignant }));
   const classeOptions = context.classes.map((c) => ({ value: c.id_classe, label: c.nom_classe }));
@@ -85,6 +105,7 @@ export default function NewEmargementScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
+      <OfflineBanner />
       {!isTeacher ? (
         <SelectField label="Enseignant" value={idEnseignant} options={enseignantOptions} onChange={(v) => setIdEnseignant(v as number)} />
       ) : null}

@@ -15,6 +15,10 @@ export interface MenuSection {
 
 export const MENU_SECTIONS: MenuSection[] = [
   {
+    titleKey: 'plus.section_sync',
+    items: [{ labelKey: 'plus.synchronisation', icon: 'cloud-sync-outline', href: '/plus/synchronisation' }],
+  },
+  {
     titleKey: 'plus.section_pedagogy',
     items: [
       { labelKey: 'plus.teachers', icon: 'account-tie', href: '/plus/enseignants', roles: ['SupAdmin', 'Admin', 'Gestionnaire', 'DAE', 'DCAP'] },
