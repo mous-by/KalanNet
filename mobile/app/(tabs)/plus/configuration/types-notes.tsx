@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import { Button, Dialog, FAB, Portal, Text, TextInput } from 'react-native-paper';
 
 import requiredLabel from '@/components/RequiredLabel';
@@ -122,19 +122,21 @@ export default function TypesNotesScreen() {
 
       <Portal>
         <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
-          <Dialog.Title>{editing ? 'Modifier le type de note' : 'Nouveau type de note'}</Dialog.Title>
-          <Dialog.Content>
-            <SelectField label={requiredLabel('Type')} value={typeNote} options={TYPE_OPTIONS} onChange={(v) => handleTypeChange(v as string)} />
-            <TextInput mode="outlined" label={requiredLabel('Code')} value={codeNote} onChangeText={setCodeNote} style={styles.input} />
-            <TextInput mode="outlined" label={requiredLabel('Note maximale')} keyboardType="numeric" value={valeur} onChangeText={setValeur} style={styles.input} />
-            {error ? <Text style={styles.error}>{error}</Text> : null}
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setDialogVisible(false)}>Annuler</Button>
-            <Button loading={isSubmitting} onPress={handleSubmit}>
-              Enregistrer
-            </Button>
-          </Dialog.Actions>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <Dialog.Title>{editing ? 'Modifier le type de note' : 'Nouveau type de note'}</Dialog.Title>
+            <Dialog.Content>
+              <SelectField label={requiredLabel('Type')} value={typeNote} options={TYPE_OPTIONS} onChange={(v) => handleTypeChange(v as string)} />
+              <TextInput mode="outlined" label={requiredLabel('Code')} value={codeNote} onChangeText={setCodeNote} style={styles.input} />
+              <TextInput mode="outlined" label={requiredLabel('Note maximale')} keyboardType="numeric" value={valeur} onChangeText={setValeur} style={styles.input} />
+              {error ? <Text style={styles.error}>{error}</Text> : null}
+            </Dialog.Content>
+            <Dialog.Actions>
+              <Button onPress={() => setDialogVisible(false)}>Annuler</Button>
+              <Button loading={isSubmitting} onPress={handleSubmit}>
+                Enregistrer
+              </Button>
+            </Dialog.Actions>
+          </KeyboardAvoidingView>
         </Dialog>
       </Portal>
 

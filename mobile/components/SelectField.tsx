@@ -76,7 +76,7 @@ export default function SelectField({ label, value, options, onChange, disabled 
             </Dialog.Content>
           ) : null}
           <Dialog.ScrollArea style={styles.scrollArea}>
-            <ScrollView contentContainerStyle={styles.scrollContent}>
+            <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
               {filtered.length === 0 ? (
                 <Text style={styles.empty}>Aucune option disponible.</Text>
               ) : (
@@ -111,10 +111,13 @@ const styles = StyleSheet.create({
   },
   scrollArea: {
     paddingHorizontal: 0,
+  },
+  scrollView: {
     maxHeight: 360,
   },
   scrollContent: {
     paddingHorizontal: 8,
+    paddingVertical: 4,
   },
   empty: {
     textAlign: 'center',
