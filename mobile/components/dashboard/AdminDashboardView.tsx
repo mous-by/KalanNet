@@ -1,11 +1,9 @@
 import { useMemo } from 'react';
 import { router } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { ImageBackground, Pressable, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-import { useAppTheme } from '@/context/ThemeContext';
 import { SURFACE } from '@/lib/themes';
 import { AnneeScolaire, Eleve } from '@/types/api';
 
@@ -62,7 +60,6 @@ function relativeOrDate(dateString: string | null): string {
 }
 
 export default function AdminDashboardView({ data }: { data: AdminDashboardData }) {
-  const { theme } = useAppTheme();
   const tip = useMemo(() => TIPS[new Date().getDate() % TIPS.length], []);
 
   const stats = [
@@ -80,10 +77,13 @@ export default function AdminDashboardView({ data }: { data: AdminDashboardData 
         </View>
       ) : null}
 
-      <LinearGradient colors={[theme.accent, '#0f172a']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.banner}>
+      <ImageBackground
+        source={require('../../assets/images/dashboard-banner.jpg')}
+        style={styles.banner}
+        imageStyle={styles.bannerImage}>
         <Text style={styles.bannerTitle}>Une école mieux gérée{'\n'}pour un meilleur avenir !</Text>
         <Text style={styles.bannerSubtitle}>KalanNet, votre partenaire de gestion scolaire.</Text>
-      </LinearGradient>
+      </ImageBackground>
 
       <View style={styles.statsRow}>
         {stats.map((stat) => (
@@ -172,17 +172,27 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 18,
     marginBottom: 16,
+    height: 140,
+    width: '100%',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  bannerImage: {
+    borderRadius: 16,
+    resizeMode: 'cover',
   },
   bannerTitle: {
-    color: '#ffffff',
+    color: '#0f172a',
     fontWeight: '800',
     fontSize: 17,
     lineHeight: 22,
+    maxWidth: '62%',
   },
   bannerSubtitle: {
-    color: 'rgba(255,255,255,0.85)',
+    color: '#1e293b',
     fontSize: 13,
     marginTop: 8,
+    maxWidth: '62%',
   },
   statsRow: {
     flexDirection: 'row',

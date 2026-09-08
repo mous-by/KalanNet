@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { SymbolView } from 'expo-symbols';
 import { Tabs } from 'expo-router';
 import { View } from 'react-native';
+import { IconButton } from 'react-native-paper';
 
 import LanguageMenuButton from '@/components/LanguageMenuButton';
 import MenuDrawer from '@/components/MenuDrawer';
@@ -22,6 +23,7 @@ export default function TabLayout() {
         screenOptions={{
           headerStyle: { backgroundColor: theme.chrome },
           headerTintColor: theme.onChrome,
+          headerLeft: () => <IconButton icon="menu" iconColor={theme.onChrome} onPress={() => setMenuOpen((open) => !open)} />,
           headerRight: () => (
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <LanguageMenuButton color={theme.onChrome} />
@@ -45,7 +47,6 @@ export default function TabLayout() {
               />
             ),
           }}
-          listeners={{ tabPress: () => setMenuOpen(false) }}
         />
         <Tabs.Screen
           name="eleves"
@@ -60,7 +61,6 @@ export default function TabLayout() {
               />
             ),
           }}
-          listeners={{ tabPress: () => setMenuOpen(false) }}
         />
         <Tabs.Screen
           name="classes"
@@ -75,7 +75,6 @@ export default function TabLayout() {
               />
             ),
           }}
-          listeners={{ tabPress: () => setMenuOpen(false) }}
         />
         <Tabs.Screen
           name="plus"
@@ -84,19 +83,11 @@ export default function TabLayout() {
             headerShown: false,
             tabBarIcon: ({ color }) => (
               <SymbolView
-                name={{ ios: menuOpen ? 'xmark.circle.fill' : 'line.horizontal.3', android: menuOpen ? 'close' : 'menu', web: menuOpen ? 'close' : 'menu' }}
+                name={{ ios: 'ellipsis.circle', android: 'more_horiz', web: 'more_horiz' }}
                 tintColor={color}
                 size={26}
               />
             ),
-          }}
-          listeners={{
-            tabPress: (e) => {
-              // Don't navigate to the "/plus" screen — toggle the drawer
-              // overlay instead, and flip it closed again on a second tap.
-              e.preventDefault();
-              setMenuOpen((open) => !open);
-            },
           }}
         />
         <Tabs.Screen
@@ -111,7 +102,6 @@ export default function TabLayout() {
               />
             ),
           }}
-          listeners={{ tabPress: () => setMenuOpen(false) }}
         />
       </Tabs>
 
