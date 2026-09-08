@@ -46,7 +46,14 @@ class SchoolOrderAccess
 
     public static function unrestricted(User $user): bool
     {
-        return in_array($user->droit, ['SupAdmin', 'DAE', 'DCAP', 'Admin'], true);
+        // managed_orders is only ever assigned to Gestionnaire accounts (see
+        // ConfigurationController::storeUtilisateur/updateUtilisateur) — every
+        // other role always has an empty managed_orders, which allowedOrders()
+        // then reads as "no order allowed", filtering classes/eleves/etc. down
+        // to nothing. Enseignant/parent access is already scoped by other
+        // means (ligneclasse assignments, parent-child links) and must not be
+        // additionally gated by this Gestionnaire-only mechanism.
+        return in_array($user->droit, ['SupAdmin', 'DAE', 'DCAP', 'Admin', 'enseignant', 'parent'], true);
     }
 
     public static function allowedOrders(User $user, ?Ecole $school = null): array

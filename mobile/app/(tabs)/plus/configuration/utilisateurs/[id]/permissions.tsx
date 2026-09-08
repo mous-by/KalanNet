@@ -101,14 +101,14 @@ export default function UserPermissionsScreen() {
           </Text>
           <Text style={styles.note}>Ce gestionnaire d'un complexe scolaire doit être limité à un ou plusieurs ordres.</Text>
           {MANAGED_ORDERS_OPTIONS.map((option) => (
-            <View key={option.value} style={styles.permRow}>
-              <Checkbox
-                status={managedOrders.has(option.value) ? 'checked' : 'unchecked'}
-                disabled={data.read_only}
-                onPress={() => toggleOrder(option.value)}
-              />
-              <Text style={styles.permLabel}>{option.label}</Text>
-            </View>
+            <Checkbox.Item
+              key={option.value}
+              label={option.label}
+              status={managedOrders.has(option.value) ? 'checked' : 'unchecked'}
+              disabled={data.read_only}
+              onPress={() => toggleOrder(option.value)}
+              style={styles.permRow}
+            />
           ))}
         </View>
       ) : null}
@@ -117,14 +117,14 @@ export default function UserPermissionsScreen() {
         <View key={moduleKey} style={styles.section}>
           <Text style={styles.sectionTitle}>{items[0]?.module_display ?? moduleKey}</Text>
           {items.map((perm) => (
-            <View key={perm.id} style={styles.permRow}>
-              <Checkbox
-                status={selected.has(perm.id) ? 'checked' : 'unchecked'}
-                disabled={data.read_only}
-                onPress={() => toggle(perm.id)}
-              />
-              <Text style={styles.permLabel}>{perm.action}</Text>
-            </View>
+            <Checkbox.Item
+              key={perm.id}
+              label={perm.action}
+              status={selected.has(perm.id) ? 'checked' : 'unchecked'}
+              disabled={data.read_only}
+              onPress={() => toggle(perm.id)}
+              style={styles.permRow}
+            />
           ))}
         </View>
       ))}
@@ -147,6 +147,5 @@ const styles = StyleSheet.create({
   section: { marginBottom: 16 },
   sectionTitle: { fontWeight: '600', marginBottom: 4 },
   required: { color: '#d33' },
-  permRow: { flexDirection: 'row', alignItems: 'center' },
-  permLabel: { flex: 1 },
+  permRow: { paddingHorizontal: 0 },
 });
