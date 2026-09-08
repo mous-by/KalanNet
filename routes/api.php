@@ -39,6 +39,8 @@ Route::prefix('v1')->group(function () {
         Route::get('/auth/me', [AuthController::class, 'me']);
         Route::put('/auth/theme', [AuthController::class, 'updateTheme']);
         Route::put('/auth/locale', [AuthController::class, 'updateLocale']);
+        Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
+        Route::put('/auth/password', [AuthController::class, 'updatePassword']);
 
         Route::get('/dashboard', [DashboardController::class, 'index']);
 

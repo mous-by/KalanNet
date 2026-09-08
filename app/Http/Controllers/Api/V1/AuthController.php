@@ -153,6 +153,46 @@ class AuthController extends Controller
         return response()->json(['user' => new UserResource($user)]);
     }
 
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+
+        if ($request->filled('telephone')) {
+            $request->merge(['telephone' => MaliPhone::normalize($request->input('telephone'))]);
+        }
+
+        $data = $request->validate([
+            'nomPrenom' => 'required|string|max:150',
+            'email' => ['required', 'email', 'max:150', Rule::unique('utilisateurs', 'email')->ignore($user->idUtilisateur, 'idUtilisateur')],
+            'telephone' => ['nullable', 'string', 'max:20', new MaliPhone()],
+        ]);
+
+        $user->update($data);
+
+        return response()->json(['user' => new UserResource($user->fresh())]);
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $user = $request->user();
+
+        $data = $request->validate([
+            'current_password' => ['required'],
+            'password' => ['required', 'string', 'min:4', 'confirmed'],
+        ]);
+
+        if (!Hash::check($data['current_password'], $user->pwd)) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'current_password' => 'Le mot de passe actuel est incorrect.',
+            ]);
+        }
+
+        $user->pwd = Hash::make($data['password']);
+        $user->save();
+
+        return response()->json(['message' => 'Mot de passe mis à jour.']);
+    }
+
     private function issueToken(User $user, Request $request)
     {
         $user->last_login_at = now();

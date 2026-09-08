@@ -42,6 +42,9 @@ Route::post('/abonnements/webhook/{provider}', [AbonnementController::class, 'we
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/profil', [\App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profil', [\App\Http\Controllers\ProfileController::class, 'updateInfo'])->name('profile.update');
+    Route::put('/profil/mot-de-passe', [\App\Http\Controllers\ProfileController::class, 'updatePassword'])->name('profile.password.update');
     Route::get('/documentation', function () {
         return view('documentation.index');
     })->name('documentation.index');
