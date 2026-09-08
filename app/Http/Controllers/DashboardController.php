@@ -307,7 +307,7 @@ class DashboardController extends Controller
             });
     }
 
-    private function notifySchoolUsersSubscriptionUpdated(Abonnement $abonnement): void
+    protected function notifySchoolUsersSubscriptionUpdated(Abonnement $abonnement): void
     {
         if (!Schema::hasTable('app_notifications')) {
             return;

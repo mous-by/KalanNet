@@ -44,6 +44,7 @@ Route::prefix('v1')->group(function () {
         Route::put('/auth/password', [AuthController::class, 'updatePassword']);
 
         Route::get('/dashboard', [DashboardController::class, 'index']);
+        Route::put('/dashboard/abonnements/{abonnement}/dates', [DashboardController::class, 'updateSubscriptionDates']);
 
         Route::get('/notifications', [NotificationController::class, 'index']);
         Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
