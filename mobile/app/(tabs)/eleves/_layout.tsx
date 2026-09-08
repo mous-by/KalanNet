@@ -1,8 +1,12 @@
 import { Stack } from 'expo-router';
 
+import { useAppTheme } from '@/context/ThemeContext';
+
 export default function ElevesLayout() {
+  const { theme } = useAppTheme();
+
   return (
-    <Stack>
+    <Stack screenOptions={{ headerStyle: { backgroundColor: theme.chrome }, headerTintColor: theme.onChrome }}>
       <Stack.Screen name="index" options={{ title: 'Élèves' }} />
       <Stack.Screen name="[id]/index" options={{ title: 'Élève' }} />
       <Stack.Screen name="[id]/edit" options={{ title: 'Modifier' }} />

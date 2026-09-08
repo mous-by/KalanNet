@@ -12,6 +12,7 @@ interface AuthContextValue {
   selectSchool: (idUtilisateur: number, idEcole: number) => Promise<void>;
   logout: () => Promise<void>;
   cancelSchoolSelection: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -95,9 +96,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const cancelSchoolSelection = useCallback(() => setPendingAccounts(null), []);
 
+  const refreshUser = useCallback(async () => {
+    const { data } = await api.get<{ user: User; subscription_blocked: boolean }>('/auth/me');
+    setUser(data.user);
+    setSubscriptionBlocked(data.subscription_blocked);
+  }, []);
+
   const value = useMemo(
-    () => ({ user, isLoading, subscriptionBlocked, pendingAccounts, login, selectSchool, logout, cancelSchoolSelection }),
-    [user, isLoading, subscriptionBlocked, pendingAccounts, login, selectSchool, logout, cancelSchoolSelection]
+    () => ({ user, isLoading, subscriptionBlocked, pendingAccounts, login, selectSchool, logout, cancelSchoolSelection, refreshUser }),
+    [user, isLoading, subscriptionBlocked, pendingAccounts, login, selectSchool, logout, cancelSchoolSelection, refreshUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

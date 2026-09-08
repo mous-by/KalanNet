@@ -80,11 +80,21 @@ export default function DashboardScreen() {
       style={styles.container}
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}>
-      <Text style={styles.greeting}>Bonjour, {user?.nom_prenom ?? ''} 👋</Text>
-      <Text style={styles.school}>
-        {user?.fonction ?? user?.droit}
-        {user?.ecole?.nom ? ` · ${user.ecole.nom}` : ''}
-      </Text>
+      <View style={styles.headerRow}>
+        <View style={styles.headerLeft}>
+          <Text style={styles.greeting}>Bonjour, {user?.nom_prenom ?? ''} 👋</Text>
+          <Text style={styles.role}>{user?.fonction ?? user?.droit}</Text>
+          {user?.ecole?.nom ? <Text style={styles.school}>{user.ecole.nom}</Text> : null}
+        </View>
+        {isStaff && typeof data?.anneeEnCours === 'object' && data?.anneeEnCours ? (
+          <View style={styles.anneeBlock}>
+            <Text style={styles.anneeLabel}>Année scolaire</Text>
+            <View style={styles.anneeBox}>
+              <Text style={styles.anneeValue}>{(data.anneeEnCours as { annee: string }).annee}</Text>
+            </View>
+          </View>
+        ) : null}
+      </View>
 
       {subscriptionBlocked ? (
         <View style={styles.warningBanner}>
@@ -115,16 +125,52 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
   },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+  },
+  headerLeft: {
+    flex: 1,
+  },
   greeting: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: 'bold',
     color: SURFACE.text,
   },
-  school: {
-    fontSize: 14,
+  role: {
+    fontSize: 13,
     color: SURFACE.muted,
     marginTop: 4,
-    marginBottom: 20,
+  },
+  school: {
+    fontSize: 13,
+    color: SURFACE.muted,
+  },
+  anneeBlock: {
+    marginLeft: 12,
+  },
+  anneeLabel: {
+    fontSize: 11,
+    color: SURFACE.muted,
+    marginBottom: 4,
+    textAlign: 'right',
+  },
+  anneeBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: SURFACE.card,
+    borderWidth: 1,
+    borderColor: SURFACE.border,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  anneeValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: SURFACE.text,
   },
   warningBanner: {
     backgroundColor: '#fdecea',

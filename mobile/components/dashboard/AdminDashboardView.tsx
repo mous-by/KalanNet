@@ -71,18 +71,15 @@ export default function AdminDashboardView({ data }: { data: AdminDashboardData 
 
   return (
     <View>
-      {data.anneeEnCours ? (
-        <View style={styles.anneeBadge}>
-          <Text style={styles.anneeText}>{data.anneeEnCours.annee}</Text>
-        </View>
-      ) : null}
-
       <ImageBackground
         source={require('../../assets/images/dashboard-banner.jpg')}
         style={styles.banner}
-        imageStyle={styles.bannerImage}>
-        <Text style={styles.bannerTitle}>Une école mieux gérée{'\n'}pour un meilleur avenir !</Text>
-        <Text style={styles.bannerSubtitle}>KalanNet, votre partenaire de gestion scolaire.</Text>
+        imageStyle={styles.bannerImage}
+        resizeMode="cover">
+        <View style={styles.bannerTextBackdrop}>
+          <Text style={styles.bannerTitle}>Une école mieux gérée{'\n'}pour un meilleur avenir !</Text>
+          <Text style={styles.bannerSubtitle}>KalanNet, votre partenaire de gestion scolaire.</Text>
+        </View>
       </ImageBackground>
 
       <View style={styles.statsRow}>
@@ -153,46 +150,36 @@ export default function AdminDashboardView({ data }: { data: AdminDashboardData 
 }
 
 const styles = StyleSheet.create({
-  anneeBadge: {
-    alignSelf: 'flex-end',
-    backgroundColor: SURFACE.card,
-    borderWidth: 1,
-    borderColor: SURFACE.border,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    marginBottom: 12,
-  },
-  anneeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: SURFACE.text,
-  },
   banner: {
     borderRadius: 16,
-    padding: 18,
     marginBottom: 16,
     height: 140,
     width: '100%',
     justifyContent: 'center',
     overflow: 'hidden',
   },
+  bannerTextBackdrop: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255,255,255,0.82)',
+    borderRadius: 12,
+    marginLeft: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    maxWidth: '75%',
+  },
   bannerImage: {
     borderRadius: 16,
-    resizeMode: 'cover',
   },
   bannerTitle: {
     color: '#0f172a',
     fontWeight: '800',
     fontSize: 17,
     lineHeight: 22,
-    maxWidth: '62%',
   },
   bannerSubtitle: {
     color: '#1e293b',
     fontSize: 13,
     marginTop: 8,
-    maxWidth: '62%',
   },
   statsRow: {
     flexDirection: 'row',

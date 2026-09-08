@@ -1,8 +1,11 @@
 import { useState } from 'react';
-import { IconButton, Menu } from 'react-native-paper';
+import { Pressable, StyleSheet } from 'react-native';
+import { Menu, Text } from 'react-native-paper';
 
 import { useLocale } from '@/context/LocaleContext';
 import { LOCALES } from '@/lib/i18n';
+
+const SHORT_LABEL: Record<string, string> = { fr: 'Fr', en: 'En', ar: 'Ar' };
 
 export default function LanguageMenuButton({ color }: { color?: string }) {
   const { locale, setLocale } = useLocale();
@@ -12,7 +15,11 @@ export default function LanguageMenuButton({ color }: { color?: string }) {
     <Menu
       visible={visible}
       onDismiss={() => setVisible(false)}
-      anchor={<IconButton icon="translate" iconColor={color} onPress={() => setVisible(true)} />}>
+      anchor={
+        <Pressable style={styles.button} onPress={() => setVisible(true)}>
+          <Text style={[styles.label, { color }]}>{SHORT_LABEL[locale] ?? locale.toUpperCase()}</Text>
+        </Pressable>
+      }>
       {LOCALES.map((item) => (
         <Menu.Item
           key={item.key}
@@ -27,3 +34,16 @@ export default function LanguageMenuButton({ color }: { color?: string }) {
     </Menu>
   );
 }
+
+const styles = StyleSheet.create({
+  button: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  label: {
+    fontWeight: '700',
+    fontSize: 15,
+  },
+});

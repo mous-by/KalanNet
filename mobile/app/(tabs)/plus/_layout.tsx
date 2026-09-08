@@ -1,8 +1,12 @@
 import { Stack } from 'expo-router';
 
+import { useAppTheme } from '@/context/ThemeContext';
+
 export default function PlusLayout() {
+  const { theme } = useAppTheme();
+
   return (
-    <Stack>
+    <Stack screenOptions={{ headerStyle: { backgroundColor: theme.chrome }, headerTintColor: theme.onChrome }}>
       <Stack.Screen name="index" options={{ title: 'Plus' }} />
 
       <Stack.Screen name="enseignants/index" options={{ title: 'Enseignants' }} />

@@ -8,6 +8,7 @@ import LanguageMenuButton from '@/components/LanguageMenuButton';
 import MenuDrawer from '@/components/MenuDrawer';
 import NotificationBell from '@/components/NotificationBell';
 import ThemeMenuButton from '@/components/ThemeMenuButton';
+import UserAvatar from '@/components/UserAvatar';
 import { useLocale } from '@/context/LocaleContext';
 import { useAppTheme } from '@/context/ThemeContext';
 import { withOpacity } from '@/lib/themes';
@@ -29,6 +30,7 @@ export default function TabLayout() {
               <LanguageMenuButton color={theme.onChrome} />
               <ThemeMenuButton color={theme.onChrome} />
               <NotificationBell color={theme.onChrome} />
+              <UserAvatar />
             </View>
           ),
           tabBarStyle: { backgroundColor: theme.chrome },
@@ -39,6 +41,7 @@ export default function TabLayout() {
           name="index"
           options={{
             title: t('tabs.home'),
+            headerTitle: () => null,
             tabBarIcon: ({ color }) => (
               <SymbolView
                 name={{ ios: 'house.fill', android: 'home', web: 'home' }}
@@ -93,14 +96,8 @@ export default function TabLayout() {
         <Tabs.Screen
           name="profile"
           options={{
-            title: t('tabs.profile'),
-            tabBarIcon: ({ color }) => (
-              <SymbolView
-                name={{ ios: 'person.fill', android: 'person', web: 'person' }}
-                tintColor={color}
-                size={26}
-              />
-            ),
+            title: 'Profil',
+            href: null,
           }}
         />
       </Tabs>
