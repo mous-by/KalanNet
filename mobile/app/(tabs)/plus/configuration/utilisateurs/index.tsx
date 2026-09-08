@@ -32,7 +32,18 @@ export default function UtilisateursScreen() {
   const canCreate = hasPermission(user, 'utilisateurs_creation');
   const canEditStatus = hasPermission(user, 'utilisateurs_modification');
   const canDelete = hasPermission(user, 'utilisateurs_supprimer');
-  const canAssignPermissions = hasPermission(user, 'permissions_assigner') || hasPermission(user, 'permission_assigner');
+  const canAssignPermissions =
+    user?.droit === 'SupAdmin' ||
+    user?.droit === 'Admin' ||
+    hasPermission(user, 'permissions_assigner') ||
+    hasPermission(user, 'permission_assigner');
+
+  function canAssignPermissionsTo(target: ConfigUser): boolean {
+    if (!canAssignPermissions) return false;
+    if (target.idUtilisateur === user?.id) return false;
+    if (target.droit === 'SupAdmin') return false;
+    return user?.droit === 'SupAdmin' || target.droit !== 'Admin';
+  }
 
   async function toggleStatus(target: ConfigUser) {
     setActionError(null);
@@ -80,7 +91,7 @@ export default function UtilisateursScreen() {
                 {item.droit} · {item.email ?? '—'} {item.ecole?.nomEcole ? `· ${item.ecole.nomEcole}` : ''}
               </Text>
               <View style={styles.actions}>
-                {canAssignPermissions ? (
+                {canAssignPermissionsTo(item) ? (
                   <Button compact onPress={() => router.push(`/plus/configuration/utilisateurs/${item.idUtilisateur}/permissions`)}>
                     Permissions
                   </Button>

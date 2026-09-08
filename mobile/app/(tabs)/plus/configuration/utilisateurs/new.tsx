@@ -46,7 +46,7 @@ export default function NewUtilisateurScreen() {
     setError(null);
     setIsSubmitting(true);
     try {
-      await api.post('/configuration/utilisateurs', {
+      const { data: created } = await api.post<{ idUtilisateur: number; droit: string }>('/configuration/utilisateurs', {
         type_utilisateur: 1,
         nomPrenom: nomPrenom.trim(),
         email: email.trim(),
@@ -56,7 +56,14 @@ export default function NewUtilisateurScreen() {
         droit,
       });
       setSuccessVisible(true);
-      setTimeout(() => router.back(), 900);
+      const canAssign = created.droit !== 'SupAdmin' && (user?.droit === 'SupAdmin' || created.droit !== 'Admin');
+      setTimeout(() => {
+        if (canAssign) {
+          router.replace(`/plus/configuration/utilisateurs/${created.idUtilisateur}/permissions`);
+        } else {
+          router.back();
+        }
+      }, 900);
     } catch (err) {
       setError(apiErrorMessage(err, 'Impossible de créer cet utilisateur.'));
     } finally {
