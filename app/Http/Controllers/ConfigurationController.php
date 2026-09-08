@@ -1242,7 +1242,7 @@ class ConfigurationController extends Controller
             return Permission::query()->distinct()->pluck('name')->all();
         }
 
-        if ($user->droit === 'Admin') {
+        if (in_array($user->droit, ['Admin', 'Gestionnaire'], true)) {
             return Permission::query()
                 ->whereNotIn('name', [
                     'matieres_creation',
