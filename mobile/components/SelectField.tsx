@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { ReactElement, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { Menu, TextInput } from 'react-native-paper';
 
@@ -8,7 +8,7 @@ export interface SelectOption {
 }
 
 interface Props {
-  label: string;
+  label: string | ReactElement;
   value: number | string | null;
   options: SelectOption[];
   onChange: (value: number | string) => void;

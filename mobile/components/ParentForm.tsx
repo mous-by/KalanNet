@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { IconButton, Text, TextInput } from 'react-native-paper';
 
+import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
 import { ParentEleve } from '@/types/api';
@@ -68,6 +70,7 @@ export default function ParentForm({ parentId, onSaved }: Props) {
   const [lignes, setLignes] = useState<LigneForm[]>([{ id_eleve: null, lien_parent: 'Parent', informer: 'Oui' }]);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
 
   useEffect(() => {
     if (!detail) return;
@@ -118,7 +121,8 @@ export default function ParentForm({ parentId, onSaved }: Props) {
       } else {
         await api.post('/parents', payload);
       }
-      onSaved();
+      setSuccessVisible(true);
+      setTimeout(onSaved, 900);
     } catch (err) {
       setError(apiErrorMessage(err, 'Impossible d’enregistrer ce parent.'));
     } finally {
@@ -133,8 +137,8 @@ export default function ParentForm({ parentId, onSaved }: Props) {
 
   return (
     <View>
-      <TextInput mode="outlined" label="Nom et prénom" value={nomPrenom} onChangeText={setNomPrenom} style={styles.input} />
-      <TextInput mode="outlined" label="Téléphone" value={telephone} onChangeText={setTelephone} keyboardType="phone-pad" style={styles.input} />
+      <TextInput mode="outlined" label={requiredLabel('Nom et prénom')} value={nomPrenom} onChangeText={setNomPrenom} style={styles.input} />
+      <TextInput mode="outlined" label={requiredLabel('Téléphone')} value={telephone} onChangeText={setTelephone} keyboardType="phone-pad" style={styles.input} />
       <TextInput mode="outlined" label="Email (optionnel)" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" style={styles.input} />
       <SelectField label="Genre (optionnel)" value={genre} options={GENRE_OPTIONS} onChange={(v) => setGenre(v as string)} />
 
@@ -143,7 +147,7 @@ export default function ParentForm({ parentId, onSaved }: Props) {
         <View key={index} style={styles.ligneRow}>
           <View style={styles.ligneFields}>
             <SelectField
-              label="Élève"
+              label={requiredLabel('Élève')}
               value={ligne.id_eleve}
               options={eleveOptions}
               onChange={(v) => updateLigne(index, { id_eleve: v as number })}
@@ -159,6 +163,12 @@ export default function ParentForm({ parentId, onSaved }: Props) {
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <SubmitButton label={parentId ? 'Enregistrer' : 'Créer le parent'} onPress={handleSubmit} loading={isSubmitting} />
+
+      <SuccessSnackbar
+        visible={successVisible}
+        message={parentId ? 'Parent modifié avec succès.' : 'Parent créé avec succès.'}
+        onDismiss={() => setSuccessVisible(false)}
+      />
     </View>
   );
 }

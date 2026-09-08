@@ -67,7 +67,7 @@ class EnseignantController extends Controller
         $data['avatar_enseignant'] = $this->storeAvatar($request);
         $data['pwd'] = Hash::make('123456');
         $data['id_ecole'] = session('idEcole') ?: Auth::user()->idEcole;
-        $data['matricule'] = $data['matricule'] ?: $this->generateMatricule($data);
+        $data['matricule'] = ($data['matricule'] ?? null) ?: $this->generateMatricule($data);
 
         Enseignant::create($this->mapFields($data));
 
@@ -162,7 +162,7 @@ class EnseignantController extends Controller
         $this->authorizeEnseignant($enseignant);
 
         $data = $this->validateEnseignant($request, $enseignant->id_enseignant);
-        $data['matricule'] = $data['matricule'] ?: $this->generateMatricule($data);
+        $data['matricule'] = ($data['matricule'] ?? null) ?: $this->generateMatricule($data);
 
         $mapped = $this->mapFields($data);
         $avatar = $this->storeAvatar($request, $enseignant->avatar_enseignant);
@@ -472,7 +472,7 @@ class EnseignantController extends Controller
 
     protected function generateMatricule(array $data): string
     {
-        $age = now()->diffInYears(\Carbon\Carbon::parse($data['date_naissance']));
+        $age = (int) now()->diffInYears(\Carbon\Carbon::parse($data['date_naissance']));
         $genre = strtoupper(substr($data['genre'], 0, 1));
         $lieu = strtoupper(substr(preg_replace('/\s+/', '', $data['lieu_naissance']), 0, 3));
         $contrat = strtoupper(substr($data['type_contrat'], 0, 3));

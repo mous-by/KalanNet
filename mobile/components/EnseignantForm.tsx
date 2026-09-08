@@ -4,8 +4,10 @@ import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { Text, TextInput } from 'react-native-paper';
 
 import DateField from '@/components/DateField';
+import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { api, apiErrorMessage } from '@/lib/api';
 import { Enseignant } from '@/types/api';
 
@@ -71,6 +73,7 @@ export default function EnseignantForm({ enseignant, onSaved }: Props) {
 
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
 
   const isCdiOrCdd = typeContrat === 'CDI' || typeContrat === 'CDD';
   const isCdd = typeContrat === 'CDD';
@@ -135,7 +138,8 @@ export default function EnseignantForm({ enseignant, onSaved }: Props) {
       } else {
         await api.post('/enseignants', form, { headers: { 'Content-Type': 'multipart/form-data' } });
       }
-      onSaved();
+      setSuccessVisible(true);
+      setTimeout(onSaved, 900);
     } catch (err) {
       setError(apiErrorMessage(err, 'Impossible d’enregistrer cet enseignant.'));
     } finally {
@@ -159,15 +163,15 @@ export default function EnseignantForm({ enseignant, onSaved }: Props) {
       </View>
 
       <Text style={styles.sectionTitle}>Informations personnelles</Text>
-      <TextInput mode="outlined" label="Nom et prénom" value={nomPrenom} onChangeText={setNomPrenom} style={styles.input} />
-      <SelectField label="Genre" value={genre} options={GENRE_OPTIONS} onChange={(v) => setGenre(v as string)} />
-      <TextInput mode="outlined" label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" style={styles.input} />
-      <TextInput mode="outlined" label="Téléphone" value={telephone} onChangeText={setTelephone} keyboardType="phone-pad" style={styles.input} />
-      <DateField label="Date de naissance" value={dateNaissance} onChange={setDateNaissance} />
-      <TextInput mode="outlined" label="Lieu de naissance" value={lieuNaissance} onChangeText={setLieuNaissance} style={styles.input} />
+      <TextInput mode="outlined" label={requiredLabel('Nom et prénom')} value={nomPrenom} onChangeText={setNomPrenom} style={styles.input} />
+      <SelectField label={requiredLabel('Genre')} value={genre} options={GENRE_OPTIONS} onChange={(v) => setGenre(v as string)} />
+      <TextInput mode="outlined" label={requiredLabel('Email')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" style={styles.input} />
+      <TextInput mode="outlined" label={requiredLabel('Téléphone')} value={telephone} onChangeText={setTelephone} keyboardType="phone-pad" style={styles.input} />
+      <DateField label={requiredLabel('Date de naissance')} value={dateNaissance} onChange={setDateNaissance} />
+      <TextInput mode="outlined" label={requiredLabel('Lieu de naissance')} value={lieuNaissance} onChangeText={setLieuNaissance} style={styles.input} />
 
       <Text style={styles.sectionTitle}>Informations professionnelles</Text>
-      <TextInput mode="outlined" label="Diplôme" value={diplome} onChangeText={setDiplome} style={styles.input} />
+      <TextInput mode="outlined" label={requiredLabel('Diplôme')} value={diplome} onChangeText={setDiplome} style={styles.input} />
       <TextInput
         mode="outlined"
         label="Spécialité (optionnel)"
@@ -176,7 +180,7 @@ export default function EnseignantForm({ enseignant, onSaved }: Props) {
         placeholder="Ex: Mathématiques, Français..."
         style={styles.input}
       />
-      <SelectField label="Type de contrat" value={typeContrat} options={CONTRAT_OPTIONS} onChange={(v) => setTypeContrat(v as string)} />
+      <SelectField label={requiredLabel('Type de contrat')} value={typeContrat} options={CONTRAT_OPTIONS} onChange={(v) => setTypeContrat(v as string)} />
 
       {isCdiOrCdd ? (
         <>
@@ -236,6 +240,12 @@ export default function EnseignantForm({ enseignant, onSaved }: Props) {
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <SubmitButton label={enseignant ? 'Enregistrer' : 'Créer l’enseignant'} onPress={handleSubmit} loading={isSubmitting} />
+
+      <SuccessSnackbar
+        visible={successVisible}
+        message={enseignant ? 'Enseignant modifié avec succès.' : 'Enseignant créé avec succès.'}
+        onDismiss={() => setSuccessVisible(false)}
+      />
     </View>
   );
 }

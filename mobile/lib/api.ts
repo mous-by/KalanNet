@@ -51,6 +51,12 @@ export function isNetworkError(error: unknown): boolean {
 export function apiErrorMessage(error: unknown, fallback = 'Une erreur est survenue.'): string {
   if (axios.isAxiosError(error)) {
     const data = error.response?.data;
+
+    // A Laravel debug-mode crash dump (uncaught exception): its "message" is a
+    // raw PHP/technical string, not something meant for an end user — always
+    // fall back to French rather than surface it verbatim.
+    if (data?.exception) return fallback;
+
     if (data?.errors) {
       const firstField = Object.values(data.errors)[0];
       if (Array.isArray(firstField) && firstField.length > 0) return firstField[0] as string;

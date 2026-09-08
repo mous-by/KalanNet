@@ -5,8 +5,10 @@ import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text, TextInput } from 'react-native-paper';
 
 import DateField from '@/components/DateField';
+import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
 import { AnneeScolaire, Classe, ParentEleve, Planification } from '@/types/api';
@@ -69,6 +71,7 @@ export default function NewEleveScreen() {
 
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
 
   const planificationRequired = options?.planification_required ?? false;
   const planificationLabel = options?.planification_label ?? 'Planification';
@@ -127,7 +130,8 @@ export default function NewEleveScreen() {
       }
 
       await api.post('/eleves', form, { headers: { 'Content-Type': 'multipart/form-data' } });
-      router.back();
+      setSuccessVisible(true);
+      setTimeout(() => router.back(), 900);
     } catch (err) {
       setError(apiErrorMessage(err, 'Impossible d’inscrire cet élève.'));
     } finally {
@@ -150,17 +154,17 @@ export default function NewEleveScreen() {
         <Text style={styles.avatarHint}>Touchez pour choisir une photo</Text>
       </View>
 
-      <TextInput mode="outlined" label="Prénom" value={prenom} onChangeText={setPrenom} style={styles.input} />
-      <TextInput mode="outlined" label="Nom" value={nom} onChangeText={setNom} style={styles.input} />
+      <TextInput mode="outlined" label={requiredLabel('Prénom')} value={prenom} onChangeText={setPrenom} style={styles.input} />
+      <TextInput mode="outlined" label={requiredLabel('Nom')} value={nom} onChangeText={setNom} style={styles.input} />
       <DateField label="Date de naissance" value={dateNaissance} onChange={setDateNaissance} />
       <TextInput mode="outlined" label="Lieu de naissance" value={lieuNaissance} onChangeText={setLieuNaissance} placeholder="Ex: Kayes" style={styles.input} />
       <TextInput mode="outlined" label="Adresse / Quartier" value={adresse} onChangeText={setAdresse} style={styles.input} />
-      <SelectField label="Genre" value={genre} options={GENRE_OPTIONS} onChange={(v) => setGenre(v as string)} />
+      <SelectField label={requiredLabel('Genre')} value={genre} options={GENRE_OPTIONS} onChange={(v) => setGenre(v as string)} />
       <TextInput mode="outlined" label="Matricule (auto si vide)" value={matricule} onChangeText={setMatricule} style={styles.input} />
       <DateField label="Date d'inscription" value={dateInscription} onChange={setDateInscription} />
       <SelectField label="Cas social" value={casSocial} options={CAS_SOCIAL_OPTIONS} onChange={(v) => setCasSocial(v as string)} />
       <SelectField
-        label="Classe"
+        label={requiredLabel('Classe')}
         value={idClasse}
         options={classeOptions}
         onChange={(v) => {
@@ -170,7 +174,7 @@ export default function NewEleveScreen() {
       />
       <SelectField label="Mode de paiement" value={modePaiement} options={MODE_PAIEMENT_OPTIONS} onChange={(v) => setModePaiement(v as string)} />
       <SelectField
-        label="Année scolaire"
+        label={requiredLabel('Année scolaire')}
         value={idAnnee}
         options={anneeOptions}
         onChange={(v) => {
@@ -179,7 +183,7 @@ export default function NewEleveScreen() {
         }}
       />
       <SelectField
-        label={planificationLabel}
+        label={planificationRequired ? requiredLabel(planificationLabel) : planificationLabel}
         value={idPlanification ?? 0}
         options={planificationOptions}
         onChange={(v) => setIdPlanification((v as number) || null)}
@@ -198,6 +202,8 @@ export default function NewEleveScreen() {
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <SubmitButton label="Valider l'inscription" onPress={handleSubmit} loading={isSubmitting} />
+
+      <SuccessSnackbar visible={successVisible} message="Élève inscrit avec succès." onDismiss={() => setSuccessVisible(false)} />
     </ScrollView>
   );
 }

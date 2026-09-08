@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { ReactElement, useState } from 'react';
 import { Platform, StyleSheet } from 'react-native';
 import { TextInput } from 'react-native-paper';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 interface Props {
-  label: string;
+  label: string | ReactElement;
   value: string | null; // ISO date, e.g. "2026-09-07"
   onChange: (value: string) => void;
   disabled?: boolean;
@@ -20,10 +20,11 @@ export default function DateField({ label, value, onChange, disabled }: Props) {
   // @react-native-community/datetimepicker has no web implementation;
   // fall back to a plain ISO-date text input there (dev/preview only).
   if (Platform.OS === 'web') {
+    const webLabel = typeof label === 'string' ? `${label} (AAAA-MM-JJ)` : <>{label} (AAAA-MM-JJ)</>;
     return (
       <TextInput
         mode="outlined"
-        label={`${label} (AAAA-MM-JJ)`}
+        label={webLabel}
         value={value ?? ''}
         onChangeText={onChange}
         disabled={disabled}

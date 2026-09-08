@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { IconButton, Text, TextInput } from 'react-native-paper';
 
+import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
 import { Classe, Enseignant, Matiere } from '@/types/api';
@@ -33,6 +35,7 @@ export default function ClasseForm({ classe, onSaved }: Props) {
   const [lignes, setLignes] = useState<LigneForm[]>([{ id_matiere: null, id_enseignant: null, coefficient: '1' }]);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
 
   useEffect(() => {
     if (classe?.ligneClasses?.length) {
@@ -81,7 +84,8 @@ export default function ClasseForm({ classe, onSaved }: Props) {
       } else {
         await api.post('/classes', payload);
       }
-      onSaved();
+      setSuccessVisible(true);
+      setTimeout(onSaved, 900);
     } catch (err) {
       setError(apiErrorMessage(err, 'Impossible d’enregistrer cette classe.'));
     } finally {
@@ -95,15 +99,15 @@ export default function ClasseForm({ classe, onSaved }: Props) {
 
   return (
     <View>
-      <TextInput mode="outlined" label="Nom de la classe" value={nomClasse} onChangeText={setNomClasse} style={styles.input} />
-      <SelectField label="Ordre d'enseignement" value={ordre} options={ordreOptions} onChange={(v) => setOrdre(v as string)} />
+      <TextInput mode="outlined" label={requiredLabel('Nom de la classe')} value={nomClasse} onChangeText={setNomClasse} style={styles.input} />
+      <SelectField label={requiredLabel("Ordre d'enseignement")} value={ordre} options={ordreOptions} onChange={(v) => setOrdre(v as string)} />
 
       <Text style={styles.sectionTitle}>Matières</Text>
       {lignes.map((ligne, index) => (
         <View key={index} style={styles.ligneRow}>
           <View style={styles.ligneFields}>
             <SelectField
-              label="Matière"
+              label={requiredLabel('Matière')}
               value={ligne.id_matiere}
               options={matiereOptions}
               onChange={(v) => updateLigne(index, { id_matiere: v as number })}
@@ -131,6 +135,12 @@ export default function ClasseForm({ classe, onSaved }: Props) {
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <SubmitButton label={classe ? 'Enregistrer' : 'Créer la classe'} onPress={handleSubmit} loading={isSubmitting} />
+
+      <SuccessSnackbar
+        visible={successVisible}
+        message={classe ? 'Classe modifiée avec succès.' : 'Classe créée avec succès.'}
+        onDismiss={() => setSuccessVisible(false)}
+      />
     </View>
   );
 }

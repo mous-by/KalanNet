@@ -72,7 +72,7 @@ class EleveController extends WebEleveController
             $eleve->prenom_eleve = $data['prenom_eleve'];
             $eleve->nom_eleve = $data['nom_eleve'];
             $eleve->date_naissance = $this->validDateOrNull($data['date_naissance'] ?? null, 'date_naissance');
-            $eleve->lieu_naiss = $data['lieu_naiss'] ?: 'Non renseigné';
+            $eleve->lieu_naiss = ($data['lieu_naiss'] ?? null) ?: 'Non renseigné';
             $eleve->adresse_eleve = $data['adresse_eleve'] ?? null;
             $eleve->id_classe = $data['id_classe'];
             $eleve->id_annee = $data['id_annee'];
@@ -80,7 +80,7 @@ class EleveController extends WebEleveController
             $eleve->matricule = $this->normalizeMatricule($data['matricule'] ?? null) ?: $this->generateMatricule($data);
             $eleve->date_inscription = $data['date_inscription'] ?? now()->toDateString();
             $eleve->image = $this->storeImage($request);
-            $eleve->cas_social = $data['cas_social'] ?: 'normal';
+            $eleve->cas_social = ($data['cas_social'] ?? null) ?: 'normal';
             $eleve->mode_paiement = $data['mode_paiement'] ?? null;
             $eleve->id_ecole = session('idEcole');
             $eleve->save();
@@ -271,12 +271,12 @@ class EleveController extends WebEleveController
         $eleve->update([
             'prenom_eleve' => $data['prenom_eleve'],
             'nom_eleve' => $data['nom_eleve'],
-            'matricule' => $data['matricule'] ?: $eleve->matricule,
+            'matricule' => ($data['matricule'] ?? null) ?: $eleve->matricule,
             'genre_eleve' => $data['genre_eleve'],
             'date_naissance' => $data['date_naissance'] ?? null,
-            'lieu_naiss' => $data['lieu_naiss'] ?: 'Non renseigné',
+            'lieu_naiss' => ($data['lieu_naiss'] ?? null) ?: 'Non renseigné',
             'adresse_eleve' => $data['adresse_eleve'] ?? null,
-            'cas_social' => $data['cas_social'] ?: 'normal',
+            'cas_social' => ($data['cas_social'] ?? null) ?: 'normal',
             'mode_paiement' => $data['mode_paiement'] ?? null,
             'statut_paiement' => $data['statut_paiement'] ?? 'normal',
             'id_classe' => $data['id_classe'],

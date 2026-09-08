@@ -4,8 +4,10 @@ import { ScrollView, StyleSheet } from 'react-native';
 import { ActivityIndicator, Text, TextInput } from 'react-native-paper';
 
 import DateField from '@/components/DateField';
+import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
 import { AnneeScolaire, Classe, Eleve } from '@/types/api';
@@ -43,6 +45,7 @@ export default function EditEleveScreen() {
   const [form, setForm] = useState<Partial<Eleve>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successVisible, setSuccessVisible] = useState(false);
 
   useEffect(() => {
     if (data?.eleve) setForm(data.eleve);
@@ -71,7 +74,8 @@ export default function EditEleveScreen() {
         id_annee: form.id_annee,
         date_inscription: form.date_inscription,
       });
-      router.back();
+      setSuccessVisible(true);
+      setTimeout(() => router.back(), 900);
     } catch (err) {
       setError(apiErrorMessage(err, 'Impossible de sauvegarder cet élève.'));
     } finally {
@@ -88,15 +92,15 @@ export default function EditEleveScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <TextInput mode="outlined" label="Prénom" value={form.prenom_eleve ?? ''} onChangeText={(v) => set('prenom_eleve', v)} style={styles.input} />
-      <TextInput mode="outlined" label="Nom" value={form.nom_eleve ?? ''} onChangeText={(v) => set('nom_eleve', v)} style={styles.input} />
+      <TextInput mode="outlined" label={requiredLabel('Prénom')} value={form.prenom_eleve ?? ''} onChangeText={(v) => set('prenom_eleve', v)} style={styles.input} />
+      <TextInput mode="outlined" label={requiredLabel('Nom')} value={form.nom_eleve ?? ''} onChangeText={(v) => set('nom_eleve', v)} style={styles.input} />
       <TextInput mode="outlined" label="Matricule" value={form.matricule ?? ''} onChangeText={(v) => set('matricule', v)} style={styles.input} />
-      <SelectField label="Genre" value={form.genre_eleve ?? null} options={GENRE_OPTIONS} onChange={(v) => set('genre_eleve', v as string)} />
+      <SelectField label={requiredLabel('Genre')} value={form.genre_eleve ?? null} options={GENRE_OPTIONS} onChange={(v) => set('genre_eleve', v as string)} />
       <DateField label="Date de naissance" value={form.date_naissance ?? null} onChange={(v) => set('date_naissance', v)} />
       <TextInput mode="outlined" label="Lieu de naissance" value={form.lieu_naiss ?? ''} onChangeText={(v) => set('lieu_naiss', v)} style={styles.input} />
       <TextInput mode="outlined" label="Adresse" value={form.adresse_eleve ?? ''} onChangeText={(v) => set('adresse_eleve', v)} style={styles.input} />
-      <SelectField label="Classe" value={form.id_classe ?? null} options={classeOptions} onChange={(v) => set('id_classe', v as number)} />
-      <SelectField label="Année scolaire" value={form.id_annee ?? null} options={anneeOptions} onChange={(v) => set('id_annee', v as number)} />
+      <SelectField label={requiredLabel('Classe')} value={form.id_classe ?? null} options={classeOptions} onChange={(v) => set('id_classe', v as number)} />
+      <SelectField label={requiredLabel('Année scolaire')} value={form.id_annee ?? null} options={anneeOptions} onChange={(v) => set('id_annee', v as number)} />
       <SelectField label="Cas social" value={form.cas_social ?? 'normal'} options={CAS_SOCIAL_OPTIONS} onChange={(v) => set('cas_social', v as string)} />
       <SelectField label="Mode de paiement" value={form.mode_paiement ?? ''} options={MODE_PAIEMENT_OPTIONS} onChange={(v) => set('mode_paiement', v as string)} />
       <SelectField
@@ -110,6 +114,8 @@ export default function EditEleveScreen() {
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <SubmitButton label="Enregistrer" onPress={handleSubmit} loading={isSubmitting} />
+
+      <SuccessSnackbar visible={successVisible} message="Élève modifié avec succès." onDismiss={() => setSuccessVisible(false)} />
     </ScrollView>
   );
 }

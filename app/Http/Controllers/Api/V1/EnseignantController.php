@@ -45,7 +45,7 @@ class EnseignantController extends WebEnseignantController
         $data['avatar_enseignant'] = $this->storeAvatar($request);
         $data['pwd'] = Hash::make('123456');
         $data['id_ecole'] = session('idEcole') ?: request()->user()->idEcole;
-        $data['matricule'] = $data['matricule'] ?: $this->generateMatricule($data);
+        $data['matricule'] = ($data['matricule'] ?? null) ?: $this->generateMatricule($data);
 
         $enseignant = Enseignant::create($this->mapFields($data));
 
@@ -103,7 +103,7 @@ class EnseignantController extends WebEnseignantController
         $this->authorizeEnseignant($enseignant);
 
         $data = $this->validateEnseignant($request, $enseignant->id_enseignant);
-        $data['matricule'] = $data['matricule'] ?: $this->generateMatricule($data);
+        $data['matricule'] = ($data['matricule'] ?? null) ?: $this->generateMatricule($data);
 
         $mapped = $this->mapFields($data);
         $avatar = $this->storeAvatar($request, $enseignant->avatar_enseignant);
