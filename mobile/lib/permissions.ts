@@ -9,3 +9,9 @@ export function hasPermission(user: User | null | undefined, permission: string)
   if (user.droit === 'SupAdmin') return true;
   return user.permissions?.includes(permission) ?? false;
 }
+
+// Mirrors User::userHasAnyPermission() — true if the user holds at least one
+// of the given permissions (SupAdmin still bypasses via hasPermission).
+export function hasAnyPermission(user: User | null | undefined, permissions: string[]): boolean {
+  return permissions.some((permission) => hasPermission(user, permission));
+}

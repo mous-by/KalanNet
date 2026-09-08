@@ -5,6 +5,7 @@ import { Divider, List } from 'react-native-paper';
 import { useAuth } from '@/context/AuthContext';
 import { useLocale } from '@/context/LocaleContext';
 import { MENU_SECTIONS } from '@/lib/menuSections';
+import { hasAnyPermission } from '@/lib/permissions';
 
 // Reachable only if something ever pushes to "/plus" directly — the tab bar
 // button now toggles the MenuDrawer overlay instead of navigating here (see
@@ -16,7 +17,7 @@ export default function PlusMenuScreen() {
   return (
     <ScrollView contentContainerStyle={styles.content}>
       {MENU_SECTIONS.map((section) => {
-        const items = section.items.filter((item) => !item.roles || (user?.droit && item.roles.includes(user.droit)));
+        const items = section.items.filter((item) => !item.permissions || hasAnyPermission(user, item.permissions));
         if (items.length === 0) return null;
 
         return (

@@ -3,7 +3,9 @@ import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, View } from 
 import { Text } from 'react-native-paper';
 
 import AdminDashboardView, { AdminDashboardData } from '@/components/dashboard/AdminDashboardView';
+import ParentDashboardView, { ParentDashboardData } from '@/components/dashboard/ParentDashboardView';
 import SupAdminDashboardView, { SupAdminDashboardData } from '@/components/dashboard/SupAdminDashboardView';
+import TeacherDashboardView, { TeacherDashboardData } from '@/components/dashboard/TeacherDashboardView';
 import { useAuth } from '@/context/AuthContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { SURFACE } from '@/lib/themes';
@@ -23,8 +25,8 @@ function formatValue(value: unknown): string {
   return String(value);
 }
 
-// Fallback for roles without a dedicated dashboard view yet (enseignant,
-// parent) — renders whatever the API returns generically.
+// Last-resort fallback for any role without a dedicated dashboard view —
+// renders whatever the API returns generically.
 function GenericDashboardFields({ data }: { data: DashboardData }) {
   const entries = Object.entries(data);
 
@@ -76,6 +78,8 @@ export default function DashboardScreen() {
 
   const isSupAdmin = user?.droit === 'SupAdmin';
   const isStaff = user?.droit && STAFF_ROLES.includes(user.droit);
+  const isTeacher = user?.droit === 'enseignant';
+  const isParent = user?.droit === 'parent';
 
   return (
     <ScrollView
@@ -114,6 +118,10 @@ export default function DashboardScreen() {
         <SupAdminDashboardView data={data as unknown as SupAdminDashboardData} onReload={() => load({ silent: true })} />
       ) : isStaff ? (
         <AdminDashboardView data={data as unknown as AdminDashboardData} />
+      ) : isTeacher ? (
+        <TeacherDashboardView data={data as unknown as TeacherDashboardData} />
+      ) : isParent ? (
+        <ParentDashboardView data={data as unknown as ParentDashboardData} />
       ) : (
         <GenericDashboardFields data={data ?? {}} />
       )}

@@ -9,6 +9,7 @@ import MenuDrawer from '@/components/MenuDrawer';
 import NotificationBell from '@/components/NotificationBell';
 import ThemeMenuButton from '@/components/ThemeMenuButton';
 import UserAvatar from '@/components/UserAvatar';
+import { useAuth } from '@/context/AuthContext';
 import { useLocale } from '@/context/LocaleContext';
 import { useAppTheme } from '@/context/ThemeContext';
 import { withOpacity } from '@/lib/themes';
@@ -16,7 +17,11 @@ import { withOpacity } from '@/lib/themes';
 export default function TabLayout() {
   const { theme } = useAppTheme();
   const { t } = useLocale();
+  const { user } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  // Mirrors the web sidebar's students/parents menu, which is never shown to
+  // a parent account — a raw, unfiltered classes list has no use for them.
+  const hideClassesTab = user?.droit === 'parent';
 
   return (
     <View style={{ flex: 1 }}>
@@ -70,6 +75,7 @@ export default function TabLayout() {
           options={{
             title: t('tabs.classes'),
             headerShown: false,
+            href: hideClassesTab ? null : undefined,
             tabBarIcon: ({ color }) => (
               <SymbolView
                 name={{ ios: 'building.2.fill', android: 'school', web: 'school' }}
