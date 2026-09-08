@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\V1\EvaluationController;
 use App\Http\Controllers\Api\V1\FinanceController;
 use App\Http\Controllers\Api\V1\MatiereController;
 use App\Http\Controllers\Api\V1\NotificationController;
+use App\Http\Controllers\Api\V1\ParentController;
 use App\Http\Controllers\Api\V1\PresenceController;
 use App\Http\Controllers\Api\V1\ProgrammeController;
 use App\Http\Controllers\Api\V1\ResultatNationalController;
@@ -80,6 +81,13 @@ Route::prefix('v1')->group(function () {
         Route::post('/matieres', [MatiereController::class, 'store']);
         Route::put('/matieres/{id}', [MatiereController::class, 'update']);
         Route::delete('/matieres/{id}', [MatiereController::class, 'destroy']);
+
+        Route::get('/parents', [ParentController::class, 'index']);
+        Route::post('/parents', [ParentController::class, 'store']);
+        Route::get('/parents/form-options', [ParentController::class, 'formOptions']);
+        Route::get('/parents/{id}', [ParentController::class, 'show']);
+        Route::put('/parents/{id}', [ParentController::class, 'update']);
+        Route::delete('/parents/{id}', [ParentController::class, 'destroy']);
 
         Route::get('/timetable', [TimetableController::class, 'index']);
         Route::get('/timetable/download-pdf', [TimetableController::class, 'downloadPDF']);

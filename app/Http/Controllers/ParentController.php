@@ -167,7 +167,7 @@ class ParentController extends Controller
     // Private helpers
     // ─────────────────────────────────────────────────────────────────────────
 
-    private function validateParent(Request $request): array
+    protected function validateParent(Request $request): array
     {
         return $request->validate([
             'nom_prenom_parent' => 'required|string|max:255',
@@ -197,7 +197,7 @@ class ParentController extends Controller
      * @param array    $idEleves  IDs submitted in the form
      * @param int|null $ownParentId  ID of the parent being edited (null on create)
      */
-    private function assertElevesLibres(array $idEleves, ?int $ownParentId = null): void
+    protected function assertElevesLibres(array $idEleves, ?int $ownParentId = null): void
     {
         $conflicts = DB::table('ligneparents_eleves')
             ->join('eleve',   'eleve.id_eleve',     '=', 'ligneparents_eleves.id_eleve')
@@ -216,7 +216,7 @@ class ParentController extends Controller
         }
     }
 
-    private function syncEleves(ParentModel $parent, array $data): void
+    protected function syncEleves(ParentModel $parent, array $data): void
     {
         $sync = [];
         foreach ($data['id_eleve'] as $index => $idEleve) {
@@ -235,7 +235,7 @@ class ParentController extends Controller
      *
      * @param int|null $ownParentId  When editing, keep the parent's own students visible
      */
-    private function elevesDisponibles(?int $ownParentId = null)
+    protected function elevesDisponibles(?int $ownParentId = null)
     {
         return Eleve::with('classe')
             ->where('id_ecole', session('idEcole'))
@@ -292,7 +292,7 @@ class ParentController extends Controller
         })->filter()->values();
     }
 
-    private function authorizePermission(string $permission): void
+    protected function authorizePermission(string $permission): void
     {
         $user = Auth::user();
 

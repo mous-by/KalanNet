@@ -17,6 +17,12 @@ export default function PlusLayout() {
 
       <Stack.Screen name="timetable/index" options={{ title: 'Emploi du temps' }} />
 
+      <Stack.Screen name="parents/index" options={{ title: "Parents d'élèves" }} />
+      <Stack.Screen name="parents/new" options={{ title: 'Nouveau parent' }} />
+      <Stack.Screen name="parents/[id]/edit" options={{ title: 'Modifier' }} />
+
+      <Stack.Screen name="matieres/index" options={{ title: 'Matières' }} />
+
       <Stack.Screen name="evaluations/index" options={{ title: 'Évaluations' }} />
       <Stack.Screen name="evaluations/new" options={{ title: 'Nouvelle évaluation' }} />
       <Stack.Screen name="evaluations/[id]/index" options={{ title: 'Notes' }} />

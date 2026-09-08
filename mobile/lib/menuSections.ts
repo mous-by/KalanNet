@@ -22,6 +22,8 @@ export const MENU_SECTIONS: MenuSection[] = [
     titleKey: 'plus.section_pedagogy',
     items: [
       { labelKey: 'plus.teachers', icon: 'account-tie', href: '/plus/enseignants', roles: ['SupAdmin', 'Admin', 'Gestionnaire', 'DAE', 'DCAP'] },
+      { labelKey: 'plus.parents', icon: 'account-heart-outline', href: '/plus/parents', roles: ['SupAdmin', 'Admin', 'Gestionnaire', 'DAE', 'DCAP'] },
+      { labelKey: 'plus.subjects', icon: 'book-open-variant', href: '/plus/matieres', roles: ['SupAdmin', 'Admin', 'Gestionnaire', 'DAE', 'DCAP'] },
       { labelKey: 'plus.timetable', icon: 'calendar-clock', href: '/plus/timetable' },
       { labelKey: 'plus.evaluations', icon: 'clipboard-text', href: '/plus/evaluations' },
       { labelKey: 'plus.emargements', icon: 'notebook-check', href: '/plus/emargements', roles: ['SupAdmin', 'Admin', 'Gestionnaire', 'enseignant'] },

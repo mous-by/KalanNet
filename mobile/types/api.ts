@@ -77,6 +77,7 @@ export interface LigneClasse {
 export interface Matiere {
   id_matiere: number;
   nom_matiere: string;
+  ordres?: { ordre_enseignement: string }[];
   [key: string]: unknown;
 }
 
@@ -108,6 +109,10 @@ export interface Enseignant {
 export interface ParentEleve {
   id_parent: number;
   nom_prenom_parent: string;
+  email_parent?: string | null;
+  telephone_parent?: string | null;
+  genre?: string | null;
+  eleves_count?: number;
   [key: string]: unknown;
 }
 
