@@ -59,7 +59,15 @@ class ValiderDecaissementTool extends AbstractKalanbotTool
 
     public function confirmationMessage(array $args, User $user): string
     {
-        $decaissement = Decaissement::find($args['id_decaissement'] ?? null);
+        // Purely a chat preview before execute() (already correctly scoped
+        // via FinanceController::validateDecaissement()) runs — but without
+        // this filter a guessed id from another school would still show its
+        // real motif/amount here before being blocked.
+        $idEcole = $user->droit === 'SupAdmin' ? null : (session('idEcole') ?: $user->idEcole);
+        $decaissement = Decaissement::when(
+            $idEcole,
+            fn ($query) => $query->whereHas('caisse', fn ($caisse) => $caisse->where('id_ecole', $idEcole))
+        )->find($args['id_decaissement'] ?? null);
 
         return sprintf(
             "💸 Je vais valider la dépense « %s » de %s FCFA, déduite de la caisse. Confirmez-vous ?",

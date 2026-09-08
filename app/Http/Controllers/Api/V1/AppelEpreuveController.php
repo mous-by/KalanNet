@@ -25,7 +25,25 @@ class AppelEpreuveController extends WebAppelEpreuveController
             $appels = AppelEpreuve::withoutGlobalScope('school')
                 ->with(['eleve', 'classe', 'matiere', 'annee', 'trimestre', 'statutControle'])
                 ->join('eleve', 'eleve.id_eleve', '=', 'controle_eleve.id_eleve')
-                ->when($schoolId && $user->droit !== 'SupAdmin', fn ($query) => $query->where('controle_eleve.id_ecole', $schoolId))
+                ->when($user->droit !== 'SupAdmin', function ($query) use ($user, $schoolId) {
+                    // Replicates BelongsToSchool's own DAE/DCAP branching,
+                    // since this query opts out of the global scope above —
+                    // without it, a DAE/DCAP user with no school selected
+                    // (the normal "overview" mode) saw every school's data.
+                    if ($schoolId) {
+                        $query->where('controle_eleve.id_ecole', $schoolId);
+                        return;
+                    }
+                    if ($user->droit === 'DAE' && $user->id_academie) {
+                        $query->whereIn('controle_eleve.id_ecole', \App\Models\Ecole::withoutGlobalScopes()->where('id_academie', $user->id_academie)->pluck('idEcole'));
+                        return;
+                    }
+                    if ($user->droit === 'DCAP' && $user->id_cap) {
+                        $query->whereIn('controle_eleve.id_ecole', \App\Models\Ecole::withoutGlobalScopes()->where('id_cap', $user->id_cap)->pluck('idEcole'));
+                        return;
+                    }
+                    $query->whereRaw('1 = 0');
+                })
                 ->when($filters['id_classe'] ?? null, fn ($query, $value) => $query->where('controle_eleve.id_classe', $value))
                 ->when($filters['id_matiere'] ?? null, fn ($query, $value) => $query->where('controle_eleve.id_matiere', $value))
                 ->when($filters['id_annee_scolaire'] ?? null, fn ($query, $value) => $query->where('controle_eleve.id_annee_scolaire', $value))

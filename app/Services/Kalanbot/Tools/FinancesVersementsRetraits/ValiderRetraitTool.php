@@ -59,7 +59,14 @@ class ValiderRetraitTool extends AbstractKalanbotTool
 
     public function confirmationMessage(array $args, User $user): string
     {
-        $retrait = Retrait::with('banque')->find($args['id_retrait'] ?? null);
+        // Purely a chat preview before execute() (already correctly scoped
+        // via FinanceController::validateRetrait()) runs — but without this
+        // filter a guessed id from another school would still show its real
+        // bank/amount here before being blocked.
+        $idEcole = $user->droit === 'SupAdmin' ? null : (session('idEcole') ?: $user->idEcole);
+        $retrait = Retrait::with('banque')
+            ->when($idEcole, fn ($query) => $query->whereHas('banque', fn ($banque) => $banque->where('id_ecole', $idEcole)))
+            ->find($args['id_retrait'] ?? null);
 
         return sprintf(
             "💸 Je vais valider le retrait de %s FCFA sur le compte %s. Confirmez-vous ?",
