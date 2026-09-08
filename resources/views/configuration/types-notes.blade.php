@@ -131,6 +131,7 @@
                         <div class="mb-3">
                             <label for="codeNote" class="form-label fw-bold">Code <span class="text-danger">*</span></label>
                             <input type="text" id="codeNote" name="codeNote" class="form-control" placeholder="Ex: Devoir 1, Comp 1..." required>
+                            <div class="form-text">Rempli automatiquement selon le type choisi — modifiable si besoin.</div>
                         </div>
                         <div class="mb-3">
                             <label for="valeur" class="form-label fw-bold">Note sur... (Ex: 10, 20) <span class="text-danger">*</span></label>
@@ -186,6 +187,24 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            var typeNoteCounts = @json($typeNoteCounts);
+            var typeNoteLabels = { devoir: 'Devoir', composition: 'Comp', NT10: 'NT10' };
+
+            function suggestedCode(typeNote) {
+                if (typeNote === 'NT10') return 'NT10';
+                var label = typeNoteLabels[typeNote] || typeNote;
+                var count = typeNoteCounts[typeNote] || 0;
+                return label + ' ' + (count + 1);
+            }
+
+            var addTypeSelect = document.getElementById('typeNote');
+            var addCodeInput = document.getElementById('codeNote');
+            if (addTypeSelect && addCodeInput) {
+                addTypeSelect.addEventListener('change', function () {
+                    addCodeInput.value = suggestedCode(addTypeSelect.value);
+                });
+            }
+
             var editModal = document.getElementById('editNoteModal');
             editModal.addEventListener('show.bs.modal', function(event) {
                 var button = event.relatedTarget;

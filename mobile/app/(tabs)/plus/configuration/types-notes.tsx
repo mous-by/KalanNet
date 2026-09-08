@@ -6,7 +6,7 @@ import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { api, apiErrorMessage } from '@/lib/api';
-import { usePaginatedApi } from '@/lib/useApi';
+import { useAllPaginated, usePaginatedApi } from '@/lib/useApi';
 
 interface TypeNote {
   id_note: number;
@@ -21,8 +21,11 @@ const TYPE_OPTIONS = [
   { value: 'NT10', label: 'NT10' },
 ];
 
+const TYPE_LABELS: Record<string, string> = { devoir: 'Devoir', composition: 'Comp', NT10: 'NT10' };
+
 export default function TypesNotesScreen() {
   const list = usePaginatedApi<TypeNote>('/configuration/types-notes');
+  const { items: allTypesNotes } = useAllPaginated<TypeNote>('/configuration/types-notes');
   const [editing, setEditing] = useState<TypeNote | null>(null);
   const [dialogVisible, setDialogVisible] = useState(false);
   const [typeNote, setTypeNote] = useState<string | null>(null);
@@ -32,6 +35,14 @@ export default function TypesNotesScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
 
+  // Mirrors the web "Ajouter un type" modal: picking a type suggests the
+  // next free code for it (Devoir 1, Comp 1…) — still editable afterward.
+  function suggestedCode(type: string): string {
+    if (type === 'NT10') return 'NT10';
+    const count = allTypesNotes.filter((n) => n.typeNote === type).length;
+    return `${TYPE_LABELS[type] ?? type} ${count + 1}`;
+  }
+
   function openDialog(item?: TypeNote) {
     setEditing(item ?? null);
     setTypeNote(item?.typeNote ?? null);
@@ -39,6 +50,11 @@ export default function TypesNotesScreen() {
     setValeur(item?.valeur != null ? String(item.valeur) : '');
     setError(null);
     setDialogVisible(true);
+  }
+
+  function handleTypeChange(value: string) {
+    setTypeNote(value);
+    if (!editing) setCodeNote(suggestedCode(value));
   }
 
   async function handleSubmit() {
@@ -108,7 +124,7 @@ export default function TypesNotesScreen() {
         <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
           <Dialog.Title>{editing ? 'Modifier le type de note' : 'Nouveau type de note'}</Dialog.Title>
           <Dialog.Content>
-            <SelectField label={requiredLabel('Type')} value={typeNote} options={TYPE_OPTIONS} onChange={(v) => setTypeNote(v as string)} />
+            <SelectField label={requiredLabel('Type')} value={typeNote} options={TYPE_OPTIONS} onChange={(v) => handleTypeChange(v as string)} />
             <TextInput mode="outlined" label={requiredLabel('Code')} value={codeNote} onChangeText={setCodeNote} style={styles.input} />
             <TextInput mode="outlined" label={requiredLabel('Note maximale')} keyboardType="numeric" value={valeur} onChangeText={setValeur} style={styles.input} />
             {error ? <Text style={styles.error}>{error}</Text> : null}

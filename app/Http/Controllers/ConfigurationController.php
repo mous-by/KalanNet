@@ -1513,7 +1513,12 @@ class ConfigurationController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        return view('configuration.types-notes', compact('typesNotes'));
+        $typeNoteCounts = Note::query()
+            ->selectRaw('typeNote, count(*) as total')
+            ->groupBy('typeNote')
+            ->pluck('total', 'typeNote');
+
+        return view('configuration.types-notes', compact('typesNotes', 'typeNoteCounts'));
     }
 
     public function classesOfficielles(Request $request)
