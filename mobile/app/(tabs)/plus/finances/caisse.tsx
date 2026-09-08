@@ -3,7 +3,9 @@ import { FlatList, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Button, Dialog, FAB, Menu, Portal, Text, TextInput } from 'react-native-paper';
 
 import DateField from '@/components/DateField';
+import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
@@ -40,6 +42,8 @@ export default function CaisseScreen() {
   const [idAnnee, setIdAnnee] = useState<number | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   const canManage = user?.droit && ['SupAdmin', 'Admin', 'Gestionnaire'].includes(user.droit);
 
@@ -77,7 +81,9 @@ export default function CaisseScreen() {
       } else {
         await api.post('/finances/decaissements', payload);
       }
+      setSuccessMessage(dialogKind === 'decaissement' ? 'Décaissement enregistré avec succès.' : 'Encaissement enregistré avec succès.');
       setDialogKind(null);
+      setSuccessVisible(true);
       reload();
     } catch (err) {
       setFormError(apiErrorMessage(err, 'Action impossible.'));
@@ -130,14 +136,14 @@ export default function CaisseScreen() {
           <Dialog.Title>{dialogKind === 'encaissement' ? 'Nouvel encaissement' : 'Nouveau décaissement'}</Dialog.Title>
           <Dialog.Content>
             <SelectField
-              label="Année scolaire"
+              label={requiredLabel('Année scolaire')}
               value={idAnnee}
               options={(data?.annees ?? []).map((a) => ({ value: a.id_anneeScolaire, label: a.annee }))}
               onChange={(v) => setIdAnnee(v as number)}
             />
-            <TextInput mode="outlined" label="Motif" value={motif} onChangeText={setMotif} style={styles.input} />
-            <TextInput mode="outlined" label="Montant" keyboardType="numeric" value={montant} onChangeText={setMontant} style={styles.input} />
-            <DateField label="Date" value={date} onChange={setDate} />
+            <TextInput mode="outlined" label={requiredLabel('Motif')} value={motif} onChangeText={setMotif} style={styles.input} />
+            <TextInput mode="outlined" label={requiredLabel('Montant')} keyboardType="numeric" value={montant} onChangeText={setMontant} style={styles.input} />
+            <DateField label={requiredLabel('Date')} value={date} onChange={setDate} />
             {formError ? <Text style={styles.error}>{formError}</Text> : null}
           </Dialog.Content>
           <Dialog.Actions>
@@ -148,6 +154,8 @@ export default function CaisseScreen() {
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
+      <SuccessSnackbar visible={successVisible} message={successMessage} onDismiss={() => setSuccessVisible(false)} />
     </View>
   );
 }

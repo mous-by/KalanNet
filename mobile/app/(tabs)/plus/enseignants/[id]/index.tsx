@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Button, Card, Text } from 'react-native-paper';
 
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
@@ -19,10 +21,14 @@ export default function EnseignantDetailScreen() {
   const { user } = useAuth();
   const { data, isLoading, error, reload } = useApiGet<EnseignantDetail>(`/enseignants/${id}`, [id]);
   const canManage = user?.droit && ['SupAdmin', 'Admin', 'Gestionnaire'].includes(user.droit);
+  const [successVisible, setSuccessVisible] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   async function toggleArchive(isArchived: boolean) {
     try {
       await api.patch(`/enseignants/${id}/${isArchived ? 'reactivate' : 'archive'}`);
+      setSuccessMessage(isArchived ? 'Enseignant réactivé avec succès.' : 'Enseignant archivé avec succès.');
+      setSuccessVisible(true);
       reload();
     } catch (err) {
       // surfaced via a simple alert-less inline reload retry; errors here are rare
@@ -75,6 +81,8 @@ export default function EnseignantDetailScreen() {
           </Text>
         ))
       )}
+
+      <SuccessSnackbar visible={successVisible} message={successMessage} onDismiss={() => setSuccessVisible(false)} />
     </ScrollView>
   );
 }

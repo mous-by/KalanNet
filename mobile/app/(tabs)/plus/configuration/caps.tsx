@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { Button, Dialog, FAB, Portal, Text, TextInput } from 'react-native-paper';
 
+import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { api, apiErrorMessage } from '@/lib/api';
 import { usePaginatedApi } from '@/lib/useApi';
 
@@ -31,6 +33,7 @@ export default function CapsScreen() {
   const [idAcademie, setIdAcademie] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
 
   function openDialog(item?: Cap) {
     setEditing(item ?? null);
@@ -57,6 +60,7 @@ export default function CapsScreen() {
         await api.post('/configuration/caps', payload);
       }
       setDialogVisible(false);
+      setSuccessVisible(true);
       list.refresh();
     } catch (err) {
       setError(apiErrorMessage(err, 'Impossible d’enregistrer ce CAP.'));
@@ -110,10 +114,10 @@ export default function CapsScreen() {
         <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
           <Dialog.Title>{editing ? 'Modifier le CAP' : 'Nouveau CAP'}</Dialog.Title>
           <Dialog.Content>
-            <TextInput mode="outlined" label="Nom" value={nom} onChangeText={setNom} style={styles.input} />
-            <TextInput mode="outlined" label="Code" value={code} onChangeText={setCode} style={styles.input} />
-            <TextInput mode="outlined" label="Localité" value={localite} onChangeText={setLocalite} style={styles.input} />
-            <SelectField label="Académie" value={idAcademie} options={academieOptions} onChange={(v) => setIdAcademie(v as number)} />
+            <TextInput mode="outlined" label={requiredLabel('Nom')} value={nom} onChangeText={setNom} style={styles.input} />
+            <TextInput mode="outlined" label={requiredLabel('Code')} value={code} onChangeText={setCode} style={styles.input} />
+            <TextInput mode="outlined" label={requiredLabel('Localité')} value={localite} onChangeText={setLocalite} style={styles.input} />
+            <SelectField label={requiredLabel('Académie')} value={idAcademie} options={academieOptions} onChange={(v) => setIdAcademie(v as number)} />
             {error ? <Text style={styles.error}>{error}</Text> : null}
           </Dialog.Content>
           <Dialog.Actions>
@@ -124,6 +128,12 @@ export default function CapsScreen() {
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
+      <SuccessSnackbar
+        visible={successVisible}
+        message={editing ? 'CAP modifié avec succès.' : 'CAP créé avec succès.'}
+        onDismiss={() => setSuccessVisible(false)}
+      />
     </View>
   );
 }

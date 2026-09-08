@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Button, Text, TextInput } from 'react-native-paper';
 
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
@@ -29,6 +30,8 @@ export default function EvaluationDetailScreen() {
   const [notes, setNotes] = useState<Record<number, string>>({});
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     if (data?.details) {
@@ -53,6 +56,8 @@ export default function EvaluationDetailScreen() {
         id_ligneEvaluation: lineIds,
         note: lineIds.map((lineId) => (notes[lineId] ? Number(notes[lineId]) : null)),
       });
+      setSuccessMessage('Notes enregistrées avec succès.');
+      setSuccessVisible(true);
       reload();
     } catch (err) {
       setSaveError(apiErrorMessage(err, 'Impossible d’enregistrer les notes.'));
@@ -64,6 +69,8 @@ export default function EvaluationDetailScreen() {
   async function handleValidate() {
     try {
       await api.post(`/evaluations/${id}/validate`);
+      setSuccessMessage('Évaluation validée avec succès.');
+      setSuccessVisible(true);
       reload();
     } catch {
       // no-op: the screen simply won't reflect a validated state if it fails
@@ -73,7 +80,9 @@ export default function EvaluationDetailScreen() {
   async function handleDelete() {
     try {
       await api.delete(`/evaluations/${id}`);
-      router.back();
+      setSuccessMessage('Évaluation supprimée avec succès.');
+      setSuccessVisible(true);
+      setTimeout(() => router.back(), 900);
     } catch (err) {
       setSaveError(apiErrorMessage(err, 'Impossible de supprimer cette évaluation.'));
     }
@@ -126,6 +135,8 @@ export default function EvaluationDetailScreen() {
           Enregistrer les notes
         </Button>
       ) : null}
+
+      <SuccessSnackbar visible={successVisible} message={successMessage} onDismiss={() => setSuccessVisible(false)} />
     </ScrollView>
   );
 }

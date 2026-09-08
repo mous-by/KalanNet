@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, SegmentedButtons, Text, TextInput } from 'react-native-paper';
 
+import requiredLabel from '@/components/RequiredLabel';
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { SURFACE } from '@/lib/themes';
@@ -12,17 +14,16 @@ function InfoForm() {
   const [email, setEmail] = useState(user?.email ?? '');
   const [telephone, setTelephone] = useState(user?.telephone ?? '');
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [successVisible, setSuccessVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit() {
     setError(null);
-    setSuccess(null);
     setIsSubmitting(true);
     try {
       await api.put('/auth/profile', { nomPrenom, email, telephone: telephone || undefined });
       await refreshUser();
-      setSuccess('Vos informations ont été mises à jour.');
+      setSuccessVisible(true);
     } catch (err) {
       setError(apiErrorMessage(err, 'Impossible de mettre à jour vos informations.'));
     } finally {
@@ -32,14 +33,14 @@ function InfoForm() {
 
   return (
     <View style={styles.form}>
-      <TextInput mode="outlined" label="Nom et prénom" value={nomPrenom} onChangeText={setNomPrenom} style={styles.input} />
-      <TextInput mode="outlined" label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" style={styles.input} />
-      <TextInput mode="outlined" label="Téléphone" value={telephone ?? ''} onChangeText={setTelephone} keyboardType="phone-pad" style={styles.input} />
+      <TextInput mode="outlined" label={requiredLabel('Nom et prénom')} value={nomPrenom} onChangeText={setNomPrenom} style={styles.input} />
+      <TextInput mode="outlined" label={requiredLabel('Email')} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" style={styles.input} />
+      <TextInput mode="outlined" label="Téléphone (optionnel)" value={telephone ?? ''} onChangeText={setTelephone} keyboardType="phone-pad" style={styles.input} />
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      {success ? <Text style={styles.success}>{success}</Text> : null}
       <Button mode="contained" onPress={handleSubmit} loading={isSubmitting} style={styles.submitButton}>
         Enregistrer
       </Button>
+      <SuccessSnackbar visible={successVisible} message="Vos informations ont été mises à jour." onDismiss={() => setSuccessVisible(false)} />
     </View>
   );
 }
@@ -49,12 +50,11 @@ function PasswordForm() {
   const [password, setPassword] = useState('');
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [successVisible, setSuccessVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit() {
     setError(null);
-    setSuccess(null);
     if (password !== passwordConfirmation) {
       setError('Les deux mots de passe ne correspondent pas.');
       return;
@@ -69,7 +69,7 @@ function PasswordForm() {
       setCurrentPassword('');
       setPassword('');
       setPasswordConfirmation('');
-      setSuccess('Votre mot de passe a été mis à jour.');
+      setSuccessVisible(true);
     } catch (err) {
       setError(apiErrorMessage(err, 'Impossible de mettre à jour le mot de passe.'));
     } finally {
@@ -79,21 +79,21 @@ function PasswordForm() {
 
   return (
     <View style={styles.form}>
-      <TextInput mode="outlined" label="Mot de passe actuel" secureTextEntry value={currentPassword} onChangeText={setCurrentPassword} style={styles.input} />
-      <TextInput mode="outlined" label="Nouveau mot de passe" secureTextEntry value={password} onChangeText={setPassword} style={styles.input} />
+      <TextInput mode="outlined" label={requiredLabel('Mot de passe actuel')} secureTextEntry value={currentPassword} onChangeText={setCurrentPassword} style={styles.input} />
+      <TextInput mode="outlined" label={requiredLabel('Nouveau mot de passe')} secureTextEntry value={password} onChangeText={setPassword} style={styles.input} />
       <TextInput
         mode="outlined"
-        label="Confirmer le nouveau mot de passe"
+        label={requiredLabel('Confirmer le nouveau mot de passe')}
         secureTextEntry
         value={passwordConfirmation}
         onChangeText={setPasswordConfirmation}
         style={styles.input}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      {success ? <Text style={styles.success}>{success}</Text> : null}
       <Button mode="contained" onPress={handleSubmit} loading={isSubmitting} style={styles.submitButton}>
         Mettre à jour le mot de passe
       </Button>
+      <SuccessSnackbar visible={successVisible} message="Votre mot de passe a été mis à jour." onDismiss={() => setSuccessVisible(false)} />
     </View>
   );
 }

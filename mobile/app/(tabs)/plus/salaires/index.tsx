@@ -3,7 +3,9 @@ import { FlatList, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Button, Dialog, Portal, Text, TextInput } from 'react-native-paper';
 
 import DateField from '@/components/DateField';
+import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
 import { Enseignant } from '@/types/api';
@@ -35,6 +37,7 @@ export default function SalairesScreen() {
   const [date, setDate] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
 
   const endpoint = useMemo(() => {
     const params = new URLSearchParams();
@@ -71,6 +74,7 @@ export default function SalairesScreen() {
         date_paiement: date,
       });
       setPayingFor(null);
+      setSuccessVisible(true);
       reload();
     } catch (err) {
       setFormError(apiErrorMessage(err, 'Impossible d’enregistrer ce paiement.'));
@@ -140,8 +144,8 @@ export default function SalairesScreen() {
         <Dialog visible={payingFor !== null} onDismiss={() => setPayingFor(null)}>
           <Dialog.Title>Payer {payingFor?.enseignant.nom_prenom_enseignant}</Dialog.Title>
           <Dialog.Content>
-            <TextInput mode="outlined" label="Montant versé" keyboardType="numeric" value={montant} onChangeText={setMontant} style={styles.dialogInput} />
-            <DateField label="Date de paiement" value={date} onChange={setDate} />
+            <TextInput mode="outlined" label={requiredLabel('Montant versé')} keyboardType="numeric" value={montant} onChangeText={setMontant} style={styles.dialogInput} />
+            <DateField label={requiredLabel('Date de paiement')} value={date} onChange={setDate} />
             {formError ? <Text style={styles.error}>{formError}</Text> : null}
           </Dialog.Content>
           <Dialog.Actions>
@@ -152,6 +156,8 @@ export default function SalairesScreen() {
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
+      <SuccessSnackbar visible={successVisible} message="Paiement enregistré avec succès." onDismiss={() => setSuccessVisible(false)} />
     </View>
   );
 }

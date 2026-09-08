@@ -5,8 +5,10 @@ import { ActivityIndicator, Text, TextInput } from 'react-native-paper';
 
 import DateField from '@/components/DateField';
 import OfflineBanner from '@/components/OfflineBanner';
+import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
 import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
@@ -47,6 +49,8 @@ export default function NewEmargementScreen() {
   const [date, setDate] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   const isTeacher = user?.droit === 'enseignant';
   const isValid = (isTeacher || idEnseignant) && idClasse && idMatiere && idTrimestre && idAnnee && date && nombreHeure;
@@ -81,11 +85,15 @@ export default function NewEmargementScreen() {
           method: 'post',
           payload,
         });
-        router.back();
+        setSuccessMessage('Émargement enregistré hors ligne, sera synchronisé.');
+        setSuccessVisible(true);
+        setTimeout(() => router.back(), 900);
         return;
       }
       await api.post('/emargements', payload);
-      router.back();
+      setSuccessMessage('Émargement enregistré avec succès.');
+      setSuccessVisible(true);
+      setTimeout(() => router.back(), 900);
     } catch (err) {
       setError(apiErrorMessage(err, 'Impossible d’enregistrer cet émargement.'));
     } finally {
@@ -107,21 +115,23 @@ export default function NewEmargementScreen() {
     <ScrollView contentContainerStyle={styles.content}>
       <OfflineBanner />
       {!isTeacher ? (
-        <SelectField label="Enseignant" value={idEnseignant} options={enseignantOptions} onChange={(v) => setIdEnseignant(v as number)} />
+        <SelectField label={requiredLabel('Enseignant')} value={idEnseignant} options={enseignantOptions} onChange={(v) => setIdEnseignant(v as number)} />
       ) : null}
-      <SelectField label="Classe" value={idClasse} options={classeOptions} onChange={(v) => setIdClasse(v as number)} />
-      <SelectField label="Matière" value={idMatiere} options={matiereOptions} onChange={(v) => setIdMatiere(v as number)} />
+      <SelectField label={requiredLabel('Classe')} value={idClasse} options={classeOptions} onChange={(v) => setIdClasse(v as number)} />
+      <SelectField label={requiredLabel('Matière')} value={idMatiere} options={matiereOptions} onChange={(v) => setIdMatiere(v as number)} />
       <SelectField label="Leçon existante (optionnel)" value={idLecon} options={leconOptions} onChange={(v) => setIdLecon(v as number)} />
       <TextInput mode="outlined" label="Ou nouvelle leçon (titre)" value={newLeconTitre} onChangeText={setNewLeconTitre} style={styles.input} />
       <TextInput mode="outlined" label="Chapitre (optionnel)" value={chapitre} onChangeText={setChapitre} style={styles.input} />
-      <TextInput mode="outlined" label="Nombre d'heures" keyboardType="numeric" value={nombreHeure} onChangeText={setNombreHeure} style={styles.input} />
-      <SelectField label="Trimestre" value={idTrimestre} options={trimestreOptions} onChange={(v) => setIdTrimestre(v as number)} />
-      <SelectField label="Année scolaire" value={idAnnee} options={anneeOptions} onChange={(v) => setIdAnnee(v as number)} />
-      <DateField label="Date" value={date} onChange={setDate} />
+      <TextInput mode="outlined" label={requiredLabel("Nombre d'heures")} keyboardType="numeric" value={nombreHeure} onChangeText={setNombreHeure} style={styles.input} />
+      <SelectField label={requiredLabel('Trimestre')} value={idTrimestre} options={trimestreOptions} onChange={(v) => setIdTrimestre(v as number)} />
+      <SelectField label={requiredLabel('Année scolaire')} value={idAnnee} options={anneeOptions} onChange={(v) => setIdAnnee(v as number)} />
+      <DateField label={requiredLabel('Date')} value={date} onChange={setDate} />
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <SubmitButton label="Enregistrer" onPress={handleSubmit} loading={isSubmitting} />
+
+      <SuccessSnackbar visible={successVisible} message={successMessage} onDismiss={() => setSuccessVisible(false)} />
     </ScrollView>
   );
 }

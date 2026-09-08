@@ -5,6 +5,7 @@ import { Button, FAB, Text } from 'react-native-paper';
 
 import OfflineBanner from '@/components/OfflineBanner';
 import PaginatedList from '@/components/PaginatedList';
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
 import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
@@ -28,6 +29,8 @@ export default function EmargementsScreen() {
   const { queue } = useOffline();
   const list = usePaginatedApi<Emargement>('/emargements', {}, 'emargements');
   const [actionError, setActionError] = useState<string | null>(null);
+  const [successVisible, setSuccessVisible] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   const queuedEmargements = queue.filter((item) => item.kind === 'emargement');
 
   const canValidate = user?.droit && ['SupAdmin', 'Admin', 'Gestionnaire'].includes(user.droit);
@@ -37,6 +40,8 @@ export default function EmargementsScreen() {
     setActionError(null);
     try {
       await api.post(`/emargements/${id}/validate`);
+      setSuccessMessage('Émargement validé avec succès.');
+      setSuccessVisible(true);
       list.refresh();
     } catch (err) {
       setActionError(apiErrorMessage(err, 'Impossible de valider.'));
@@ -47,6 +52,8 @@ export default function EmargementsScreen() {
     setActionError(null);
     try {
       await api.delete(`/emargements/${id}`);
+      setSuccessMessage('Émargement supprimé avec succès.');
+      setSuccessVisible(true);
       list.refresh();
     } catch (err) {
       setActionError(apiErrorMessage(err, 'Impossible de supprimer.'));
@@ -113,6 +120,8 @@ export default function EmargementsScreen() {
         )}
       />
       <FAB icon="plus" style={styles.fab} onPress={() => router.push('/plus/emargements/new')} />
+
+      <SuccessSnackbar visible={successVisible} message={successMessage} onDismiss={() => setSuccessVisible(false)} />
     </>
   );
 }

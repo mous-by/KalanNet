@@ -4,6 +4,7 @@ import { ActivityIndicator, Checkbox, Chip, Text, TextInput } from 'react-native
 
 import DateField from '@/components/DateField';
 import OfflineBanner from '@/components/OfflineBanner';
+import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
 import { useOffline } from '@/context/OfflineContext';
@@ -165,10 +166,10 @@ export default function PaiementClasseScreen() {
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <OfflineBanner />
-      <SelectField label="Classe" value={idClasse} options={classeOptions} onChange={(v) => setIdClasse(v as number)} />
-      <SelectField label="Année scolaire" value={idAnnee} options={anneeOptions} onChange={(v) => setIdAnnee(v as number)} />
-      <SelectField label="Trimestre" value={idTrimestre} options={trimestreOptions} onChange={(v) => setIdTrimestre(v as number)} />
-      <DateField label="Date de paiement" value={date} onChange={setDate} />
+      <SelectField label={requiredLabel('Classe')} value={idClasse} options={classeOptions} onChange={(v) => setIdClasse(v as number)} />
+      <SelectField label={requiredLabel('Année scolaire')} value={idAnnee} options={anneeOptions} onChange={(v) => setIdAnnee(v as number)} />
+      <SelectField label={requiredLabel('Trimestre')} value={idTrimestre} options={trimestreOptions} onChange={(v) => setIdTrimestre(v as number)} />
+      <DateField label={requiredLabel('Date de paiement')} value={date} onChange={setDate} />
 
       <View style={styles.tabsRow}>
         {typeTabs.map((tab) => (

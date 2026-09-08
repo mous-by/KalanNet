@@ -3,7 +3,9 @@ import * as ImagePicker from 'expo-image-picker';
 import { FlatList, ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Dialog, FAB, Portal, Text, TextInput } from 'react-native-paper';
 
+import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet, usePaginatedApi } from '@/lib/useApi';
@@ -94,6 +96,7 @@ export default function EcolesScreen() {
   const [logoUri, setLogoUri] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
 
   function openDialog(item?: Ecole) {
     setEditing(item ?? null);
@@ -164,6 +167,7 @@ export default function EcolesScreen() {
         await api.post('/configuration/ecoles', form, { headers: { 'Content-Type': 'multipart/form-data' } });
       }
       setDialogVisible(false);
+      setSuccessVisible(true);
       list.refresh();
     } catch (err) {
       setFormError(apiErrorMessage(err, 'Impossible d’enregistrer cette école.'));
@@ -227,11 +231,11 @@ export default function EcolesScreen() {
           <Dialog.Title>{editing ? 'Modifier l’école' : 'Nouvelle école'}</Dialog.Title>
           <Dialog.ScrollArea style={styles.dialogScroll}>
             <ScrollView contentContainerStyle={styles.dialogContent}>
-              <TextInput mode="outlined" label="Nom de l'école" value={nomEcole} onChangeText={setNomEcole} style={styles.input} />
-              <SelectField label="Type" value={typeEcole} options={TYPE_OPTIONS} onChange={(v) => setTypeEcole(v as string)} />
-              <SelectField label="Statut" value={statut} options={STATUT_OPTIONS} onChange={(v) => setStatut(v as string)} />
-              <SelectField label="Académie" value={idAcademie} options={academieOptions} onChange={(v) => setIdAcademie(v as number)} />
-              {needsCap ? <SelectField label="CAP" value={idCap} options={capOptions} onChange={(v) => setIdCap(v as number)} /> : null}
+              <TextInput mode="outlined" label={requiredLabel("Nom de l'école")} value={nomEcole} onChangeText={setNomEcole} style={styles.input} />
+              <SelectField label={requiredLabel('Type')} value={typeEcole} options={TYPE_OPTIONS} onChange={(v) => setTypeEcole(v as string)} />
+              <SelectField label={requiredLabel('Statut')} value={statut} options={STATUT_OPTIONS} onChange={(v) => setStatut(v as string)} />
+              <SelectField label={requiredLabel('Académie')} value={idAcademie} options={academieOptions} onChange={(v) => setIdAcademie(v as number)} />
+              {needsCap ? <SelectField label={requiredLabel('CAP')} value={idCap} options={capOptions} onChange={(v) => setIdCap(v as number)} /> : null}
               <TextInput mode="outlined" label="Téléphone (optionnel)" value={telephone} onChangeText={setTelephone} keyboardType="phone-pad" style={styles.input} />
               <TextInput mode="outlined" label="Email (optionnel)" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" style={styles.input} />
               <SelectField label="Notification SMS" value={notificationSms} options={OUI_NON_OPTIONS} onChange={(v) => setNotificationSms(v as string)} />
@@ -267,6 +271,12 @@ export default function EcolesScreen() {
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
+      <SuccessSnackbar
+        visible={successVisible}
+        message={editing ? 'École modifiée avec succès.' : 'École créée avec succès.'}
+        onDismiss={() => setSuccessVisible(false)}
+      />
     </View>
   );
 }

@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { Button, Checkbox, Dialog, FAB, Portal, Text, TextInput } from 'react-native-paper';
 
+import requiredLabel from '@/components/RequiredLabel';
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { api, apiErrorMessage } from '@/lib/api';
 import { usePaginatedApi } from '@/lib/useApi';
 import { Matiere } from '@/types/api';
@@ -22,6 +24,7 @@ export default function MatieresScreen() {
   const [ordres, setOrdres] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
 
   function openDialog(item?: Matiere) {
     setEditing(item ?? null);
@@ -55,6 +58,7 @@ export default function MatieresScreen() {
         await api.post('/matieres', payload);
       }
       setDialogVisible(false);
+      setSuccessVisible(true);
       list.refresh();
     } catch (err) {
       setError(apiErrorMessage(err, 'Impossible d’enregistrer cette matière.'));
@@ -104,8 +108,10 @@ export default function MatieresScreen() {
         <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
           <Dialog.Title>{editing ? 'Modifier la matière' : 'Nouvelle matière'}</Dialog.Title>
           <Dialog.Content>
-            <TextInput mode="outlined" label="Nom" value={nom} onChangeText={setNom} style={styles.input} />
-            <Text style={styles.sectionTitle}>Ordres d'enseignement</Text>
+            <TextInput mode="outlined" label={requiredLabel('Nom')} value={nom} onChangeText={setNom} style={styles.input} />
+            <Text style={styles.sectionTitle}>
+              Ordres d'enseignement <Text style={styles.required}>*</Text>
+            </Text>
             {ALL_ORDRES.map((ordre) => (
               <View key={ordre} style={styles.checkRow}>
                 <Checkbox status={ordres.has(ordre) ? 'checked' : 'unchecked'} onPress={() => toggleOrdre(ordre)} />
@@ -122,6 +128,12 @@ export default function MatieresScreen() {
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
+      <SuccessSnackbar
+        visible={successVisible}
+        message={editing ? 'Matière modifiée avec succès.' : 'Matière créée avec succès.'}
+        onDismiss={() => setSuccessVisible(false)}
+      />
     </View>
   );
 }
@@ -144,6 +156,7 @@ const styles = StyleSheet.create({
   fab: { position: 'absolute', right: 16, bottom: 16 },
   input: { marginBottom: 8 },
   sectionTitle: { fontWeight: '600', marginTop: 4, marginBottom: 4 },
+  required: { color: '#d33' },
   checkRow: { flexDirection: 'row', alignItems: 'center' },
   error: { color: '#d33', marginTop: 4 },
 });

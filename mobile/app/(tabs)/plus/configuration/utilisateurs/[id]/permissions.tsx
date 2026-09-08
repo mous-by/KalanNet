@@ -4,6 +4,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Checkbox, Text } from 'react-native-paper';
 
 import SubmitButton from '@/components/SubmitButton';
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
 
@@ -35,6 +36,7 @@ export default function UserPermissionsScreen() {
   const [managedOrders, setManagedOrders] = useState<Set<string>>(new Set());
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
 
   useEffect(() => {
     if (data) {
@@ -75,7 +77,8 @@ export default function UserPermissionsScreen() {
         permissions: Array.from(selected),
         managed_orders: Array.from(managedOrders),
       });
-      router.back();
+      setSuccessVisible(true);
+      setTimeout(() => router.back(), 900);
     } catch (err) {
       setSaveError(apiErrorMessage(err, 'Impossible d’enregistrer les permissions.'));
     } finally {
@@ -93,7 +96,9 @@ export default function UserPermissionsScreen() {
 
       {isComplexGestionnaire ? (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Ordres d'enseignement gérés</Text>
+          <Text style={styles.sectionTitle}>
+            Ordres d'enseignement gérés <Text style={styles.required}>*</Text>
+          </Text>
           <Text style={styles.note}>Ce gestionnaire d'un complexe scolaire doit être limité à un ou plusieurs ordres.</Text>
           {MANAGED_ORDERS_OPTIONS.map((option) => (
             <View key={option.value} style={styles.permRow}>
@@ -127,6 +132,8 @@ export default function UserPermissionsScreen() {
       {saveError ? <Text style={styles.error}>{saveError}</Text> : null}
 
       {!data.read_only ? <SubmitButton label="Enregistrer" onPress={handleSave} loading={isSaving} /> : null}
+
+      <SuccessSnackbar visible={successVisible} message="Permissions enregistrées avec succès." onDismiss={() => setSuccessVisible(false)} />
     </ScrollView>
   );
 }
@@ -139,6 +146,7 @@ const styles = StyleSheet.create({
   note: { opacity: 0.6, marginBottom: 16 },
   section: { marginBottom: 16 },
   sectionTitle: { fontWeight: '600', marginBottom: 4 },
+  required: { color: '#d33' },
   permRow: { flexDirection: 'row', alignItems: 'center' },
   permLabel: { flex: 1 },
 });

@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { Button, Dialog, FAB, Portal, Text, TextInput } from 'react-native-paper';
 
+import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { api, apiErrorMessage } from '@/lib/api';
 import { usePaginatedApi } from '@/lib/useApi';
 
@@ -28,6 +30,7 @@ export default function TypesNotesScreen() {
   const [valeur, setValeur] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
 
   function openDialog(item?: TypeNote) {
     setEditing(item ?? null);
@@ -53,6 +56,7 @@ export default function TypesNotesScreen() {
         await api.post('/configuration/types-notes', payload);
       }
       setDialogVisible(false);
+      setSuccessVisible(true);
       list.refresh();
     } catch (err) {
       setError(apiErrorMessage(err, 'Impossible d’enregistrer ce type de note.'));
@@ -104,9 +108,9 @@ export default function TypesNotesScreen() {
         <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
           <Dialog.Title>{editing ? 'Modifier le type de note' : 'Nouveau type de note'}</Dialog.Title>
           <Dialog.Content>
-            <SelectField label="Type" value={typeNote} options={TYPE_OPTIONS} onChange={(v) => setTypeNote(v as string)} />
-            <TextInput mode="outlined" label="Code" value={codeNote} onChangeText={setCodeNote} style={styles.input} />
-            <TextInput mode="outlined" label="Note maximale" keyboardType="numeric" value={valeur} onChangeText={setValeur} style={styles.input} />
+            <SelectField label={requiredLabel('Type')} value={typeNote} options={TYPE_OPTIONS} onChange={(v) => setTypeNote(v as string)} />
+            <TextInput mode="outlined" label={requiredLabel('Code')} value={codeNote} onChangeText={setCodeNote} style={styles.input} />
+            <TextInput mode="outlined" label={requiredLabel('Note maximale')} keyboardType="numeric" value={valeur} onChangeText={setValeur} style={styles.input} />
             {error ? <Text style={styles.error}>{error}</Text> : null}
           </Dialog.Content>
           <Dialog.Actions>
@@ -117,6 +121,12 @@ export default function TypesNotesScreen() {
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
+      <SuccessSnackbar
+        visible={successVisible}
+        message={editing ? 'Type de note modifié avec succès.' : 'Type de note créé avec succès.'}
+        onDismiss={() => setSuccessVisible(false)}
+      />
     </View>
   );
 }

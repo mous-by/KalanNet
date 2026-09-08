@@ -4,8 +4,10 @@ import { ScrollView, StyleSheet } from 'react-native';
 import { ActivityIndicator, Text, TextInput } from 'react-native-paper';
 
 import DateField from '@/components/DateField';
+import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
 import { AnneeScolaire, Classe, Trimestre } from '@/types/api';
@@ -39,6 +41,7 @@ export default function NewEvaluationScreen() {
   const [heureFin, setHeureFin] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
 
   useEffect(() => {
     if (!idClasse) {
@@ -73,7 +76,8 @@ export default function NewEvaluationScreen() {
         heure_debut: heureDebut,
         heure_fin: heureFin,
       });
-      router.back();
+      setSuccessVisible(true);
+      setTimeout(() => router.back(), 900);
     } catch (err) {
       setError(apiErrorMessage(err, 'Impossible de créer cette évaluation.'));
     } finally {
@@ -91,9 +95,9 @@ export default function NewEvaluationScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <SelectField label="Classe" value={idClasse} options={classeOptions} onChange={(v) => setIdClasse(v as number)} />
-      <SelectField label="Matière" value={idMatiere} options={matiereOptions} onChange={(v) => setIdMatiere(v as number)} disabled={!idClasse} />
-      <SelectField label="Année scolaire" value={idAnnee} options={anneeOptions} onChange={(v) => setIdAnnee(v as number)} />
+      <SelectField label={requiredLabel('Classe')} value={idClasse} options={classeOptions} onChange={(v) => setIdClasse(v as number)} />
+      <SelectField label={requiredLabel('Matière')} value={idMatiere} options={matiereOptions} onChange={(v) => setIdMatiere(v as number)} disabled={!idClasse} />
+      <SelectField label={requiredLabel('Année scolaire')} value={idAnnee} options={anneeOptions} onChange={(v) => setIdAnnee(v as number)} />
       <SelectField label="Trimestre (ou mois ci-dessous)" value={idTrimestre} options={trimestreOptions} onChange={(v) => setIdTrimestre(v as number)} />
       <TextInput
         mode="outlined"
@@ -103,15 +107,17 @@ export default function NewEvaluationScreen() {
         onChangeText={(v) => setMois(v ? Number(v) : null)}
         style={styles.input}
       />
-      <SelectField label="Type de note" value={idNote} options={noteOptions} onChange={(v) => setIdNote(v as number)} />
-      <TextInput mode="outlined" label="Libellé" value={libeller} onChangeText={setLibeller} style={styles.input} />
-      <DateField label="Date de l'évaluation" value={dateEvaluation} onChange={setDateEvaluation} />
-      <TextInput mode="outlined" label="Heure de début (HH:MM)" value={heureDebut} onChangeText={setHeureDebut} placeholder="08:00" style={styles.input} />
-      <TextInput mode="outlined" label="Heure de fin (HH:MM)" value={heureFin} onChangeText={setHeureFin} placeholder="09:00" style={styles.input} />
+      <SelectField label={requiredLabel('Type de note')} value={idNote} options={noteOptions} onChange={(v) => setIdNote(v as number)} />
+      <TextInput mode="outlined" label={requiredLabel('Libellé')} value={libeller} onChangeText={setLibeller} style={styles.input} />
+      <DateField label={requiredLabel("Date de l'évaluation")} value={dateEvaluation} onChange={setDateEvaluation} />
+      <TextInput mode="outlined" label={requiredLabel('Heure de début (HH:MM)')} value={heureDebut} onChangeText={setHeureDebut} placeholder="08:00" style={styles.input} />
+      <TextInput mode="outlined" label={requiredLabel('Heure de fin (HH:MM)')} value={heureFin} onChangeText={setHeureFin} placeholder="09:00" style={styles.input} />
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <SubmitButton label="Créer l'évaluation" onPress={handleSubmit} loading={isSubmitting} />
+
+      <SuccessSnackbar visible={successVisible} message="Évaluation créée avec succès." onDismiss={() => setSuccessVisible(false)} />
     </ScrollView>
   );
 }

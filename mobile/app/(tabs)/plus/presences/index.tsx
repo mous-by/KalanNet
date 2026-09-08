@@ -5,6 +5,7 @@ import { Button, FAB, Text } from 'react-native-paper';
 
 import OfflineBanner from '@/components/OfflineBanner';
 import PaginatedList from '@/components/PaginatedList';
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
 import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
@@ -26,6 +27,8 @@ export default function PresencesScreen() {
   const { queue } = useOffline();
   const list = usePaginatedApi<Presence>('/presences', {}, 'presences');
   const [actionError, setActionError] = useState<string | null>(null);
+  const [successVisible, setSuccessVisible] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   const queuedPresences = queue.filter((item) => item.kind === 'presence');
 
   const canValidate = user?.droit && ['SupAdmin', 'Admin', 'Gestionnaire'].includes(user.droit);
@@ -35,6 +38,8 @@ export default function PresencesScreen() {
     setActionError(null);
     try {
       await api.post(`/presences/${id}/validate`);
+      setSuccessMessage('Présence validée avec succès.');
+      setSuccessVisible(true);
       list.refresh();
     } catch (err) {
       setActionError(apiErrorMessage(err, 'Impossible de valider.'));
@@ -45,6 +50,8 @@ export default function PresencesScreen() {
     setActionError(null);
     try {
       await api.delete(`/presences/${id}`);
+      setSuccessMessage('Présence supprimée avec succès.');
+      setSuccessVisible(true);
       list.refresh();
     } catch (err) {
       setActionError(apiErrorMessage(err, 'Impossible de supprimer.'));
@@ -108,6 +115,8 @@ export default function PresencesScreen() {
         )}
       />
       <FAB icon="plus" style={styles.fab} onPress={() => router.push('/plus/presences/new')} />
+
+      <SuccessSnackbar visible={successVisible} message={successMessage} onDismiss={() => setSuccessVisible(false)} />
     </>
   );
 }

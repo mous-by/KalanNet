@@ -3,6 +3,8 @@ import { FlatList, StyleSheet, View } from 'react-native';
 import { Button, Dialog, FAB, Portal, Text, TextInput } from 'react-native-paper';
 
 import DateField from '@/components/DateField';
+import requiredLabel from '@/components/RequiredLabel';
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { api, apiErrorMessage } from '@/lib/api';
 import { usePaginatedApi } from '@/lib/useApi';
 
@@ -21,6 +23,7 @@ export default function AnneesScreen() {
   const [dateFin, setDateFin] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
 
   function openDialog() {
     setAnnee('');
@@ -40,6 +43,7 @@ export default function AnneesScreen() {
     try {
       await api.post('/configuration/annees', { annee: annee.trim(), date_debut: dateDebut, date_fin: dateFin });
       setDialogVisible(false);
+      setSuccessVisible(true);
       list.refresh();
     } catch (err) {
       setError(apiErrorMessage(err, 'Impossible de créer cette année scolaire.'));
@@ -72,9 +76,9 @@ export default function AnneesScreen() {
         <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
           <Dialog.Title>Nouvelle année scolaire</Dialog.Title>
           <Dialog.Content>
-            <TextInput mode="outlined" label="Libellé (ex: 2026-2027)" value={annee} onChangeText={setAnnee} style={styles.input} />
-            <DateField label="Date de début" value={dateDebut} onChange={setDateDebut} />
-            <DateField label="Date de fin" value={dateFin} onChange={setDateFin} />
+            <TextInput mode="outlined" label={requiredLabel('Libellé (ex: 2026-2027)')} value={annee} onChangeText={setAnnee} style={styles.input} />
+            <DateField label={requiredLabel('Date de début')} value={dateDebut} onChange={setDateDebut} />
+            <DateField label={requiredLabel('Date de fin')} value={dateFin} onChange={setDateFin} />
             {error ? <Text style={styles.error}>{error}</Text> : null}
           </Dialog.Content>
           <Dialog.Actions>
@@ -85,6 +89,8 @@ export default function AnneesScreen() {
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
+      <SuccessSnackbar visible={successVisible} message="Année scolaire créée avec succès." onDismiss={() => setSuccessVisible(false)} />
     </View>
   );
 }

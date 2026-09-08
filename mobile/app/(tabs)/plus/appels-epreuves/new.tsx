@@ -4,8 +4,10 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Switch, Text, TextInput } from 'react-native-paper';
 
 import DateField from '@/components/DateField';
+import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
 import { AnneeScolaire, Classe, Eleve, Matiere, Trimestre } from '@/types/api';
@@ -39,6 +41,7 @@ export default function NewAppelEpreuveScreen() {
   const [statuts, setStatuts] = useState<Record<number, number>>({});
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
 
   useEffect(() => {
     if (!idClasse || !idAnnee) {
@@ -74,7 +77,8 @@ export default function NewAppelEpreuveScreen() {
         notifier_parent: notifierParent,
         statuts,
       });
-      router.back();
+      setSuccessVisible(true);
+      setTimeout(() => router.back(), 900);
     } catch (err) {
       setError(apiErrorMessage(err, 'Impossible d’enregistrer cet appel.'));
     } finally {
@@ -92,14 +96,14 @@ export default function NewAppelEpreuveScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <SelectField label="Classe" value={idClasse} options={classeOptions} onChange={(v) => setIdClasse(v as number)} />
-      <SelectField label="Matière" value={idMatiere} options={matiereOptions} onChange={(v) => setIdMatiere(v as number)} />
-      <SelectField label="Année scolaire" value={idAnnee} options={anneeOptions} onChange={(v) => setIdAnnee(v as number)} />
-      <SelectField label="Trimestre" value={idTrimestre} options={trimestreOptions} onChange={(v) => setIdTrimestre(v as number)} />
-      <DateField label="Date" value={date} onChange={setDate} />
-      <TextInput mode="outlined" label="Libellé" value={libelle} onChangeText={setLibelle} style={styles.input} />
-      <TextInput mode="outlined" label="Heure de début (HH:MM)" value={heureDebut} onChangeText={setHeureDebut} style={styles.input} />
-      <TextInput mode="outlined" label="Heure de fin (HH:MM)" value={heureFin} onChangeText={setHeureFin} style={styles.input} />
+      <SelectField label={requiredLabel('Classe')} value={idClasse} options={classeOptions} onChange={(v) => setIdClasse(v as number)} />
+      <SelectField label={requiredLabel('Matière')} value={idMatiere} options={matiereOptions} onChange={(v) => setIdMatiere(v as number)} />
+      <SelectField label={requiredLabel('Année scolaire')} value={idAnnee} options={anneeOptions} onChange={(v) => setIdAnnee(v as number)} />
+      <SelectField label={requiredLabel('Trimestre')} value={idTrimestre} options={trimestreOptions} onChange={(v) => setIdTrimestre(v as number)} />
+      <DateField label={requiredLabel('Date')} value={date} onChange={setDate} />
+      <TextInput mode="outlined" label={requiredLabel('Libellé')} value={libelle} onChangeText={setLibelle} style={styles.input} />
+      <TextInput mode="outlined" label={requiredLabel('Heure de début (HH:MM)')} value={heureDebut} onChangeText={setHeureDebut} style={styles.input} />
+      <TextInput mode="outlined" label={requiredLabel('Heure de fin (HH:MM)')} value={heureFin} onChangeText={setHeureFin} style={styles.input} />
 
       <View style={styles.switchRow}>
         <Text>Notifier les parents</Text>
@@ -108,14 +112,16 @@ export default function NewAppelEpreuveScreen() {
 
       {eleves.length > 0 ? (
         <>
-          <Text style={styles.sectionTitle}>Statut des élèves</Text>
+          <Text style={styles.sectionTitle}>
+            Statut des élèves <Text style={styles.required}>*</Text>
+          </Text>
           {eleves.map((eleve) => (
             <View key={eleve.id_eleve} style={styles.studentRow}>
               <Text style={styles.studentName}>
                 {eleve.prenom_eleve} {eleve.nom_eleve}
               </Text>
               <SelectField
-                label="Statut"
+                label={requiredLabel('Statut')}
                 value={statuts[eleve.id_eleve] ?? null}
                 options={statutOptions}
                 onChange={(v) => setStatuts((prev) => ({ ...prev, [eleve.id_eleve]: v as number }))}
@@ -128,6 +134,8 @@ export default function NewAppelEpreuveScreen() {
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <SubmitButton label="Enregistrer" onPress={handleSubmit} loading={isSubmitting} />
+
+      <SuccessSnackbar visible={successVisible} message="Appel d'épreuve enregistré avec succès." onDismiss={() => setSuccessVisible(false)} />
     </ScrollView>
   );
 }
@@ -136,6 +144,7 @@ const styles = StyleSheet.create({
   content: { padding: 20 },
   input: { marginBottom: 12 },
   spinner: { marginTop: 40 },
+  required: { color: '#d33' },
   error: { color: '#d33', marginBottom: 12 },
   switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   sectionTitle: { fontWeight: '600', marginTop: 8, marginBottom: 8 },

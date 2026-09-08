@@ -2,7 +2,9 @@ import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Button, Dialog, FAB, IconButton, Portal, Text, TextInput } from 'react-native-paper';
 
+import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
@@ -45,6 +47,7 @@ export default function TimetableScreen() {
   const [slot, setSlot] = useState<SlotForm>(EMPTY_SLOT);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
 
   const endpoint = useMemo(() => {
     if (idClasse && idAnnee) return `/timetable?id_classe=${idClasse}&id_annee=${idAnnee}`;
@@ -87,6 +90,7 @@ export default function TimetableScreen() {
         heure_fin: slot.heure_fin,
       });
       setDialogVisible(false);
+      setSuccessVisible(true);
       reload();
     } catch (err) {
       setError(apiErrorMessage(err, 'Impossible d’ajouter ce créneau.'));
@@ -149,13 +153,13 @@ export default function TimetableScreen() {
           <Dialog.Title>Nouveau créneau</Dialog.Title>
           <Dialog.Content>
             <SelectField
-              label="Jour"
+              label={requiredLabel('Jour')}
               value={slot.jour}
               options={JOURS.map((j) => ({ value: j, label: j }))}
               onChange={(v) => setSlot((prev) => ({ ...prev, jour: v as string }))}
             />
             <SelectField
-              label="Matière"
+              label={requiredLabel('Matière')}
               value={slot.id_matiere}
               options={matiereOptions}
               onChange={(v) => setSlot((prev) => ({ ...prev, id_matiere: v as number }))}
@@ -168,7 +172,7 @@ export default function TimetableScreen() {
             />
             <TextInput
               mode="outlined"
-              label="Heure de début (HH:MM)"
+              label={requiredLabel('Heure de début (HH:MM)')}
               value={slot.heure_debut}
               onChangeText={(v) => setSlot((prev) => ({ ...prev, heure_debut: v }))}
               placeholder="08:00"
@@ -176,7 +180,7 @@ export default function TimetableScreen() {
             />
             <TextInput
               mode="outlined"
-              label="Heure de fin (HH:MM)"
+              label={requiredLabel('Heure de fin (HH:MM)')}
               value={slot.heure_fin}
               onChangeText={(v) => setSlot((prev) => ({ ...prev, heure_fin: v }))}
               placeholder="09:00"
@@ -192,6 +196,8 @@ export default function TimetableScreen() {
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
+      <SuccessSnackbar visible={successVisible} message="Créneau ajouté avec succès." onDismiss={() => setSuccessVisible(false)} />
     </>
   );
 }

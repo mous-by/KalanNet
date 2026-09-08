@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { Button, Dialog, FAB, Portal, Text, TextInput } from 'react-native-paper';
 
+import requiredLabel from '@/components/RequiredLabel';
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
 
@@ -17,6 +19,7 @@ export default function PermissionsScreen() {
   const [name, setName] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
 
   async function handleSubmit() {
     if (!name.trim()) {
@@ -29,6 +32,7 @@ export default function PermissionsScreen() {
       await api.post('/configuration/permissions', { name: name.trim() });
       setDialogVisible(false);
       setName('');
+      setSuccessVisible(true);
       reload();
     } catch (err) {
       setFormError(apiErrorMessage(err, 'Impossible de créer cette permission.'));
@@ -59,7 +63,7 @@ export default function PermissionsScreen() {
         <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
           <Dialog.Title>Nouvelle permission</Dialog.Title>
           <Dialog.Content>
-            <TextInput mode="outlined" label="Nom" value={name} onChangeText={setName} style={styles.input} />
+            <TextInput mode="outlined" label={requiredLabel('Nom')} value={name} onChangeText={setName} style={styles.input} />
             {formError ? <Text style={styles.error}>{formError}</Text> : null}
           </Dialog.Content>
           <Dialog.Actions>
@@ -70,6 +74,8 @@ export default function PermissionsScreen() {
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
+      <SuccessSnackbar visible={successVisible} message="Permission créée avec succès." onDismiss={() => setSuccessVisible(false)} />
     </View>
   );
 }

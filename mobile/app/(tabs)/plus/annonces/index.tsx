@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { Button, FAB, Text } from 'react-native-paper';
 
 import PaginatedList from '@/components/PaginatedList';
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { usePaginatedApi } from '@/lib/useApi';
@@ -22,6 +23,8 @@ export default function AnnoncesScreen() {
   const { user } = useAuth();
   const list = usePaginatedApi<Annonce>('/annonces', {}, 'annonces');
   const [actionError, setActionError] = useState<string | null>(null);
+  const [successVisible, setSuccessVisible] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   const canManage = user?.droit && ['SupAdmin', 'Admin', 'Gestionnaire', 'DAE', 'DCAP'].includes(user.droit);
 
@@ -29,6 +32,8 @@ export default function AnnoncesScreen() {
     setActionError(null);
     try {
       await api.post(`/annonces/${id}/publier`);
+      setSuccessMessage('Annonce publiée avec succès.');
+      setSuccessVisible(true);
       list.refresh();
     } catch (err) {
       setActionError(apiErrorMessage(err));
@@ -39,6 +44,8 @@ export default function AnnoncesScreen() {
     setActionError(null);
     try {
       await api.post(`/annonces/${id}/archiver`);
+      setSuccessMessage('Annonce archivée avec succès.');
+      setSuccessVisible(true);
       list.refresh();
     } catch (err) {
       setActionError(apiErrorMessage(err));
@@ -49,6 +56,8 @@ export default function AnnoncesScreen() {
     setActionError(null);
     try {
       await api.delete(`/annonces/${id}`);
+      setSuccessMessage('Annonce supprimée avec succès.');
+      setSuccessVisible(true);
       list.refresh();
     } catch (err) {
       setActionError(apiErrorMessage(err));
@@ -97,6 +106,8 @@ export default function AnnoncesScreen() {
         )}
       />
       {canManage ? <FAB icon="plus" style={styles.fab} onPress={() => router.push('/plus/annonces/new')} /> : null}
+
+      <SuccessSnackbar visible={successVisible} message={successMessage} onDismiss={() => setSuccessVisible(false)} />
     </>
   );
 }

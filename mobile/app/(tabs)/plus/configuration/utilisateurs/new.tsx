@@ -3,8 +3,10 @@ import { router } from 'expo-router';
 import { ScrollView, StyleSheet } from 'react-native';
 import { Text, TextInput } from 'react-native-paper';
 
+import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
 import { api, apiErrorMessage } from '@/lib/api';
 
@@ -23,6 +25,7 @@ export default function NewUtilisateurScreen() {
   const [droit, setDroit] = useState<string | null>(user?.droit === 'SupAdmin' ? null : 'Gestionnaire');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
 
   const droitOptions =
     user?.droit === 'SupAdmin'
@@ -52,7 +55,8 @@ export default function NewUtilisateurScreen() {
         fonction: fonction || null,
         droit,
       });
-      router.back();
+      setSuccessVisible(true);
+      setTimeout(() => router.back(), 900);
     } catch (err) {
       setError(apiErrorMessage(err, 'Impossible de créer cet utilisateur.'));
     } finally {
@@ -66,16 +70,18 @@ export default function NewUtilisateurScreen() {
         Ce formulaire crée un compte classique (Admin/Gestionnaire). Pour lier un compte à un enseignant, un parent, un DAE ou un
         DCAP, utilisez la version web.
       </Text>
-      <TextInput mode="outlined" label="Nom et prénom" value={nomPrenom} onChangeText={setNomPrenom} style={styles.input} />
-      <TextInput mode="outlined" label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" style={styles.input} />
-      <TextInput mode="outlined" label="Téléphone" value={telephone} onChangeText={setTelephone} keyboardType="phone-pad" style={styles.input} />
-      <SelectField label="Genre" value={genre} options={GENRE_OPTIONS} onChange={(v) => setGenre(v as string)} />
+      <TextInput mode="outlined" label={requiredLabel('Nom et prénom')} value={nomPrenom} onChangeText={setNomPrenom} style={styles.input} />
+      <TextInput mode="outlined" label={requiredLabel('Email')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" style={styles.input} />
+      <TextInput mode="outlined" label={requiredLabel('Téléphone')} value={telephone} onChangeText={setTelephone} keyboardType="phone-pad" style={styles.input} />
+      <SelectField label={requiredLabel('Genre')} value={genre} options={GENRE_OPTIONS} onChange={(v) => setGenre(v as string)} />
       <TextInput mode="outlined" label="Fonction (optionnel)" value={fonction} onChangeText={setFonction} style={styles.input} />
-      <SelectField label="Droit" value={droit} options={droitOptions} onChange={(v) => setDroit(v as string)} />
+      <SelectField label={requiredLabel('Droit')} value={droit} options={droitOptions} onChange={(v) => setDroit(v as string)} />
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <SubmitButton label="Créer l'utilisateur" onPress={handleSubmit} loading={isSubmitting} />
+
+      <SuccessSnackbar visible={successVisible} message="Utilisateur créé avec succès." onDismiss={() => setSuccessVisible(false)} />
     </ScrollView>
   );
 }

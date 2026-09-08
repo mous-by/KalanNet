@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Button, FAB, Searchbar, Text } from 'react-native-paper';
 
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
@@ -24,11 +25,15 @@ export default function UtilisateursScreen() {
     [search]
   );
   const [actionError, setActionError] = useState<string | null>(null);
+  const [successVisible, setSuccessVisible] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   async function toggleStatus(target: ConfigUser) {
     setActionError(null);
     try {
       await api.patch(`/configuration/utilisateurs/${target.idUtilisateur}/status`, { statut: target.statut ? 0 : 1 });
+      setSuccessMessage(target.statut ? 'Utilisateur désactivé avec succès.' : 'Utilisateur activé avec succès.');
+      setSuccessVisible(true);
       reload();
     } catch (err) {
       setActionError(apiErrorMessage(err));
@@ -39,6 +44,8 @@ export default function UtilisateursScreen() {
     setActionError(null);
     try {
       await api.delete(`/configuration/utilisateurs/${target.idUtilisateur}`);
+      setSuccessMessage('Utilisateur supprimé avec succès.');
+      setSuccessVisible(true);
       reload();
     } catch (err) {
       setActionError(apiErrorMessage(err));
@@ -87,6 +94,8 @@ export default function UtilisateursScreen() {
       )}
       {actionError ? <Text style={styles.error}>{actionError}</Text> : null}
       <FAB icon="plus" style={styles.fab} onPress={() => router.push('/plus/configuration/utilisateurs/new')} />
+
+      <SuccessSnackbar visible={successVisible} message={successMessage} onDismiss={() => setSuccessVisible(false)} />
     </View>
   );
 }

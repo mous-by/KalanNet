@@ -5,7 +5,9 @@ import * as WebBrowser from 'expo-web-browser';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Button, Dialog, Portal, Text, TextInput } from 'react-native-paper';
 
+import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
@@ -70,6 +72,8 @@ export default function AbonnementScreen() {
   const [receiptUri, setReceiptUri] = useState<string | null>(null);
   const [manualError, setManualError] = useState<string | null>(null);
   const [isSubmittingManual, setIsSubmittingManual] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   async function handleOnlinePay() {
     if (!onlineOffre || !provider) {
@@ -88,6 +92,8 @@ export default function AbonnementScreen() {
         await WebBrowser.openBrowserAsync(response.checkout_url);
       }
       setOnlineOffre(null);
+      setSuccessMessage('Paiement initié avec succès.');
+      setSuccessVisible(true);
       reload();
     } catch (err) {
       setOnlineError(apiErrorMessage(err, 'Paiement impossible.'));
@@ -125,6 +131,8 @@ export default function AbonnementScreen() {
       setReceiptUri(null);
       setTransactionRef('');
       setOwnerNote('');
+      setSuccessMessage('Preuve de paiement envoyée avec succès.');
+      setSuccessVisible(true);
       reload();
     } catch (err) {
       setManualError(apiErrorMessage(err, 'Envoi impossible.'));
@@ -136,6 +144,8 @@ export default function AbonnementScreen() {
   async function handleReview(paiementId: number, approve: boolean) {
     try {
       await api.post(`/abonnements/paiements/${paiementId}/${approve ? 'approuver' : 'rejeter'}`);
+      setSuccessMessage(approve ? 'Paiement approuvé avec succès.' : 'Paiement rejeté avec succès.');
+      setSuccessVisible(true);
       reload();
     } catch {
       // the list simply won't update if this fails; user can retry
@@ -210,7 +220,7 @@ export default function AbonnementScreen() {
         <Dialog visible={onlineOffre !== null} onDismiss={() => setOnlineOffre(null)}>
           <Dialog.Title>Payer {onlineOffre?.nom}</Dialog.Title>
           <Dialog.Content>
-            <SelectField label="Fournisseur" value={provider} options={PROVIDERS} onChange={(v) => setProvider(v as string)} />
+            <SelectField label={requiredLabel('Fournisseur')} value={provider} options={PROVIDERS} onChange={(v) => setProvider(v as string)} />
             <TextInput mode="outlined" label="Numéro payeur (optionnel)" value={numeroPayeur} onChangeText={setNumeroPayeur} style={styles.input} />
             {onlineError ? <Text style={styles.error}>{onlineError}</Text> : null}
           </Dialog.Content>
@@ -225,11 +235,11 @@ export default function AbonnementScreen() {
         <Dialog visible={manualOffre !== null} onDismiss={() => setManualOffre(null)}>
           <Dialog.Title>Paiement manuel — {manualOffre?.nom}</Dialog.Title>
           <Dialog.Content>
-            <SelectField label="Mode de paiement" value={modePaiement} options={MANUAL_MODES} onChange={(v) => setModePaiement(v as string)} />
+            <SelectField label={requiredLabel('Mode de paiement')} value={modePaiement} options={MANUAL_MODES} onChange={(v) => setModePaiement(v as string)} />
             <TextInput mode="outlined" label="Référence de transaction (optionnel)" value={transactionRef} onChangeText={setTransactionRef} style={styles.input} />
             <TextInput mode="outlined" label="Note (optionnel)" value={ownerNote} onChangeText={setOwnerNote} style={styles.input} />
             <Button mode="outlined" onPress={pickReceipt} style={styles.input}>
-              {receiptUri ? 'Changer la preuve de paiement' : 'Choisir une preuve de paiement'}
+              {receiptUri ? 'Changer la preuve de paiement' : 'Choisir une preuve de paiement *'}
             </Button>
             {manualError ? <Text style={styles.error}>{manualError}</Text> : null}
           </Dialog.Content>
@@ -241,6 +251,8 @@ export default function AbonnementScreen() {
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
+      <SuccessSnackbar visible={successVisible} message={successMessage} onDismiss={() => setSuccessVisible(false)} />
     </ScrollView>
   );
 }

@@ -5,8 +5,10 @@ import { ActivityIndicator, IconButton, Text, TextInput } from 'react-native-pap
 
 import DateField from '@/components/DateField';
 import OfflineBanner from '@/components/OfflineBanner';
+import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
 import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
@@ -42,6 +44,8 @@ export default function NewPresenceScreen() {
   const [lecons, setLecons] = useState<LeconRow[]>([{ titre: '', nombre_heure: '1', progression: '' }]);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   const isTeacher = user?.droit === 'enseignant';
   const validLecons = lecons.filter((l) => l.titre.trim());
@@ -81,11 +85,15 @@ export default function NewPresenceScreen() {
           method: 'post',
           payload,
         });
-        router.back();
+        setSuccessMessage('Présence enregistrée hors ligne, sera synchronisée.');
+        setSuccessVisible(true);
+        setTimeout(() => router.back(), 900);
         return;
       }
       await api.post('/presences', payload);
-      router.back();
+      setSuccessMessage('Présence enregistrée avec succès.');
+      setSuccessVisible(true);
+      setTimeout(() => router.back(), 900);
     } catch (err) {
       setError(apiErrorMessage(err, 'Impossible d’enregistrer cette présence.'));
     } finally {
@@ -105,19 +113,21 @@ export default function NewPresenceScreen() {
     <ScrollView contentContainerStyle={styles.content}>
       <OfflineBanner />
       {!isTeacher ? (
-        <SelectField label="Enseignant" value={idEnseignant} options={enseignantOptions} onChange={(v) => setIdEnseignant(v as number)} />
+        <SelectField label={requiredLabel('Enseignant')} value={idEnseignant} options={enseignantOptions} onChange={(v) => setIdEnseignant(v as number)} />
       ) : null}
-      <SelectField label="Classe" value={idClasse} options={classeOptions} onChange={(v) => setIdClasse(v as number)} />
+      <SelectField label={requiredLabel('Classe')} value={idClasse} options={classeOptions} onChange={(v) => setIdClasse(v as number)} />
       <TextInput mode="outlined" label="Nombre d'heures total" keyboardType="numeric" value={nombreHeure} onChangeText={setNombreHeure} style={styles.input} />
-      <SelectField label="Trimestre" value={idTrimestre} options={trimestreOptions} onChange={(v) => setIdTrimestre(v as number)} />
-      <SelectField label="Année scolaire" value={idAnnee} options={anneeOptions} onChange={(v) => setIdAnnee(v as number)} />
-      <DateField label="Date" value={date} onChange={setDate} />
+      <SelectField label={requiredLabel('Trimestre')} value={idTrimestre} options={trimestreOptions} onChange={(v) => setIdTrimestre(v as number)} />
+      <SelectField label={requiredLabel('Année scolaire')} value={idAnnee} options={anneeOptions} onChange={(v) => setIdAnnee(v as number)} />
+      <DateField label={requiredLabel('Date')} value={date} onChange={setDate} />
 
-      <Text style={styles.sectionTitle}>Leçons couvertes</Text>
+      <Text style={styles.sectionTitle}>
+        Leçons couvertes <Text style={styles.required}>*</Text>
+      </Text>
       {lecons.map((lecon, index) => (
         <View key={index} style={styles.leconRow}>
           <View style={styles.leconFields}>
-            <TextInput mode="outlined" label="Titre" value={lecon.titre} onChangeText={(v) => updateLecon(index, { titre: v })} style={styles.input} />
+            <TextInput mode="outlined" label={requiredLabel('Titre')} value={lecon.titre} onChangeText={(v) => updateLecon(index, { titre: v })} style={styles.input} />
             <TextInput
               mode="outlined"
               label="Heures"
@@ -150,6 +160,8 @@ export default function NewPresenceScreen() {
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <SubmitButton label="Enregistrer" onPress={handleSubmit} loading={isSubmitting} />
+
+      <SuccessSnackbar visible={successVisible} message={successMessage} onDismiss={() => setSuccessVisible(false)} />
     </ScrollView>
   );
 }
@@ -159,6 +171,7 @@ const styles = StyleSheet.create({
   input: { marginBottom: 12 },
   spinner: { marginTop: 40 },
   error: { color: '#d33', marginBottom: 12 },
+  required: { color: '#d33' },
   sectionTitle: { fontWeight: '600', marginTop: 8, marginBottom: 8 },
   leconRow: {
     flexDirection: 'row',

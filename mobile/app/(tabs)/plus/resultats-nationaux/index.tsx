@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Text, TextInput } from 'react-native-paper';
 
+import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
 import { api, apiErrorMessage } from '@/lib/api';
@@ -109,10 +110,10 @@ export default function ResultatsNationauxScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <SelectField label="Classe" value={idClasse} options={classeOptions} onChange={(v) => setIdClasse(v as number)} />
-      <SelectField label="Année scolaire" value={idAnnee} options={anneeOptions} onChange={(v) => setIdAnnee(v as number)} />
+      <SelectField label={requiredLabel('Classe')} value={idClasse} options={classeOptions} onChange={(v) => setIdClasse(v as number)} />
+      <SelectField label={requiredLabel('Année scolaire')} value={idAnnee} options={anneeOptions} onChange={(v) => setIdAnnee(v as number)} />
       <SelectField
-        label="Type d'examen"
+        label={requiredLabel("Type d'examen")}
         value={niveauExamen ?? data?.niveau_examen ?? null}
         options={examenOptions}
         onChange={(v) => setNiveauExamen(v as string)}

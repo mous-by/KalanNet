@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { Button, Dialog, FAB, Portal, Switch, Text, TextInput } from 'react-native-paper';
 
+import requiredLabel from '@/components/RequiredLabel';
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
 
@@ -29,6 +31,7 @@ export default function OffresAbonnementScreen() {
   const [actif, setActif] = useState(true);
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
 
   function openDialog(item?: Offre) {
     setEditing(item ?? null);
@@ -66,6 +69,7 @@ export default function OffresAbonnementScreen() {
         await api.post('/abonnements/offres', payload);
       }
       setDialogVisible(false);
+      setSuccessVisible(true);
       reload();
     } catch (err) {
       setFormError(apiErrorMessage(err, 'Impossible d’enregistrer cette offre.'));
@@ -122,14 +126,14 @@ export default function OffresAbonnementScreen() {
           <Dialog.Title>{editing ? 'Modifier l’offre' : 'Nouvelle offre'}</Dialog.Title>
           <Dialog.ScrollArea>
             <Dialog.Content>
-              <TextInput mode="outlined" label="Code" value={code} onChangeText={setCode} autoCapitalize="none" style={styles.input} />
-              <TextInput mode="outlined" label="Nom" value={nom} onChangeText={setNom} style={styles.input} />
+              <TextInput mode="outlined" label={requiredLabel('Code')} value={code} onChangeText={setCode} autoCapitalize="none" style={styles.input} />
+              <TextInput mode="outlined" label={requiredLabel('Nom')} value={nom} onChangeText={setNom} style={styles.input} />
               <TextInput mode="outlined" label="Description (optionnel)" value={description} onChangeText={setDescription} style={styles.input} />
-              <TextInput mode="outlined" label="Montant" keyboardType="numeric" value={montant} onChangeText={setMontant} style={styles.input} />
-              <TextInput mode="outlined" label="Devise" value={devise} onChangeText={setDevise} autoCapitalize="characters" style={styles.input} />
+              <TextInput mode="outlined" label={requiredLabel('Montant')} keyboardType="numeric" value={montant} onChangeText={setMontant} style={styles.input} />
+              <TextInput mode="outlined" label={requiredLabel('Devise')} value={devise} onChangeText={setDevise} autoCapitalize="characters" style={styles.input} />
               <TextInput
                 mode="outlined"
-                label="Durée (jours, 0 = à vie)"
+                label={requiredLabel('Durée (jours, 0 = à vie)')}
                 keyboardType="numeric"
                 value={dureeJours}
                 onChangeText={setDureeJours}
@@ -150,6 +154,12 @@ export default function OffresAbonnementScreen() {
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
+      <SuccessSnackbar
+        visible={successVisible}
+        message={editing ? 'Offre modifiée avec succès.' : 'Offre créée avec succès.'}
+        onDismiss={() => setSuccessVisible(false)}
+      />
     </View>
   );
 }

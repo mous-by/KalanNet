@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { Button, Dialog, FAB, Portal, Text, TextInput } from 'react-native-paper';
 
+import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { api, apiErrorMessage } from '@/lib/api';
 import { usePaginatedApi } from '@/lib/useApi';
 
@@ -27,6 +29,7 @@ export default function ClassesOfficiellesScreen() {
   const [ordre, setOrdre] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
 
   function openDialog(item?: ClasseOfficielle) {
     setEditing(item ?? null);
@@ -51,6 +54,7 @@ export default function ClassesOfficiellesScreen() {
         await api.post('/configuration/classes-officielles', payload);
       }
       setDialogVisible(false);
+      setSuccessVisible(true);
       list.refresh();
     } catch (err) {
       setError(apiErrorMessage(err, 'Impossible d’enregistrer cette classe officielle.'));
@@ -100,8 +104,8 @@ export default function ClassesOfficiellesScreen() {
         <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
           <Dialog.Title>{editing ? 'Modifier la classe officielle' : 'Nouvelle classe officielle'}</Dialog.Title>
           <Dialog.Content>
-            <TextInput mode="outlined" label="Nom" value={nom} onChangeText={setNom} style={styles.input} />
-            <SelectField label="Ordre d'enseignement" value={ordre} options={ORDRE_OPTIONS} onChange={(v) => setOrdre(v as string)} />
+            <TextInput mode="outlined" label={requiredLabel('Nom')} value={nom} onChangeText={setNom} style={styles.input} />
+            <SelectField label={requiredLabel("Ordre d'enseignement")} value={ordre} options={ORDRE_OPTIONS} onChange={(v) => setOrdre(v as string)} />
             {error ? <Text style={styles.error}>{error}</Text> : null}
           </Dialog.Content>
           <Dialog.Actions>
@@ -112,6 +116,12 @@ export default function ClassesOfficiellesScreen() {
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
+      <SuccessSnackbar
+        visible={successVisible}
+        message={editing ? 'Classe officielle modifiée avec succès.' : 'Classe officielle créée avec succès.'}
+        onDismiss={() => setSuccessVisible(false)}
+      />
     </View>
   );
 }

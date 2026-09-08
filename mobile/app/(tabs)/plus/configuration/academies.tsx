@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { Button, Dialog, FAB, Portal, Text, TextInput } from 'react-native-paper';
 
+import requiredLabel from '@/components/RequiredLabel';
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { api, apiErrorMessage } from '@/lib/api';
 import { usePaginatedApi } from '@/lib/useApi';
 
@@ -21,6 +23,7 @@ export default function AcademiesScreen() {
   const [localite, setLocalite] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
 
   function openDialog(item?: Academie) {
     setEditing(item ?? null);
@@ -46,6 +49,7 @@ export default function AcademiesScreen() {
         await api.post('/configuration/academies', payload);
       }
       setDialogVisible(false);
+      setSuccessVisible(true);
       list.refresh();
     } catch (err) {
       setError(apiErrorMessage(err, 'Impossible d’enregistrer cette académie.'));
@@ -97,9 +101,9 @@ export default function AcademiesScreen() {
         <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
           <Dialog.Title>{editing ? 'Modifier l’académie' : 'Nouvelle académie'}</Dialog.Title>
           <Dialog.Content>
-            <TextInput mode="outlined" label="Nom" value={nom} onChangeText={setNom} style={styles.input} />
-            <TextInput mode="outlined" label="Code" value={code} onChangeText={setCode} style={styles.input} />
-            <TextInput mode="outlined" label="Localité" value={localite} onChangeText={setLocalite} style={styles.input} />
+            <TextInput mode="outlined" label={requiredLabel('Nom')} value={nom} onChangeText={setNom} style={styles.input} />
+            <TextInput mode="outlined" label={requiredLabel('Code')} value={code} onChangeText={setCode} style={styles.input} />
+            <TextInput mode="outlined" label={requiredLabel('Localité')} value={localite} onChangeText={setLocalite} style={styles.input} />
             {error ? <Text style={styles.error}>{error}</Text> : null}
           </Dialog.Content>
           <Dialog.Actions>
@@ -110,6 +114,12 @@ export default function AcademiesScreen() {
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
+      <SuccessSnackbar
+        visible={successVisible}
+        message={editing ? 'Académie modifiée avec succès.' : 'Académie créée avec succès.'}
+        onDismiss={() => setSuccessVisible(false)}
+      />
     </View>
   );
 }

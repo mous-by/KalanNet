@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { Button, Dialog, FAB, Portal, Text, TextInput } from 'react-native-paper';
 
+import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { api, apiErrorMessage } from '@/lib/api';
 import { usePaginatedApi } from '@/lib/useApi';
 
@@ -27,6 +29,7 @@ export default function StatusControlesScreen() {
   const [penalite, setPenalite] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
 
   function openDialog(item?: StatusControle) {
     setEditing(item ?? null);
@@ -52,6 +55,7 @@ export default function StatusControlesScreen() {
         await api.post('/configuration/status-controles', payload);
       }
       setDialogVisible(false);
+      setSuccessVisible(true);
       list.refresh();
     } catch (err) {
       setError(apiErrorMessage(err, 'Impossible d’enregistrer ce statut.'));
@@ -103,11 +107,11 @@ export default function StatusControlesScreen() {
         <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
           <Dialog.Title>{editing ? 'Modifier le statut' : 'Nouveau statut de contrôle'}</Dialog.Title>
           <Dialog.Content>
-            <TextInput mode="outlined" label="Libellé" value={controle} onChangeText={setControle} style={styles.input} />
-            <SelectField label="Alerte" value={alert} options={ALERT_OPTIONS} onChange={(v) => setAlert(v as string)} />
+            <TextInput mode="outlined" label={requiredLabel('Libellé')} value={controle} onChangeText={setControle} style={styles.input} />
+            <SelectField label={requiredLabel('Alerte')} value={alert} options={ALERT_OPTIONS} onChange={(v) => setAlert(v as string)} />
             <TextInput
               mode="outlined"
-              label="Pénalité sur la note de conduite (0-18)"
+              label={requiredLabel('Pénalité sur la note de conduite (0-18)')}
               keyboardType="numeric"
               value={penalite}
               onChangeText={setPenalite}
@@ -123,6 +127,12 @@ export default function StatusControlesScreen() {
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
+      <SuccessSnackbar
+        visible={successVisible}
+        message={editing ? 'Statut modifié avec succès.' : 'Statut créé avec succès.'}
+        onDismiss={() => setSuccessVisible(false)}
+      />
     </View>
   );
 }

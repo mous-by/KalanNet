@@ -3,8 +3,10 @@ import { router } from 'expo-router';
 import { ScrollView, StyleSheet } from 'react-native';
 import { Text, TextInput } from 'react-native-paper';
 
+import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { api, apiErrorMessage } from '@/lib/api';
 
 const PUBLIC_OPTIONS = [
@@ -26,6 +28,7 @@ export default function NewAnnonceScreen() {
   const [statut, setStatut] = useState('publie');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
 
   const isValid = titre.trim() && contenu.trim();
 
@@ -43,7 +46,8 @@ export default function NewAnnonceScreen() {
         public_cible: publicCible,
         statut_annonce: statut,
       });
-      router.back();
+      setSuccessVisible(true);
+      setTimeout(() => router.back(), 900);
     } catch (err) {
       setError(apiErrorMessage(err, 'Impossible de créer cette annonce.'));
     } finally {
@@ -53,14 +57,16 @@ export default function NewAnnonceScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <TextInput mode="outlined" label="Titre" value={titre} onChangeText={setTitre} style={styles.input} />
-      <TextInput mode="outlined" label="Contenu" value={contenu} onChangeText={setContenu} multiline numberOfLines={6} style={styles.input} />
-      <SelectField label="Public cible" value={publicCible} options={PUBLIC_OPTIONS} onChange={(v) => setPublicCible(v as string)} />
-      <SelectField label="Statut" value={statut} options={STATUT_OPTIONS} onChange={(v) => setStatut(v as string)} />
+      <TextInput mode="outlined" label={requiredLabel('Titre')} value={titre} onChangeText={setTitre} style={styles.input} />
+      <TextInput mode="outlined" label={requiredLabel('Contenu')} value={contenu} onChangeText={setContenu} multiline numberOfLines={6} style={styles.input} />
+      <SelectField label={requiredLabel('Public cible')} value={publicCible} options={PUBLIC_OPTIONS} onChange={(v) => setPublicCible(v as string)} />
+      <SelectField label={requiredLabel('Statut')} value={statut} options={STATUT_OPTIONS} onChange={(v) => setStatut(v as string)} />
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <SubmitButton label="Enregistrer" onPress={handleSubmit} loading={isSubmitting} />
+
+      <SuccessSnackbar visible={successVisible} message="Annonce enregistrée avec succès." onDismiss={() => setSuccessVisible(false)} />
     </ScrollView>
   );
 }

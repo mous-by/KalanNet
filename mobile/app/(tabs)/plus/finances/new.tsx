@@ -4,8 +4,10 @@ import { ScrollView, StyleSheet } from 'react-native';
 import { ActivityIndicator, Text, TextInput } from 'react-native-paper';
 
 import DateField from '@/components/DateField';
+import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
 
@@ -49,6 +51,7 @@ export default function NewPaiementScreen() {
   const [telephone, setTelephone] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
 
   const isValid = echeanceId && montant && modeReglement && date;
 
@@ -70,7 +73,8 @@ export default function NewPaiementScreen() {
         nom_payeur: nomPayeur || null,
         telephone: telephone || null,
       });
-      router.back();
+      setSuccessVisible(true);
+      setTimeout(() => router.back(), 900);
     } catch (err) {
       setError(apiErrorMessage(err, 'Impossible d’enregistrer ce paiement.'));
     } finally {
@@ -93,10 +97,10 @@ export default function NewPaiementScreen() {
     <ScrollView contentContainerStyle={styles.content}>
       <Text style={styles.studentName}>{context.eleve.nom}</Text>
 
-      <SelectField label="Échéance" value={echeanceId} options={echeanceOptions} onChange={(v) => setEcheanceId(v as number)} />
-      <TextInput mode="outlined" label="Montant payé" keyboardType="numeric" value={montant} onChangeText={setMontant} style={styles.input} />
-      <SelectField label="Mode de règlement" value={modeReglement} options={MODE_REGLEMENT_OPTIONS} onChange={(v) => setModeReglement(v as string)} />
-      <DateField label="Date de paiement" value={date} onChange={setDate} />
+      <SelectField label={requiredLabel('Échéance')} value={echeanceId} options={echeanceOptions} onChange={(v) => setEcheanceId(v as number)} />
+      <TextInput mode="outlined" label={requiredLabel('Montant payé')} keyboardType="numeric" value={montant} onChangeText={setMontant} style={styles.input} />
+      <SelectField label={requiredLabel('Mode de règlement')} value={modeReglement} options={MODE_REGLEMENT_OPTIONS} onChange={(v) => setModeReglement(v as string)} />
+      <DateField label={requiredLabel('Date de paiement')} value={date} onChange={setDate} />
       <TextInput mode="outlined" label="Motif (optionnel)" value={motif} onChangeText={setMotif} style={styles.input} />
       <SelectField label="Parent payeur" value={parentId ?? 0} options={parentOptions} onChange={(v) => setParentId((v as number) || null)} />
       <TextInput mode="outlined" label="Nom du payeur (optionnel)" value={nomPayeur} onChangeText={setNomPayeur} style={styles.input} />
@@ -105,6 +109,8 @@ export default function NewPaiementScreen() {
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <SubmitButton label="Enregistrer le paiement" onPress={handleSubmit} loading={isSubmitting} />
+
+      <SuccessSnackbar visible={successVisible} message="Paiement enregistré avec succès." onDismiss={() => setSuccessVisible(false)} />
     </ScrollView>
   );
 }

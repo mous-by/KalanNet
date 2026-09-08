@@ -3,8 +3,10 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { ScrollView, StyleSheet } from 'react-native';
 import { Text, TextInput } from 'react-native-paper';
 
+import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
+import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
 import { AnneeScolaire, Classe } from '@/types/api';
@@ -18,13 +20,15 @@ export default function ReintegrateEleveScreen() {
   const [motif, setMotif] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
 
   async function handleSubmit() {
     setError(null);
     setIsSubmitting(true);
     try {
       await api.post(`/eleves/${id}/reintegrer`, { id_classe: idClasse, id_annee: idAnnee, motif_retour: motif });
-      router.back();
+      setSuccessVisible(true);
+      setTimeout(() => router.back(), 900);
     } catch (err) {
       setError(apiErrorMessage(err, 'Impossible de réintégrer cet élève.'));
     } finally {
@@ -37,13 +41,15 @@ export default function ReintegrateEleveScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <SelectField label="Classe" value={idClasse} options={classeOptions} onChange={(v) => setIdClasse(v as number)} />
-      <SelectField label="Année scolaire" value={idAnnee} options={anneeOptions} onChange={(v) => setIdAnnee(v as number)} />
+      <SelectField label={requiredLabel('Classe')} value={idClasse} options={classeOptions} onChange={(v) => setIdClasse(v as number)} />
+      <SelectField label={requiredLabel('Année scolaire')} value={idAnnee} options={anneeOptions} onChange={(v) => setIdAnnee(v as number)} />
       <TextInput mode="outlined" label="Motif du retour (optionnel)" value={motif} onChangeText={setMotif} style={styles.input} />
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <SubmitButton label="Réintégrer" onPress={handleSubmit} loading={isSubmitting} disabled={!idClasse || !idAnnee} />
+
+      <SuccessSnackbar visible={successVisible} message="Élève réintégré avec succès." onDismiss={() => setSuccessVisible(false)} />
     </ScrollView>
   );
 }
