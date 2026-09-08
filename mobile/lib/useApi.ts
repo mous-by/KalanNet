@@ -137,3 +137,50 @@ export function useApiGet<T>(endpoint: string | null, deps: unknown[] = [], opti
 
   return { data, isLoading, error, reload: load, isFromCache };
 }
+
+/**
+ * Fetches every page of a Laravel ->paginate() endpoint and returns the
+ * combined list. For populating a <SelectField> with the full reference
+ * data (e.g. académies, CAP) — usePaginatedApi only loads page 1 unless
+ * something calls loadMore(), which a dropdown never does, silently
+ * truncating the options to the first page size.
+ */
+export function useAllPaginated<T>(endpoint: string | null) {
+  const [items, setItems] = useState<T[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    if (!endpoint) {
+      setIsLoading(false);
+      return;
+    }
+    setIsLoading(true);
+    setError(null);
+    try {
+      let all: T[] = [];
+      let page = 1;
+      let lastPage = 1;
+      do {
+        const { data } = await api.get(endpoint, { params: { page } });
+        const resolved: Paginated<T> = isPaginated(data)
+          ? data
+          : { data: Array.isArray(data) ? data : [], current_page: 1, last_page: 1, per_page: 0, total: 0 };
+        all = all.concat(resolved.data);
+        lastPage = resolved.last_page;
+        page += 1;
+      } while (page <= lastPage);
+      setItems(all);
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Impossible de charger la liste.'));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [endpoint]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  return { items, isLoading, error, reload: load };
+}

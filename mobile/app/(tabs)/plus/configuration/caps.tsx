@@ -6,7 +6,7 @@ import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { api, apiErrorMessage } from '@/lib/api';
-import { usePaginatedApi } from '@/lib/useApi';
+import { useAllPaginated, usePaginatedApi } from '@/lib/useApi';
 
 interface Academie {
   id_academie: number;
@@ -24,7 +24,7 @@ interface Cap {
 
 export default function CapsScreen() {
   const list = usePaginatedApi<Cap>('/configuration/caps');
-  const academies = usePaginatedApi<Academie>('/configuration/academies');
+  const academies = useAllPaginated<Academie>('/configuration/academies');
   const [editing, setEditing] = useState<Cap | null>(null);
   const [dialogVisible, setDialogVisible] = useState(false);
   const [nom, setNom] = useState('');

@@ -8,7 +8,7 @@ import SelectField from '@/components/SelectField';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
 import { api, apiErrorMessage } from '@/lib/api';
-import { useApiGet, usePaginatedApi } from '@/lib/useApi';
+import { useAllPaginated, useApiGet, usePaginatedApi } from '@/lib/useApi';
 
 interface Ecole {
   idEcole: number;
@@ -72,8 +72,8 @@ const CAP_REQUIRED_TYPES = ['Fondamentale I', 'Fondamentale II', 'Collège', 'Co
 export default function EcolesScreen() {
   const { user } = useAuth();
   const list = usePaginatedApi<Ecole>('/configuration/ecoles');
-  const { data: academiesData } = useApiGet<{ data: Academie[] }>('/configuration/academies');
-  const { data: capsData } = useApiGet<{ data: Cap[] }>('/configuration/caps');
+  const { items: academies } = useAllPaginated<Academie>('/configuration/academies');
+  const { items: caps } = useAllPaginated<Cap>('/configuration/caps');
   const { data: abonnementData } = useApiGet<{ all_offres: Offre[] }>('/abonnements');
 
   const [editing, setEditing] = useState<Ecole | null>(null);
@@ -185,8 +185,8 @@ export default function EcolesScreen() {
     }
   }
 
-  const academieOptions = (academiesData?.data ?? []).map((a) => ({ value: a.id_academie, label: a.nom_academie }));
-  const capOptions = (capsData?.data ?? [])
+  const academieOptions = academies.map((a) => ({ value: a.id_academie, label: a.nom_academie }));
+  const capOptions = caps
     .filter((c) => !idAcademie || c.id_academie === idAcademie)
     .map((c) => ({ value: c.id_cap, label: c.nom_cap }));
   const offreOptions = (abonnementData?.all_offres ?? [])
