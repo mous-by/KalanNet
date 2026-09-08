@@ -3,13 +3,14 @@ import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, View } from 
 import { Text } from 'react-native-paper';
 
 import AdminDashboardView, { AdminDashboardData } from '@/components/dashboard/AdminDashboardView';
+import SupAdminDashboardView, { SupAdminDashboardData } from '@/components/dashboard/SupAdminDashboardView';
 import { useAuth } from '@/context/AuthContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { SURFACE } from '@/lib/themes';
 
 type DashboardData = Record<string, unknown>;
 
-const STAFF_ROLES = ['SupAdmin', 'Admin', 'Gestionnaire', 'DAE', 'DCAP'];
+const STAFF_ROLES = ['Admin', 'Gestionnaire', 'DAE', 'DCAP'];
 
 function humanizeKey(key: string): string {
   return key.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase());
@@ -73,6 +74,7 @@ export default function DashboardScreen() {
     load({ silent: true });
   }
 
+  const isSupAdmin = user?.droit === 'SupAdmin';
   const isStaff = user?.droit && STAFF_ROLES.includes(user.droit);
 
   return (
@@ -108,6 +110,8 @@ export default function DashboardScreen() {
         <ActivityIndicator style={styles.spinner} size="large" />
       ) : error ? (
         <Text style={styles.error}>{error}</Text>
+      ) : isSupAdmin ? (
+        <SupAdminDashboardView data={data as unknown as SupAdminDashboardData} onReload={() => load({ silent: true })} />
       ) : isStaff ? (
         <AdminDashboardView data={data as unknown as AdminDashboardData} />
       ) : (
