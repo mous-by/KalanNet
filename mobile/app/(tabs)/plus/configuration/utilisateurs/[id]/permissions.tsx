@@ -15,21 +15,32 @@ interface PermissionItem {
 }
 
 interface PermissionsData {
-  utilisateur: { nomPrenom: string };
+  utilisateur: { nomPrenom: string; droit: string; managed_orders: string[] | null; ecole?: { typeEcole: string } | null };
   grouped_permissions: Record<string, PermissionItem[]>;
   permission_ids: number[];
   read_only: boolean;
 }
 
+const MANAGED_ORDERS_OPTIONS: { value: string; label: string }[] = [
+  { value: 'fondamentale1', label: 'Fondamentale I' },
+  { value: 'fondamentale2', label: 'Fondamentale II' },
+  { value: 'secondairegenerale', label: 'Secondaire Général' },
+  { value: 'secondairetechniqueetprofessionnel', label: 'Secondaire Technique et Professionnel' },
+];
+
 export default function UserPermissionsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data, isLoading, error } = useApiGet<PermissionsData>(`/configuration/utilisateurs/${id}/permissions`, [id]);
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [managedOrders, setManagedOrders] = useState<Set<string>>(new Set());
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    if (data) setSelected(new Set(data.permission_ids));
+    if (data) {
+      setSelected(new Set(data.permission_ids));
+      setManagedOrders(new Set(data.utilisateur.managed_orders ?? []));
+    }
   }, [data]);
 
   function toggle(permId: number) {
@@ -41,11 +52,29 @@ export default function UserPermissionsScreen() {
     });
   }
 
+  function toggleOrder(order: string) {
+    setManagedOrders((prev) => {
+      const next = new Set(prev);
+      if (next.has(order)) next.delete(order);
+      else next.add(order);
+      return next;
+    });
+  }
+
+  const isComplexGestionnaire = data?.utilisateur.droit === 'Gestionnaire' && data?.utilisateur.ecole?.typeEcole === 'Complexe Scolaire';
+
   async function handleSave() {
+    if (isComplexGestionnaire && managedOrders.size === 0) {
+      setSaveError('Veuillez sélectionner au moins un ordre d’enseignement géré.');
+      return;
+    }
     setSaveError(null);
     setIsSaving(true);
     try {
-      await api.put(`/configuration/utilisateurs/${id}/permissions`, { permissions: Array.from(selected) });
+      await api.put(`/configuration/utilisateurs/${id}/permissions`, {
+        permissions: Array.from(selected),
+        managed_orders: Array.from(managedOrders),
+      });
       router.back();
     } catch (err) {
       setSaveError(apiErrorMessage(err, 'Impossible d’enregistrer les permissions.'));
@@ -61,6 +90,23 @@ export default function UserPermissionsScreen() {
     <ScrollView contentContainerStyle={styles.content}>
       <Text style={styles.title}>{data.utilisateur.nomPrenom}</Text>
       {data.read_only ? <Text style={styles.note}>Lecture seule : vous ne pouvez pas modifier ces permissions.</Text> : null}
+
+      {isComplexGestionnaire ? (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Ordres d'enseignement gérés</Text>
+          <Text style={styles.note}>Ce gestionnaire d'un complexe scolaire doit être limité à un ou plusieurs ordres.</Text>
+          {MANAGED_ORDERS_OPTIONS.map((option) => (
+            <View key={option.value} style={styles.permRow}>
+              <Checkbox
+                status={managedOrders.has(option.value) ? 'checked' : 'unchecked'}
+                disabled={data.read_only}
+                onPress={() => toggleOrder(option.value)}
+              />
+              <Text style={styles.permLabel}>{option.label}</Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
 
       {Object.entries(data.grouped_permissions).map(([moduleKey, items]) => (
         <View key={moduleKey} style={styles.section}>

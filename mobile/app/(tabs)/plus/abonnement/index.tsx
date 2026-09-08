@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import * as WebBrowser from 'expo-web-browser';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Button, Dialog, Portal, Text, TextInput } from 'react-native-paper';
 
 import SelectField from '@/components/SelectField';
+import { useAuth } from '@/context/AuthContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
 
@@ -52,6 +54,7 @@ interface AbonnementData {
 }
 
 export default function AbonnementScreen() {
+  const { user } = useAuth();
   const { data, isLoading, error, reload } = useApiGet<AbonnementData>('/abonnements');
 
   const [onlineOffre, setOnlineOffre] = useState<Offre | null>(null);
@@ -150,6 +153,12 @@ export default function AbonnementScreen() {
         {data.abonnement?.fin_at ? <Text style={styles.meta}>Expire le {data.abonnement.fin_at}</Text> : null}
         <Text style={styles.meta}>Statut : {data.abonnement?.statut ?? '—'}</Text>
       </View>
+
+      {user?.droit === 'SupAdmin' ? (
+        <Button mode="outlined" onPress={() => router.push('/plus/abonnement/offres')} style={styles.input}>
+          Gérer les offres
+        </Button>
+      ) : null}
 
       <Text style={styles.sectionTitle}>Offres disponibles</Text>
       {data.offres.map((offre) => (
