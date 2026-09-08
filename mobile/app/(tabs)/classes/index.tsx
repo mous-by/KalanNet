@@ -3,13 +3,14 @@ import { FlatList, Pressable, StyleSheet } from 'react-native';
 import { ActivityIndicator, FAB, Text } from 'react-native-paper';
 
 import { useAuth } from '@/context/AuthContext';
+import { hasPermission } from '@/lib/permissions';
 import { useApiGet } from '@/lib/useApi';
 import { Classe } from '@/types/api';
 
 export default function ClassesScreen() {
   const { user } = useAuth();
   const { data, isLoading, error, reload } = useApiGet<{ data: Classe[] }>('/classes');
-  const canManage = user?.droit && ['SupAdmin', 'Admin', 'Gestionnaire'].includes(user.droit);
+  const canManage = hasPermission(user, 'classes_creation');
 
   return (
     <>

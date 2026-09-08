@@ -3,6 +3,7 @@ import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Button, Card, Divider, Text } from 'react-native-paper';
 
 import { useAuth } from '@/context/AuthContext';
+import { hasPermission } from '@/lib/permissions';
 import { useApiGet } from '@/lib/useApi';
 import { Eleve } from '@/types/api';
 
@@ -20,7 +21,8 @@ export default function EleveDetailScreen() {
   const { user } = useAuth();
   const { data, isLoading, error, reload } = useApiGet<EleveDetail>(`/eleves/${id}`, [id]);
 
-  const canManage = user?.droit && ['SupAdmin', 'Admin', 'Gestionnaire', 'DAE', 'DCAP'].includes(user.droit);
+  const canManage = hasPermission(user, 'eleves_modification');
+  const canPay = hasPermission(user, 'paiements_faire');
 
   if (isLoading) return <ActivityIndicator style={styles.spinner} size="large" />;
   if (error || !data) return <Text style={styles.error}>{error ?? 'Élève introuvable.'}</Text>;
@@ -55,7 +57,7 @@ export default function EleveDetailScreen() {
         </View>
       ) : null}
 
-      {canManage ? (
+      {canPay ? (
         <Button
           mode="contained-tonal"
           onPress={() => router.push(`/plus/finances/new?id_eleve=${eleve.id_eleve}`)}

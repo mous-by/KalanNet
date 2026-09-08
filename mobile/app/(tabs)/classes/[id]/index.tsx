@@ -5,6 +5,7 @@ import { ActivityIndicator, Button, Dialog, Divider, Portal, Text } from 'react-
 
 import { useAuth } from '@/context/AuthContext';
 import { api, apiErrorMessage } from '@/lib/api';
+import { hasPermission } from '@/lib/permissions';
 import { useApiGet } from '@/lib/useApi';
 import { Classe } from '@/types/api';
 
@@ -16,7 +17,8 @@ export default function ClasseDetailScreen() {
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const canManage = user?.droit && ['SupAdmin', 'Admin', 'Gestionnaire'].includes(user.droit);
+  const canEdit = hasPermission(user, 'classes_modification');
+  const canDelete = hasPermission(user, 'classes_supprimer');
 
   async function handleDelete() {
     setIsDeleting(true);
@@ -40,14 +42,18 @@ export default function ClasseDetailScreen() {
       <Text style={styles.name}>{classe.nom_classe}</Text>
       <Text style={styles.meta}>{classe.ordreEnseignement}</Text>
 
-      {canManage ? (
+      {canEdit || canDelete ? (
         <View style={styles.actions}>
-          <Button mode="outlined" onPress={() => router.push(`/classes/${id}/edit`)} style={styles.actionButton}>
-            Modifier
-          </Button>
-          <Button mode="outlined" textColor="#d33" onPress={() => setConfirmVisible(true)} style={styles.actionButton}>
-            Supprimer
-          </Button>
+          {canEdit ? (
+            <Button mode="outlined" onPress={() => router.push(`/classes/${id}/edit`)} style={styles.actionButton}>
+              Modifier
+            </Button>
+          ) : null}
+          {canDelete ? (
+            <Button mode="outlined" textColor="#d33" onPress={() => setConfirmVisible(true)} style={styles.actionButton}>
+              Supprimer
+            </Button>
+          ) : null}
         </View>
       ) : null}
 

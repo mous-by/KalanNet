@@ -8,6 +8,7 @@ import SelectField from '@/components/SelectField';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
 import { api, apiErrorMessage } from '@/lib/api';
+import { hasPermission } from '@/lib/permissions';
 import { useApiGet } from '@/lib/useApi';
 import { AnneeScolaire } from '@/types/api';
 
@@ -45,7 +46,9 @@ export default function CaisseScreen() {
   const [successVisible, setSuccessVisible] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
-  const canManage = user?.droit && ['SupAdmin', 'Admin', 'Gestionnaire'].includes(user.droit);
+  const canEncaisser = hasPermission(user, 'encaissement_creation');
+  const canDecaisser = hasPermission(user, 'decaissements_creation');
+  const canManage = canEncaisser || canDecaisser;
 
   function openDialog(kind: DialogKind) {
     setMenuVisible(false);
@@ -126,8 +129,8 @@ export default function CaisseScreen() {
           visible={menuVisible}
           onDismiss={() => setMenuVisible(false)}
           anchor={<FAB icon="plus" style={styles.fab} onPress={() => setMenuVisible(true)} />}>
-          <Menu.Item title="Encaissement" onPress={() => openDialog('encaissement')} />
-          <Menu.Item title="Décaissement" onPress={() => openDialog('decaissement')} />
+          {canEncaisser ? <Menu.Item title="Encaissement" onPress={() => openDialog('encaissement')} /> : null}
+          {canDecaisser ? <Menu.Item title="Décaissement" onPress={() => openDialog('decaissement')} /> : null}
         </Menu>
       ) : null}
 

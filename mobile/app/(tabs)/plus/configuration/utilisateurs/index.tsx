@@ -6,6 +6,7 @@ import { ActivityIndicator, Button, FAB, Searchbar, Text } from 'react-native-pa
 import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
 import { api, apiErrorMessage } from '@/lib/api';
+import { hasPermission } from '@/lib/permissions';
 import { useApiGet } from '@/lib/useApi';
 
 interface ConfigUser {
@@ -27,6 +28,11 @@ export default function UtilisateursScreen() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [successVisible, setSuccessVisible] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+
+  const canCreate = hasPermission(user, 'utilisateurs_creation');
+  const canEditStatus = hasPermission(user, 'utilisateurs_modification');
+  const canDelete = hasPermission(user, 'utilisateurs_supprimer');
+  const canAssignPermissions = hasPermission(user, 'permissions_assigner') || hasPermission(user, 'permission_assigner');
 
   async function toggleStatus(target: ConfigUser) {
     setActionError(null);
@@ -74,17 +80,23 @@ export default function UtilisateursScreen() {
                 {item.droit} · {item.email ?? '—'} {item.ecole?.nomEcole ? `· ${item.ecole.nomEcole}` : ''}
               </Text>
               <View style={styles.actions}>
-                <Button compact onPress={() => router.push(`/plus/configuration/utilisateurs/${item.idUtilisateur}/permissions`)}>
-                  Permissions
-                </Button>
+                {canAssignPermissions ? (
+                  <Button compact onPress={() => router.push(`/plus/configuration/utilisateurs/${item.idUtilisateur}/permissions`)}>
+                    Permissions
+                  </Button>
+                ) : null}
                 {item.idUtilisateur !== user?.id ? (
                   <>
-                    <Button compact onPress={() => toggleStatus(item)}>
-                      {item.statut ? 'Désactiver' : 'Activer'}
-                    </Button>
-                    <Button compact textColor="#d33" onPress={() => handleDelete(item)}>
-                      Supprimer
-                    </Button>
+                    {canEditStatus ? (
+                      <Button compact onPress={() => toggleStatus(item)}>
+                        {item.statut ? 'Désactiver' : 'Activer'}
+                      </Button>
+                    ) : null}
+                    {canDelete ? (
+                      <Button compact textColor="#d33" onPress={() => handleDelete(item)}>
+                        Supprimer
+                      </Button>
+                    ) : null}
                   </>
                 ) : null}
               </View>
@@ -93,7 +105,7 @@ export default function UtilisateursScreen() {
         />
       )}
       {actionError ? <Text style={styles.error}>{actionError}</Text> : null}
-      <FAB icon="plus" style={styles.fab} onPress={() => router.push('/plus/configuration/utilisateurs/new')} />
+      {canCreate ? <FAB icon="plus" style={styles.fab} onPress={() => router.push('/plus/configuration/utilisateurs/new')} /> : null}
 
       <SuccessSnackbar visible={successVisible} message={successMessage} onDismiss={() => setSuccessVisible(false)} />
     </View>

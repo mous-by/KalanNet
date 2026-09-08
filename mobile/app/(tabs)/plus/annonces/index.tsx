@@ -7,6 +7,7 @@ import PaginatedList from '@/components/PaginatedList';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
 import { api, apiErrorMessage } from '@/lib/api';
+import { hasPermission } from '@/lib/permissions';
 import { usePaginatedApi } from '@/lib/useApi';
 
 interface Annonce {
@@ -26,7 +27,8 @@ export default function AnnoncesScreen() {
   const [successVisible, setSuccessVisible] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
-  const canManage = user?.droit && ['SupAdmin', 'Admin', 'Gestionnaire', 'DAE', 'DCAP'].includes(user.droit);
+  const canManage = hasPermission(user, 'annonces_creation');
+  const canDelete = hasPermission(user, 'annonces_supprimer');
 
   async function handlePublish(id: number) {
     setActionError(null);
@@ -85,21 +87,23 @@ export default function AnnoncesScreen() {
             <Text style={styles.meta}>
               {item.public_cible} · {item.statut_annonce}
             </Text>
-            {canManage ? (
+            {canManage || canDelete ? (
               <View style={styles.actions}>
-                {item.statut_annonce !== 'publie' ? (
+                {canManage && item.statut_annonce !== 'publie' ? (
                   <Button compact onPress={() => handlePublish(item.id_annonce)}>
                     Publier
                   </Button>
                 ) : null}
-                {item.statut_annonce !== 'archive' ? (
+                {canManage && item.statut_annonce !== 'archive' ? (
                   <Button compact onPress={() => handleArchive(item.id_annonce)}>
                     Archiver
                   </Button>
                 ) : null}
-                <Button compact textColor="#d33" onPress={() => handleDelete(item.id_annonce)}>
-                  Supprimer
-                </Button>
+                {canDelete ? (
+                  <Button compact textColor="#d33" onPress={() => handleDelete(item.id_annonce)}>
+                    Supprimer
+                  </Button>
+                ) : null}
               </View>
             ) : null}
           </View>

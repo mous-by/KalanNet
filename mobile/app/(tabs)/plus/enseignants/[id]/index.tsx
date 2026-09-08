@@ -6,6 +6,7 @@ import { ActivityIndicator, Button, Card, Text } from 'react-native-paper';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
 import { api, apiErrorMessage } from '@/lib/api';
+import { hasPermission } from '@/lib/permissions';
 import { useApiGet } from '@/lib/useApi';
 import { Enseignant, LigneClasse } from '@/types/api';
 
@@ -20,7 +21,8 @@ export default function EnseignantDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
   const { data, isLoading, error, reload } = useApiGet<EnseignantDetail>(`/enseignants/${id}`, [id]);
-  const canManage = user?.droit && ['SupAdmin', 'Admin', 'Gestionnaire'].includes(user.droit);
+  const canEdit = hasPermission(user, 'enseignants_modification');
+  const canArchive = hasPermission(user, 'enseignants_archiver_ou_reactiver');
   const [successVisible, setSuccessVisible] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -46,14 +48,18 @@ export default function EnseignantDetailScreen() {
       <Text style={styles.name}>{enseignant.nom_prenom_enseignant}</Text>
       <Text style={styles.meta}>{enseignant.email_enseignant ?? '—'} · {enseignant.telephone_enseignant ?? '—'}</Text>
 
-      {canManage ? (
+      {canEdit || canArchive ? (
         <View style={styles.actions}>
-          <Button mode="outlined" onPress={() => router.push(`/plus/enseignants/${id}/edit`)} style={styles.actionButton}>
-            Modifier
-          </Button>
-          <Button mode="outlined" textColor={isArchived ? undefined : '#d33'} onPress={() => toggleArchive(isArchived)} style={styles.actionButton}>
-            {isArchived ? 'Réactiver' : 'Archiver'}
-          </Button>
+          {canEdit ? (
+            <Button mode="outlined" onPress={() => router.push(`/plus/enseignants/${id}/edit`)} style={styles.actionButton}>
+              Modifier
+            </Button>
+          ) : null}
+          {canArchive ? (
+            <Button mode="outlined" textColor={isArchived ? undefined : '#d33'} onPress={() => toggleArchive(isArchived)} style={styles.actionButton}>
+              {isArchived ? 'Réactiver' : 'Archiver'}
+            </Button>
+          ) : null}
         </View>
       ) : null}
 

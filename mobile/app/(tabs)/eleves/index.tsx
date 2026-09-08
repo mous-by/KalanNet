@@ -5,6 +5,7 @@ import { ActivityIndicator, Chip, FAB, Text } from 'react-native-paper';
 
 import PaginatedList from '@/components/PaginatedList';
 import { useAuth } from '@/context/AuthContext';
+import { hasPermission } from '@/lib/permissions';
 import { useApiGet, usePaginatedApi } from '@/lib/useApi';
 import { Classe, Eleve } from '@/types/api';
 
@@ -42,7 +43,7 @@ function StaffEleveList() {
   const { user } = useAuth();
   const { data: filterOptions } = useApiGet<{ classes: Classe[] }>('/eleves/cartes-scolaires');
   const [selectedClasse, setSelectedClasse] = useState<number | null>(null);
-  const canManage = user?.droit ? ['SupAdmin', 'Admin', 'Gestionnaire'].includes(user.droit) : false;
+  const canManage = hasPermission(user, 'inscriptions_inscrire');
 
   const params = useMemo(
     () => (selectedClasse ? { id_classe: selectedClasse } : {}),

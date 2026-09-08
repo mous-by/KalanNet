@@ -7,6 +7,7 @@ import SelectField from '@/components/SelectField';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
 import { api, apiErrorMessage } from '@/lib/api';
+import { hasPermission } from '@/lib/permissions';
 import { useApiGet } from '@/lib/useApi';
 import { AnneeScolaire, Classe, Enseignant, LigneClasse, Matiere } from '@/types/api';
 
@@ -55,7 +56,7 @@ export default function TimetableScreen() {
   }, [idClasse, idAnnee]);
 
   const { data, isLoading, error: loadError, reload } = useApiGet<TimetableData>(endpoint, [endpoint]);
-  const canManage = user?.droit && ['SupAdmin', 'Admin', 'Gestionnaire'].includes(user.droit);
+  const canManage = user?.droit !== 'enseignant' && hasPermission(user, 'planning_creation');
 
   async function handleDeleteSlot(id: number) {
     try {

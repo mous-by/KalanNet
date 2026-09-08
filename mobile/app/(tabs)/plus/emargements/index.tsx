@@ -10,6 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { removeQueueItem } from '@/lib/offlineQueue';
+import { hasPermission } from '@/lib/permissions';
 import { usePaginatedApi } from '@/lib/useApi';
 import { Classe, Enseignant, Matiere } from '@/types/api';
 
@@ -33,8 +34,8 @@ export default function EmargementsScreen() {
   const [successMessage, setSuccessMessage] = useState('');
   const queuedEmargements = queue.filter((item) => item.kind === 'emargement');
 
-  const canValidate = user?.droit && ['SupAdmin', 'Admin', 'Gestionnaire'].includes(user.droit);
-  const canDelete = user?.droit && ['SupAdmin', 'Admin', 'Gestionnaire', 'enseignant'].includes(user.droit);
+  const canValidate = hasPermission(user, 'emargement_validation_admin');
+  const canDelete = hasPermission(user, 'emargement_supprimer');
 
   async function handleValidate(id: number) {
     setActionError(null);

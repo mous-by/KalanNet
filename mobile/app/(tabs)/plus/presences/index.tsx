@@ -10,6 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { removeQueueItem } from '@/lib/offlineQueue';
+import { hasPermission } from '@/lib/permissions';
 import { usePaginatedApi } from '@/lib/useApi';
 import { Classe, Enseignant } from '@/types/api';
 
@@ -31,8 +32,8 @@ export default function PresencesScreen() {
   const [successMessage, setSuccessMessage] = useState('');
   const queuedPresences = queue.filter((item) => item.kind === 'presence');
 
-  const canValidate = user?.droit && ['SupAdmin', 'Admin', 'Gestionnaire'].includes(user.droit);
-  const canDelete = user?.droit && ['SupAdmin', 'Admin', 'Gestionnaire', 'enseignant'].includes(user.droit);
+  const canValidate = hasPermission(user, 'presence_modification');
+  const canDelete = hasPermission(user, 'presence_supprimer');
 
   async function handleValidate(id: number) {
     setActionError(null);

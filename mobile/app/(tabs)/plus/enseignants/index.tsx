@@ -4,13 +4,14 @@ import { FAB, Text } from 'react-native-paper';
 
 import PaginatedList from '@/components/PaginatedList';
 import { useAuth } from '@/context/AuthContext';
+import { hasPermission } from '@/lib/permissions';
 import { usePaginatedApi } from '@/lib/useApi';
 import { Enseignant } from '@/types/api';
 
 export default function EnseignantsScreen() {
   const { user } = useAuth();
   const list = usePaginatedApi<Enseignant>('/enseignants');
-  const canManage = user?.droit && ['SupAdmin', 'Admin', 'Gestionnaire'].includes(user.droit);
+  const canManage = hasPermission(user, 'enseignants_creation');
 
   return (
     <>

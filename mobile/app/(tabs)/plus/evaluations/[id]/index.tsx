@@ -6,6 +6,7 @@ import { ActivityIndicator, Button, Text, TextInput } from 'react-native-paper';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
 import { api, apiErrorMessage } from '@/lib/api';
+import { hasPermission } from '@/lib/permissions';
 import { useApiGet } from '@/lib/useApi';
 import { Eleve, Matiere } from '@/types/api';
 
@@ -43,8 +44,9 @@ export default function EvaluationDetailScreen() {
     }
   }, [data]);
 
-  const canManage = user?.droit && ['SupAdmin', 'Admin', 'Gestionnaire', 'enseignant'].includes(user.droit);
-  const canValidate = user?.droit && ['SupAdmin', 'Admin'].includes(user.droit);
+  const canManage = hasPermission(user, 'evaluation_modification');
+  const canDelete = hasPermission(user, 'evaluation_supprimer');
+  const canValidate = hasPermission(user, 'evaluation_validation_notes');
 
   async function handleSaveNotes() {
     if (!data) return;
@@ -98,16 +100,18 @@ export default function EvaluationDetailScreen() {
         {data.classe?.nom_classe ?? '—'} · {data.matiere?.nom_matiere ?? '—'} · {data.evaluation.date_evaluation}
       </Text>
 
-      {canManage ? (
+      {canValidate || canDelete ? (
         <View style={styles.actions}>
           {canValidate ? (
             <Button mode="outlined" onPress={handleValidate} style={styles.actionButton}>
               Valider
             </Button>
           ) : null}
-          <Button mode="outlined" textColor="#d33" onPress={handleDelete} style={styles.actionButton}>
-            Supprimer
-          </Button>
+          {canDelete ? (
+            <Button mode="outlined" textColor="#d33" onPress={handleDelete} style={styles.actionButton}>
+              Supprimer
+            </Button>
+          ) : null}
         </View>
       ) : null}
 

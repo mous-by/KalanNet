@@ -7,6 +7,7 @@ import SelectField from '@/components/SelectField';
 import { useAuth } from '@/context/AuthContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { downloadAndShare } from '@/lib/downloadFile';
+import { hasPermission } from '@/lib/permissions';
 import { useApiGet } from '@/lib/useApi';
 import { AnneeScolaire, Trimestre } from '@/types/api';
 
@@ -36,7 +37,7 @@ export default function BulletinsClasseScreen() {
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
 
-  const canManage = user?.droit && ['SupAdmin', 'Admin', 'Gestionnaire', 'DAE', 'DCAP'].includes(user.droit);
+  const canManage = hasPermission(user, 'bulletins_publication');
 
   const period = periodMode === 'trimestre' ? idTrimestre : mois;
   const studentsEndpoint = useMemo(() => {

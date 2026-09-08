@@ -6,13 +6,15 @@ import { FAB, IconButton, Text } from 'react-native-paper';
 import PaginatedList from '@/components/PaginatedList';
 import { useAuth } from '@/context/AuthContext';
 import { api, apiErrorMessage } from '@/lib/api';
+import { hasPermission } from '@/lib/permissions';
 import { usePaginatedApi } from '@/lib/useApi';
 import { ParentEleve } from '@/types/api';
 
 export default function ParentsScreen() {
   const { user } = useAuth();
   const list = usePaginatedApi<ParentEleve>('/parents', {}, 'parents');
-  const canManage = user?.droit ? ['SupAdmin', 'Admin', 'Gestionnaire'].includes(user.droit) : false;
+  const canCreate = hasPermission(user, 'parents_creation');
+  const canDelete = hasPermission(user, 'parents_supprimer');
   const [actionError, setActionError] = useState<string | null>(null);
 
   async function handleDelete(id: number) {
@@ -48,11 +50,11 @@ export default function ParentsScreen() {
                 {item.telephone_parent ?? '—'} · {item.eleves_count ?? 0} élève(s)
               </Text>
             </View>
-            {canManage ? <IconButton icon="delete-outline" onPress={() => handleDelete(item.id_parent)} /> : null}
+            {canDelete ? <IconButton icon="delete-outline" onPress={() => handleDelete(item.id_parent)} /> : null}
           </Pressable>
         )}
       />
-      {canManage ? <FAB icon="plus" style={styles.fab} onPress={() => router.push('/plus/parents/new')} /> : null}
+      {canCreate ? <FAB icon="plus" style={styles.fab} onPress={() => router.push('/plus/parents/new')} /> : null}
     </>
   );
 }
