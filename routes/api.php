@@ -199,6 +199,7 @@ Route::prefix('v1')->group(function () {
 
         Route::get('/annonces', [AnnouncementController::class, 'index']);
         Route::post('/annonces', [AnnouncementController::class, 'store']);
+        Route::get('/annonces/visibles', [AnnouncementController::class, 'visibleUnread']);
         Route::post('/annonces/marquer-lues', [AnnouncementController::class, 'markVisibleAsRead']);
         Route::post('/annonces/{id}/publier', [AnnouncementController::class, 'publish']);
         Route::post('/annonces/{id}/archiver', [AnnouncementController::class, 'archive']);

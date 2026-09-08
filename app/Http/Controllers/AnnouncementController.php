@@ -76,6 +76,44 @@ class AnnouncementController extends Controller
         return back()->with('success', 'Annonce enregistrée avec succès.');
     }
 
+    /**
+     * Announcements targeted at the current user's role (tous / their group)
+     * that they have not marked read yet — the same feed the web layout pops
+     * up automatically on login (annonces/_unread-modal.blade.php), available
+     * to every authenticated user regardless of the annonces_apercu
+     * management permission (that one only gates the admin listing/CRUD).
+     */
+    public function visibleUnread()
+    {
+        $user = Auth::user();
+        $schoolId = session('idEcole') ?: $user->idEcole;
+
+        if (!$schoolId || !Schema::hasTable('annonces_admin_gestionnaire')) {
+            return response()->json(['annonces' => [], 'fichiers' => []]);
+        }
+
+        $query = static::visibleAnnouncementQuery($user, (int) $schoolId)
+            ->leftJoin('utilisateurs as users', 'users.idUtilisateur', '=', 'annonces.id_utilisateur')
+            ->select('annonces.*', 'users.nomPrenom as auteur');
+
+        if (Schema::hasTable('annonces_lues')) {
+            $query->whereNotExists(function ($inner) use ($user) {
+                $inner->select(DB::raw(1))
+                    ->from('annonces_lues as lues')
+                    ->whereColumn('lues.id_annonce', 'annonces.id_annonce')
+                    ->where('lues.id_utilisateur', $user->idUtilisateur)
+                    ->where('lues.type_annonce', 'admin_gestionnaire');
+            });
+        }
+
+        $annonces = $query->limit(5)->get();
+
+        return response()->json([
+            'annonces' => $annonces,
+            'fichiers' => $this->filesByAnnouncement($annonces->pluck('id_annonce')->all()),
+        ]);
+    }
+
     public function markVisibleAsRead()
     {
         if (!Schema::hasTable('annonces_lues')) {

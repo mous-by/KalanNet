@@ -6,6 +6,7 @@ import AdminDashboardView, { AdminDashboardData } from '@/components/dashboard/A
 import ParentDashboardView, { ParentDashboardData } from '@/components/dashboard/ParentDashboardView';
 import SupAdminDashboardView, { SupAdminDashboardData } from '@/components/dashboard/SupAdminDashboardView';
 import TeacherDashboardView, { TeacherDashboardData } from '@/components/dashboard/TeacherDashboardView';
+import UnreadAnnouncementsModal from '@/components/UnreadAnnouncementsModal';
 import { useAuth } from '@/context/AuthContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { SURFACE } from '@/lib/themes';
@@ -86,6 +87,7 @@ export default function DashboardScreen() {
       style={styles.container}
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}>
+      <UnreadAnnouncementsModal />
       <View style={styles.headerRow}>
         <View style={styles.headerLeft}>
           <Text style={styles.greeting}>Bonjour, {user?.nom_prenom ?? ''} 👋</Text>
