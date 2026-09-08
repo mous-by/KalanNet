@@ -36,6 +36,7 @@ class MatiereController extends WebMatiereController
 
     public function store(Request $request)
     {
+        $this->authorizePermission('matieres_creation');
         $data = $this->validateMatiere($request);
         $user = $request->user();
 
@@ -55,6 +56,7 @@ class MatiereController extends WebMatiereController
 
     public function update(Request $request, $id)
     {
+        $this->authorizePermission('matieres_modification');
         $matiere = Matiere::findOrFail($id);
         $data = $this->validateMatiere($request);
 
@@ -69,6 +71,7 @@ class MatiereController extends WebMatiereController
 
     public function destroy($id)
     {
+        $this->authorizePermission('matieres_supprimer');
         $matiere = Matiere::findOrFail($id);
 
         $usedInClasses = LigneClasse::where('id_matiere', $matiere->id_matiere)->exists();

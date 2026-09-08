@@ -38,6 +38,7 @@ class MatiereController extends Controller
 
     public function store(Request $request)
     {
+        $this->authorizePermission('matieres_creation');
         $data = $this->validateMatiere($request);
 
         DB::transaction(function () use ($data) {
@@ -54,6 +55,7 @@ class MatiereController extends Controller
 
     public function update(Request $request, $id)
     {
+        $this->authorizePermission('matieres_modification');
         $matiere = Matiere::findOrFail($id);
         $data = $this->validateMatiere($request);
 
@@ -68,6 +70,7 @@ class MatiereController extends Controller
 
     public function destroy($id)
     {
+        $this->authorizePermission('matieres_supprimer');
         $matiere = Matiere::findOrFail($id);
 
         $usedInClasses = LigneClasse::where('id_matiere', $matiere->id_matiere)->exists();
@@ -115,6 +118,14 @@ class MatiereController extends Controller
             'Secondaire Generale' => 'Secondaire Générale',
             'Secondaire Technique et Professionnel' => 'Secondaire Technique et Professionnel',
         ];
+    }
+
+    protected function authorizePermission(string $permission): void
+    {
+        $user = Auth::user();
+        if (!$user || ($user->droit !== 'SupAdmin' && !$user->userHasPermission($permission))) {
+            abort(403, 'Permission insuffisante.');
+        }
     }
 
     protected function ordresAutorises(): array

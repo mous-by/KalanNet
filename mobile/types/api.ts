@@ -18,6 +18,7 @@ export interface User {
   statut: number;
   theme_preference: string | null;
   locale_preference: string | null;
+  permissions: string[];
   ecole: Ecole | null;
 }
 

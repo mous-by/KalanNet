@@ -4,7 +4,9 @@ import { Button, Checkbox, Dialog, FAB, Portal, Text, TextInput } from 'react-na
 
 import requiredLabel from '@/components/RequiredLabel';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
+import { useAuth } from '@/context/AuthContext';
 import { api, apiErrorMessage } from '@/lib/api';
+import { hasPermission } from '@/lib/permissions';
 import { usePaginatedApi } from '@/lib/useApi';
 import { Matiere } from '@/types/api';
 
@@ -17,6 +19,10 @@ const ORDRE_LABELS: Record<string, string> = {
 };
 
 export default function MatieresScreen() {
+  const { user } = useAuth();
+  const canCreate = hasPermission(user, 'matieres_creation');
+  const canEdit = hasPermission(user, 'matieres_modification');
+  const canDelete = hasPermission(user, 'matieres_supprimer');
   const list = usePaginatedApi<Matiere>('/matieres', {}, 'data');
   const [editing, setEditing] = useState<Matiere | null>(null);
   const [dialogVisible, setDialogVisible] = useState(false);
@@ -91,18 +97,24 @@ export default function MatieresScreen() {
               <Text style={styles.title}>{item.nom_matiere}</Text>
               <Text style={styles.meta}>{(item.ordres ?? []).map((o) => ORDRE_LABELS[o.ordre_enseignement] ?? o.ordre_enseignement).join(', ')}</Text>
             </View>
-            <View style={styles.actions}>
-              <Button compact onPress={() => openDialog(item)}>
-                Modifier
-              </Button>
-              <Button compact textColor="#d33" onPress={() => handleDelete(item)}>
-                Supprimer
-              </Button>
-            </View>
+            {canEdit || canDelete ? (
+              <View style={styles.actions}>
+                {canEdit ? (
+                  <Button compact onPress={() => openDialog(item)}>
+                    Modifier
+                  </Button>
+                ) : null}
+                {canDelete ? (
+                  <Button compact textColor="#d33" onPress={() => handleDelete(item)}>
+                    Supprimer
+                  </Button>
+                ) : null}
+              </View>
+            ) : null}
           </View>
         )}
       />
-      <FAB icon="plus" style={styles.fab} onPress={() => openDialog()} />
+      {canCreate ? <FAB icon="plus" style={styles.fab} onPress={() => openDialog()} /> : null}
 
       <Portal>
         <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>

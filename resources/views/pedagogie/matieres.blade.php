@@ -1,6 +1,10 @@
 @extends('layouts.app')
 
 @section('content')
+    @php
+        $canEditMatiere = auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('matieres_modification');
+        $canDeleteMatiere = auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('matieres_supprimer');
+    @endphp
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
         <div class="breadcrumb-title pe-3">Matières</div>
         <div class="ps-3">
@@ -13,7 +17,7 @@
         </div>
     </div>
 
-    @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('matieres_création'))
+    @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('matieres_creation'))
     <div class="mb-3 d-flex justify-content-end">
         <a href="#" class="btn px-4 theme-pill-active" data-bs-toggle="modal" data-bs-target="#addNewCCModal">
             <i class="bi bi-plus-lg me-2"></i>Matière
@@ -49,28 +53,38 @@
                                 <td class="fw-bold">{{ $matiere->nom_matiere }}</td>
                                 <td>{{ $matiere->ordres->pluck('ordre_enseignement')->join(', ') }}</td>
                                 <td class="text-center">
-                                    <div class="dropdown">
-                                        <a class="text-muted fs-5" href="#" data-bs-toggle="dropdown">
-                                            <i class="bi bi-three-dots"></i>
-                                        </a>
-                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3">
-                                            <li>
-                                                <a class="dropdown-item py-2 edit-matiere" href="#" data-bs-toggle="modal" data-bs-target="#modalCenter" data-id="{{ $matiere->id_matiere }}" data-nom="{{ $matiere->nom_matiere }}" data-ordres='@json($matiere->ordres->pluck('ordre_enseignement')->values())'>
-                                                    <i class="bi bi-pencil text-warning me-2"></i>Modifier
-                                                </a>
-                                            </li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li>
-                                                <form action="{{ route('pedagogie.matieres.destroy', $matiere->id_matiere) }}" method="POST" onsubmit="return confirm('Supprimer cette matière ?');">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="dropdown-item py-2 text-danger">
-                                                        <i class="bi bi-trash me-2"></i>Supprimer
-                                                    </button>
-                                                </form>
-                                            </li>
-                                        </ul>
-                                    </div>
+                                    @if($canEditMatiere || $canDeleteMatiere)
+                                        <div class="dropdown">
+                                            <a class="text-muted fs-5" href="#" data-bs-toggle="dropdown">
+                                                <i class="bi bi-three-dots"></i>
+                                            </a>
+                                            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3">
+                                                @if($canEditMatiere)
+                                                    <li>
+                                                        <a class="dropdown-item py-2 edit-matiere" href="#" data-bs-toggle="modal" data-bs-target="#modalCenter" data-id="{{ $matiere->id_matiere }}" data-nom="{{ $matiere->nom_matiere }}" data-ordres='@json($matiere->ordres->pluck('ordre_enseignement')->values())'>
+                                                            <i class="bi bi-pencil text-warning me-2"></i>Modifier
+                                                        </a>
+                                                    </li>
+                                                @endif
+                                                @if($canEditMatiere && $canDeleteMatiere)
+                                                    <li><hr class="dropdown-divider"></li>
+                                                @endif
+                                                @if($canDeleteMatiere)
+                                                    <li>
+                                                        <form action="{{ route('pedagogie.matieres.destroy', $matiere->id_matiere) }}" method="POST" onsubmit="return confirm('Supprimer cette matière ?');">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="dropdown-item py-2 text-danger">
+                                                                <i class="bi bi-trash me-2"></i>Supprimer
+                                                            </button>
+                                                        </form>
+                                                    </li>
+                                                @endif
+                                            </ul>
+                                        </div>
+                                    @else
+                                        <span class="text-muted">—</span>
+                                    @endif
                                 </td>
                             </tr>
                         @empty
