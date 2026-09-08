@@ -5,12 +5,183 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\EleveController as WebEleveController;
 use App\Models\AnneeScolaire;
 use App\Models\Classe;
+use App\Models\Ecole;
 use App\Models\Eleve;
 use App\Models\Paiement;
+use App\Models\ParentModel;
+use App\Models\Planification;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class EleveController extends WebEleveController
 {
+    public function inscriptionOptions(Request $request)
+    {
+        $idEcole = session('idEcole');
+        $classes = Classe::where('idEcole', $idEcole)->orderBy('nom_classe')->get();
+        $classeIds = $classes->pluck('id_classe');
+        $planificationRequired = $this->schoolRequiresPlanification();
+
+        return response()->json([
+            'classes' => $classes,
+            'annees' => AnneeScolaire::orderByDesc('id_anneeScolaire')->get(),
+            'parents' => ParentModel::where('idEcole', $idEcole)->orderBy('nom_prenom_parent')->get(),
+            'planifications' => Planification::whereIn('id_classe', $classeIds)->orderBy('motif')->get(),
+            'planification_required' => $planificationRequired,
+            'planification_label' => $planificationRequired ? 'Planification' : 'Coopérative',
+        ]);
+    }
+
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'prenom_eleve' => 'required',
+            'nom_eleve' => 'required',
+            'id_classe' => 'required|integer|exists:classe,id_classe',
+            'id_annee' => 'required|integer|exists:anneescolaire,id_anneeScolaire',
+            'genre_eleve' => ['required', Rule::in(['Masculin', 'Féminin'])],
+            'date_naissance' => ['nullable', 'date_format:Y-m-d'],
+            'lieu_naiss' => 'nullable',
+            'adresse_eleve' => 'nullable',
+            'cas_social' => 'nullable',
+            'mode_paiement' => 'nullable',
+            'date_inscription' => ['nullable', 'date_format:Y-m-d'],
+            'matricule' => 'nullable|string|max:50',
+            'image' => 'nullable|image|max:5120',
+            'parent_id' => 'nullable|exists:parents,id_parent',
+            'lien_parent' => 'nullable|string|max:100',
+            'informer' => 'nullable|string|in:Oui,Non',
+            'id_planification' => [$this->schoolRequiresPlanification() ? 'required' : 'nullable', 'integer', 'exists:planification,id_planification'],
+        ]);
+
+        Classe::where('idEcole', session('idEcole'))->findOrFail($data['id_classe']);
+
+        $planificationId = $data['id_planification'] ?? null;
+        if ($planificationId) {
+            Planification::where('id_classe', $data['id_classe'])
+                ->where('id_annee', $data['id_annee'])
+                ->findOrFail($planificationId);
+        }
+
+        $eleve = DB::transaction(function () use ($request, $data, $planificationId) {
+            $eleve = new Eleve();
+            $eleve->prenom_eleve = $data['prenom_eleve'];
+            $eleve->nom_eleve = $data['nom_eleve'];
+            $eleve->date_naissance = $this->validDateOrNull($data['date_naissance'] ?? null, 'date_naissance');
+            $eleve->lieu_naiss = $data['lieu_naiss'] ?: 'Non renseigné';
+            $eleve->adresse_eleve = $data['adresse_eleve'] ?? null;
+            $eleve->id_classe = $data['id_classe'];
+            $eleve->id_annee = $data['id_annee'];
+            $eleve->genre_eleve = $data['genre_eleve'];
+            $eleve->matricule = $this->normalizeMatricule($data['matricule'] ?? null) ?: $this->generateMatricule($data);
+            $eleve->date_inscription = $data['date_inscription'] ?? now()->toDateString();
+            $eleve->image = $this->storeImage($request);
+            $eleve->cas_social = $data['cas_social'] ?: 'normal';
+            $eleve->mode_paiement = $data['mode_paiement'] ?? null;
+            $eleve->id_ecole = session('idEcole');
+            $eleve->save();
+
+            if (!empty($data['parent_id'])) {
+                $eleve->parents()->syncWithoutDetaching([
+                    $data['parent_id'] => [
+                        'lien_parent' => $data['lien_parent'] ?? 'Parent',
+                        'informer' => $data['informer'] ?? 'Non',
+                    ],
+                ]);
+            }
+
+            DB::table('ligne_inscription')->insert([
+                'id_eleve' => $eleve->id_eleve,
+                'id_classe' => $data['id_classe'],
+                'id_annee' => $data['id_annee'],
+                'id_planification' => $planificationId,
+                'date_inscription' => $eleve->date_inscription,
+            ]);
+
+            return $eleve;
+        });
+
+        return response()->json($eleve->fresh('classe'), 201);
+    }
+
+    private function schoolRequiresPlanification(): bool
+    {
+        $ecole = Ecole::withoutGlobalScopes()->find(session('idEcole'));
+        $statut = Str::lower(Str::ascii((string) ($ecole->statut ?? '')));
+
+        return $statut !== 'public';
+    }
+
+    private function validDateOrNull(?string $value, string $field): ?string
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return null;
+        }
+
+        if (!preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $value, $matches)
+            || !checkdate((int) $matches[2], (int) $matches[3], (int) $matches[1])) {
+            throw ValidationException::withMessages([
+                $field => 'La date de naissance est invalide.',
+            ]);
+        }
+
+        return $value;
+    }
+
+    private function generateMatricule(array $data): string
+    {
+        $year = now()->format('y');
+        $nom = $this->asciiLetters($data['nom_eleve'] ?? '');
+        $prenom = $this->asciiLetters($data['prenom_eleve'] ?? '');
+        $seed = strtoupper(str_pad(substr($nom, 0, 2) . substr($prenom, 0, 2), 4, 'X'));
+
+        return 'ELV-' . $year . '-' . $seed . random_int(100, 999);
+    }
+
+    private function normalizeMatricule(?string $matricule): ?string
+    {
+        $matricule = trim((string) $matricule);
+        if ($matricule === '') {
+            return null;
+        }
+
+        $matricule = Str::ascii($matricule);
+        $matricule = preg_replace('/[^A-Za-z0-9_-]/', '', $matricule);
+
+        return $matricule !== '' ? substr($matricule, 0, 50) : null;
+    }
+
+    private function asciiLetters(string $value): string
+    {
+        $value = Str::ascii($value);
+        $value = preg_replace('/[^A-Za-z]/', '', $value);
+
+        return strtoupper($value ?: 'XXXX');
+    }
+
+    private function storeImage(Request $request): string
+    {
+        if (!$request->hasFile('image')) {
+            return 'assets/images/avatars/avatar-1.png';
+        }
+
+        $directory = public_path('image_eleves');
+        if (!File::exists($directory)) {
+            File::makeDirectory($directory, 0755, true);
+        }
+
+        $file = $request->file('image');
+        $name = uniqid('eleve_', true) . '.' . $file->getClientOriginalExtension();
+        $file->move($directory, $name);
+
+        return 'image_eleves/' . $name;
+    }
+
     public function index(Request $request)
     {
         $idEcole = session('idEcole');

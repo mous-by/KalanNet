@@ -104,6 +104,21 @@ export interface Enseignant {
   [key: string]: unknown;
 }
 
+export interface ParentEleve {
+  id_parent: number;
+  nom_prenom_parent: string;
+  [key: string]: unknown;
+}
+
+export interface Planification {
+  id_planification: number;
+  id_classe: number;
+  id_annee: number;
+  motif: string;
+  montant_planification: number | string;
+  [key: string]: unknown;
+}
+
 export interface Eleve {
   id_eleve: number;
   nom_eleve: string;

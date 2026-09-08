@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, Chip, Text } from 'react-native-paper';
+import { ActivityIndicator, Chip, FAB, Text } from 'react-native-paper';
 
 import PaginatedList from '@/components/PaginatedList';
 import { useAuth } from '@/context/AuthContext';
@@ -39,8 +39,10 @@ function ParentChildrenList() {
 }
 
 function StaffEleveList() {
+  const { user } = useAuth();
   const { data: filterOptions } = useApiGet<{ classes: Classe[] }>('/eleves/cartes-scolaires');
   const [selectedClasse, setSelectedClasse] = useState<number | null>(null);
+  const canManage = user?.droit ? ['SupAdmin', 'Admin', 'Gestionnaire'].includes(user.droit) : false;
 
   const params = useMemo(
     () => (selectedClasse ? { id_classe: selectedClasse } : {}),
@@ -50,39 +52,42 @@ function StaffEleveList() {
   const list = usePaginatedApi<Eleve>('/eleves', params);
 
   return (
-    <PaginatedList
-      items={list.items}
-      keyExtractor={(item) => String(item.id_eleve)}
-      renderItem={(item) => <EleveRow eleve={item} />}
-      isLoading={list.isLoading}
-      isRefreshing={list.isRefreshing}
-      isLoadingMore={list.isLoadingMore}
-      error={list.error}
-      onRefresh={list.refresh}
-      onLoadMore={list.loadMore}
-      search={list.search}
-      onSearchChange={list.setSearch}
-      searchPlaceholder="Nom, prénom ou matricule…"
-      emptyLabel="Aucun élève trouvé."
-      header={
-        (filterOptions?.classes?.length ?? 0) > 0 ? (
-          <View style={styles.chipsRow}>
-            <Chip selected={selectedClasse === null} onPress={() => setSelectedClasse(null)} style={styles.chip}>
-              Toutes les classes
-            </Chip>
-            {filterOptions!.classes.map((classe) => (
-              <Chip
-                key={classe.id_classe}
-                selected={selectedClasse === classe.id_classe}
-                onPress={() => setSelectedClasse(classe.id_classe)}
-                style={styles.chip}>
-                {classe.nom_classe}
+    <>
+      <PaginatedList
+        items={list.items}
+        keyExtractor={(item) => String(item.id_eleve)}
+        renderItem={(item) => <EleveRow eleve={item} />}
+        isLoading={list.isLoading}
+        isRefreshing={list.isRefreshing}
+        isLoadingMore={list.isLoadingMore}
+        error={list.error}
+        onRefresh={list.refresh}
+        onLoadMore={list.loadMore}
+        search={list.search}
+        onSearchChange={list.setSearch}
+        searchPlaceholder="Nom, prénom ou matricule…"
+        emptyLabel="Aucun élève trouvé."
+        header={
+          (filterOptions?.classes?.length ?? 0) > 0 ? (
+            <View style={styles.chipsRow}>
+              <Chip selected={selectedClasse === null} onPress={() => setSelectedClasse(null)} style={styles.chip}>
+                Toutes les classes
               </Chip>
-            ))}
-          </View>
-        ) : undefined
-      }
-    />
+              {filterOptions!.classes.map((classe) => (
+                <Chip
+                  key={classe.id_classe}
+                  selected={selectedClasse === classe.id_classe}
+                  onPress={() => setSelectedClasse(classe.id_classe)}
+                  style={styles.chip}>
+                  {classe.nom_classe}
+                </Chip>
+              ))}
+            </View>
+          ) : undefined
+        }
+      />
+      {canManage ? <FAB icon="plus" style={styles.fab} onPress={() => router.push('/eleves/new')} /> : null}
+    </>
   );
 }
 
@@ -123,6 +128,11 @@ const styles = StyleSheet.create({
   },
   chip: {
     marginRight: 4,
+  },
+  fab: {
+    position: 'absolute',
+    right: 16,
+    bottom: 16,
   },
   spinner: {
     marginTop: 40,

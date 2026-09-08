@@ -49,6 +49,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
 
         Route::get('/eleves', [EleveController::class, 'index']);
+        Route::post('/eleves', [EleveController::class, 'store']);
+        Route::get('/eleves/inscription-options', [EleveController::class, 'inscriptionOptions']);
         Route::get('/eleves/cartes-scolaires', [EleveController::class, 'cartes']);
         Route::post('/eleves/cartes-scolaires/pdf', [WebEleveController::class, 'downloadCartesPdf']);
         Route::post('/eleves/liste/pdf', [WebEleveController::class, 'downloadListPdf']);

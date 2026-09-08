@@ -16,10 +16,23 @@ const GENRE_OPTIONS = [
 ];
 
 const STATUT_PAIEMENT_OPTIONS = [
+  { value: 'normal', label: 'Normal - parent/tuteur' },
+  { value: 'subventionne', label: 'Subventionné par l’État' },
+  { value: 'boursier', label: 'Boursier / organisme' },
+  { value: 'gratuit', label: 'Gratuité totale' },
+];
+
+const CAS_SOCIAL_OPTIONS = [
   { value: 'normal', label: 'Normal' },
-  { value: 'subventionne', label: 'Subventionné' },
-  { value: 'boursier', label: 'Boursier' },
-  { value: 'gratuit', label: 'Gratuit' },
+  { value: 'Dipenser', label: 'Dispensé' },
+  { value: 'Malade', label: 'Malade' },
+];
+
+const MODE_PAIEMENT_OPTIONS = [
+  { value: '', label: 'Non défini' },
+  { value: 'Mensuel', label: 'Mensuel' },
+  { value: 'Trimestriel', label: 'Trimestriel' },
+  { value: 'Annuel', label: 'Annuel' },
 ];
 
 export default function EditEleveScreen() {
@@ -82,14 +95,16 @@ export default function EditEleveScreen() {
       <DateField label="Date de naissance" value={form.date_naissance ?? null} onChange={(v) => set('date_naissance', v)} />
       <TextInput mode="outlined" label="Lieu de naissance" value={form.lieu_naiss ?? ''} onChangeText={(v) => set('lieu_naiss', v)} style={styles.input} />
       <TextInput mode="outlined" label="Adresse" value={form.adresse_eleve ?? ''} onChangeText={(v) => set('adresse_eleve', v)} style={styles.input} />
+      <SelectField label="Classe" value={form.id_classe ?? null} options={classeOptions} onChange={(v) => set('id_classe', v as number)} />
+      <SelectField label="Année scolaire" value={form.id_annee ?? null} options={anneeOptions} onChange={(v) => set('id_annee', v as number)} />
+      <SelectField label="Cas social" value={form.cas_social ?? 'normal'} options={CAS_SOCIAL_OPTIONS} onChange={(v) => set('cas_social', v as string)} />
+      <SelectField label="Mode de paiement" value={form.mode_paiement ?? ''} options={MODE_PAIEMENT_OPTIONS} onChange={(v) => set('mode_paiement', v as string)} />
       <SelectField
-        label="Statut de paiement"
-        value={form.statut_paiement ?? null}
+        label="Statut financier"
+        value={form.statut_paiement ?? 'normal'}
         options={STATUT_PAIEMENT_OPTIONS}
         onChange={(v) => set('statut_paiement', v as string)}
       />
-      <SelectField label="Classe" value={form.id_classe ?? null} options={classeOptions} onChange={(v) => set('id_classe', v as number)} />
-      <SelectField label="Année scolaire" value={form.id_annee ?? null} options={anneeOptions} onChange={(v) => set('id_annee', v as number)} />
       <DateField label="Date d'inscription" value={form.date_inscription ?? null} onChange={(v) => set('date_inscription', v)} />
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
