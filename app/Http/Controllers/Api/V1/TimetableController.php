@@ -74,7 +74,7 @@ class TimetableController extends WebTimetableController
     {
         $this->ensureCanManageTimetable();
 
-        $request->validate([
+        $data = $request->validate([
             'id_classe' => 'required',
             'id_matiere' => 'required',
             'id_enseignant' => 'nullable',
@@ -84,7 +84,9 @@ class TimetableController extends WebTimetableController
             'heure_fin' => 'required|after:heure_debut',
         ]);
 
-        $course = EmploiDuTemps::create($request->all());
+        $this->authorizeClasseForTimetable((int) $data['id_classe']);
+
+        $course = EmploiDuTemps::create($data);
 
         return response()->json($course->load(['matiere', 'enseignant']), 201);
     }
@@ -93,7 +95,7 @@ class TimetableController extends WebTimetableController
     {
         $this->ensureCanManageTimetable();
 
-        $request->validate([
+        $data = $request->validate([
             'id_classe' => 'required',
             'id_matiere' => 'required',
             'id_enseignant' => 'nullable',
@@ -103,8 +105,9 @@ class TimetableController extends WebTimetableController
             'heure_fin' => 'required|after:heure_debut',
         ]);
 
-        $course = EmploiDuTemps::findOrFail($id);
-        $course->update($request->all());
+        $course = $this->authorizeCourseForTimetable((int) $id);
+        $this->authorizeClasseForTimetable((int) $data['id_classe']);
+        $course->update($data);
 
         return response()->json($course->fresh(['matiere', 'enseignant']));
     }
@@ -113,6 +116,7 @@ class TimetableController extends WebTimetableController
     {
         $this->ensureCanManageTimetable();
 
+        $this->authorizeCourseForTimetable((int) $id);
         EmploiDuTemps::destroy($id);
 
         return response()->json(['success' => true]);
@@ -133,6 +137,8 @@ class TimetableController extends WebTimetableController
             return response()->json(['message' => 'id_classe et id_annee sont requis.'], 422);
         }
 
+        $this->authorizeClasseForTimetable((int) $id_classe);
+
         $slots = $request->input('slots', []);
         $hourRows = [];
 
@@ -149,18 +155,23 @@ class TimetableController extends WebTimetableController
                 }
 
                 if ($id) {
+                    // Ignore any slot id that doesn't actually belong to the
+                    // classe verified above — a forged payload could
+                    // otherwise smuggle in a foreign course id.
+                    $course = EmploiDuTemps::find($id);
+                    if (!$course || (int) $course->id_classe !== (int) $id_classe) {
+                        continue;
+                    }
+
                     if (empty($id_matiere)) {
-                        EmploiDuTemps::destroy($id);
+                        $course->delete();
                     } else {
-                        $course = EmploiDuTemps::find($id);
-                        if ($course) {
-                            $course->update([
-                                'id_matiere' => $id_matiere,
-                                'id_enseignant' => $id_enseignant ?: null,
-                                'heure_debut' => $heure_debut,
-                                'heure_fin' => $heure_fin,
-                            ]);
-                        }
+                        $course->update([
+                            'id_matiere' => $id_matiere,
+                            'id_enseignant' => $id_enseignant ?: null,
+                            'heure_debut' => $heure_debut,
+                            'heure_fin' => $heure_fin,
+                        ]);
                     }
                 } elseif (!empty($id_matiere)) {
                     EmploiDuTemps::create([

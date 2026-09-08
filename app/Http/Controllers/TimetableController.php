@@ -30,7 +30,8 @@ class TimetableController extends Controller
 
         // Store selected options in session when coming from filter POST form
         if ($request->isMethod('post')) {
-            if ($request->has('id_classe')) {
+            if ($request->filled('id_classe')) {
+                $this->authorizeClasseForTimetable((int) $request->input('id_classe'));
                 session(['timetable_id_classe' => $request->input('id_classe')]);
             }
             if ($request->has('id_annee')) {
@@ -133,7 +134,7 @@ class TimetableController extends Controller
     {
         $this->ensureCanManageTimetable();
 
-        $request->validate([
+        $data = $request->validate([
             'id_classe' => 'required',
             'id_matiere' => 'required',
             'id_enseignant' => 'nullable',
@@ -143,7 +144,9 @@ class TimetableController extends Controller
             'heure_fin' => 'required|after:heure_debut',
         ]);
 
-        $course = EmploiDuTemps::create($request->all());
+        $this->authorizeClasseForTimetable((int) $data['id_classe']);
+
+        $course = EmploiDuTemps::create($data);
 
         if ($request->ajax()) {
             return response()->json([
@@ -160,7 +163,7 @@ class TimetableController extends Controller
     {
         $this->ensureCanManageTimetable();
 
-        $request->validate([
+        $data = $request->validate([
             'id_classe' => 'required',
             'id_matiere' => 'required',
             'id_enseignant' => 'nullable',
@@ -170,8 +173,9 @@ class TimetableController extends Controller
             'heure_fin' => 'required|after:heure_debut',
         ]);
 
-        $course = EmploiDuTemps::findOrFail($id);
-        $course->update($request->all());
+        $course = $this->authorizeCourseForTimetable((int) $id);
+        $this->authorizeClasseForTimetable((int) $data['id_classe']);
+        $course->update($data);
 
         if ($request->ajax()) {
             return response()->json([
@@ -188,6 +192,7 @@ class TimetableController extends Controller
     {
         $this->ensureCanManageTimetable();
 
+        $this->authorizeCourseForTimetable((int) $id);
         EmploiDuTemps::destroy($id);
 
         if ($request->ajax()) {
@@ -211,6 +216,8 @@ class TimetableController extends Controller
             return back()->with('error', 'Sélectionnez d\'abord une classe et une année scolaire.');
         }
 
+        $this->authorizeClasseForTimetable((int) $id_classe);
+
         $slots = $request->input('slots', []);
 
         $hourRows = [];
@@ -231,20 +238,25 @@ class TimetableController extends Controller
                 }
 
                 if ($id) {
+                    // Ignore any slot id that doesn't actually belong to the
+                    // classe this grid was verified for above — a forged
+                    // payload could otherwise smuggle in a foreign course id.
+                    $course = EmploiDuTemps::find($id);
+                    if (!$course || (int) $course->id_classe !== (int) $id_classe) {
+                        continue;
+                    }
+
                     if (empty($id_matiere)) {
                         // User cleared the slot
-                        EmploiDuTemps::destroy($id);
+                        $course->delete();
                     } else {
                         // Update existing slot
-                        $course = EmploiDuTemps::find($id);
-                        if ($course) {
-                            $course->update([
-                                'id_matiere' => $id_matiere,
-                                'id_enseignant' => $id_enseignant ?: null,
-                                'heure_debut' => $heure_debut,
-                                'heure_fin' => $heure_fin,
-                            ]);
-                        }
+                        $course->update([
+                            'id_matiere' => $id_matiere,
+                            'id_enseignant' => $id_enseignant ?: null,
+                            'heure_debut' => $heure_debut,
+                            'heure_fin' => $heure_fin,
+                        ]);
                     }
                 } else {
                     if (!empty($id_matiere)) {
@@ -318,6 +330,33 @@ class TimetableController extends Controller
         if (!$user || $user->droit === 'enseignant' || ($user->droit !== 'SupAdmin' && !$user->userHasPermission('planning_creation'))) {
             abort(403, 'Permission insuffisante.');
         }
+    }
+
+    /**
+     * Verifies a classe belongs to the current user's school before it is
+     * used to create/modify an EmploiDuTemps row — EmploiDuTemps has no
+     * school column/scope of its own, so without this check any account
+     * with planning_creation could read or write another school's timetable
+     * just by passing a foreign id_classe or a foreign course id.
+     */
+    protected function authorizeClasseForTimetable(int $idClasse): Classe
+    {
+        $user = Auth::user();
+        if ($user->droit === 'SupAdmin') {
+            return Classe::findOrFail($idClasse);
+        }
+
+        $idEcole = session('idEcole') ?: $user->idEcole;
+
+        return Classe::where('idEcole', $idEcole)->findOrFail($idClasse);
+    }
+
+    protected function authorizeCourseForTimetable(int $id): EmploiDuTemps
+    {
+        $course = EmploiDuTemps::findOrFail($id);
+        $this->authorizeClasseForTimetable($course->id_classe);
+
+        return $course;
     }
 
     protected function pdfHours($storedHours, $courses): array
