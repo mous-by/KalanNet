@@ -97,7 +97,7 @@ export default function TeacherDashboardView({ data }: { data: TeacherDashboardD
           <Text style={styles.statLabel}>Élèves concernés</Text>
         </View>
         <View style={styles.statCard}>
-          <Text style={styles.statValue}>{data.heuresEmargees.toLocaleString('fr-FR', { maximumFractionDigits: 1 })}</Text>
+          <Text style={styles.statValue}>{data.heuresEmargees.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</Text>
           <Text style={styles.statLabel}>Heures émargées</Text>
         </View>
       </View>
@@ -110,7 +110,7 @@ export default function TeacherDashboardView({ data }: { data: TeacherDashboardD
           <View key={`${row.classe}-${row.titre}-${index}`} style={styles.progressRow}>
             <View style={styles.progressHeader}>
               <Text style={styles.progressClasse}>{row.classe}</Text>
-              <Text style={styles.progressHours}>{row.hours.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} h</Text>
+              <Text style={styles.progressHours}>{row.hours.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} h</Text>
             </View>
             <Text style={styles.progressTitre}>{row.titre}</Text>
             <View style={styles.progressBarTrack}>
