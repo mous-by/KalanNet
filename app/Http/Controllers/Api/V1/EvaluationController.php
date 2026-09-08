@@ -24,11 +24,18 @@ class EvaluationController extends WebEvaluationController
             ? "MIN(COALESCE(ligne_evaluation.validation_status, 'valide')) as validation_status"
             : "'valide' as validation_status";
 
+        $user = $request->user();
+        $idEcole = session('idEcole') ?: $user->idEcole;
+
         $evaluations = LigneEvaluation::query()
             ->with(['evaluation', 'classe', 'matiere', 'trimestre'])
             ->selectRaw("MIN(ligne_evaluation.id_ligneEvaluation) as id_ligneEvaluation, ligne_evaluation.id_evaluation, ligne_evaluation.id_classe, ligne_evaluation.id_matiere, ligne_evaluation.id_annee_scolaire, ligne_evaluation.id_trimestre, ligne_evaluation.mois, {$validationSelect}")
             ->join('evaluation as e', 'e.id_evaluation', '=', 'ligne_evaluation.id_evaluation')
-            ->when(Auth::user()->id_enseignant, fn ($q, $teacherId) => $q->where('ligne_evaluation.id_enseignant', $teacherId))
+            ->when($user->droit !== 'SupAdmin', fn ($q) => $q->whereIn(
+                'ligne_evaluation.id_classe',
+                Classe::withoutGlobalScopes()->where('idEcole', $idEcole)->select('id_classe')
+            ))
+            ->when($user->id_enseignant, fn ($q, $teacherId) => $q->where('ligne_evaluation.id_enseignant', $teacherId))
             ->when($filters['id_classe'] ?? null, fn ($q, $value) => $q->where('ligne_evaluation.id_classe', $value))
             ->when($filters['id_matiere'] ?? null, fn ($q, $value) => $q->where('ligne_evaluation.id_matiere', $value))
             ->when($filters['id_annee_scolaire'] ?? null, fn ($q, $value) => $q->where('ligne_evaluation.id_annee_scolaire', $value))
