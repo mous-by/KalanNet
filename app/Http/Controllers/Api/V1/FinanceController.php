@@ -34,6 +34,32 @@ class FinanceController extends WebFinanceController
 
         $ecole = Ecole::find($idEcole);
 
+        $rows = null;
+        if ($request->filled('id_classe') && $request->filled('id_annee')) {
+            Classe::where('idEcole', $idEcole)->findOrFail($request->integer('id_classe'));
+            $rows = $this->legacyPaymentRows(
+                $request->integer('id_classe'),
+                $request->integer('id_annee'),
+                (string) $request->input('type_planification', '')
+            )->map(fn ($row) => [
+                'eleve' => [
+                    'id_eleve' => $row->eleve->id_eleve,
+                    'prenom_eleve' => $row->eleve->prenom_eleve,
+                    'nom_eleve' => $row->eleve->nom_eleve,
+                ],
+                'id_planification' => $row->planification->id_planification,
+                'motif' => $row->planification->motif,
+                'montant_total' => $row->montant_total,
+                'montant_deja_paye' => $row->montant_deja_paye,
+                'reste_a_payer' => $row->reste_a_payer,
+                'parents' => $row->parents->map(fn ($parent) => [
+                    'id_parent' => $parent->id_parent,
+                    'nom_prenom_parent' => $parent->nom_prenom_parent,
+                    'telephone_parent' => $parent->telephone_parent,
+                ]),
+            ]);
+        }
+
         return response()->json([
             'paiements' => $paiements,
             'classes' => Classe::where('idEcole', $idEcole)->orderBy('nom_classe')->get(),
@@ -45,7 +71,134 @@ class FinanceController extends WebFinanceController
             'caisse' => Caisse::where('id_ecole', $idEcole)->where('status', 1)->first(),
             'is_public_school' => $this->isPublicSchool($ecole),
             'next_reference' => $this->nextPaiementReference(),
+            'rows' => $rows,
         ]);
+    }
+
+    public function storePaiementsGroupes(Request $request)
+    {
+        $this->ensurePermission('paiements_faire');
+
+        $data = $request->validate([
+            'id_classe' => 'required|exists:classe,id_classe',
+            'id_annee' => 'required|exists:anneescolaire,id_anneeScolaire',
+            'id_trimestre' => 'required|exists:trimestre,id_trimestre',
+            'date_paiement' => 'required|date',
+            'type_planification' => 'nullable|string|max:40',
+            'rows' => 'required|array|min:1',
+            'rows.*.id_eleve' => 'required|integer',
+            'rows.*.id_planification' => 'required|integer',
+            'rows.*.motif' => 'nullable|string|max:255',
+            'rows.*.montant_recu' => 'required|numeric|min:1',
+            'rows.*.parent_id' => 'nullable',
+            'rows.*.autre_personne_nom' => 'nullable|string|max:100',
+            'rows.*.autre_personne_telephone' => 'nullable|string|max:20',
+        ]);
+
+        $idEcole = (int) session('idEcole');
+        Classe::where('idEcole', $idEcole)->findOrFail($data['id_classe']);
+        $createdIds = [];
+        $errors = [];
+
+        foreach ($data['rows'] as $row) {
+            $eleveId = (int) $row['id_eleve'];
+
+            try {
+                $paiement = DB::transaction(function () use ($data, $row, $eleveId, $idEcole) {
+                    $eleve = \App\Models\Eleve::where('id_ecole', $idEcole)
+                        ->where('id_classe', $data['id_classe'])
+                        ->where('id_annee', $data['id_annee'])
+                        ->where('etat_dossier', 0)
+                        ->findOrFail($eleveId);
+
+                    $planification = \App\Models\Planification::where('id_classe', $data['id_classe'])
+                        ->where('id_annee', $data['id_annee'])
+                        ->findOrFail((int) $row['id_planification']);
+
+                    $montantRecu = (float) $row['montant_recu'];
+                    $reste = $this->legacyRemainingForPlan($eleveId, $planification, (int) $data['id_annee'], $data['date_paiement']);
+                    if ($montantRecu > $reste) {
+                        throw ValidationException::withMessages(['montant_recu' => 'Le montant reçu dépasse le reste à payer.']);
+                    }
+
+                    $payer = $this->resolveLegacyPayer(
+                        $eleve,
+                        $row['parent_id'] ?? null,
+                        $row['autre_personne_nom'] ?? null,
+                        $row['autre_personne_telephone'] ?? null
+                    );
+
+                    $caisse = Caisse::where('id_ecole', $idEcole)
+                        ->where('status', 1)
+                        ->lockForUpdate()
+                        ->firstOrFail();
+
+                    $motifInput = trim((string) ($row['motif'] ?? ''));
+                    $paiement = Paiement::create([
+                        'montant' => $montantRecu,
+                        'montant_paye' => $montantRecu,
+                        'date_paiement' => $data['date_paiement'],
+                        'mode_reglement' => 'especes',
+                        'statut' => 'valide',
+                        'motif' => $motifInput !== '' ? $motifInput : $planification->motif,
+                        'id_classe' => $data['id_classe'],
+                        'id_annee' => $data['id_annee'],
+                        'id_trimestre' => $data['id_trimestre'],
+                        'reference' => $this->referenceService->nextReference(),
+                        'idEcole' => $idEcole,
+                        'id_eleve' => $eleve->id_eleve,
+                        'parent' => $payer['parent'],
+                        'nom_payeur' => $payer['nom_payeur'],
+                        'telephone' => $payer['telephone'],
+                        'id_utilisateur' => Auth::id(),
+                        'id_caisse' => $caisse->id_caisse,
+                        'numero_recu' => $this->referenceService->nextReceiptNumber($idEcole),
+                        'id_planification' => $planification->id_planification,
+                    ]);
+
+                    $encaissement = Encaissement::create([
+                        'paiement_id' => $paiement->id_paiement,
+                        'type_operation' => 'Paiement eleve',
+                        'date_encaissement' => $data['date_paiement'],
+                        'motif_encaissement' => $paiement->motif,
+                        'montant_encaissement' => $montantRecu,
+                        'statut' => 'valide',
+                        'id_annee_scolaire' => $data['id_annee'],
+                        'id_caisse' => $caisse->id_caisse,
+                        'idUtilisateur' => Auth::id(),
+                    ]);
+
+                    $paiement->encaissement_id = $encaissement->id_encaissement;
+                    $paiement->save();
+
+                    \App\Models\LignePaiementEleve::create([
+                        'id_classe' => $data['id_classe'],
+                        'id_annee' => $data['id_annee'],
+                        'id_paiement' => $paiement->id_paiement,
+                        'id_eleve' => $eleve->id_eleve,
+                        'id_trimestre' => $data['id_trimestre'],
+                        'idEcole' => $idEcole,
+                    ]);
+
+                    $caisse->montant_net = (float) $caisse->montant_net + $montantRecu;
+                    $caisse->save();
+
+                    return $paiement;
+                });
+
+                $createdIds[] = $paiement->id_paiement;
+            } catch (ValidationException $exception) {
+                $errors[] = "Élève #{$eleveId}: " . collect($exception->errors())->flatten()->first();
+            } catch (\Throwable) {
+                $errors[] = "Élève #{$eleveId}: paiement non enregistré.";
+            }
+        }
+
+        return response()->json([
+            'created' => count($createdIds),
+            'created_payment_ids' => $createdIds,
+            'errors' => $errors,
+        ], $createdIds ? 201 : 422);
     }
 
     public function storePaiement(Request $request)

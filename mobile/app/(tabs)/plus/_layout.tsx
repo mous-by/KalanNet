@@ -31,6 +31,7 @@ export default function PlusLayout() {
 
       <Stack.Screen name="finances/index" options={{ title: 'Paiements' }} />
       <Stack.Screen name="finances/new" options={{ title: 'Nouveau paiement' }} />
+      <Stack.Screen name="finances/classe" options={{ title: 'Paiement par classe' }} />
       <Stack.Screen name="finances/caisse" options={{ title: 'Caisse' }} />
 
       <Stack.Screen name="salaires/index" options={{ title: 'Salaires' }} />

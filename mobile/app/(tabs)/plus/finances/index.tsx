@@ -22,6 +22,9 @@ export default function FinancesScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.toolbar}>
+        <Button mode="contained" onPress={() => router.push('/plus/finances/classe')}>
+          Paiement par classe
+        </Button>
         <Button mode="outlined" onPress={() => router.push('/plus/finances/caisse')}>
           Voir la caisse
         </Button>
@@ -54,7 +57,7 @@ export default function FinancesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  toolbar: { padding: 16, paddingBottom: 0, alignItems: 'flex-end' },
+  toolbar: { padding: 16, paddingBottom: 0, gap: 8 },
   row: {
     borderWidth: 1,
     borderColor: 'rgba(128,128,128,0.25)',

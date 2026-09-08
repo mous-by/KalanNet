@@ -128,6 +128,7 @@ Route::prefix('v1')->group(function () {
 
         Route::get('/finances/paiements', [FinanceController::class, 'paiements']);
         Route::post('/finances/paiements', [FinanceController::class, 'storePaiement']);
+        Route::post('/finances/paiements/groupes', [FinanceController::class, 'storePaiementsGroupes']);
         Route::put('/finances/paiements/{id}', [FinanceController::class, 'updatePaiement']);
         Route::post('/finances/paiements/{id}/cancel', [FinanceController::class, 'cancelPaiement']);
         Route::get('/finances/eleves/{id}/contexte', [FinanceController::class, 'contexteEleve']);

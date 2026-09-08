@@ -1359,7 +1359,7 @@ class FinanceController extends Controller
         return $this->reportService->legacyXlsx($paiements);
     }
 
-    private function legacyPaymentRows(int $classeId, int $anneeId, string $typePlanification = '')
+    protected function legacyPaymentRows(int $classeId, int $anneeId, string $typePlanification = '')
     {
         $idEcole = (int) session('idEcole');
         $planifications = Planification::where('id_classe', $classeId)
@@ -1408,7 +1408,7 @@ class FinanceController extends Controller
         })->filter()->values();
     }
 
-    private function legacyRemainingForPlan(int $eleveId, Planification $planification, int $anneeId, ?string $date = null): float
+    protected function legacyRemainingForPlan(int $eleveId, Planification $planification, int $anneeId, ?string $date = null): float
     {
         $paid = $this->legacyPaidForPlan($eleveId, $planification, $anneeId, $date);
 
@@ -1477,7 +1477,7 @@ class FinanceController extends Controller
         return strtolower(trim((string) ($ecole->statut ?? ''))) === 'public';
     }
 
-    private function resolveLegacyPayer(Eleve $eleve, $parentId, ?string $otherName, ?string $otherPhone): array
+    protected function resolveLegacyPayer(Eleve $eleve, $parentId, ?string $otherName, ?string $otherPhone): array
     {
         if ($parentId && $parentId !== 'autre') {
             $parent = $eleve->parents()->where('parents.id_parent', $parentId)->first();

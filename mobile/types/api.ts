@@ -82,6 +82,7 @@ export interface Matiere {
 
 export interface Trimestre {
   id_trimestre: number;
+  nom_trimestre?: string;
   [key: string]: unknown;
 }
 
