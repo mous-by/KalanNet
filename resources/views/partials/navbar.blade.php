@@ -181,7 +181,7 @@
                             <img src="{{ asset('assets/images/avatars/avatar-1.png') }}" class="user-img" alt="">
                             <div class="d-none d-sm-block">
                                 <p class="user-name mb-0">{{ $user->nomPrenom }}</p>
-                                <small class="mb-0 dropdown-user-designation text-secondary">{{ $user->droit }}</small>
+                                <small class="mb-0 dropdown-user-designation text-secondary">{{ $user->fonction }}</small>
                             </div>
                         </div>
                     </a>
