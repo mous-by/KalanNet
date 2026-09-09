@@ -107,6 +107,14 @@ class PaiementEleveService
             $plan = $echeance->planPaiement;
             $eleve = $plan->eleve;
 
+            $user = Auth::user();
+            $idEcole = session('idEcole') ?: $user->idEcole;
+            if ($user->droit !== 'SupAdmin' && (int) $plan->ecole_id !== (int) $idEcole) {
+                throw ValidationException::withMessages([
+                    'echeance_id' => 'Cette échéance n’appartient pas à votre école.',
+                ]);
+            }
+
             $caisse = Caisse::where('id_ecole', $plan->ecole_id)
                 ->where('status', 1)
                 ->lockForUpdate()
