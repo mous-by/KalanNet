@@ -1,4 +1,5 @@
-import { router } from 'expo-router';
+import { useCallback } from 'react';
+import { router, useFocusEffect } from 'expo-router';
 import { Pressable, StyleSheet } from 'react-native';
 import { FAB, Text } from 'react-native-paper';
 
@@ -20,6 +21,15 @@ interface EvaluationRow {
 
 export default function EvaluationsScreen() {
   const list = usePaginatedApi<EvaluationRow>('/evaluations', {}, 'evaluations');
+
+  // Refetch whenever this screen regains focus — e.g. returning here after
+  // deleting or creating an evaluation on another screen, which otherwise
+  // left the stale list showing until the user pulled to refresh manually.
+  useFocusEffect(
+    useCallback(() => {
+      list.refresh();
+    }, [list.refresh])
+  );
 
   return (
     <>

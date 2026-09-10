@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Button, Text, TextInput } from 'react-native-paper';
 
 import SuccessSnackbar from '@/components/SuccessSnackbar';
@@ -104,7 +104,14 @@ export default function EvaluationDetailScreen() {
     }
   }
 
-  async function handleValidate() {
+  function handleValidate() {
+    Alert.alert('Valider ces notes ?', 'Valider ces notes pour les bulletins ?', [
+      { text: 'Annuler', style: 'cancel' },
+      { text: 'Valider', onPress: confirmValidate },
+    ]);
+  }
+
+  async function confirmValidate() {
     try {
       await api.post(`/evaluations/${id}/validate`);
       setSuccessMessage('Évaluation validée avec succès.');
@@ -115,7 +122,14 @@ export default function EvaluationDetailScreen() {
     }
   }
 
-  async function handleDelete() {
+  function handleDelete() {
+    Alert.alert('Supprimer cette évaluation ?', 'Cette action est irréversible.', [
+      { text: 'Annuler', style: 'cancel' },
+      { text: 'Supprimer', style: 'destructive', onPress: confirmDelete },
+    ]);
+  }
+
+  async function confirmDelete() {
     try {
       await api.delete(`/evaluations/${id}`);
       setSuccessMessage('Évaluation supprimée avec succès.');
@@ -138,7 +152,10 @@ export default function EvaluationDetailScreen() {
     }
   }
 
-  if (isLoading) return <ActivityIndicator style={styles.spinner} size="large" />;
+  // Only block the whole screen on the very first load — a reload() after
+  // saving/validating notes must not replace the tree (and unmount the
+  // success snackbar) while data is already on screen.
+  if (isLoading && !data) return <ActivityIndicator style={styles.spinner} size="large" />;
   if (error || !data) return <Text style={styles.error}>{error ?? 'Évaluation introuvable.'}</Text>;
 
   return (
@@ -159,6 +176,11 @@ export default function EvaluationDetailScreen() {
         <Button mode="outlined" icon="printer" loading={isDownloading} onPress={handleDownloadPdf} style={styles.actionButton}>
           Fiche PDF
         </Button>
+        {canManage ? (
+          <Button mode="outlined" icon="calendar-edit" onPress={() => router.push(`/plus/evaluations/${id}/programme`)} style={styles.actionButton}>
+            Modifier la fiche
+          </Button>
+        ) : null}
         {canValidate ? (
           <Button mode="outlined" onPress={handleValidate} style={styles.actionButton}>
             Valider

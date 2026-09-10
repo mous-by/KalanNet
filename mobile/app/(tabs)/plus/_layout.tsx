@@ -26,6 +26,7 @@ export default function PlusLayout() {
       <Stack.Screen name="evaluations/index" options={{ title: 'Évaluations' }} />
       <Stack.Screen name="evaluations/new" options={{ title: 'Nouvelle évaluation' }} />
       <Stack.Screen name="evaluations/[id]/index" options={{ title: 'Notes' }} />
+      <Stack.Screen name="evaluations/[id]/programme" options={{ title: 'Modifier la fiche' }} />
 
       <Stack.Screen name="emargements/index" options={{ title: 'Émargements' }} />
       <Stack.Screen name="emargements/new" options={{ title: 'Nouvel émargement' }} />

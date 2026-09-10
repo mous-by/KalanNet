@@ -51,6 +51,7 @@ class EmargementController extends WebEmargementController
             'trimestres' => Trimestre::orderBy('id_trimestre')->get(),
             'annees' => AnneeScolaire::orderByDesc('id_anneeScolaire')->get(),
             'lecons' => ProgrammeLecon::orderBy('numero')->orderBy('titre')->get(),
+            'formData' => $this->emargementFormData($user, $idEcole),
             'permissions' => $this->emargementPermissions($user),
             'summary' => $emargementSummary,
         ]);

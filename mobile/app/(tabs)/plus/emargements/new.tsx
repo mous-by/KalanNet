@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { router } from 'expo-router';
 import { ScrollView, StyleSheet } from 'react-native';
 import { ActivityIndicator, Text, TextInput } from 'react-native-paper';
@@ -15,10 +15,22 @@ import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
 import { AnneeScolaire, Classe, Enseignant, Matiere, Trimestre } from '@/types/api';
 
-interface Lecon {
-  id_lecon: number;
-  numero: number;
-  titre: string;
+interface LeconOption {
+  id: number;
+  label: string;
+  done: boolean;
+}
+
+interface ClasseMatiereProgress {
+  total: number;
+  completed: number;
+  percent: number;
+  next_lecon_id: number | null;
+}
+
+interface EmargementFormData {
+  leconsByClasseMatiere: Record<string, LeconOption[]>;
+  progressByClasseMatiere: Record<string, ClasseMatiereProgress>;
 }
 
 interface EmargementContext {
@@ -27,7 +39,7 @@ interface EmargementContext {
   matieres: Matiere[];
   trimestres: Trimestre[];
   annees: AnneeScolaire[];
-  lecons: Lecon[];
+  formData: EmargementFormData;
 }
 
 export default function NewEmargementScreen() {
@@ -53,7 +65,25 @@ export default function NewEmargementScreen() {
   const [successMessage, setSuccessMessage] = useState('');
 
   const isTeacher = user?.droit === 'enseignant';
-  const isValid = (isTeacher || idEnseignant) && idClasse && idMatiere && idTrimestre && idAnnee && date && nombreHeure;
+
+  // Mirrors the web form: lessons are scoped to the selected classe+matière's
+  // official programme (not every lesson in the school), already-emarged
+  // ones are marked done, and the next undone lesson is preselected.
+  const classeMatiereKey = idClasse && idMatiere ? `${idClasse}_${idMatiere}` : null;
+  const lecons = useMemo(
+    () => (classeMatiereKey ? context?.formData.leconsByClasseMatiere[classeMatiereKey] ?? [] : []),
+    [context, classeMatiereKey]
+  );
+  const progress = classeMatiereKey ? context?.formData.progressByClasseMatiere[classeMatiereKey] ?? null : null;
+
+  useEffect(() => {
+    setIdLecon(progress?.next_lecon_id ?? null);
+    setNewLeconTitre('');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [classeMatiereKey]);
+
+  const leconIsValid = lecons.length > 0 ? !!idLecon : !!newLeconTitre.trim();
+  const isValid = (isTeacher || idEnseignant) && idClasse && idMatiere && idTrimestre && idAnnee && date && nombreHeure && leconIsValid;
 
   async function handleSubmit() {
     if (!isValid) {
@@ -107,7 +137,7 @@ export default function NewEmargementScreen() {
   const enseignantOptions = context.enseignants.map((e) => ({ value: e.id_enseignant, label: e.nom_prenom_enseignant }));
   const classeOptions = context.classes.map((c) => ({ value: c.id_classe, label: c.nom_classe }));
   const matiereOptions = context.matieres.map((m) => ({ value: m.id_matiere, label: m.nom_matiere }));
-  const leconOptions = context.lecons.map((l) => ({ value: l.id_lecon, label: `${l.numero}. ${l.titre}` }));
+  const leconOptions = lecons.map((l) => ({ value: l.id, label: l.done ? `${l.label} ✓` : l.label }));
   const trimestreOptions = context.trimestres.map((t) => ({ value: t.id_trimestre, label: `Trimestre ${t.id_trimestre}` }));
   const anneeOptions = context.annees.map((a) => ({ value: a.id_anneeScolaire, label: a.annee }));
 
@@ -119,8 +149,16 @@ export default function NewEmargementScreen() {
       ) : null}
       <SelectField label={requiredLabel('Classe')} value={idClasse} options={classeOptions} onChange={(v) => setIdClasse(v as number)} />
       <SelectField label={requiredLabel('Matière')} value={idMatiere} options={matiereOptions} onChange={(v) => setIdMatiere(v as number)} />
-      <SelectField label="Leçon existante (optionnel)" value={idLecon} options={leconOptions} onChange={(v) => setIdLecon(v as number)} />
-      <TextInput mode="outlined" label="Ou nouvelle leçon (titre)" value={newLeconTitre} onChangeText={setNewLeconTitre} style={styles.input} />
+      {progress ? (
+        <Text style={styles.progressText}>
+          Progression : {progress.completed}/{progress.total} leçon(s), {progress.percent}% du programme.
+        </Text>
+      ) : null}
+      {lecons.length > 0 ? (
+        <SelectField label={requiredLabel('Leçon')} value={idLecon} options={leconOptions} onChange={(v) => setIdLecon(v as number)} />
+      ) : (
+        <TextInput mode="outlined" label={requiredLabel('Nouvelle leçon (titre)')} value={newLeconTitre} onChangeText={setNewLeconTitre} style={styles.input} />
+      )}
       <TextInput mode="outlined" label="Chapitre (optionnel)" value={chapitre} onChangeText={setChapitre} style={styles.input} />
       <TextInput mode="outlined" label={requiredLabel("Nombre d'heures")} keyboardType="numeric" value={nombreHeure} onChangeText={setNombreHeure} style={styles.input} />
       <SelectField label={requiredLabel('Trimestre')} value={idTrimestre} options={trimestreOptions} onChange={(v) => setIdTrimestre(v as number)} />
@@ -139,6 +177,7 @@ export default function NewEmargementScreen() {
 const styles = StyleSheet.create({
   content: { padding: 20 },
   input: { marginBottom: 12 },
+  progressText: { opacity: 0.6, fontSize: 12, marginBottom: 10 },
   spinner: { marginTop: 40 },
   error: { color: '#d33', marginBottom: 12 },
 });

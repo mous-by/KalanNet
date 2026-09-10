@@ -286,7 +286,7 @@ class EmargementController extends Controller
         abort(403);
     }
 
-    private function emargementFormData($user, ?int $idEcole): array
+    protected function emargementFormData($user, ?int $idEcole): array
     {
         $assignments = $this->ligneClasseForUser($user, $idEcole)
             ->with(['enseignant', 'classe', 'matiere'])

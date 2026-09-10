@@ -118,6 +118,56 @@ class EvaluationController extends WebEvaluationController
         ]);
     }
 
+    public function updateProgramme(Request $request, int $id)
+    {
+        $this->authorizePermission('evaluation_modification');
+        $evaluation = Evaluation::findOrFail($id);
+        $details = LigneEvaluation::with('classe')->where('id_evaluation', $evaluation->id_evaluation)->get();
+
+        abort_if($details->isEmpty(), 404);
+        $this->authorizeEvaluationLines($details);
+        $this->authorizeClasse($details->first()->classe);
+
+        $data = $this->validateProgramme($request);
+        $students = $this->studentsForEvaluation($data['id_classe'], $data['id_annee_scolaire'])->pluck('id_eleve')->all();
+        if (empty($students)) {
+            throw ValidationException::withMessages(['id_classe' => 'Aucun élève trouvé pour cette classe et cette année scolaire.']);
+        }
+        $idEnseignant = $request->user()->id_enseignant ?: $details->first()->id_enseignant;
+
+        DB::transaction(function () use ($evaluation, $data, $students, $idEnseignant) {
+            $evaluation->update([
+                'libeller' => $data['libeller'],
+                'date_evaluation' => $data['date_evaluation'],
+                'heure_debut' => $data['heure_debut'],
+                'heure_fin' => $data['heure_fin'],
+                'updated_at' => now(),
+            ]);
+
+            $existingNotes = LigneEvaluation::where('id_evaluation', $evaluation->id_evaluation)
+                ->pluck('note', 'id_eleve');
+
+            LigneEvaluation::where('id_evaluation', $evaluation->id_evaluation)->delete();
+
+            foreach ($students as $idEleve) {
+                LigneEvaluation::create([
+                    'id_evaluation' => $evaluation->id_evaluation,
+                    'id_classe' => $data['id_classe'],
+                    'id_matiere' => $data['id_matiere'],
+                    'id_annee_scolaire' => $data['id_annee_scolaire'],
+                    'id_trimestre' => $data['id_trimestre'] ?? null,
+                    'id_note' => $data['id_note'],
+                    'id_eleve' => $idEleve,
+                    'note' => $existingNotes[$idEleve] ?? null,
+                    'id_enseignant' => $idEnseignant,
+                    'mois' => $data['mois'] ?? null,
+                ]);
+            }
+        });
+
+        return response()->json(['success' => true]);
+    }
+
     public function update(Request $request, int $id)
     {
         $this->authorizePermission('evaluation_modification');
