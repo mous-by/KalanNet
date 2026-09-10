@@ -19,9 +19,11 @@ export default function TabLayout() {
   const { t } = useLocale();
   const { user } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
-  // Mirrors the web sidebar's students/parents menu, which is never shown to
-  // a parent account — a raw, unfiltered classes list has no use for them.
-  const hideClassesTab = user?.droit === 'parent';
+  // Mirrors the web sidebar's students/parents menu (sidebar.blade.php's
+  // `$canOpenStudentsParents`), which is never shown to a parent account even
+  // though some parent accounts carry stray eleves_dossier/parents_apercu
+  // permissions — a raw, unfiltered classes or students list has no use for them.
+  const hideForParent = user?.droit === 'parent';
 
   return (
     <View style={{ flex: 1 }}>
@@ -61,6 +63,7 @@ export default function TabLayout() {
           options={{
             title: t('tabs.students'),
             headerShown: false,
+            href: hideForParent ? null : undefined,
             tabBarIcon: ({ color }) => (
               <SymbolView
                 name={{ ios: 'person.2.fill', android: 'people', web: 'people' }}
@@ -75,7 +78,7 @@ export default function TabLayout() {
           options={{
             title: t('tabs.classes'),
             headerShown: false,
-            href: hideClassesTab ? null : undefined,
+            href: hideForParent ? null : undefined,
             tabBarIcon: ({ color }) => (
               <SymbolView
                 name={{ ios: 'building.2.fill', android: 'school', web: 'school' }}

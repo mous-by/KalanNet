@@ -4,8 +4,7 @@ import { Divider, List, Text } from 'react-native-paper';
 
 import { useAuth } from '@/context/AuthContext';
 import { useLocale } from '@/context/LocaleContext';
-import { MENU_SECTIONS } from '@/lib/menuSections';
-import { hasAnyPermission } from '@/lib/permissions';
+import { MENU_SECTIONS, isMenuItemVisible } from '@/lib/menuSections';
 import { SURFACE } from '@/lib/themes';
 
 interface Props {
@@ -31,7 +30,7 @@ export default function MenuDrawer({ visible, onClose }: Props) {
           <Text style={styles.title}>{t('tabs.more')}</Text>
           <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
             {MENU_SECTIONS.map((section) => {
-              const items = section.items.filter((item) => !item.permissions || hasAnyPermission(user, item.permissions));
+              const items = section.items.filter((item) => isMenuItemVisible(user, item));
               if (items.length === 0) return null;
 
               return (

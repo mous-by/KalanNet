@@ -1,4 +1,6 @@
 import { TranslationKey } from '@/lib/i18n';
+import { hasAnyPermission } from '@/lib/permissions';
+import { User } from '@/types/api';
 
 export interface MenuItem {
   labelKey: TranslationKey;
@@ -9,11 +11,21 @@ export interface MenuItem {
   // Omitted entirely only for items with no web equivalent (mobile-only
   // features) or genuinely open to every authenticated staff member.
   permissions?: string[];
+  // Mirrors sidebar.blade.php's `$user->droit !== 'parent'` guard on the
+  // students/parents section: some parent accounts carry stray
+  // eleves_dossier/parents_apercu permissions, so the permission check alone
+  // isn't enough — this link must stay hidden from a parent regardless.
+  hideForParent?: boolean;
 }
 
 export interface MenuSection {
   titleKey: TranslationKey;
   items: MenuItem[];
+}
+
+export function isMenuItemVisible(user: User | null | undefined, item: MenuItem): boolean {
+  if (item.hideForParent && user?.droit === 'parent') return false;
+  return !item.permissions || hasAnyPermission(user, item.permissions);
 }
 
 export const MENU_SECTIONS: MenuSection[] = [
@@ -30,7 +42,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         href: '/plus/enseignants',
         permissions: ['enseignants_apercu', 'enseignants_creation', 'emargement_faire', 'presence_apercu', 'paiements_faire'],
       },
-      { labelKey: 'plus.parents', icon: 'account-heart-outline', href: '/plus/parents', permissions: ['parents_apercu'] },
+      { labelKey: 'plus.parents', icon: 'account-heart-outline', href: '/plus/parents', permissions: ['parents_apercu'], hideForParent: true },
       { labelKey: 'plus.subjects', icon: 'book-open-variant', href: '/plus/matieres', permissions: ['matieres_apercu'] },
       {
         labelKey: 'plus.timetable',
