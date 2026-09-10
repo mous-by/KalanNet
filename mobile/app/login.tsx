@@ -10,7 +10,7 @@ import LoginCarousel from '@/components/LoginCarousel';
 import ThemeDots from '@/components/ThemeDots';
 import { useAuth } from '@/context/AuthContext';
 import { useLocale } from '@/context/LocaleContext';
-import { apiErrorMessage } from '@/lib/api';
+import { apiErrorMessage, isNetworkError } from '@/lib/api';
 import { TranslationKey } from '@/lib/i18n';
 import { ThemeKey, getTheme } from '@/lib/themes';
 import { AccountChoice } from '@/types/api';
@@ -47,7 +47,7 @@ export default function LoginScreen() {
     try {
       await login(identifier.trim(), pwd);
     } catch (err) {
-      setError(apiErrorMessage(err, t('auth.invalid_credentials')));
+      setError(isNetworkError(err) ? t('auth.network_error') : apiErrorMessage(err, t('auth.invalid_credentials')));
     } finally {
       setIsSubmitting(false);
     }
@@ -59,7 +59,7 @@ export default function LoginScreen() {
     try {
       await selectSchool(account.id_utilisateur, account.id_ecole!);
     } catch (err) {
-      setError(apiErrorMessage(err, t('auth.school_selection_error')));
+      setError(isNetworkError(err) ? t('auth.network_error') : apiErrorMessage(err, t('auth.school_selection_error')));
     } finally {
       setIsSubmitting(false);
     }

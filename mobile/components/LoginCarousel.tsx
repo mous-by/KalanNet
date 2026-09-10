@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Animated, Image, StyleSheet } from 'react-native';
 
 const SLIDES = [
@@ -15,20 +15,20 @@ interface Props {
 }
 
 export default function LoginCarousel({ onIndexChange }: Props) {
-  const [index, setIndex] = useState(0);
+  const currentIndexRef = useRef(0);
   const opacities = useRef(SLIDES.map((_, i) => new Animated.Value(i === 0 ? 1 : 0))).current;
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setIndex((current) => {
-        const next = (current + 1) % SLIDES.length;
-        Animated.parallel([
-          Animated.timing(opacities[current], { toValue: 0, duration: FADE_MS, useNativeDriver: true }),
-          Animated.timing(opacities[next], { toValue: 1, duration: FADE_MS, useNativeDriver: true }),
-        ]).start();
-        onIndexChange?.(next);
-        return next;
-      });
+      const current = currentIndexRef.current;
+      const next = (current + 1) % SLIDES.length;
+      currentIndexRef.current = next;
+
+      Animated.parallel([
+        Animated.timing(opacities[current], { toValue: 0, duration: FADE_MS, useNativeDriver: true }),
+        Animated.timing(opacities[next], { toValue: 1, duration: FADE_MS, useNativeDriver: true }),
+      ]).start();
+      onIndexChange?.(next);
     }, INTERVAL_MS);
 
     return () => clearInterval(timer);
