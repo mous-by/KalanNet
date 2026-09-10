@@ -16,12 +16,18 @@ class AnnouncementController extends WebAnnouncementController
         $this->authorizeAnnouncementAccess('annonces_apercu');
         $user = request()->user();
         $schoolId = session('idEcole') ?: $user->idEcole;
+        $isSupAdmin = $user->droit === 'SupAdmin';
 
         $annonces = collect();
-        if ($schoolId && Schema::hasTable('annonces_admin_gestionnaire')) {
+        if (($schoolId || $isSupAdmin) && Schema::hasTable('annonces_admin_gestionnaire')) {
             $annonces = DB::table('annonces_admin_gestionnaire as annonces')
                 ->leftJoin('utilisateurs as users', 'users.idUtilisateur', '=', 'annonces.id_utilisateur')
-                ->where('annonces.id_ecole', $schoolId)
+                ->where(function ($query) use ($schoolId, $isSupAdmin) {
+                    $query->where('annonces.id_ecole', $schoolId);
+                    if ($isSupAdmin) {
+                        $query->orWhereNull('annonces.id_ecole');
+                    }
+                })
                 ->select('annonces.*', 'users.nomPrenom as auteur')
                 ->orderByDesc('annonces.date_publication')
                 ->orderByDesc('annonces.id_annonce')
@@ -39,16 +45,18 @@ class AnnouncementController extends WebAnnouncementController
     public function store(Request $request)
     {
         $this->authorizeAnnouncementAccess('annonces_creation');
-        $schoolId = session('idEcole') ?: $request->user()->idEcole;
+        $user = $request->user();
+        $schoolId = session('idEcole') ?: $user->idEcole;
+        $isGlobal = $user->droit === 'SupAdmin' && $request->boolean('global');
 
-        if (!$schoolId || !Schema::hasTable('annonces_admin_gestionnaire')) {
+        if (!Schema::hasTable('annonces_admin_gestionnaire') || (!$isGlobal && !$schoolId)) {
             return response()->json(['message' => 'Le module des annonces n’est pas encore disponible.'], 422);
         }
 
         $data = $request->validate([
             'titre' => 'required|string|max:255',
             'contenu' => 'required|string',
-            'public_cible' => 'required|string|in:tous,parents,enseignants,gestionnaires',
+            'public_cible' => 'required|string|in:tous,parents,enseignants,gestionnaires,admins',
             'statut_annonce' => 'required|string|in:publie,brouillon,archive',
             'fichiers' => 'nullable|array',
             'fichiers.*' => 'nullable|file|max:5120|mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx',
@@ -56,12 +64,18 @@ class AnnouncementController extends WebAnnouncementController
             'titres_fichiers.*' => 'nullable|string|max:255',
         ]);
 
-        $announcementId = DB::transaction(function () use ($request, $data, $schoolId) {
+        if ($isGlobal) {
+            $data['public_cible'] = 'admins';
+        } elseif ($data['public_cible'] === 'admins') {
+            abort(422, 'Cible invalide pour une annonce d’école.');
+        }
+
+        $announcementId = DB::transaction(function () use ($request, $data, $schoolId, $isGlobal) {
             $storedFiles = $this->storeAttachments($request);
             $firstFile = $storedFiles[0] ?? [];
 
             $announcementId = DB::table('annonces_admin_gestionnaire')->insertGetId(array_merge([
-                'id_ecole' => $schoolId,
+                'id_ecole' => $isGlobal ? null : $schoolId,
                 'titre' => $data['titre'],
                 'contenu' => $data['contenu'],
                 'public_cible' => $data['public_cible'],
@@ -75,6 +89,10 @@ class AnnouncementController extends WebAnnouncementController
             ])));
 
             $this->insertAttachmentRows($announcementId, $storedFiles);
+
+            if ($isGlobal && $data['statut_annonce'] === 'publie') {
+                $this->notifyAllAdmins($announcementId, $data['titre']);
+            }
 
             return $announcementId;
         });

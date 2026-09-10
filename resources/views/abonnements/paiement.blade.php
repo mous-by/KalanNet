@@ -47,7 +47,7 @@
             </div>
             <div class="col-md-4">
                 <div class="text-muted small fw-bold text-uppercase">Validation</div>
-                <div class="fw-bold">{{ $paiement->reviewed_at ? $paiement->reviewed_at->format('d/m/Y H:i') : 'En attente superadmin' }}</div>
+                <div class="fw-bold">{{ $paiement->reviewed_at ? $paiement->reviewed_at->format('d/m/Y H:i') : 'En attente' }}</div>
             </div>
         </div>
 

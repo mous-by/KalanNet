@@ -5,7 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Abonnement;
 use App\Models\AbonnementOffre;
 use App\Models\AbonnementPaiement;
+use App\Models\Ecole;
+use App\Models\RevendeurOffre;
 use App\Services\Abonnements\AbonnementPaymentService;
+use App\Support\SubscriptionGate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -14,7 +17,7 @@ use RuntimeException;
 
 class AbonnementController extends Controller
 {
-    public function index()
+    public function index(AbonnementPaymentService $payments)
     {
         $user = Auth::user();
         $schoolId = session('idEcole') ?: $user->idEcole;
@@ -23,10 +26,24 @@ class AbonnementController extends Controller
             abort(403);
         }
 
+        $ecole = $schoolId ? Ecole::withoutGlobalScopes()->find($schoolId) : null;
         $allOffres = AbonnementOffre::orderBy('montant')->get();
         // Self-service (réabonnement école) : on exclut les offres à vie (duree_jours = 0, ex: ACHAT),
-        // attribuées par le SuperAdmin uniquement. $allOffres reste complet pour la configuration admin.
-        $offres = $allOffres->where('actif', true)->where('duree_jours', '>', 0)->values();
+        // attribuées par le SuperAdmin uniquement, et les offres réservées à l'autre type d'école
+        // (public/privé). $allOffres reste complet pour la configuration admin.
+        $offres = $allOffres->where('actif', true)->where('duree_jours', '>', 0)
+            ->filter(fn (AbonnementOffre $offre) => $this->offreMatchesEcole($offre, $ecole))
+            ->values();
+
+        // Le prix affiché à l'école doit être celui qu'elle paiera réellement —
+        // le prix de revente de son revendeur s'il y en a un, sinon le catalogue.
+        if ($schoolId) {
+            $offres->each(function (AbonnementOffre $offre) use ($payments, $schoolId) {
+                $offre->montant_effectif = $payments->resolveMontant((int) $schoolId, $offre);
+            });
+        } else {
+            $offres->each(fn (AbonnementOffre $offre) => $offre->montant_effectif = (float) $offre->montant);
+        }
         $abonnement = Abonnement::with('offre')
             ->where('ecole_id', $schoolId)
             ->orderByDesc('id')
@@ -38,9 +55,19 @@ class AbonnementController extends Controller
             ->get();
         $canConfigure = $this->canConfigureAbonnements($user);
         $canReview = $this->canReviewAbonnements($user);
-        $manualModes = AbonnementPaymentService::MANUAL_MODES;
+        // Les numéros de dépôt affichés (formulaire + carrousel) sont ceux du
+        // revendeur de l'école s'il en a un, sinon ceux de la plateforme.
+        $manualModes = $payments->manualModesFor($ecole);
+        $manualNumbers = $payments->manualPaymentNumbers($ecole);
         $adminPaiements = collect();
         $canSubmitManual = (bool) $schoolId;
+
+        // Un Admin/Gestionnaire d'une école bloquée, sans droit de configuration
+        // ni de validation, ne doit voir qu'un écran de réabonnement minimal —
+        // pas l'historique complet ni les autres sections de cette page.
+        if ($schoolId && !$canConfigure && !$canReview && SubscriptionGate::isBlocked((int) $schoolId)) {
+            return view('abonnements.blocked', compact('offres', 'manualModes', 'manualNumbers', 'canSubmitManual'));
+        }
 
         if ($canReview) {
             $adminPaiements = AbonnementPaiement::with(['offre', 'ecole'])
@@ -72,6 +99,7 @@ class AbonnementController extends Controller
         $offre = AbonnementOffre::where('actif', true)->findOrFail($data['offre_id']);
         // La licence à vie (duree_jours = 0, ex: ACHAT) est attribuée par le SuperAdmin uniquement.
         abort_if($offre->duree_jours <= 0, 422, "Cette offre n'est pas disponible à la souscription en ligne.");
+        abort_unless($this->offreMatchesEcole($offre, Ecole::withoutGlobalScopes()->find($schoolId)), 422, "Cette offre n'est pas disponible pour votre type d'école.");
         $paiement = $payments->initiate($schoolId, $offre, $data['fournisseur'], $data['numero_payeur'] ?? null);
 
         if ($paiement->checkout_url) {
@@ -102,6 +130,7 @@ class AbonnementController extends Controller
         $offre = AbonnementOffre::where('actif', true)->findOrFail($data['offre_id']);
         // La licence à vie (duree_jours = 0, ex: ACHAT) est attribuée par le SuperAdmin uniquement.
         abort_if($offre->duree_jours <= 0, 422, "Cette offre n'est pas disponible à la souscription en ligne.");
+        abort_unless($this->offreMatchesEcole($offre, Ecole::withoutGlobalScopes()->find($schoolId)), 422, "Cette offre n'est pas disponible pour votre type d'école.");
         $data['preuve_url'] = $this->storeReceipt($request);
 
         try {
@@ -111,7 +140,7 @@ class AbonnementController extends Controller
         }
 
         return redirect()->route('abonnements.paiements.show', $paiement->reference)
-            ->with('success', 'Demande envoyée. En attente de validation superadmin.');
+            ->with('success', 'Demande envoyée. En attente de validation.');
     }
 
     public function paiement($reference)
@@ -186,6 +215,15 @@ class AbonnementController extends Controller
             return;
         }
 
+        // Un revendeur ne valide que les paiements des écoles qu'il a apportées.
+        if ($user->droit === 'revendeur') {
+            $ecole = Ecole::withoutGlobalScopes()->find($paiement->ecole_id);
+            if ($ecole && $user->id_revendeur && (int) $ecole->id_revendeur === (int) $user->id_revendeur) {
+                return;
+            }
+            abort(403);
+        }
+
         $idEcole = session('idEcole') ?: $user->idEcole;
         if ((int) $paiement->ecole_id !== (int) $idEcole) {
             abort(403);
@@ -245,21 +283,53 @@ class AbonnementController extends Controller
         return back()->with('success', $active ? 'Formule activée.' : 'Formule désactivée.');
     }
 
+    /**
+     * type_ecole_cible = null => offre valable pour tout type d'école, sinon elle
+     * doit correspondre au statut (public/prive) de l'école. Et si l'école a été
+     * apportée par un revendeur, elle ne doit voir QUE les formules que ce
+     * revendeur lui a explicitement ouvertes — jamais le catalogue complet.
+     */
+    protected function offreMatchesEcole(AbonnementOffre $offre, ?Ecole $ecole): bool
+    {
+        if ($offre->type_ecole_cible && (!$ecole || $offre->type_ecole_cible !== $ecole->statut)) {
+            return false;
+        }
+
+        if ($ecole?->id_revendeur) {
+            return RevendeurOffre::where('id_revendeur', $ecole->id_revendeur)
+                ->where('id_offre', $offre->id)
+                ->where('actif', true)
+                ->exists();
+        }
+
+        return true;
+    }
+
     protected function canManageAbonnements($user): bool
     {
         return in_array($user?->droit, ['SupAdmin', 'Admin', 'Gestionnaire'], true)
             || $user?->userHasAnyPermission(['abonnements_apercu', 'abonnements_paiement']);
     }
 
+    /**
+     * Fixer les tarifs des formules est une action plateforme, jamais délégable
+     * à un Admin/Gestionnaire d'école — même via la permission
+     * 'abonnements_configuration', qui reste dans le catalogue pour ne pas
+     * casser d'éventuelles attributions existantes mais n'accorde plus cet
+     * accès (le badge "Superadmin" affiché sur cette section doit être exact).
+     */
     protected function canConfigureAbonnements($user): bool
     {
-        return $user?->droit === 'SupAdmin'
-            || $user?->userHasPermission('abonnements_configuration');
+        return $user?->droit === 'SupAdmin';
     }
 
     protected function canReviewAbonnements($user): bool
     {
         return $user?->droit === 'SupAdmin'
+            // Un revendeur valide les paiements de ses propres écoles (portée
+            // vérifiée par authorizePaiementReview) — le SupAdmin garde
+            // toujours, en plus, le contrôle total sur tout.
+            || $user?->droit === 'revendeur'
             || $user?->userHasPermission('abonnements_validation');
     }
 
@@ -293,6 +363,7 @@ class AbonnementController extends Controller
             'montant' => 'required|numeric|min:0',
             'devise' => 'required|string|max:8',
             'duree_jours' => 'required|integer|min:0|max:3650',
+            'type_ecole_cible' => 'nullable|in:public,prive',
             'actif' => 'nullable|boolean',
         ]);
 

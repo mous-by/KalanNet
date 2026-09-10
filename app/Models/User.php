@@ -45,6 +45,7 @@ class User extends Authenticatable
         'id_cap',
         'id_enseignant',
         'id_parent',
+        'id_revendeur',
         'id_role',
         'image',
         'statut',
@@ -195,6 +196,11 @@ class User extends Authenticatable
     public function parent()
     {
         return $this->belongsTo(ParentModel::class, 'id_parent', 'id_parent');
+    }
+
+    public function revendeur()
+    {
+        return $this->belongsTo(Revendeur::class, 'id_revendeur');
     }
 
     public function appNotifications()

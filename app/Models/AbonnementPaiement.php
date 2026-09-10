@@ -29,13 +29,19 @@ class AbonnementPaiement extends Model
         'reviewed_by',
         'reviewed_at',
         'paye_at',
+        'montant_du_developpeur',
+        'reverse_statut',
+        'reverse_at',
+        'reverse_par',
     ];
 
     protected $casts = [
         'montant' => 'decimal:2',
+        'montant_du_developpeur' => 'decimal:2',
         'payload' => 'array',
         'reviewed_at' => 'datetime',
         'paye_at' => 'datetime',
+        'reverse_at' => 'datetime',
     ];
 
     public function abonnement()

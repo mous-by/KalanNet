@@ -110,7 +110,22 @@
                 <div class="menu-title">{{ __('messages.menu.dashboard') }}</div>
             </a>
         </li>
-        
+
+        @if ($user->droit === 'revendeur')
+        <li>
+            <a href="{{ route('revendeur.dashboard') }}">
+                <div class="parent-icon"><i class="bi bi-building-fill"></i></div>
+                <div class="menu-title">Mes écoles</div>
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('revendeur.tarifs') }}">
+                <div class="parent-icon"><i class="bi bi-tags-fill"></i></div>
+                <div class="menu-title">Mes tarifs</div>
+            </a>
+        </li>
+        @endif
+
         <li class="menu-label">{{ __('messages.menu.pedagogy') }}</li>
         
         @if ($canOpenStudentsParents)

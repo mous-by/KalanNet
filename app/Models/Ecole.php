@@ -20,6 +20,7 @@ class Ecole extends Model
         'nomProfessionnel',
         'id_academie',
         'id_cap',
+        'id_revendeur',
         'nomComplexe',
         'cap',
         'statut',
@@ -44,5 +45,10 @@ class Ecole extends Model
     public function capRef()
     {
         return $this->belongsTo(Cap::class, 'id_cap', 'id_cap');
+    }
+
+    public function revendeur()
+    {
+        return $this->belongsTo(Revendeur::class, 'id_revendeur');
     }
 }

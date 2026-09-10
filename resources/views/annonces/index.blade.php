@@ -37,9 +37,20 @@
                                 <label class="form-label">Titre</label>
                                 <input type="text" name="titre" class="form-control" value="{{ old('titre') }}" required>
                             </div>
-                            <div class="col-12">
+                            @if(auth()->user()->droit === 'SupAdmin')
+                                <div class="col-12">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="global" value="1" id="announcement-global" @checked(old('global'))>
+                                        <label class="form-check-label fw-bold" for="announcement-global">
+                                            Diffuser à toutes les écoles (tous les Admin)
+                                        </label>
+                                    </div>
+                                    <div class="form-text">Réservé au SupAdmin — visible par tous les directeurs d'école, toutes écoles confondues.</div>
+                                </div>
+                            @endif
+                            <div class="col-12" id="announcement-public-wrap">
                                 <label class="form-label">Public</label>
-                                <select name="public_cible" class="form-select" required>
+                                <select name="public_cible" id="announcement-public" class="form-select" required>
                                     <option value="tous" @selected(old('public_cible') === 'tous')>Tous</option>
                                     <option value="parents" @selected(old('public_cible') === 'parents')>Parents</option>
                                     <option value="enseignants" @selected(old('public_cible') === 'enseignants')>Enseignants</option>
@@ -103,7 +114,12 @@
                                 @forelse($annonces as $annonce)
                                     <tr>
                                         <td>
-                                            <div class="fw-bold">{{ $annonce->titre }}</div>
+                                            <div class="fw-bold">
+                                                {{ $annonce->titre }}
+                                                @if(is_null($annonce->id_ecole))
+                                                    <span class="badge bg-primary ms-1"><i class="bi bi-broadcast me-1"></i>Toutes les écoles</span>
+                                                @endif
+                                            </div>
                                             <div class="small text-muted">{{ \Illuminate\Support\Str::limit($annonce->contenu, 100) }}</div>
                                             @php($files = $filesByAnnouncement[$annonce->id_annonce] ?? collect())
                                             @if($files->isNotEmpty())
@@ -183,6 +199,19 @@
                     row.querySelector('.btn-close').addEventListener('click', () => row.remove());
                     filesContainer.appendChild(row);
                 });
+            }
+
+            const globalCheckbox = document.getElementById('announcement-global');
+            const publicWrap = document.getElementById('announcement-public-wrap');
+            const publicSelect = document.getElementById('announcement-public');
+            if (globalCheckbox && publicWrap && publicSelect) {
+                const syncGlobalToggle = function () {
+                    const isGlobal = globalCheckbox.checked;
+                    publicWrap.classList.toggle('d-none', isGlobal);
+                    publicSelect.required = !isGlobal;
+                };
+                globalCheckbox.addEventListener('change', syncGlobalToggle);
+                syncGlobalToggle();
             }
 
             document.querySelectorAll('[data-confirm-delete]').forEach(function (form) {

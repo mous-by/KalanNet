@@ -18,8 +18,9 @@ class EnsureSchoolSelected
     {
         if (auth()->check()) {
             $user = auth()->user();
-            // Bypass school selection for SupAdmin, DAE, and DCAP users
-            if (in_array($user->droit, ['SupAdmin', 'DAE', 'DCAP'], true)) {
+            // Bypass school selection for SupAdmin, DAE, DCAP, and revendeur users
+            // (a revendeur isn't tied to a single school — they manage several).
+            if (in_array($user->droit, ['SupAdmin', 'DAE', 'DCAP', 'revendeur'], true)) {
                 return $next($request);
             }
 

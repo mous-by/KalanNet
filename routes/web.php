@@ -21,6 +21,7 @@ use App\Http\Controllers\ConfigurationController;
 use App\Http\Controllers\ProgrammeController;
 use App\Http\Controllers\TeacherSalaryController;
 use App\Http\Controllers\AbonnementController;
+use App\Http\Controllers\RevendeurController;
 use App\Http\Controllers\AppelEpreuveController;
 use App\Http\Controllers\ResultatNationalController;
 use App\Http\Controllers\AnnouncementController;
@@ -234,6 +235,21 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/configuration/ecoles', [ConfigurationController::class, 'storeEcole'])->name('configuration.ecoles.store');
     Route::put('/configuration/ecoles/{id}', [ConfigurationController::class, 'updateEcole'])->name('configuration.ecoles.update');
     Route::delete('/configuration/ecoles/{id}', [ConfigurationController::class, 'destroyEcole'])->name('configuration.ecoles.destroy');
+
+    // Revendeurs — gestion par le SupAdmin
+    Route::get('/configuration/revendeurs', [RevendeurController::class, 'index'])->name('configuration.revendeurs');
+    Route::post('/configuration/revendeurs', [RevendeurController::class, 'store'])->name('configuration.revendeurs.store');
+    Route::put('/configuration/revendeurs/{revendeur}', [RevendeurController::class, 'update'])->name('configuration.revendeurs.update');
+    Route::patch('/configuration/revendeurs/{revendeur}/toggle', [RevendeurController::class, 'toggle'])->name('configuration.revendeurs.toggle');
+    Route::post('/configuration/revendeurs/{revendeur}/offres', [RevendeurController::class, 'storeOffre'])->name('configuration.revendeurs.offres.store');
+    Route::patch('/configuration/revendeurs-offres/{revendeurOffre}/toggle', [RevendeurController::class, 'toggleOffre'])->name('configuration.revendeurs.offres.toggle');
+    Route::patch('/configuration/reversements/{paiement}/recu', [RevendeurController::class, 'markReversementRecu'])->name('configuration.reversements.recu');
+
+    // Revendeurs — espace en libre-service
+    Route::get('/revendeur', [RevendeurController::class, 'dashboard'])->name('revendeur.dashboard');
+    Route::put('/revendeur/numeros', [RevendeurController::class, 'updateNumeros'])->name('revendeur.numeros.update');
+    Route::get('/revendeur/tarifs', [RevendeurController::class, 'tarifs'])->name('revendeur.tarifs');
+    Route::put('/revendeur/tarifs/{revendeurOffre}', [RevendeurController::class, 'updateTarif'])->name('revendeur.tarifs.update');
     Route::get('/configuration/academies', [ConfigurationController::class, 'academies'])->name('configuration.academies');
     Route::post('/configuration/academies', [ConfigurationController::class, 'storeAcademie'])->name('configuration.academies.store');
     Route::put('/configuration/academies/{id}', [ConfigurationController::class, 'updateAcademie'])->name('configuration.academies.update');

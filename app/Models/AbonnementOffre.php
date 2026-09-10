@@ -15,6 +15,7 @@ class AbonnementOffre extends Model
         'montant',
         'devise',
         'duree_jours',
+        'type_ecole_cible',
         'actif',
     ];
 

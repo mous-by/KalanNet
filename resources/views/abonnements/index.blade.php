@@ -69,7 +69,7 @@
                             <option value="">Choisir</option>
                             @foreach($offres as $offre)
                                 <option value="{{ $offre->id }}" @selected(old('offre_id') == $offre->id)>
-                                    {{ $offre->nom }} - {{ number_format($offre->montant, 0, ',', ' ') }} {{ $offre->devise }} / {{ $offre->duree_jours }} jours
+                                    {{ $offre->nom }} - {{ number_format($offre->montant_effectif ?? $offre->montant, 0, ',', ' ') }} {{ $offre->devise }} / {{ $offre->duree_jours }} jours
                                 </option>
                             @endforeach
                         </select>
@@ -245,6 +245,14 @@
             <div class="col-md-2"><label class="form-label small fw-bold">Prix</label><input name="montant" type="number" min="1" step="1" class="form-control" required></div>
             <div class="col-md-1"><label class="form-label small fw-bold">Devise</label><input name="devise" class="form-control" value="XOF" required></div>
             <div class="col-md-2"><label class="form-label small fw-bold">Durée (jours)</label><input name="duree_jours" type="number" min="0" class="form-control" value="30" required></div>
+            <div class="col-md-2">
+                <label class="form-label small fw-bold">École cible</label>
+                <select name="type_ecole_cible" class="form-select">
+                    <option value="">Toutes</option>
+                    <option value="public">Publique</option>
+                    <option value="prive">Privée</option>
+                </select>
+            </div>
             <div class="col-md-1"><div class="form-check mb-2"><input class="form-check-input" type="checkbox" name="actif" value="1" id="new-offre-active" checked><label class="form-check-label small fw-bold" for="new-offre-active">Actif</label></div></div>
             <div class="col-md-1"><button class="btn theme-action-btn w-100" type="submit"><i class="bi bi-plus-lg"></i></button></div>
             <div class="col-12"><label class="form-label small fw-bold">Description</label><input name="description" class="form-control" placeholder="Accès complet à KalanNet pendant la durée choisie."></div>
@@ -259,6 +267,7 @@
                         <th class="text-end">Prix</th>
                         <th>Devise</th>
                         <th>Durée</th>
+                        <th>École cible</th>
                         <th>Actif</th>
                         <th class="text-end">Action</th>
                     </tr>
@@ -278,6 +287,13 @@
                                 <div class="col-md-2"><input name="montant" type="number" min="1" step="1" class="form-control form-control-sm text-end" value="{{ (int) $offre->montant }}" required></div>
                                 <div class="col-md-1"><input name="devise" class="form-control form-control-sm" value="{{ $offre->devise }}" required></div>
                                 <div class="col-md-2"><input name="duree_jours" type="number" min="0" class="form-control form-control-sm" value="{{ $offre->duree_jours }}" required></div>
+                                <div class="col-md-2">
+                                    <select name="type_ecole_cible" class="form-select form-select-sm">
+                                        <option value="" @selected(!$offre->type_ecole_cible)>Toutes</option>
+                                        <option value="public" @selected($offre->type_ecole_cible === 'public')>Publique</option>
+                                        <option value="prive" @selected($offre->type_ecole_cible === 'prive')>Privée</option>
+                                    </select>
+                                </div>
                                 <div class="col-md-1">
                                     <select name="actif" class="form-select form-select-sm">
                                         <option value="1" @selected($offre->actif)>Oui</option>
@@ -400,87 +416,8 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('proofPreviewTitle').textContent = this.dataset.proofTitle || 'Preuve d\'abonnement';
         });
     });
-
-    // Gestion de la caméra et de l'aperçu pour les preuves photo
-    document.querySelectorAll('.js-receipt-wrapper').forEach(wrapper => {
-        const fileInput = wrapper.querySelector('.js-receipt-input');
-        const btnCamera = wrapper.querySelector('.js-btn-camera');
-        const cameraContainer = wrapper.querySelector('.js-camera-container');
-        const video = wrapper.querySelector('.js-camera-video');
-        const btnCapture = wrapper.querySelector('.js-btn-capture');
-        const btnCloseCamera = wrapper.querySelector('.js-btn-close-camera');
-        
-        const previewContainer = wrapper.querySelector('.js-receipt-preview');
-        const previewImg = wrapper.querySelector('.js-preview-img');
-        const btnRemoveReceipt = wrapper.querySelector('.js-btn-remove-receipt');
-
-        let stream = null;
-
-        fileInput.addEventListener('change', function() {
-            if (this.files && this.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    previewImg.src = e.target.result;
-                    previewContainer.classList.remove('d-none');
-                }
-                reader.readAsDataURL(this.files[0]);
-            } else {
-                previewContainer.classList.add('d-none');
-            }
-        });
-
-        btnCamera.addEventListener('click', async function() {
-            try {
-                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-                video.srcObject = stream;
-                cameraContainer.classList.remove('d-none');
-                btnCamera.disabled = true;
-                fileInput.disabled = true;
-            } catch (err) {
-                alert('Impossible d\'accéder à la caméra : ' + err.message);
-            }
-        });
-
-        function stopCamera() {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-                stream = null;
-            }
-            video.srcObject = null;
-            cameraContainer.classList.add('d-none');
-            btnCamera.disabled = false;
-            fileInput.disabled = false;
-        }
-
-        btnCloseCamera.addEventListener('click', stopCamera);
-
-        btnCapture.addEventListener('click', function() {
-            if (!stream) return;
-            
-            const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
-            canvas.toBlob(function(blob) {
-                const file = new File([blob], "capture_camera.jpg", { type: "image/jpeg" });
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(file);
-                fileInput.files = dataTransfer.files;
-                
-                fileInput.dispatchEvent(new Event('change'));
-                stopCamera();
-            }, 'image/jpeg', 0.8);
-        });
-
-        btnRemoveReceipt.addEventListener('click', function() {
-            fileInput.value = '';
-            previewContainer.classList.add('d-none');
-            previewImg.src = '';
-        });
-    });
 });
 </script>
+@include('abonnements._receipt-capture-script')
 @endpush
 @endsection

@@ -27,7 +27,7 @@
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Statut</label>
-                            <select name="statut" class="form-select" required>
+                            <select name="statut" class="form-select js-statut-select" required>
                                 <option value="public" @selected(old('statut', $ecole->statut ?? 'public') === 'public')>Public</option>
                                 <option value="prive" @selected(old('statut', $ecole->statut ?? 'public') === 'prive')>Privé</option>
                             </select>
@@ -79,15 +79,27 @@
                         @if(Auth::user()->droit === 'SupAdmin')
                             <div class="col-md-4">
                                 <label class="form-label">{{ $ecole ? "Changer/activer l'abonnement" : "Plan d'abonnement initial" }}</label>
-                                <select name="abonnement_offre_id" class="form-select">
+                                <select name="abonnement_offre_id" class="form-select js-offre-select">
                                     <option value="{{ $ecole ? '__KEEP__' : '' }}" selected>{{ $ecole ? "Ne pas modifier l'abonnement" : 'Aucun plan au démarrage' }}</option>
                                     @foreach($abonnementOffres ?? [] as $offre)
-                                        <option value="{{ $offre->id }}" @selected(old('abonnement_offre_id') == $offre->id)>
+                                        <option value="{{ $offre->id }}" data-type-ecole="{{ $offre->type_ecole_cible }}" @selected(old('abonnement_offre_id') == $offre->id)>
                                             {{ $offre->nom }} - {{ number_format($offre->montant, 0, ',', ' ') }} {{ $offre->devise }} / {{ $offre->duree_jours }} jours
                                         </option>
                                     @endforeach
                                 </select>
-                                <small class="text-muted d-block mt-1">{{ $ecole ? 'Choisir un plan ajoute une nouvelle période.' : 'Optionnel, comme dans Alliance.' }}</small>
+                                <small class="text-muted d-block mt-1">{{ $ecole ? 'Choisir un plan ajoute une nouvelle période.' : 'Optionnel, comme dans Alliance.' }} Seules les formules compatibles avec le statut choisi (public/privé) sont proposées.</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Apportée par un revendeur</label>
+                                <select name="id_revendeur" class="form-select">
+                                    <option value="">Aucun</option>
+                                    @foreach($revendeurs ?? [] as $revendeur)
+                                        <option value="{{ $revendeur->id }}" @selected(old('id_revendeur', $ecole->id_revendeur ?? null) == $revendeur->id)>
+                                            {{ $revendeur->nom }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <small class="text-muted d-block mt-1">Optionnel — l'école paiera alors le tarif fixé par ce revendeur.</small>
                             </div>
                         @endif
                         <div class="col-md-4">
@@ -154,6 +166,8 @@
         document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('.ecole-dynamic-form').forEach((form) => {
                 const typeSelect = form.querySelector('.js-ecole-type');
+                const statutSelect = form.querySelector('.js-statut-select');
+                const offreSelect = form.querySelector('.js-offre-select');
                 const academieSelect = form.querySelector('.js-academie-select');
                 const capField = form.querySelector('.js-cap-field');
                 const capSelect = form.querySelector('.js-cap-select');
@@ -235,6 +249,29 @@
                     jQuery(capSelect).trigger('change.select2');
                 }
 
+                // Une formule réservée au public ou au privé (data-type-ecole) ne
+                // doit être proposable que pour une école du même statut — sinon le
+                // serveur l'ignore silencieusement à l'enregistrement.
+                function filterOffres() {
+                    if (!offreSelect || !statutSelect) return;
+
+                    const statut = statutSelect.value;
+                    let currentOptionStillValid = true;
+
+                    Array.from(offreSelect.options).forEach((option) => {
+                        if (!option.hasAttribute('data-type-ecole')) return; // option "aucun/ne pas modifier"
+                        const cible = option.dataset.typeEcole;
+                        const matches = cible === '' || cible === statut;
+                        option.hidden = !matches;
+                        option.disabled = !matches;
+                        if (option.selected && !matches) currentOptionStillValid = false;
+                    });
+
+                    if (!currentOptionStillValid) {
+                        offreSelect.value = offreSelect.options[0]?.value ?? '';
+                    }
+                }
+
                 function updateFields() {
                     const type = selectedType();
                     typeFields.forEach((field) => {
@@ -254,9 +291,11 @@
                     }
 
                     filterCaps();
+                    filterOffres();
                 }
 
                 typeSelect?.addEventListener('change', updateFields);
+                statutSelect?.addEventListener('change', filterOffres);
                 jQuery(academieSelect).on('change', filterCaps);
                 logoInput?.addEventListener('change', () => {
                     const file = logoInput.files?.[0];

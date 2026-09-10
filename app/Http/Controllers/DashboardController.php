@@ -38,6 +38,10 @@ class DashboardController extends Controller
             return view('dashboards.parent', $this->parentDashboardData($user, $schoolId));
         }
 
+        if ($user->droit === 'revendeur') {
+            return redirect()->route('revendeur.dashboard');
+        }
+
         if ($user->droit === 'SupAdmin') {
             return view('dashboards.supadmin', $this->supAdminDashboardData($user));
         }
@@ -267,17 +271,26 @@ class DashboardController extends Controller
             $health['db_connection'] = 'ERREUR';
         }
 
-        // Pending Subscriptions to validate
-        $pendingValidations = \App\Models\AbonnementPaiement::with(['offre', 'ecole'])
+        // Pending Subscriptions to validate — le SupAdmin voit tout, y compris
+        // les écoles d'un revendeur (qui les valide normalement lui-même) :
+        // contrôle total conservé, avec juste un rappel de qui s'en occupe.
+        $pendingValidations = \App\Models\AbonnementPaiement::with(['offre', 'ecole.revendeur'])
             ->where('statut', 'en_attente')
             ->orderByDesc('id')
             ->get();
+
+        // Part de gros que les revendeurs ont encaissée pour le compte du
+        // développeur mais ne lui ont pas encore reversée.
+        $reversementsDus = \App\Models\AbonnementPaiement::where('reverse_statut', 'en_attente')->sum('montant_du_developpeur');
+        $reversementsDusCount = \App\Models\AbonnementPaiement::where('reverse_statut', 'en_attente')->count();
 
         return compact(
             'subscriptionOverview',
             'connectedUsers',
             'health',
-            'pendingValidations'
+            'pendingValidations',
+            'reversementsDus',
+            'reversementsDusCount'
         );
     }
 

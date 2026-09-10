@@ -13,6 +13,7 @@ use App\Models\Ecole;
 use App\Models\Enseignant;
 use App\Models\ParentModel;
 use App\Models\Permission;
+use App\Models\Revendeur;
 use App\Models\User;
 use App\Models\Note;
 use App\Models\Controle;
@@ -89,8 +90,11 @@ class ConfigurationController extends Controller
         $abonnementOffres = Auth::user()->droit === 'SupAdmin'
             ? AbonnementOffre::where('actif', true)->orderBy('montant')->get()
             : collect();
+        $revendeurs = Auth::user()->droit === 'SupAdmin'
+            ? Revendeur::where('actif', true)->orderBy('nom')->get()
+            : collect();
 
-        return view('configuration.ecoles', compact('ecoles', 'academies', 'caps', 'abonnementOffres'));
+        return view('configuration.ecoles', compact('ecoles', 'academies', 'caps', 'abonnementOffres', 'revendeurs'));
     }
 
     public function storeEcole(Request $request)
@@ -1386,6 +1390,7 @@ class ConfigurationController extends Controller
             'notification_email' => 'nullable|boolean',
             'logoEcole' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'abonnement_offre_id' => 'nullable',
+            'id_revendeur' => 'nullable|integer|exists:revendeurs,id',
         ]);
 
         unset($data['abonnement_offre_id']);
@@ -1472,6 +1477,12 @@ class ConfigurationController extends Controller
 
         $offre = AbonnementOffre::where('actif', true)->find($offreId);
         if (!$offre) {
+            return;
+        }
+
+        // Une formule réservée à un type d'école (public/prive) ne peut pas être
+        // activée pour une école de l'autre type.
+        if ($offre->type_ecole_cible && $offre->type_ecole_cible !== $ecole->statut) {
             return;
         }
 

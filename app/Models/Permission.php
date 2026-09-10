@@ -46,6 +46,13 @@ class Permission extends Model
                 'annonces_supprimer' => 'Supprimer une annonce',
             ],
         ],
+        'revendeurs' => [
+            'label' => 'Revendeurs',
+            'permissions' => [
+                'revendeur_apercu' => 'Voir ses écoles apportées',
+                'revendeur_tarifs' => 'Gérer ses tarifs de revente',
+            ],
+        ],
         'pedagogie_enseignants' => [
             'label' => 'Pédagogie - Enseignants',
             'permissions' => [

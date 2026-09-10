@@ -5,6 +5,9 @@ namespace App\Services\Abonnements;
 use App\Models\Abonnement;
 use App\Models\AbonnementOffre;
 use App\Models\AbonnementPaiement;
+use App\Models\Ecole;
+use App\Models\Revendeur;
+use App\Models\RevendeurOffre;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -55,7 +58,7 @@ class AbonnementPaymentService
                 'fournisseur' => $provider,
                 'reference' => $this->reference(),
                 'numero_payeur' => $payerPhone,
-                'montant' => $offre->montant,
+                'montant' => $this->resolveMontant($schoolId, $offre),
                 'devise' => $offre->devise,
                 'statut' => 'en_attente',
             ]);
@@ -94,11 +97,64 @@ class AbonnementPaymentService
                 'transaction_ref' => $data['transaction_ref'] ?? null,
                 'owner_note' => $data['owner_note'] ?? null,
                 'preuve_url' => $data['preuve_url'],
-                'montant' => $offre->montant,
+                'montant' => $this->resolveMontant($schoolId, $offre),
                 'devise' => $offre->devise,
                 'statut' => 'en_attente',
             ]);
         });
+    }
+
+    /**
+     * Si l'école a été apportée par un revendeur qui a ouvert cette formule à
+     * son propre prix de revente, ce prix remplace le prix catalogue. Public
+     * car aussi utilisé par AbonnementController pour AFFICHER le bon prix
+     * dans la liste des formules (pas seulement au moment de facturer).
+     */
+    public function resolveMontant(int $schoolId, AbonnementOffre $offre): float
+    {
+        $ecole = Ecole::withoutGlobalScopes()->find($schoolId);
+
+        if (!$ecole || !$ecole->id_revendeur) {
+            return (float) $offre->montant;
+        }
+
+        $revendeurOffre = RevendeurOffre::where('id_revendeur', $ecole->id_revendeur)
+            ->where('id_offre', $offre->id)
+            ->where('actif', true)
+            ->first();
+
+        return $revendeurOffre ? (float) $revendeurOffre->montant_revente : (float) $offre->montant;
+    }
+
+    /**
+     * Numéros de dépôt bruts à afficher à l'école — ceux de son revendeur s'il
+     * en a un et qu'il les a renseignés, sinon les numéros par défaut de la
+     * plateforme. Utilisé par le carrousel de réabonnement.
+     */
+    public function manualPaymentNumbers(?Ecole $ecole): array
+    {
+        $revendeur = $ecole?->id_revendeur ? Revendeur::find($ecole->id_revendeur) : null;
+
+        return [
+            'orange_wave' => $revendeur?->numero_orange_wave ?: '74745669',
+            'mobicash' => $revendeur?->numero_mobicash ?: '67205736',
+        ];
+    }
+
+    /**
+     * Même chose que MANUAL_MODES (libellés du sélecteur "Canal de transfert"),
+     * mais avec les numéros effectifs (revendeur ou plateforme) pour que le
+     * formulaire et le carrousel ne se contredisent jamais.
+     */
+    public function manualModesFor(?Ecole $ecole): array
+    {
+        $numeros = $this->manualPaymentNumbers($ecole);
+
+        return [
+            'Orange Money' => 'Orange Money - ' . $numeros['orange_wave'],
+            'Wave' => 'Wave - ' . $numeros['orange_wave'],
+            'MobiCash' => 'MobiCash - ' . $numeros['mobicash'],
+        ];
     }
 
     public function hasPendingManualPayment(int $schoolId): bool
@@ -143,17 +199,37 @@ class AbonnementPaymentService
                 'dernier_paiement_id' => $paiement->id,
             ]);
 
-            $paiement->update([
+            $paiement->update(array_merge([
                 'abonnement_id' => $abonnement->id,
                 'statut' => 'paye',
                 'review_note' => $reviewNote,
                 'reviewed_by' => $reviewerId,
                 'reviewed_at' => now(),
                 'paye_at' => now(),
-            ]);
+            ], $this->reversementFieldsFor($paiement)));
 
             return $paiement->fresh();
         });
+    }
+
+    /**
+     * Quand un paiement d'une école apportée par un revendeur passe "payé",
+     * l'argent est allé chez le revendeur (ses propres numéros de dépôt) — le
+     * développeur reste créancier du prix de gros tant que ce n'est pas
+     * marqué reversé. N'a d'effet que si l'école a un revendeur ; sinon []
+     * (le paiement va directement au développeur, rien à suivre).
+     */
+    private function reversementFieldsFor(AbonnementPaiement $paiement): array
+    {
+        $ecole = Ecole::withoutGlobalScopes()->find($paiement->ecole_id);
+        if (!$ecole || !$ecole->id_revendeur) {
+            return [];
+        }
+
+        return [
+            'montant_du_developpeur' => (float) ($paiement->offre->montant ?? 0),
+            'reverse_statut' => 'en_attente',
+        ];
     }
 
     public function rejectManualPayment(AbonnementPaiement $paiement, int $reviewerId, ?string $reviewNote = null): AbonnementPaiement
@@ -202,11 +278,11 @@ class AbonnementPaymentService
                 'statut' => 'actif',
             ]);
 
-            $paiement->update([
+            $paiement->update(array_merge([
                 'statut' => 'paye',
                 'paye_at' => now(),
                 'payload' => array_merge($paiement->payload ?? [], ['confirmation' => $payload]),
-            ]);
+            ], $this->reversementFieldsFor($paiement)));
 
             $abonnement->update([
                 'offre_id' => $paiement->offre_id,

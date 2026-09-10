@@ -72,6 +72,17 @@
             <hr class="my-2 opacity-25">
         @endif
 
+        {{-- Revendeurs --}}
+        @if($connectedUser->droit === 'SupAdmin')
+            <p class="text-uppercase fw-bold px-2 mb-1" class="config-menu-section-label">Partenaires</p>
+            <ul class="nav flex-column mb-1">
+                <li class="nav-item">
+                    @include('configuration._menu_link', ['route' => 'configuration.revendeurs', 'icon' => 'bi-briefcase-fill', 'label' => 'Revendeurs'])
+                </li>
+            </ul>
+            <hr class="my-2 opacity-25">
+        @endif
+
         {{-- Paramètres pédagogiques --}}
         @if($showAnnees || $showNotes || $showClasses || $showStatus)
             <p class="text-uppercase fw-bold px-2 mb-1" class="config-menu-section-label">Paramètres</p>

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AppNotification;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -13,13 +15,22 @@ class AnnouncementController extends Controller
     public function index()
     {
         $this->authorizeAnnouncementAccess('annonces_apercu');
-        $schoolId = session('idEcole') ?: Auth::user()->idEcole;
+        $user = Auth::user();
+        $schoolId = session('idEcole') ?: $user->idEcole;
+        $isSupAdmin = $user->droit === 'SupAdmin';
 
         $annonces = collect();
-        if ($schoolId && Schema::hasTable('annonces_admin_gestionnaire')) {
+        if (($schoolId || $isSupAdmin) && Schema::hasTable('annonces_admin_gestionnaire')) {
             $annonces = DB::table('annonces_admin_gestionnaire as annonces')
                 ->leftJoin('utilisateurs as users', 'users.idUtilisateur', '=', 'annonces.id_utilisateur')
-                ->where('annonces.id_ecole', $schoolId)
+                ->where(function ($query) use ($schoolId, $isSupAdmin) {
+                    $query->where('annonces.id_ecole', $schoolId);
+                    // Le SupAdmin voit aussi ses propres annonces globales (id_ecole = null),
+                    // sinon il ne pourrait jamais les republier/archiver/supprimer.
+                    if ($isSupAdmin) {
+                        $query->orWhereNull('annonces.id_ecole');
+                    }
+                })
                 ->select('annonces.*', 'users.nomPrenom as auteur')
                 ->orderByDesc('annonces.date_publication')
                 ->orderByDesc('annonces.id_annonce')
@@ -35,16 +46,19 @@ class AnnouncementController extends Controller
     public function store(Request $request)
     {
         $this->authorizeAnnouncementAccess('annonces_creation');
-        $schoolId = session('idEcole') ?: Auth::user()->idEcole;
+        $user = Auth::user();
+        $schoolId = session('idEcole') ?: $user->idEcole;
+        // Seul le SupAdmin peut diffuser une annonce à toutes les écoles à la fois.
+        $isGlobal = $user->droit === 'SupAdmin' && $request->boolean('global');
 
-        if (!$schoolId || !Schema::hasTable('annonces_admin_gestionnaire')) {
+        if (!Schema::hasTable('annonces_admin_gestionnaire') || (!$isGlobal && !$schoolId)) {
             return back()->with('error', 'Le module des annonces n’est pas encore disponible.');
         }
 
         $data = $request->validate([
             'titre' => 'required|string|max:255',
             'contenu' => 'required|string',
-            'public_cible' => 'required|string|in:tous,parents,enseignants,gestionnaires',
+            'public_cible' => 'required|string|in:tous,parents,enseignants,gestionnaires,admins',
             'statut_annonce' => 'required|string|in:publie,brouillon,archive',
             'fichiers' => 'nullable|array',
             'fichiers.*' => 'nullable|file|max:5120|mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx',
@@ -52,12 +66,21 @@ class AnnouncementController extends Controller
             'titres_fichiers.*' => 'nullable|string|max:255',
         ]);
 
-        DB::transaction(function () use ($request, $data, $schoolId) {
+        if ($isGlobal) {
+            // Une diffusion globale cible toujours et uniquement les Admin — peu importe
+            // ce qui a été soumis.
+            $data['public_cible'] = 'admins';
+        } elseif ($data['public_cible'] === 'admins') {
+            // 'admins' n'a de sens que pour une diffusion globale.
+            abort(422, 'Cible invalide pour une annonce d’école.');
+        }
+
+        DB::transaction(function () use ($request, $data, $schoolId, $isGlobal) {
             $storedFiles = $this->storeAttachments($request);
             $firstFile = $storedFiles[0] ?? [];
 
             $announcementId = DB::table('annonces_admin_gestionnaire')->insertGetId(array_merge([
-                'id_ecole' => $schoolId,
+                'id_ecole' => $isGlobal ? null : $schoolId,
                 'titre' => $data['titre'],
                 'contenu' => $data['contenu'],
                 'public_cible' => $data['public_cible'],
@@ -71,9 +94,13 @@ class AnnouncementController extends Controller
             ])));
 
             $this->insertAttachmentRows($announcementId, $storedFiles);
+
+            if ($isGlobal && $data['statut_annonce'] === 'publie') {
+                $this->notifyAllAdmins($announcementId, $data['titre']);
+            }
         });
 
-        return back()->with('success', 'Annonce enregistrée avec succès.');
+        return back()->with('success', $isGlobal ? 'Annonce diffusée à tous les Admin.' : 'Annonce enregistrée avec succès.');
     }
 
     /**
@@ -213,11 +240,43 @@ class AnnouncementController extends Controller
 
     protected function ownedAnnouncementQuery(int $id)
     {
-        $schoolId = session('idEcole') ?: Auth::user()->idEcole;
+        $user = Auth::user();
+        $schoolId = session('idEcole') ?: $user->idEcole;
+        $isSupAdmin = $user->droit === 'SupAdmin';
 
         return DB::table('annonces_admin_gestionnaire')
             ->where('id_annonce', $id)
-            ->where('id_ecole', $schoolId);
+            ->where(function ($query) use ($schoolId, $isSupAdmin) {
+                $query->where('id_ecole', $schoolId);
+                // Sinon le SupAdmin ne pourrait jamais republier/archiver/supprimer
+                // une annonce globale (id_ecole = null) qu'il a lui-même créée.
+                if ($isSupAdmin) {
+                    $query->orWhereNull('id_ecole');
+                }
+            });
+    }
+
+    /**
+     * Envoie une notification (cloche) à tous les comptes Admin de la plateforme
+     * quand une annonce globale est publiée — le système d'annonces n'a sinon
+     * aucune notification active, seulement une pop-up passive à la connexion.
+     */
+    protected function notifyAllAdmins(int $announcementId, string $titre): void
+    {
+        if (!Schema::hasTable('app_notifications')) {
+            return;
+        }
+
+        User::where('droit', 'Admin')->pluck('idUtilisateur')->each(function ($id) use ($announcementId, $titre) {
+            AppNotification::create([
+                'user_id' => $id,
+                'type' => 'annonce_globale',
+                'title' => 'Nouvelle annonce de la plateforme',
+                'message' => $titre,
+                'link' => route('annonces.index', [], false),
+                'data' => ['id_annonce' => $announcementId],
+            ]);
+        });
     }
 
     protected function storeAttachments(Request $request): array
@@ -327,8 +386,19 @@ class AnnouncementController extends Controller
         }
 
         return DB::table('annonces_admin_gestionnaire as annonces')
-            ->where('annonces.id_ecole', $schoolId)
-            ->whereIn('annonces.public_cible', $targets)
+            ->where(function ($query) use ($schoolId, $targets, $user) {
+                $query->where(function ($local) use ($schoolId, $targets) {
+                    $local->where('annonces.id_ecole', $schoolId)
+                        ->whereIn('annonces.public_cible', $targets);
+                });
+                // Diffusion globale du SupAdmin (id_ecole = null) : réservée aux Admin.
+                if ($user->droit === 'Admin') {
+                    $query->orWhere(function ($global) {
+                        $global->whereNull('annonces.id_ecole')
+                            ->where('annonces.public_cible', 'admins');
+                    });
+                }
+            })
             ->when(Schema::hasColumn('annonces_admin_gestionnaire', 'statut_annonce'), fn ($query) => $query->where('annonces.statut_annonce', 'publie'))
             ->orderByDesc('annonces.date_publication')
             ->orderByDesc('annonces.id_annonce');

@@ -101,6 +101,19 @@
     </div>
 </div>
 
+@if($reversementsDusCount > 0)
+<div class="alert alert-warning border-0 shadow-sm d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
+    <div class="d-flex align-items-center gap-3">
+        <i class="bi bi-cash-stack fs-3"></i>
+        <div>
+            <div class="fw-bold">{{ number_format($reversementsDus, 0, ',', ' ') }} XOF à recevoir des revendeurs</div>
+            <div class="small">{{ $reversementsDusCount }} paiement(s) validé(s) par un revendeur, prix de gros pas encore reversé.</div>
+        </div>
+    </div>
+    <a href="{{ route('configuration.revendeurs') }}" class="btn btn-sm btn-dark">Voir le détail</a>
+</div>
+@endif
+
 <div class="row g-4">
     <!-- Ecoles -->
     <div class="col-lg-8">
@@ -256,7 +269,12 @@
                         <tbody>
                             @foreach($pendingValidations->take(5) as $pending)
                             <tr>
-                                <td class="fw-bold">{{ $pending->ecole?->nomEcole ?? 'Inconnue' }}</td>
+                                <td class="fw-bold">
+                                    {{ $pending->ecole?->nomEcole ?? 'Inconnue' }}
+                                    @if($pending->ecole?->revendeur)
+                                        <br><span class="badge bg-info text-dark fw-normal mt-1"><i class="bi bi-briefcase-fill me-1"></i>Revendeur : {{ $pending->ecole->revendeur->nom }}</span>
+                                    @endif
+                                </td>
                                 <td>
                                     {{ $pending->offre?->nom }}<br>
                                     <small class="text-muted">{{ $pending->reference }}</small>
