@@ -77,6 +77,21 @@ class User extends Authenticatable
     }
 
     /**
+     * Relative public path to the user's photo, falling back to the default
+     * avatar when none was uploaded or the stored file is missing on disk.
+     */
+    public function getPhotoPathAttribute(): string
+    {
+        $default = 'assets/images/avatars/avatar-1.png';
+
+        if ($this->image && file_exists(public_path($this->image))) {
+            return $this->image;
+        }
+
+        return $default;
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>

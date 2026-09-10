@@ -178,7 +178,7 @@
                 <li class="nav-item dropdown dropdown-user-setting">
                     <a class="nav-link dropdown-toggle dropdown-toggle-nocaret" href="#" data-bs-toggle="dropdown">
                         <div class="user-setting d-flex align-items-center gap-3">
-                            <img src="{{ asset('assets/images/avatars/avatar-1.png') }}" class="user-img" alt="">
+                            <img src="{{ asset($user->photo_path) }}" class="user-img" alt="">
                             <div class="d-none d-sm-block">
                                 <p class="user-name mb-0">{{ $user->nomPrenom }}</p>
                                 <small class="mb-0 dropdown-user-designation text-secondary">{{ $user->fonction }}</small>
@@ -189,7 +189,7 @@
                         <li>
                             <a class="dropdown-item" href="#">
                                 <div class="d-flex align-items-center">
-                                    <img src="{{ asset('assets/images/avatars/avatar-1.png') }}" alt="" class="rounded-circle" width="54" height="54">
+                                    <img src="{{ asset($user->photo_path) }}" alt="" class="rounded-circle" width="54" height="54">
                                     <div class="ms-3">
                                         <h6 class="mb-0 dropdown-user-name">{{ $user->nomPrenom }}</h6>
                                         <small class="mb-0 dropdown-user-designation text-secondary">{{ $user->email }}</small>

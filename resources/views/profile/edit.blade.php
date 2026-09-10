@@ -40,9 +40,14 @@
 
             <div class="tab-content pt-4" id="profileTabsContent">
                 <div class="tab-pane fade show active" id="info-pane" role="tabpanel" aria-labelledby="info-tab">
-                    <form action="{{ route('profile.update') }}" method="POST" class="col-12 col-lg-6">
+                    <form action="{{ route('profile.update') }}" method="POST" enctype="multipart/form-data" class="col-12 col-lg-6">
                         @csrf
                         @method('PUT')
+                        <div class="mb-4 text-center">
+                            <input type="file" name="image" class="form-control d-none" id="photoInput" accept="image/*">
+                            <img id="photoPreview" src="{{ asset($user->photo_path) }}" alt="Photo de profil" class="rounded-circle" style="width:96px; height:96px; object-fit:cover; cursor:pointer; border:2px solid var(--theme-accent);" onclick="document.getElementById('photoInput').click();">
+                            <div class="small text-secondary mt-2">Cliquez sur la photo pour la changer</div>
+                        </div>
                         <div class="mb-3">
                             <label for="nomPrenom" class="form-label fw-semibold">Nom et prénom</label>
                             <input type="text" class="form-control" id="nomPrenom" name="nomPrenom" value="{{ old('nomPrenom', $user->nomPrenom) }}" required>
@@ -85,4 +90,22 @@
             </div>
         </div>
     </div>
+
+    @push('scripts')
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const photoInput = document.getElementById('photoInput');
+                const photoPreview = document.getElementById('photoPreview');
+
+                photoInput.addEventListener('change', function (event) {
+                    const file = event.target.files[0];
+                    if (file && file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = e => photoPreview.src = e.target.result;
+                        reader.readAsDataURL(file);
+                    }
+                });
+            });
+        </script>
+    @endpush
 @endsection

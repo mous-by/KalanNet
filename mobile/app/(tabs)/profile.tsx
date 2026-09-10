@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Button, SegmentedButtons, Text, TextInput } from 'react-native-paper';
+import * as ImagePicker from 'expo-image-picker';
 
 import requiredLabel from '@/components/RequiredLabel';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
@@ -13,16 +14,35 @@ function InfoForm() {
   const [nomPrenom, setNomPrenom] = useState(user?.nom_prenom ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
   const [telephone, setTelephone] = useState(user?.telephone ?? '');
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [successVisible, setSuccessVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function pickPhoto() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) return;
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8, aspect: [1, 1] });
+    if (!result.canceled && result.assets[0]) {
+      setPhotoUri(result.assets[0].uri);
+    }
+  }
 
   async function handleSubmit() {
     setError(null);
     setIsSubmitting(true);
     try {
-      await api.put('/auth/profile', { nomPrenom, email, telephone: telephone || undefined });
+      const form = new FormData();
+      form.append('_method', 'PUT');
+      form.append('nomPrenom', nomPrenom);
+      form.append('email', email);
+      if (telephone) form.append('telephone', telephone);
+      if (photoUri) {
+        form.append('image', { uri: photoUri, name: 'photo.jpg', type: 'image/jpeg' } as unknown as Blob);
+      }
+      await api.post('/auth/profile', form, { headers: { 'Content-Type': 'multipart/form-data' } });
       await refreshUser();
+      setPhotoUri(null);
       setSuccessVisible(true);
     } catch (err) {
       setError(apiErrorMessage(err, 'Impossible de mettre à jour vos informations.'));
@@ -33,6 +53,12 @@ function InfoForm() {
 
   return (
     <View style={styles.form}>
+      <View style={styles.photoRow}>
+        <Pressable onPress={pickPhoto}>
+          <Image source={{ uri: photoUri ?? user?.photo_url }} style={styles.photo} />
+        </Pressable>
+        <Text style={styles.photoHint}>Touchez pour changer la photo</Text>
+      </View>
       <TextInput mode="outlined" label={requiredLabel('Nom et prénom')} value={nomPrenom} onChangeText={setNomPrenom} style={styles.input} />
       <TextInput mode="outlined" label={requiredLabel('Email')} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" style={styles.input} />
       <TextInput mode="outlined" label="Téléphone (optionnel)" value={telephone ?? ''} onChangeText={setTelephone} keyboardType="phone-pad" style={styles.input} />
@@ -104,6 +130,7 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      {user?.photo_url ? <Image source={{ uri: user.photo_url }} style={styles.headerPhoto} /> : null}
       <Text style={styles.name}>{user?.nom_prenom}</Text>
       <Text style={styles.role}>{user?.droit}</Text>
 
@@ -131,16 +158,25 @@ const styles = StyleSheet.create({
     padding: 24,
     paddingBottom: 48,
   },
+  headerPhoto: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignSelf: 'center',
+    marginBottom: 12,
+  },
   name: {
     fontSize: 22,
     fontWeight: 'bold',
     color: SURFACE.text,
+    textAlign: 'center',
   },
   role: {
     fontSize: 14,
     color: SURFACE.muted,
     marginTop: 4,
     marginBottom: 20,
+    textAlign: 'center',
   },
   segmented: {
     marginBottom: 20,
@@ -150,6 +186,20 @@ const styles = StyleSheet.create({
   },
   input: {
     marginBottom: 14,
+  },
+  photoRow: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  photo: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+  },
+  photoHint: {
+    fontSize: 12,
+    opacity: 0.6,
+    marginTop: 6,
   },
   submitButton: {
     marginTop: 4,

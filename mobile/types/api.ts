@@ -16,6 +16,7 @@ export interface User {
   genre: string | null;
   droit: Droit;
   statut: number;
+  photo_url: string;
   theme_preference: string | null;
   locale_preference: string | null;
   permissions: string[];

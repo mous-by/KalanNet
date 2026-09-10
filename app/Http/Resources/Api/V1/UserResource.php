@@ -18,6 +18,7 @@ class UserResource extends JsonResource
             'genre' => $this->genre,
             'droit' => $this->droit,
             'statut' => $this->statut,
+            'photo_url' => rtrim($request->root(), '/') . '/' . $this->photo_path,
             'permissions' => $this->droit === 'SupAdmin' ? [] : $this->permissionCanonicalNames(),
             'theme_preference' => $this->theme_preference,
             'locale_preference' => $this->locale_preference,

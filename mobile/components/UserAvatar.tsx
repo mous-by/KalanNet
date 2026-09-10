@@ -1,17 +1,15 @@
 import { useState } from 'react';
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { Menu } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { useAuth } from '@/context/AuthContext';
 
-// No photo comes back from the API for a user account, so this shows a
-// plain person icon in a circle instead of a fabricated placeholder photo.
-// Tapping it opens a dropdown (Profil / Déconnexion) matching the web
-// navbar's user menu, instead of navigating straight to the profile screen.
+// Tapping the avatar opens a dropdown (Profil / Déconnexion) matching the
+// web navbar's user menu, instead of navigating straight to the profile screen.
 export default function UserAvatar() {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const [visible, setVisible] = useState(false);
 
   return (
@@ -20,9 +18,13 @@ export default function UserAvatar() {
       onDismiss={() => setVisible(false)}
       anchor={
         <Pressable style={styles.wrapper} onPress={() => setVisible(true)}>
-          <View style={styles.circle}>
-            <MaterialCommunityIcons name="account" size={20} color="#ffffff" />
-          </View>
+          {user?.photo_url ? (
+            <Image source={{ uri: user.photo_url }} style={styles.circle} />
+          ) : (
+            <View style={styles.circle}>
+              <MaterialCommunityIcons name="account" size={20} color="#ffffff" />
+            </View>
+          )}
           <View style={styles.onlineDot} />
         </Pressable>
       }>
