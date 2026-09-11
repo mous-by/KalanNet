@@ -37,6 +37,10 @@ Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 Route::post('/login/select-school', [AuthController::class, 'selectSchool'])->name('login.select-school');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+// Page publique requise par Play Console / App Store — jamais derriere l'auth
+// ni bloquee par le mode maintenance (voir CheckMaintenanceMode).
+Route::view('/politique-confidentialite', 'legal.confidentialite')->name('legal.confidentialite');
+
 // Public payment-provider callback (server-to-server) — no auth, CSRF-exempt
 // via bootstrap/app.php ('abonnements/webhook/*'). Signature is verified
 // inside AbonnementController::webhook()/AbonnementPaymentService for Wave.

@@ -30,7 +30,7 @@ class CheckMaintenanceMode
 
         // La connexion doit rester joignable : un SupAdmin qui n'est pas
         // encore authentifié doit pouvoir se connecter pour désactiver le mode.
-        if ($request->routeIs('login', 'login.post', 'login.select-school', 'logout')) {
+        if ($request->routeIs('login', 'login.post', 'login.select-school', 'logout', 'legal.confidentialite')) {
             return $next($request);
         }
 
