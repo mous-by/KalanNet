@@ -94,9 +94,10 @@ class BulletinController extends WebBulletinController
             'nom' => $eleve->nom_eleve,
             'prenom' => $eleve->prenom_eleve,
             'matricule' => $eleve->matricule,
-            // API-relative path (not the web route) so a mobile client can call it
-            // directly with its Bearer token.
-            'url' => '/api/v1/bulletins/' . $eleve->id_eleve . '/telecharger?' . http_build_query($params),
+            // Chemin relatif a API_URL (deja "/api/v1") cote mobile — voir
+            // mobile/lib/api.ts et downloadFile.ts, meme convention que les
+            // PDF d'evaluations.
+            'url' => '/bulletins/' . $eleve->id_eleve . '/telecharger?' . http_build_query($params),
         ]);
 
         return response()->json($students);

@@ -54,8 +54,8 @@ export default function BulletinsClasseScreen() {
     setDownloadingId(student.id);
     try {
       await downloadAndShare(student.url, `Bulletin_${student.nom}_${student.prenom}.pdf`);
-    } catch {
-      setActionMessage('Le téléchargement a échoué.');
+    } catch (err) {
+      setActionMessage(apiErrorMessage(err, 'Le téléchargement a échoué.'));
     } finally {
       setDownloadingId(null);
     }
