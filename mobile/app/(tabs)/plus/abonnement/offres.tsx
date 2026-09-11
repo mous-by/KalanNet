@@ -3,9 +3,16 @@ import { FlatList, StyleSheet, View } from 'react-native';
 import { Button, Dialog, FAB, Portal, Switch, Text, TextInput } from 'react-native-paper';
 
 import requiredLabel from '@/components/RequiredLabel';
+import SelectField from '@/components/SelectField';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
+
+const TYPE_ECOLE_OPTIONS = [
+  { value: '', label: 'Toutes' },
+  { value: 'public', label: 'Publique' },
+  { value: 'prive', label: 'Privée' },
+];
 
 interface Offre {
   id: number;
@@ -15,6 +22,7 @@ interface Offre {
   montant: number;
   devise: string;
   duree_jours: number;
+  type_ecole_cible: 'public' | 'prive' | null;
   actif: boolean;
 }
 
@@ -28,6 +36,7 @@ export default function OffresAbonnementScreen() {
   const [montant, setMontant] = useState('');
   const [devise, setDevise] = useState('XOF');
   const [dureeJours, setDureeJours] = useState('30');
+  const [typeEcoleCible, setTypeEcoleCible] = useState<string | null>('');
   const [actif, setActif] = useState(true);
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,6 +50,7 @@ export default function OffresAbonnementScreen() {
     setMontant(item ? String(item.montant) : '');
     setDevise(item?.devise ?? 'XOF');
     setDureeJours(item ? String(item.duree_jours) : '30');
+    setTypeEcoleCible(item?.type_ecole_cible ?? '');
     setActif(item?.actif ?? true);
     setFormError(null);
     setDialogVisible(true);
@@ -61,6 +71,7 @@ export default function OffresAbonnementScreen() {
         montant: Number(montant),
         devise: devise.trim(),
         duree_jours: Number(dureeJours),
+        type_ecole_cible: typeEcoleCible || null,
         actif,
       };
       if (editing) {
@@ -105,7 +116,8 @@ export default function OffresAbonnementScreen() {
               </Text>
               <Text style={styles.meta}>
                 {item.code} · {Number(item.montant).toLocaleString('fr-FR')} {item.devise} ·{' '}
-                {item.duree_jours > 0 ? `${item.duree_jours} jours` : 'à vie'}
+                {item.duree_jours > 0 ? `${item.duree_jours} jours` : 'à vie'} ·{' '}
+                {item.type_ecole_cible === 'public' ? 'Publique' : item.type_ecole_cible === 'prive' ? 'Privée' : 'Toutes écoles'}
               </Text>
             </View>
             <View style={styles.actions}>
@@ -139,6 +151,7 @@ export default function OffresAbonnementScreen() {
                 onChangeText={setDureeJours}
                 style={styles.input}
               />
+              <SelectField label="École cible" value={typeEcoleCible} options={TYPE_ECOLE_OPTIONS} onChange={(v) => setTypeEcoleCible(v as string)} />
               <View style={styles.switchRow}>
                 <Text>Active</Text>
                 <Switch value={actif} onValueChange={setActif} />

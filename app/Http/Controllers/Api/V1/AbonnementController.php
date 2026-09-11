@@ -6,6 +6,7 @@ use App\Http\Controllers\AbonnementController as WebAbonnementController;
 use App\Models\Abonnement;
 use App\Models\AbonnementOffre;
 use App\Models\AbonnementPaiement;
+use App\Models\Ecole;
 use App\Services\Abonnements\AbonnementPaymentService;
 use Illuminate\Http\Request;
 use RuntimeException;
@@ -35,6 +36,8 @@ class AbonnementController extends WebAbonnementController
 
         $offre = AbonnementOffre::where('actif', true)->findOrFail($data['offre_id']);
         abort_if($offre->duree_jours <= 0, 422, "Cette offre n'est pas disponible à la souscription en ligne.");
+        $ecole = $schoolId ? Ecole::withoutGlobalScopes()->find($schoolId) : null;
+        abort_unless($this->offreMatchesEcole($offre, $ecole), 422, "Cette offre n'est pas disponible pour votre école.");
         $paiement = $payments->initiate($schoolId, $offre, $data['fournisseur'], $data['numero_payeur'] ?? null);
 
         return response()->json([
@@ -43,7 +46,7 @@ class AbonnementController extends WebAbonnementController
         ], 201);
     }
 
-    public function index()
+    public function index(AbonnementPaymentService $payments)
     {
         $request = request();
         $user = $request->user();
@@ -53,8 +56,16 @@ class AbonnementController extends WebAbonnementController
             abort(403);
         }
 
+        $ecole = $schoolId ? Ecole::withoutGlobalScopes()->find($schoolId) : null;
         $allOffres = AbonnementOffre::orderBy('montant')->get();
-        $offres = $allOffres->where('actif', true)->where('duree_jours', '>', 0)->values();
+        // Meme filtre que le web : type d'ecole (public/prive) et, si l'ecole
+        // a un revendeur, uniquement les formules qu'il lui a ouvertes.
+        $offres = $allOffres->where('actif', true)->where('duree_jours', '>', 0)
+            ->filter(fn (AbonnementOffre $offre) => $this->offreMatchesEcole($offre, $ecole))
+            ->values();
+        $offres->each(function (AbonnementOffre $offre) use ($payments, $schoolId) {
+            $offre->montant_effectif = $schoolId ? $payments->resolveMontant((int) $schoolId, $offre) : (float) $offre->montant;
+        });
         $abonnement = Abonnement::with('offre')->where('ecole_id', $schoolId)->orderByDesc('id')->first();
         $paiements = AbonnementPaiement::with('offre')->where('ecole_id', $schoolId)->orderByDesc('id')->limit(12)->get();
         $canReview = $this->canReviewAbonnements($user);
@@ -77,6 +88,8 @@ class AbonnementController extends WebAbonnementController
             'can_configure' => $this->canConfigureAbonnements($user),
             'can_review' => $canReview,
             'admin_paiements' => $adminPaiements,
+            'manual_modes' => $payments->manualModesFor($ecole),
+            'manual_numbers' => $payments->manualPaymentNumbers($ecole),
         ]);
     }
 
@@ -99,6 +112,8 @@ class AbonnementController extends WebAbonnementController
 
         $offre = AbonnementOffre::where('actif', true)->findOrFail($data['offre_id']);
         abort_if($offre->duree_jours <= 0, 422, "Cette offre n'est pas disponible à la souscription en ligne.");
+        $ecole = Ecole::withoutGlobalScopes()->find($schoolId);
+        abort_unless($this->offreMatchesEcole($offre, $ecole), 422, "Cette offre n'est pas disponible pour votre école.");
         $data['preuve_url'] = $this->storeReceipt($request);
 
         try {

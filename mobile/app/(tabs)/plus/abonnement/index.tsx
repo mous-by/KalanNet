@@ -19,16 +19,11 @@ const PROVIDERS = [
   { value: 'wave', label: 'Wave' },
 ];
 
-const MANUAL_MODES = [
-  { value: 'Orange Money', label: 'Orange Money - 74745669' },
-  { value: 'Wave', label: 'Wave - 74745669' },
-  { value: 'MobiCash', label: 'MobiCash - 67205736' },
-];
-
 interface Offre {
   id: number;
   nom: string;
   montant: number;
+  montant_effectif?: number;
   devise: string;
   duree_jours: number;
 }
@@ -53,6 +48,10 @@ interface AbonnementData {
   paiements: Paiement[];
   can_review: boolean;
   admin_paiements: Paiement[];
+  // Numéros/canaux effectifs — ceux du revendeur de l'école si elle en a un,
+  // sinon ceux par défaut de la plateforme (voir AbonnementPaymentService).
+  manual_modes: Record<string, string>;
+  manual_numbers: { orange_wave: string; mobicash: string };
 }
 
 export default function AbonnementScreen() {
@@ -176,7 +175,7 @@ export default function AbonnementScreen() {
           <View style={styles.offreInfo}>
             <Text style={styles.offreName}>{offre.nom}</Text>
             <Text style={styles.meta}>
-              {Number(offre.montant).toLocaleString('fr-FR')} {offre.devise} · {offre.duree_jours} jours
+              {Number(offre.montant_effectif ?? offre.montant).toLocaleString('fr-FR')} {offre.devise} · {offre.duree_jours} jours
             </Text>
           </View>
           <View style={styles.offreActions}>
@@ -235,7 +234,15 @@ export default function AbonnementScreen() {
         <Dialog visible={manualOffre !== null} onDismiss={() => setManualOffre(null)}>
           <Dialog.Title>Paiement manuel — {manualOffre?.nom}</Dialog.Title>
           <Dialog.Content>
-            <SelectField label={requiredLabel('Mode de paiement')} value={modePaiement} options={MANUAL_MODES} onChange={(v) => setModePaiement(v as string)} />
+            <Text style={[styles.meta, styles.input]}>
+              Effectuez le dépôt puis joignez la preuve ci-dessous.
+            </Text>
+            <SelectField
+              label={requiredLabel('Mode de paiement')}
+              value={modePaiement}
+              options={Object.entries(data.manual_modes ?? {}).map(([value, label]) => ({ value, label }))}
+              onChange={(v) => setModePaiement(v as string)}
+            />
             <TextInput mode="outlined" label="Référence de transaction (optionnel)" value={transactionRef} onChangeText={setTransactionRef} style={styles.input} />
             <TextInput mode="outlined" label="Note (optionnel)" value={ownerNote} onChangeText={setOwnerNote} style={styles.input} />
             <Button mode="outlined" onPress={pickReceipt} style={styles.input}>
