@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { PaperProvider } from 'react-native-paper';
 import 'react-native-reanimated';
 
+import MaintenanceScreen from '@/components/MaintenanceScreen';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { LocaleProvider, useLocale } from '@/context/LocaleContext';
 import { OfflineProvider } from '@/context/OfflineContext';
@@ -69,13 +70,19 @@ function SplashScreenController() {
 }
 
 function RootLayoutNav() {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, maintenanceMessage } = useAuth();
   const { hasOnboarded, isLoading: onboardingLoading } = useOnboarding();
   const { theme } = useAppTheme();
   const { t } = useLocale();
 
   if (authLoading || onboardingLoading) {
     return null;
+  }
+
+  // Prend le pas sur tout le reste — n'importe quel appel API renvoyant la
+  // maintenance remplace immédiatement l'app entière par cet écran.
+  if (maintenanceMessage) {
+    return <MaintenanceScreen message={maintenanceMessage} />;
   }
 
   const paperTheme = buildPaperTheme(theme);

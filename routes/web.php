@@ -22,6 +22,7 @@ use App\Http\Controllers\ProgrammeController;
 use App\Http\Controllers\TeacherSalaryController;
 use App\Http\Controllers\AbonnementController;
 use App\Http\Controllers\RevendeurController;
+use App\Http\Controllers\MaintenanceController;
 use App\Http\Controllers\AppelEpreuveController;
 use App\Http\Controllers\ResultatNationalController;
 use App\Http\Controllers\AnnouncementController;
@@ -244,6 +245,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/configuration/revendeurs/{revendeur}/offres', [RevendeurController::class, 'storeOffre'])->name('configuration.revendeurs.offres.store');
     Route::patch('/configuration/revendeurs-offres/{revendeurOffre}/toggle', [RevendeurController::class, 'toggleOffre'])->name('configuration.revendeurs.offres.toggle');
     Route::patch('/configuration/reversements/{paiement}/recu', [RevendeurController::class, 'markReversementRecu'])->name('configuration.reversements.recu');
+
+    Route::post('/configuration/maintenance', [MaintenanceController::class, 'toggle'])->name('configuration.maintenance.toggle');
 
     // Revendeurs — espace en libre-service
     Route::get('/revendeur', [RevendeurController::class, 'dashboard'])->name('revendeur.dashboard');

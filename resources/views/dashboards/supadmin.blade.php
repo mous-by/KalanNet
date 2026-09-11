@@ -20,6 +20,62 @@
     <div class="alert alert-danger border-0 border-start border-danger border-4">{{ $errors->first() }}</div>
 @endif
 
+<div class="card theme-card shadow-sm mb-4 {{ $maintenance->actif ? 'border-danger' : '' }}">
+    <div class="card-body p-4 d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="widget-icon rounded-3 {{ $maintenance->actif ? 'bg-danger-soft text-danger' : 'theme-icon-box' }}">
+                <i class="bi bi-tools fs-4"></i>
+            </div>
+            <div>
+                <h5 class="fw-bold mb-1">Mode maintenance</h5>
+                @if($maintenance->actif)
+                    <div class="text-danger fw-bold">Activé — l'application est inaccessible aux autres utilisateurs</div>
+                    <div class="text-muted small">Depuis le {{ $maintenance->active_at?->format('d/m/Y H:i') }} par {{ $maintenance->activePar?->nomPrenom ?? '—' }}</div>
+                @else
+                    <div class="text-muted small">L'application est accessible normalement. En cas de besoin, activez ce mode pour bloquer l'accès à tout le monde sauf vous.</div>
+                @endif
+            </div>
+        </div>
+        <form method="POST" action="{{ route('configuration.maintenance.toggle') }}" class="d-flex align-items-center gap-2 flex-wrap" id="maintenance-toggle-form" @if(!$maintenance->actif) data-confirm-activation @endif>
+            @csrf
+            <textarea name="message" class="form-control form-control-sm" rows="1" style="min-width:260px" placeholder="Message affiché aux utilisateurs">{{ $maintenance->message ?: \App\Models\MaintenanceMode::DEFAULT_MESSAGE }}</textarea>
+            <button type="submit" class="btn btn-sm {{ $maintenance->actif ? 'btn-success' : 'btn-danger' }}">
+                {{ $maintenance->actif ? 'Désactiver' : 'Activer' }}
+            </button>
+        </form>
+    </div>
+</div>
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('maintenance-toggle-form');
+        if (!form || !form.hasAttribute('data-confirm-activation')) return;
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+            const title = 'Activer le mode maintenance ?';
+            const text = "L'application deviendra inaccessible à tous les autres utilisateurs immédiatement.";
+            if (!window.Swal) {
+                if (confirm(title)) form.submit();
+                return;
+            }
+            Swal.fire({
+                title,
+                text,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Oui, activer',
+                cancelButtonText: 'Annuler',
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+            }).then(result => {
+                if (result.isConfirmed) form.submit();
+            });
+        });
+    });
+</script>
+@endpush
+
 <!-- Santé de l'Application -->
 <h5 class="fw-bold mb-3 mt-4"><i class="bi bi-heart-pulse text-danger me-2"></i>Santé de l'Application</h5>
 <div class="row g-4 mb-4">

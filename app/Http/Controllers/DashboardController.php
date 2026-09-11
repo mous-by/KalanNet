@@ -283,6 +283,7 @@ class DashboardController extends Controller
         // développeur mais ne lui ont pas encore reversée.
         $reversementsDus = \App\Models\AbonnementPaiement::where('reverse_statut', 'en_attente')->sum('montant_du_developpeur');
         $reversementsDusCount = \App\Models\AbonnementPaiement::where('reverse_statut', 'en_attente')->count();
+        $maintenance = \App\Models\MaintenanceMode::current();
 
         return compact(
             'subscriptionOverview',
@@ -290,7 +291,8 @@ class DashboardController extends Controller
             'health',
             'pendingValidations',
             'reversementsDus',
-            'reversementsDusCount'
+            'reversementsDusCount',
+            'maintenance'
         );
     }
 

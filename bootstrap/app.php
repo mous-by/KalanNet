@@ -23,6 +23,11 @@ return Application::configure(basePath: dirname(__DIR__))
         );
 
         $middleware->web(append: [
+            // Doit passer avant SetLocale/EnsureSchoolSelected/EnsureActiveSubscription
+            // (aucun intérêt à les évaluer si l'app est en maintenance), mais après
+            // StartSession — sinon Auth::check() ne voit jamais l'utilisateur connecté
+            // et le SupAdmin serait lui aussi bloqué, empêchant toute désactivation.
+            \App\Http\Middleware\CheckMaintenanceMode::class,
             \App\Http\Middleware\SetLocale::class,
             \App\Http\Middleware\EnsureSchoolSelected::class,
             \App\Http\Middleware\EnsureActiveSubscription::class,
@@ -34,6 +39,14 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'permission' => \App\Http\Middleware\EnsurePermission::class,
         ]);
+        // Sans ça, la priorité par défaut de Laravel fait passer 'auth' avant
+        // CheckMaintenanceMode (peu importe l'ordre dans web()) : un visiteur
+        // non connecté sur une route protégée était redirigé vers /login au
+        // lieu de voir la page de maintenance.
+        $middleware->prependToPriorityList(
+            before: \Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class,
+            prepend: \App\Http\Middleware\CheckMaintenanceMode::class,
+        );
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

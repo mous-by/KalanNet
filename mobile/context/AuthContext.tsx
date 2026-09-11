@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { api, registerUnauthorizedHandler } from '../lib/api';
+import { api, registerMaintenanceHandler, registerUnauthorizedHandler } from '../lib/api';
 import { clearToken, getToken, setToken } from '../lib/storage';
 import { AccountChoice, LoginResponse, User, isLoginSuccess } from '../types/api';
 
@@ -7,6 +7,7 @@ interface AuthContextValue {
   user: User | null;
   isLoading: boolean;
   subscriptionBlocked: boolean;
+  maintenanceMessage: string | null;
   pendingAccounts: AccountChoice[] | null;
   login: (identifier: string, pwd: string) => Promise<void>;
   selectSchool: (idUtilisateur: number, idEcole: number) => Promise<void>;
@@ -35,6 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [subscriptionBlocked, setSubscriptionBlocked] = useState(false);
+  const [maintenanceMessage, setMaintenanceMessage] = useState<string | null>(null);
   const [pendingAccounts, setPendingAccounts] = useState<AccountChoice[] | null>(null);
 
   const logout = useCallback(async () => {
@@ -53,6 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       setSubscriptionBlocked(false);
     });
+    registerMaintenanceHandler((message) => setMaintenanceMessage(message));
   }, []);
 
   useEffect(() => {
@@ -103,8 +106,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ user, isLoading, subscriptionBlocked, pendingAccounts, login, selectSchool, logout, cancelSchoolSelection, refreshUser }),
-    [user, isLoading, subscriptionBlocked, pendingAccounts, login, selectSchool, logout, cancelSchoolSelection, refreshUser]
+    () => ({ user, isLoading, subscriptionBlocked, maintenanceMessage, pendingAccounts, login, selectSchool, logout, cancelSchoolSelection, refreshUser }),
+    [user, isLoading, subscriptionBlocked, maintenanceMessage, pendingAccounts, login, selectSchool, logout, cancelSchoolSelection, refreshUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

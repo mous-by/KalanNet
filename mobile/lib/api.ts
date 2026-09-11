@@ -27,12 +27,25 @@ export function registerUnauthorizedHandler(handler: () => void) {
   onUnauthorized = handler;
 }
 
+// Set by AuthContext so a maintenance response from ANY request (not just
+// one specific screen) immediately swaps the whole app to a full-screen
+// notice — mirrors the web's CheckMaintenanceMode middleware, which replaces
+// every page the same way regardless of which one was requested.
+let onMaintenance: ((message: string) => void) | null = null;
+
+export function registerMaintenanceHandler(handler: (message: string) => void) {
+  onMaintenance = handler;
+}
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
       await clearToken();
       onUnauthorized?.();
+    }
+    if (error.response?.status === 503 && error.response.data?.maintenance === true) {
+      onMaintenance?.(error.response.data?.message || 'KalanNet est actuellement en maintenance.');
     }
     return Promise.reject(error);
   }
