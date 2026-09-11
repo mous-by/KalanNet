@@ -3,8 +3,10 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Button, Text, TextInput } from 'react-native-paper';
 
+import OfflineBanner from '@/components/OfflineBanner';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
+import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { downloadAndShare } from '@/lib/downloadFile';
 import { hasPermission } from '@/lib/permissions';
@@ -44,7 +46,10 @@ interface EvaluationDetail {
 export default function EvaluationDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
-  const { data, isLoading, error, reload } = useApiGet<EvaluationDetail>(`/evaluations/${id}`, [id]);
+  const { isOnline, enqueueAction } = useOffline();
+  const { data, isLoading, error, reload } = useApiGet<EvaluationDetail>(`/evaluations/${id}`, [id], {
+    cacheKey: `evaluation-${id}`,
+  });
   const [notes, setNotes] = useState<Record<number, string>>({});
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -88,12 +93,25 @@ export default function EvaluationDetailScreen() {
     }
     setSaveError(null);
     setIsSaving(true);
+    const lineIds = data.details.map((l) => l.id_ligneEvaluation);
+    const payload = {
+      id_ligneEvaluation: lineIds,
+      note: lineIds.map((lineId) => (notes[lineId] ? Number(notes[lineId].replace(',', '.')) : null)),
+    };
     try {
-      const lineIds = data.details.map((l) => l.id_ligneEvaluation);
-      await api.put(`/evaluations/${id}/notes`, {
-        id_ligneEvaluation: lineIds,
-        note: lineIds.map((lineId) => (notes[lineId] ? Number(notes[lineId].replace(',', '.')) : null)),
-      });
+      if (!isOnline) {
+        await enqueueAction({
+          kind: 'evaluation',
+          label: `Notes · ${data.evaluation.libeller}`,
+          endpoint: `/evaluations/${id}/notes`,
+          method: 'put',
+          payload,
+        });
+        setSuccessMessage('Notes mises en attente, seront synchronisées au retour du réseau.');
+        setSuccessVisible(true);
+        return;
+      }
+      await api.put(`/evaluations/${id}/notes`, payload);
       setSuccessMessage('Notes enregistrées avec succès.');
       setSuccessVisible(true);
       reload();
@@ -160,6 +178,7 @@ export default function EvaluationDetailScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
+      <OfflineBanner />
       <Text style={styles.title}>{data.evaluation.libeller}</Text>
 
       <Text style={styles.sectionTitle}>Fiche de l'évaluation</Text>

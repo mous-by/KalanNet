@@ -9,6 +9,16 @@ const KIND_LABELS: Record<string, string> = {
   presence: 'Présence',
   emargement: 'Émargement',
   paiement_classe: 'Paiement de classe',
+  paiement_eleve: 'Paiement (élève)',
+  eleve: 'Élève',
+  evaluation: 'Évaluation',
+  caisse: 'Caisse',
+  salaire: 'Salaire',
+  enseignant: 'Enseignant',
+  parent: 'Parent',
+  annonce: 'Annonce',
+  classe: 'Classe',
+  appel_epreuve: "Appel d'épreuve",
 };
 
 export default function SynchronisationScreen() {

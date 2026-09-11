@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, Chip, FAB, Text } from 'react-native-paper';
+import { ActivityIndicator, Button, Chip, FAB, Text } from 'react-native-paper';
 
+import OfflineBanner from '@/components/OfflineBanner';
 import PaginatedList from '@/components/PaginatedList';
 import { useAuth } from '@/context/AuthContext';
+import { useOffline } from '@/context/OfflineContext';
+import { removeQueueItem } from '@/lib/offlineQueue';
 import { hasPermission } from '@/lib/permissions';
 import { useApiGet, usePaginatedApi } from '@/lib/useApi';
 import { Classe, Eleve } from '@/types/api';
@@ -41,9 +44,13 @@ function ParentChildrenList() {
 
 function StaffEleveList() {
   const { user } = useAuth();
-  const { data: filterOptions } = useApiGet<{ classes: Classe[] }>('/eleves/cartes-scolaires');
+  const { queue } = useOffline();
+  const { data: filterOptions } = useApiGet<{ classes: Classe[] }>('/eleves/cartes-scolaires', [], {
+    cacheKey: 'eleves-cartes-scolaires',
+  });
   const [selectedClasse, setSelectedClasse] = useState<number | null>(null);
   const canManage = hasPermission(user, 'inscriptions_inscrire');
+  const queuedEleves = queue.filter((item) => item.kind === 'eleve');
 
   const params = useMemo(
     () => (selectedClasse ? { id_classe: selectedClasse } : {}),
@@ -54,6 +61,7 @@ function StaffEleveList() {
 
   return (
     <>
+      <OfflineBanner />
       <PaginatedList
         items={list.items}
         keyExtractor={(item) => String(item.id_eleve)}
@@ -69,20 +77,41 @@ function StaffEleveList() {
         searchPlaceholder="Nom, prénom ou matricule…"
         emptyLabel="Aucun élève trouvé."
         header={
-          (filterOptions?.classes?.length ?? 0) > 0 ? (
-            <View style={styles.chipsRow}>
-              <Chip selected={selectedClasse === null} onPress={() => setSelectedClasse(null)} style={styles.chip}>
-                Toutes les classes
-              </Chip>
-              {filterOptions!.classes.map((classe) => (
-                <Chip
-                  key={classe.id_classe}
-                  selected={selectedClasse === classe.id_classe}
-                  onPress={() => setSelectedClasse(classe.id_classe)}
-                  style={styles.chip}>
-                  {classe.nom_classe}
-                </Chip>
-              ))}
+          queuedEleves.length > 0 || (filterOptions?.classes?.length ?? 0) > 0 ? (
+            <View>
+              {queuedEleves.length > 0 ? (
+                <View style={styles.queuedSection}>
+                  {queuedEleves.map((item) => (
+                    <View key={item.id} style={[styles.queuedRowBase, item.status === 'conflict' ? styles.conflictRow : styles.queuedRow]}>
+                      <Text style={styles.name}>{item.label}</Text>
+                      <Text style={item.status === 'conflict' ? styles.conflictText : styles.queuedText}>
+                        {item.status === 'conflict' ? (item.message ?? 'Conflit à vérifier') : 'En attente de synchronisation'}
+                      </Text>
+                      {item.status === 'conflict' ? (
+                        <Button compact textColor="#d33" onPress={() => removeQueueItem(item.id)}>
+                          Abandonner
+                        </Button>
+                      ) : null}
+                    </View>
+                  ))}
+                </View>
+              ) : null}
+              {(filterOptions?.classes?.length ?? 0) > 0 ? (
+                <View style={styles.chipsRow}>
+                  <Chip selected={selectedClasse === null} onPress={() => setSelectedClasse(null)} style={styles.chip}>
+                    Toutes les classes
+                  </Chip>
+                  {filterOptions!.classes.map((classe) => (
+                    <Chip
+                      key={classe.id_classe}
+                      selected={selectedClasse === classe.id_classe}
+                      onPress={() => setSelectedClasse(classe.id_classe)}
+                      style={styles.chip}>
+                      {classe.nom_classe}
+                    </Chip>
+                  ))}
+                </View>
+              ) : null}
             </View>
           ) : undefined
         }
@@ -126,6 +155,33 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
     marginBottom: 12,
+  },
+  queuedSection: {
+    marginBottom: 12,
+  },
+  queuedRowBase: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+  },
+  queuedRow: {
+    borderColor: '#b8860b',
+    backgroundColor: 'rgba(184,134,11,0.08)',
+  },
+  conflictRow: {
+    borderColor: '#d33',
+    backgroundColor: 'rgba(211,51,51,0.06)',
+  },
+  queuedText: {
+    color: '#b8860b',
+    marginTop: 6,
+    fontSize: 12,
+  },
+  conflictText: {
+    color: '#d33',
+    marginTop: 6,
+    fontSize: 12,
   },
   chip: {
     marginRight: 4,

@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { IconButton, Text, TextInput } from 'react-native-paper';
 
+import OfflineBanner from '@/components/OfflineBanner';
 import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
+import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
 import { ParentEleve } from '@/types/api';
@@ -58,10 +60,15 @@ interface Props {
 }
 
 export default function ParentForm({ parentId, onSaved }: Props) {
-  const { data: options } = useApiGet<{ eleves: EleveOption[] }>(
-    parentId ? `/parents/form-options?id=${parentId}` : '/parents/form-options'
+  const { isOnline, enqueueAction } = useOffline();
+  const { data: options, error: optionsError } = useApiGet<{ eleves: EleveOption[] }>(
+    parentId ? `/parents/form-options?id=${parentId}` : '/parents/form-options',
+    [],
+    { cacheKey: parentId ? `parents-form-options-${parentId}` : 'parents-form-options' }
   );
-  const { data: detail } = useApiGet<{ parent: ParentDetail; eleves: LinkedEleve[] }>(parentId ? `/parents/${parentId}` : null, [parentId]);
+  const { data: detail } = useApiGet<{ parent: ParentDetail; eleves: LinkedEleve[] }>(parentId ? `/parents/${parentId}` : null, [parentId], {
+    cacheKey: parentId ? `parent-${parentId}` : undefined,
+  });
 
   const [nomPrenom, setNomPrenom] = useState('');
   const [telephone, setTelephone] = useState('');
@@ -71,6 +78,7 @@ export default function ParentForm({ parentId, onSaved }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
+  const [successMessage, setSuccessMessage] = useState(parentId ? 'Parent modifié avec succès.' : 'Parent créé avec succès.');
 
   useEffect(() => {
     if (!detail) return;
@@ -105,22 +113,35 @@ export default function ParentForm({ parentId, onSaved }: Props) {
       return;
     }
     setIsSubmitting(true);
+    const payload = {
+      nom_prenom_parent: nomPrenom.trim(),
+      telephone_parent: telephone.trim(),
+      email_parent: email.trim() || null,
+      genre,
+      id_eleve: validLignes.map((l) => l.id_eleve),
+      lien_parent: validLignes.map((l) => l.lien_parent),
+      informer: validLignes.map((l) => l.informer),
+    };
     try {
-      const payload = {
-        nom_prenom_parent: nomPrenom.trim(),
-        telephone_parent: telephone.trim(),
-        email_parent: email.trim() || null,
-        genre,
-        id_eleve: validLignes.map((l) => l.id_eleve),
-        lien_parent: validLignes.map((l) => l.lien_parent),
-        informer: validLignes.map((l) => l.informer),
-      };
-
+      if (!isOnline) {
+        await enqueueAction({
+          kind: 'parent',
+          label: nomPrenom.trim(),
+          endpoint: parentId ? `/parents/${parentId}` : '/parents',
+          method: parentId ? 'put' : 'post',
+          payload,
+        });
+        setSuccessMessage('Parent mis en attente, sera synchronisé au retour du réseau.');
+        setSuccessVisible(true);
+        setTimeout(onSaved, 900);
+        return;
+      }
       if (parentId) {
         await api.put(`/parents/${parentId}`, payload);
       } else {
         await api.post('/parents', payload);
       }
+      setSuccessMessage(parentId ? 'Parent modifié avec succès.' : 'Parent créé avec succès.');
       setSuccessVisible(true);
       setTimeout(onSaved, 900);
     } catch (err) {
@@ -137,6 +158,8 @@ export default function ParentForm({ parentId, onSaved }: Props) {
 
   return (
     <View>
+      <OfflineBanner />
+      {optionsError ? <Text style={styles.error}>{optionsError}</Text> : null}
       <TextInput mode="outlined" label={requiredLabel('Nom et prénom')} value={nomPrenom} onChangeText={setNomPrenom} style={styles.input} />
       <TextInput mode="outlined" label={requiredLabel('Téléphone')} value={telephone} onChangeText={setTelephone} keyboardType="phone-pad" style={styles.input} />
       <TextInput mode="outlined" label="Email (optionnel)" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" style={styles.input} />
@@ -164,11 +187,7 @@ export default function ParentForm({ parentId, onSaved }: Props) {
 
       <SubmitButton label={parentId ? 'Enregistrer' : 'Créer le parent'} onPress={handleSubmit} loading={isSubmitting} />
 
-      <SuccessSnackbar
-        visible={successVisible}
-        message={parentId ? 'Parent modifié avec succès.' : 'Parent créé avec succès.'}
-        onDismiss={() => setSuccessVisible(false)}
-      />
+      <SuccessSnackbar visible={successVisible} message={successMessage} onDismiss={() => setSuccessVisible(false)} />
     </View>
   );
 }

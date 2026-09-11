@@ -4,11 +4,14 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Switch, Text, TextInput } from 'react-native-paper';
 
 import DateField from '@/components/DateField';
+import OfflineBanner from '@/components/OfflineBanner';
 import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
+import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
+import { getCached, setCached } from '@/lib/offlineCache';
 import { useApiGet } from '@/lib/useApi';
 import { AnneeScolaire, Classe, Eleve, Matiere, Trimestre } from '@/types/api';
 
@@ -26,7 +29,10 @@ interface FormData {
 }
 
 export default function NewAppelEpreuveScreen() {
-  const { data: context } = useApiGet<FormData>('/appels-epreuves/create');
+  const { isOnline, enqueueAction } = useOffline();
+  const { data: context, error: contextError } = useApiGet<FormData>('/appels-epreuves/create', [], {
+    cacheKey: 'appels-epreuves-context',
+  });
 
   const [idClasse, setIdClasse] = useState<number | null>(null);
   const [idMatiere, setIdMatiere] = useState<number | null>(null);
@@ -42,16 +48,24 @@ export default function NewAppelEpreuveScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("Appel d'épreuve enregistré avec succès.");
 
   useEffect(() => {
     if (!idClasse || !idAnnee) {
       setEleves([]);
       return;
     }
+    const cacheKey = `appels-epreuves-eleves-${idClasse}-${idAnnee}`;
     api
       .get<{ eleves: Eleve[] }>('/appels-epreuves/create', { params: { id_classe: idClasse, id_annee_scolaire: idAnnee } })
-      .then(({ data }) => setEleves(data.eleves))
-      .catch(() => setEleves([]));
+      .then(({ data }) => {
+        setEleves(data.eleves);
+        setCached(cacheKey, data.eleves);
+      })
+      .catch(async () => {
+        const cached = await getCached<Eleve[]>(cacheKey);
+        setEleves(cached ?? []);
+      });
   }, [idClasse, idAnnee]);
 
   const isValid =
@@ -64,19 +78,35 @@ export default function NewAppelEpreuveScreen() {
     }
     setError(null);
     setIsSubmitting(true);
+    const payload = {
+      id_classe: idClasse,
+      id_matiere: idMatiere,
+      id_annee_scolaire: idAnnee,
+      id_trimestre: idTrimestre,
+      date,
+      libelle: libelle.trim(),
+      heure_debut: heureDebut,
+      heure_fin: heureFin,
+      notifier_parent: notifierParent,
+      statuts,
+    };
     try {
-      await api.post('/appels-epreuves', {
-        id_classe: idClasse,
-        id_matiere: idMatiere,
-        id_annee_scolaire: idAnnee,
-        id_trimestre: idTrimestre,
-        date,
-        libelle: libelle.trim(),
-        heure_debut: heureDebut,
-        heure_fin: heureFin,
-        notifier_parent: notifierParent,
-        statuts,
-      });
+      if (!isOnline) {
+        const classeLabel = context?.classes.find((c) => c.id_classe === idClasse)?.nom_classe ?? '';
+        await enqueueAction({
+          kind: 'appel_epreuve',
+          label: `${libelle.trim()} · ${classeLabel}`,
+          endpoint: '/appels-epreuves',
+          method: 'post',
+          payload,
+        });
+        setSuccessMessage('Appel mis en attente, sera synchronisé au retour du réseau.');
+        setSuccessVisible(true);
+        setTimeout(() => router.back(), 900);
+        return;
+      }
+      await api.post('/appels-epreuves', payload);
+      setSuccessMessage("Appel d'épreuve enregistré avec succès.");
       setSuccessVisible(true);
       setTimeout(() => router.back(), 900);
     } catch (err) {
@@ -86,7 +116,13 @@ export default function NewAppelEpreuveScreen() {
     }
   }
 
-  if (!context) return <ActivityIndicator style={styles.spinner} size="large" />;
+  if (!context) {
+    return contextError ? (
+      <Text style={styles.error}>{contextError}</Text>
+    ) : (
+      <ActivityIndicator style={styles.spinner} size="large" />
+    );
+  }
 
   const classeOptions = context.classes.map((c) => ({ value: c.id_classe, label: c.nom_classe }));
   const matiereOptions = context.matieres.map((m) => ({ value: m.id_matiere, label: m.nom_matiere }));
@@ -96,6 +132,7 @@ export default function NewAppelEpreuveScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
+      <OfflineBanner />
       <SelectField label={requiredLabel('Classe')} value={idClasse} options={classeOptions} onChange={(v) => setIdClasse(v as number)} />
       <SelectField label={requiredLabel('Matière')} value={idMatiere} options={matiereOptions} onChange={(v) => setIdMatiere(v as number)} />
       <SelectField label={requiredLabel('Année scolaire')} value={idAnnee} options={anneeOptions} onChange={(v) => setIdAnnee(v as number)} />
@@ -135,7 +172,7 @@ export default function NewAppelEpreuveScreen() {
 
       <SubmitButton label="Enregistrer" onPress={handleSubmit} loading={isSubmitting} />
 
-      <SuccessSnackbar visible={successVisible} message="Appel d'épreuve enregistré avec succès." onDismiss={() => setSuccessVisible(false)} />
+      <SuccessSnackbar visible={successVisible} message={successMessage} onDismiss={() => setSuccessVisible(false)} />
     </ScrollView>
   );
 }

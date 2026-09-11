@@ -4,10 +4,12 @@ import { ScrollView, StyleSheet } from 'react-native';
 import { ActivityIndicator, Text, TextInput } from 'react-native-paper';
 
 import DateField from '@/components/DateField';
+import OfflineBanner from '@/components/OfflineBanner';
 import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
+import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
 import { AnneeScolaire, Classe, Eleve } from '@/types/api';
@@ -39,13 +41,19 @@ const MODE_PAIEMENT_OPTIONS = [
 
 export default function EditEleveScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data, isLoading: isLoadingEleve } = useApiGet<{ eleve: Eleve }>(`/eleves/${id}`, [id]);
-  const { data: options } = useApiGet<{ classes: Classe[]; annees: AnneeScolaire[] }>('/eleves/cartes-scolaires');
+  const { isOnline, enqueueAction } = useOffline();
+  const { data, isLoading: isLoadingEleve, error: eleveError } = useApiGet<{ eleve: Eleve }>(`/eleves/${id}`, [id], {
+    cacheKey: `eleve-${id}`,
+  });
+  const { data: options } = useApiGet<{ classes: Classe[]; annees: AnneeScolaire[] }>('/eleves/cartes-scolaires', [], {
+    cacheKey: 'eleves-cartes-scolaires',
+  });
 
   const [form, setForm] = useState<Partial<Eleve>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successVisible, setSuccessVisible] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('Élève modifié avec succès.');
 
   useEffect(() => {
     if (data?.eleve) setForm(data.eleve);
@@ -58,22 +66,37 @@ export default function EditEleveScreen() {
   async function handleSubmit() {
     setError(null);
     setIsSubmitting(true);
+    const payload = {
+      prenom_eleve: form.prenom_eleve,
+      nom_eleve: form.nom_eleve,
+      matricule: form.matricule,
+      genre_eleve: form.genre_eleve,
+      date_naissance: form.date_naissance,
+      lieu_naiss: form.lieu_naiss,
+      adresse_eleve: form.adresse_eleve,
+      cas_social: form.cas_social,
+      mode_paiement: form.mode_paiement,
+      statut_paiement: form.statut_paiement,
+      id_classe: form.id_classe,
+      id_annee: form.id_annee,
+      date_inscription: form.date_inscription,
+    };
     try {
-      await api.put(`/eleves/${id}`, {
-        prenom_eleve: form.prenom_eleve,
-        nom_eleve: form.nom_eleve,
-        matricule: form.matricule,
-        genre_eleve: form.genre_eleve,
-        date_naissance: form.date_naissance,
-        lieu_naiss: form.lieu_naiss,
-        adresse_eleve: form.adresse_eleve,
-        cas_social: form.cas_social,
-        mode_paiement: form.mode_paiement,
-        statut_paiement: form.statut_paiement,
-        id_classe: form.id_classe,
-        id_annee: form.id_annee,
-        date_inscription: form.date_inscription,
-      });
+      if (!isOnline) {
+        await enqueueAction({
+          kind: 'eleve',
+          label: `${form.prenom_eleve ?? ''} ${form.nom_eleve ?? ''}`.trim(),
+          endpoint: `/eleves/${id}`,
+          method: 'put',
+          payload,
+        });
+        setSuccessMessage('Modification mise en attente, sera synchronisée au retour du réseau.');
+        setSuccessVisible(true);
+        setTimeout(() => router.back(), 900);
+        return;
+      }
+      await api.put(`/eleves/${id}`, payload);
+      setSuccessMessage('Élève modifié avec succès.');
       setSuccessVisible(true);
       setTimeout(() => router.back(), 900);
     } catch (err) {
@@ -83,8 +106,11 @@ export default function EditEleveScreen() {
     }
   }
 
-  if (isLoadingEleve || !form.id_eleve) {
+  if (isLoadingEleve) {
     return <ActivityIndicator style={styles.spinner} size="large" />;
+  }
+  if (!form.id_eleve) {
+    return <Text style={styles.error}>{eleveError ?? 'Impossible de charger cet élève.'}</Text>;
   }
 
   const classeOptions = (options?.classes ?? []).map((c) => ({ value: c.id_classe, label: c.nom_classe }));
@@ -92,6 +118,7 @@ export default function EditEleveScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
+      <OfflineBanner />
       <TextInput mode="outlined" label={requiredLabel('Prénom')} value={form.prenom_eleve ?? ''} onChangeText={(v) => set('prenom_eleve', v)} style={styles.input} />
       <TextInput mode="outlined" label={requiredLabel('Nom')} value={form.nom_eleve ?? ''} onChangeText={(v) => set('nom_eleve', v)} style={styles.input} />
       <TextInput mode="outlined" label="Matricule" value={form.matricule ?? ''} onChangeText={(v) => set('matricule', v)} style={styles.input} />
@@ -115,7 +142,7 @@ export default function EditEleveScreen() {
 
       <SubmitButton label="Enregistrer" onPress={handleSubmit} loading={isSubmitting} />
 
-      <SuccessSnackbar visible={successVisible} message="Élève modifié avec succès." onDismiss={() => setSuccessVisible(false)} />
+      <SuccessSnackbar visible={successVisible} message={successMessage} onDismiss={() => setSuccessVisible(false)} />
     </ScrollView>
   );
 }

@@ -1,21 +1,26 @@
 import { useState } from 'react';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { FAB, IconButton, Text } from 'react-native-paper';
+import { Button, FAB, IconButton, Text } from 'react-native-paper';
 
+import OfflineBanner from '@/components/OfflineBanner';
 import PaginatedList from '@/components/PaginatedList';
 import { useAuth } from '@/context/AuthContext';
+import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
+import { removeQueueItem } from '@/lib/offlineQueue';
 import { hasPermission } from '@/lib/permissions';
 import { usePaginatedApi } from '@/lib/useApi';
 import { ParentEleve } from '@/types/api';
 
 export default function ParentsScreen() {
   const { user } = useAuth();
+  const { queue } = useOffline();
   const list = usePaginatedApi<ParentEleve>('/parents', {}, 'parents');
   const canCreate = hasPermission(user, 'parents_creation');
   const canDelete = hasPermission(user, 'parents_supprimer');
   const [actionError, setActionError] = useState<string | null>(null);
+  const queuedParents = queue.filter((item) => item.kind === 'parent');
 
   async function handleDelete(id: number) {
     setActionError(null);
@@ -29,6 +34,7 @@ export default function ParentsScreen() {
 
   return (
     <>
+      <OfflineBanner />
       <PaginatedList
         items={list.items}
         keyExtractor={(item) => String(item.id_parent)}
@@ -42,6 +48,25 @@ export default function ParentsScreen() {
         onSearchChange={list.setSearch}
         searchPlaceholder="Nom, téléphone, email, élève…"
         emptyLabel="Aucun parent."
+        header={
+          queuedParents.length > 0 ? (
+            <View style={styles.queuedSection}>
+              {queuedParents.map((item) => (
+                <View key={item.id} style={[styles.row, item.status === 'conflict' ? styles.conflictRow : styles.queuedRow]}>
+                  <Text style={styles.name}>{item.label}</Text>
+                  <Text style={item.status === 'conflict' ? styles.conflictText : styles.queuedText}>
+                    {item.status === 'conflict' ? (item.message ?? 'Conflit à vérifier') : 'En attente de synchronisation'}
+                  </Text>
+                  {item.status === 'conflict' ? (
+                    <Button compact textColor="#d33" onPress={() => removeQueueItem(item.id)}>
+                      Abandonner
+                    </Button>
+                  ) : null}
+                </View>
+              ))}
+            </View>
+          ) : undefined
+        }
         renderItem={(item) => (
           <Pressable style={styles.row} onPress={() => router.push(`/plus/parents/${item.id_parent}/edit`)}>
             <View style={styles.rowInfo}>
@@ -73,4 +98,9 @@ const styles = StyleSheet.create({
   name: { fontSize: 16, fontWeight: '600' },
   meta: { opacity: 0.6, marginTop: 4 },
   fab: { position: 'absolute', right: 16, bottom: 16 },
+  queuedSection: { marginBottom: 4 },
+  queuedRow: { borderColor: '#b8860b', backgroundColor: 'rgba(184,134,11,0.08)' },
+  conflictRow: { borderColor: '#d33', backgroundColor: 'rgba(211,51,51,0.06)' },
+  queuedText: { color: '#b8860b', marginTop: 6, fontSize: 12 },
+  conflictText: { color: '#d33', marginTop: 6, fontSize: 12 },
 });

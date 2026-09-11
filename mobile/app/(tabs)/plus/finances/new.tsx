@@ -4,10 +4,12 @@ import { ScrollView, StyleSheet } from 'react-native';
 import { ActivityIndicator, Text, TextInput } from 'react-native-paper';
 
 import DateField from '@/components/DateField';
+import OfflineBanner from '@/components/OfflineBanner';
 import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
+import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
 
@@ -39,7 +41,10 @@ const MODE_REGLEMENT_OPTIONS = [
 
 export default function NewPaiementScreen() {
   const { id_eleve } = useLocalSearchParams<{ id_eleve: string }>();
-  const { data: context, isLoading } = useApiGet<StudentContext>(id_eleve ? `/finances/eleves/${id_eleve}/contexte` : null, [id_eleve]);
+  const { isOnline, enqueueAction } = useOffline();
+  const { data: context, isLoading, error: contextError } = useApiGet<StudentContext>(id_eleve ? `/finances/eleves/${id_eleve}/contexte` : null, [id_eleve], {
+    cacheKey: id_eleve ? `finances-eleve-${id_eleve}` : undefined,
+  });
 
   const [echeanceId, setEcheanceId] = useState<number | null>(null);
   const [montant, setMontant] = useState('');
@@ -52,6 +57,7 @@ export default function NewPaiementScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('Paiement enregistré avec succès.');
 
   const isValid = echeanceId && montant && modeReglement && date;
 
@@ -62,17 +68,32 @@ export default function NewPaiementScreen() {
     }
     setError(null);
     setIsSubmitting(true);
+    const payload = {
+      echeance_id: echeanceId,
+      date_paiement: date,
+      motif: motif || null,
+      montant_paye: Number(montant),
+      mode_reglement: modeReglement,
+      parent_id: parentId,
+      nom_payeur: nomPayeur || null,
+      telephone: telephone || null,
+    };
     try {
-      await api.post('/finances/paiements', {
-        echeance_id: echeanceId,
-        date_paiement: date,
-        motif: motif || null,
-        montant_paye: Number(montant),
-        mode_reglement: modeReglement,
-        parent_id: parentId,
-        nom_payeur: nomPayeur || null,
-        telephone: telephone || null,
-      });
+      if (!isOnline) {
+        await enqueueAction({
+          kind: 'paiement_eleve',
+          label: `${context?.eleve.nom ?? ''} · ${Number(montant).toLocaleString('fr-FR')} FCFA`,
+          endpoint: '/finances/paiements',
+          method: 'post',
+          payload,
+        });
+        setSuccessMessage('Paiement mis en attente, sera synchronisé au retour du réseau.');
+        setSuccessVisible(true);
+        setTimeout(() => router.back(), 900);
+        return;
+      }
+      await api.post('/finances/paiements', payload);
+      setSuccessMessage('Paiement enregistré avec succès.');
       setSuccessVisible(true);
       setTimeout(() => router.back(), 900);
     } catch (err) {
@@ -83,7 +104,8 @@ export default function NewPaiementScreen() {
   }
 
   if (!id_eleve) return <Text style={styles.error}>Élève non spécifié.</Text>;
-  if (isLoading || !context) return <ActivityIndicator style={styles.spinner} size="large" />;
+  if (isLoading) return <ActivityIndicator style={styles.spinner} size="large" />;
+  if (!context) return <Text style={styles.error}>{contextError ?? 'Impossible de charger ce paiement.'}</Text>;
 
   const echeanceOptions = (context.plan?.echeances ?? [])
     .filter((e) => e.reste > 0)
@@ -95,6 +117,7 @@ export default function NewPaiementScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
+      <OfflineBanner />
       <Text style={styles.studentName}>{context.eleve.nom}</Text>
 
       <SelectField label={requiredLabel('Échéance')} value={echeanceId} options={echeanceOptions} onChange={(v) => setEcheanceId(v as number)} />
@@ -110,7 +133,7 @@ export default function NewPaiementScreen() {
 
       <SubmitButton label="Enregistrer le paiement" onPress={handleSubmit} loading={isSubmitting} />
 
-      <SuccessSnackbar visible={successVisible} message="Paiement enregistré avec succès." onDismiss={() => setSuccessVisible(false)} />
+      <SuccessSnackbar visible={successVisible} message={successMessage} onDismiss={() => setSuccessVisible(false)} />
     </ScrollView>
   );
 }

@@ -4,10 +4,12 @@ import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { Text, TextInput } from 'react-native-paper';
 
 import DateField from '@/components/DateField';
+import OfflineBanner from '@/components/OfflineBanner';
 import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
+import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { Enseignant } from '@/types/api';
 
@@ -41,6 +43,7 @@ interface Props {
 }
 
 export default function EnseignantForm({ enseignant, onSaved }: Props) {
+  const { isOnline, enqueueAction } = useOffline();
   // Informations personnelles
   const [nomPrenom, setNomPrenom] = useState(enseignant?.nom_prenom_enseignant ?? '');
   const [genre, setGenre] = useState<string | null>(enseignant?.genre_enseignant ?? null);
@@ -74,6 +77,7 @@ export default function EnseignantForm({ enseignant, onSaved }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
+  const [successMessage, setSuccessMessage] = useState(enseignant ? 'Enseignant modifié avec succès.' : 'Enseignant créé avec succès.');
 
   const isCdiOrCdd = typeContrat === 'CDI' || typeContrat === 'CDD';
   const isCdd = typeContrat === 'CDD';
@@ -98,8 +102,51 @@ export default function EnseignantForm({ enseignant, onSaved }: Props) {
       setError('Veuillez renseigner tous les champs obligatoires.');
       return;
     }
+    if (!isOnline && avatarUri) {
+      setError('Une photo ne peut pas être envoyée hors ligne. Retirez-la ou connectez-vous pour l’ajouter.');
+      return;
+    }
     setIsSubmitting(true);
     try {
+      if (!isOnline) {
+        const jsonPayload: Record<string, unknown> = {
+          nom_prenom: nomPrenom.trim(),
+          genre,
+          email: email.trim(),
+          telephone: telephone.trim(),
+          date_naissance: dateNaissance,
+          lieu_naissance: lieuNaissance.trim(),
+          diplome: diplome.trim(),
+          specialite: specialite || undefined,
+          type_contrat: typeContrat,
+          ...(isCdiOrCdd ? { salaire: salaire || undefined, salaire_mois_mode: salaireMoisMode } : {}),
+          ...(isCdd && dureeContrat ? { duree_contrat: dureeContrat } : {}),
+          ...(isVct ? { nombre_heure: nombreHeure || undefined, prix_heure: prixHeure || undefined } : {}),
+          ...(isFonctionnaire
+            ? {
+                statut_matrimonial: statutMatrimonial || undefined,
+                nombre_enfants: nombreEnfants || '0',
+                service_employeur: serviceEmployeur || undefined,
+                anciennete_annees: ancienneteAnnees || '0',
+                pere_nom_prenom: pereNomPrenom || undefined,
+                mere_nom_prenom: mereNomPrenom || undefined,
+              }
+            : {}),
+          matricule: matricule.trim() || undefined,
+        };
+        await enqueueAction({
+          kind: 'enseignant',
+          label: nomPrenom.trim(),
+          endpoint: enseignant ? `/enseignants/${enseignant.id_enseignant}` : '/enseignants',
+          method: enseignant ? 'put' : 'post',
+          payload: jsonPayload,
+        });
+        setSuccessMessage('Enseignant mis en attente, sera synchronisé au retour du réseau.');
+        setSuccessVisible(true);
+        setTimeout(onSaved, 900);
+        return;
+      }
+
       const form = new FormData();
       form.append('nom_prenom', nomPrenom.trim());
       form.append('genre', genre as string);
@@ -149,6 +196,7 @@ export default function EnseignantForm({ enseignant, onSaved }: Props) {
 
   return (
     <View>
+      <OfflineBanner />
       <View style={styles.avatarRow}>
         <Pressable onPress={pickAvatar}>
           {avatarUri ? (
@@ -241,11 +289,7 @@ export default function EnseignantForm({ enseignant, onSaved }: Props) {
 
       <SubmitButton label={enseignant ? 'Enregistrer' : 'Créer l’enseignant'} onPress={handleSubmit} loading={isSubmitting} />
 
-      <SuccessSnackbar
-        visible={successVisible}
-        message={enseignant ? 'Enseignant modifié avec succès.' : 'Enseignant créé avec succès.'}
-        onDismiss={() => setSuccessVisible(false)}
-      />
+      <SuccessSnackbar visible={successVisible} message={successMessage} onDismiss={() => setSuccessVisible(false)} />
     </View>
   );
 }

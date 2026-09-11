@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { IconButton, Text, TextInput } from 'react-native-paper';
 
+import OfflineBanner from '@/components/OfflineBanner';
 import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
+import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
 import { Classe, Enseignant, Matiere } from '@/types/api';
@@ -19,7 +21,10 @@ interface LigneForm {
 interface FormOptions {
   matieres: Matiere[];
   enseignants: Enseignant[];
-  ordres: string[];
+  // Code interne -> libellé (ex: "fondamentale1" -> "Fondamentale I (1 à 6)"),
+  // pas un tableau — voir ClasseController::ordresDisponibles() cote backend,
+  // qui renvoie un tableau associatif dans toutes ses branches.
+  ordres: Record<string, string>;
 }
 
 interface Props {
@@ -28,7 +33,8 @@ interface Props {
 }
 
 export default function ClasseForm({ classe, onSaved }: Props) {
-  const { data: options } = useApiGet<FormOptions>('/classes/form-options');
+  const { isOnline, enqueueAction } = useOffline();
+  const { data: options, error: optionsError } = useApiGet<FormOptions>('/classes/form-options', [], { cacheKey: 'classes-form-options' });
 
   const [nomClasse, setNomClasse] = useState(classe?.nom_classe ?? '');
   const [ordre, setOrdre] = useState<string | null>(classe?.ordreEnseignement ?? null);
@@ -36,6 +42,7 @@ export default function ClasseForm({ classe, onSaved }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
+  const [successMessage, setSuccessMessage] = useState(classe ? 'Classe modifiée avec succès.' : 'Classe créée avec succès.');
 
   useEffect(() => {
     if (classe?.ligneClasses?.length) {
@@ -70,20 +77,33 @@ export default function ClasseForm({ classe, onSaved }: Props) {
     }
 
     setIsSubmitting(true);
+    const payload = {
+      nom_classe: nomClasse.trim(),
+      ordre_enseignement: ordre,
+      id_matiere: validLignes.map((l) => l.id_matiere),
+      id_enseignants: validLignes.map((l) => l.id_enseignant),
+      coefficient: validLignes.map((l) => Number(l.coefficient) || 0),
+    };
     try {
-      const payload = {
-        nom_classe: nomClasse.trim(),
-        ordre_enseignement: ordre,
-        id_matiere: validLignes.map((l) => l.id_matiere),
-        id_enseignants: validLignes.map((l) => l.id_enseignant),
-        coefficient: validLignes.map((l) => Number(l.coefficient) || 0),
-      };
-
+      if (!isOnline) {
+        await enqueueAction({
+          kind: 'classe',
+          label: nomClasse.trim(),
+          endpoint: classe ? `/classes/${classe.id_classe}` : '/classes',
+          method: classe ? 'put' : 'post',
+          payload,
+        });
+        setSuccessMessage('Classe mise en attente, sera synchronisée au retour du réseau.');
+        setSuccessVisible(true);
+        setTimeout(onSaved, 900);
+        return;
+      }
       if (classe) {
         await api.put(`/classes/${classe.id_classe}`, payload);
       } else {
         await api.post('/classes', payload);
       }
+      setSuccessMessage(classe ? 'Classe modifiée avec succès.' : 'Classe créée avec succès.');
       setSuccessVisible(true);
       setTimeout(onSaved, 900);
     } catch (err) {
@@ -93,12 +113,14 @@ export default function ClasseForm({ classe, onSaved }: Props) {
     }
   }
 
-  const ordreOptions = (options?.ordres ?? []).map((o) => ({ value: o, label: o }));
+  const ordreOptions = Object.entries(options?.ordres ?? {}).map(([value, label]) => ({ value, label }));
   const matiereOptions = (options?.matieres ?? []).map((m) => ({ value: m.id_matiere, label: m.nom_matiere }));
   const enseignantOptions = (options?.enseignants ?? []).map((e) => ({ value: e.id_enseignant, label: e.nom_prenom_enseignant }));
 
   return (
     <View>
+      <OfflineBanner />
+      {optionsError ? <Text style={styles.error}>{optionsError}</Text> : null}
       <TextInput mode="outlined" label={requiredLabel('Nom de la classe')} value={nomClasse} onChangeText={setNomClasse} style={styles.input} />
       <SelectField label={requiredLabel("Ordre d'enseignement")} value={ordre} options={ordreOptions} onChange={(v) => setOrdre(v as string)} />
 
@@ -136,11 +158,7 @@ export default function ClasseForm({ classe, onSaved }: Props) {
 
       <SubmitButton label={classe ? 'Enregistrer' : 'Créer la classe'} onPress={handleSubmit} loading={isSubmitting} />
 
-      <SuccessSnackbar
-        visible={successVisible}
-        message={classe ? 'Classe modifiée avec succès.' : 'Classe créée avec succès.'}
-        onDismiss={() => setSuccessVisible(false)}
-      />
+      <SuccessSnackbar visible={successVisible} message={successMessage} onDismiss={() => setSuccessVisible(false)} />
     </View>
   );
 }

@@ -8,7 +8,9 @@ import { Enseignant } from '@/types/api';
 
 export default function EditEnseignantScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data, isLoading, error } = useApiGet<{ enseignant: Enseignant }>(`/enseignants/${id}`, [id]);
+  const { data, isLoading, error } = useApiGet<{ enseignant: Enseignant }>(`/enseignants/${id}`, [id], {
+    cacheKey: `enseignant-${id}`,
+  });
 
   if (isLoading) return <ActivityIndicator style={styles.spinner} size="large" />;
   if (error || !data) return <Text style={styles.error}>{error ?? 'Enseignant introuvable.'}</Text>;

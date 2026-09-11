@@ -3,11 +3,13 @@ import { router } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Switch, Text, TextInput } from 'react-native-paper';
 
+import OfflineBanner from '@/components/OfflineBanner';
 import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
+import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
 
 const PUBLIC_OPTIONS = [
@@ -24,6 +26,7 @@ const STATUT_OPTIONS = [
 
 export default function NewAnnonceScreen() {
   const { user } = useAuth();
+  const { isOnline, enqueueAction } = useOffline();
   const isSupAdmin = user?.droit === 'SupAdmin';
   const [titre, setTitre] = useState('');
   const [contenu, setContenu] = useState('');
@@ -33,6 +36,7 @@ export default function NewAnnonceScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('Annonce enregistrée avec succès.');
 
   const isValid = titre.trim() && contenu.trim();
 
@@ -43,14 +47,29 @@ export default function NewAnnonceScreen() {
     }
     setError(null);
     setIsSubmitting(true);
+    const payload = {
+      titre: titre.trim(),
+      contenu: contenu.trim(),
+      public_cible: publicCible,
+      statut_annonce: statut,
+      global: isSupAdmin && global,
+    };
     try {
-      await api.post('/annonces', {
-        titre: titre.trim(),
-        contenu: contenu.trim(),
-        public_cible: publicCible,
-        statut_annonce: statut,
-        global: isSupAdmin && global,
-      });
+      if (!isOnline) {
+        await enqueueAction({
+          kind: 'annonce',
+          label: titre.trim(),
+          endpoint: '/annonces',
+          method: 'post',
+          payload,
+        });
+        setSuccessMessage('Annonce mise en attente, sera synchronisée au retour du réseau.');
+        setSuccessVisible(true);
+        setTimeout(() => router.back(), 900);
+        return;
+      }
+      await api.post('/annonces', payload);
+      setSuccessMessage('Annonce enregistrée avec succès.');
       setSuccessVisible(true);
       setTimeout(() => router.back(), 900);
     } catch (err) {
@@ -62,6 +81,7 @@ export default function NewAnnonceScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
+      <OfflineBanner />
       <TextInput mode="outlined" label={requiredLabel('Titre')} value={titre} onChangeText={setTitre} style={styles.input} />
       <TextInput mode="outlined" label={requiredLabel('Contenu')} value={contenu} onChangeText={setContenu} multiline numberOfLines={6} style={styles.input} />
       {isSupAdmin ? (
@@ -79,7 +99,7 @@ export default function NewAnnonceScreen() {
 
       <SubmitButton label="Enregistrer" onPress={handleSubmit} loading={isSubmitting} />
 
-      <SuccessSnackbar visible={successVisible} message="Annonce enregistrée avec succès." onDismiss={() => setSuccessVisible(false)} />
+      <SuccessSnackbar visible={successVisible} message={successMessage} onDismiss={() => setSuccessVisible(false)} />
     </ScrollView>
   );
 }

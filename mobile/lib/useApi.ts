@@ -123,6 +123,12 @@ export function useApiGet<T>(endpoint: string | null, deps: unknown[] = [], opti
           setIsLoading(false);
           return;
         }
+        // Hors ligne et jamais ouvert cet écran avec une connexion avant :
+        // rien à afficher depuis le cache. Message explicite plutôt que
+        // l'erreur générique, pour ne pas laisser croire à une panne.
+        setError('Vous êtes hors ligne et cet écran n’a encore jamais été chargé avec une connexion. Reconnectez-vous une fois pour le rendre disponible hors ligne.');
+        setIsLoading(false);
+        return;
       }
       setError(apiErrorMessage(err));
     } finally {

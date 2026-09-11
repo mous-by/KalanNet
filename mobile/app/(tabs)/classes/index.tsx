@@ -1,19 +1,25 @@
 import { router } from 'expo-router';
-import { FlatList, Pressable, StyleSheet } from 'react-native';
-import { ActivityIndicator, FAB, Text } from 'react-native-paper';
+import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Button, FAB, Text } from 'react-native-paper';
 
+import OfflineBanner from '@/components/OfflineBanner';
 import { useAuth } from '@/context/AuthContext';
+import { useOffline } from '@/context/OfflineContext';
+import { removeQueueItem } from '@/lib/offlineQueue';
 import { hasPermission } from '@/lib/permissions';
 import { useApiGet } from '@/lib/useApi';
 import { Classe } from '@/types/api';
 
 export default function ClassesScreen() {
   const { user } = useAuth();
-  const { data, isLoading, error, reload } = useApiGet<{ data: Classe[] }>('/classes');
+  const { queue } = useOffline();
+  const { data, isLoading, error, reload } = useApiGet<{ data: Classe[] }>('/classes', [], { cacheKey: 'classes' });
   const canManage = hasPermission(user, 'classes_creation');
+  const queuedClasses = queue.filter((item) => item.kind === 'classe');
 
   return (
     <>
+      <OfflineBanner />
       {isLoading ? (
         <ActivityIndicator style={styles.spinner} size="large" />
       ) : (
@@ -23,6 +29,25 @@ export default function ClassesScreen() {
           contentContainerStyle={styles.content}
           refreshing={false}
           onRefresh={reload}
+          ListHeaderComponent={
+            queuedClasses.length > 0 ? (
+              <View style={styles.queuedSection}>
+                {queuedClasses.map((item) => (
+                  <View key={item.id} style={[styles.row, item.status === 'conflict' ? styles.conflictRow : styles.queuedRow]}>
+                    <Text style={styles.name}>{item.label}</Text>
+                    <Text style={item.status === 'conflict' ? styles.conflictText : styles.queuedText}>
+                      {item.status === 'conflict' ? (item.message ?? 'Conflit à vérifier') : 'En attente de synchronisation'}
+                    </Text>
+                    {item.status === 'conflict' ? (
+                      <Button compact textColor="#d33" onPress={() => removeQueueItem(item.id)}>
+                        Abandonner
+                      </Button>
+                    ) : null}
+                  </View>
+                ))}
+              </View>
+            ) : undefined
+          }
           ListEmptyComponent={
             error ? <Text style={styles.error}>{error}</Text> : <Text style={styles.empty}>Aucune classe.</Text>
           }
@@ -79,4 +104,9 @@ const styles = StyleSheet.create({
     right: 16,
     bottom: 16,
   },
+  queuedSection: { marginBottom: 4 },
+  queuedRow: { borderColor: '#b8860b', backgroundColor: 'rgba(184,134,11,0.08)' },
+  conflictRow: { borderColor: '#d33', backgroundColor: 'rgba(211,51,51,0.06)' },
+  queuedText: { color: '#b8860b', marginTop: 6, fontSize: 12 },
+  conflictText: { color: '#d33', marginTop: 6, fontSize: 12 },
 });

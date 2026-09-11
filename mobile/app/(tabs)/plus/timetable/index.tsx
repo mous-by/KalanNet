@@ -45,10 +45,12 @@ export default function TimetableScreen() {
   const [idClasse, setIdClasse] = useState<number | null>(null);
   const [idAnnee, setIdAnnee] = useState<number | null>(null);
   const [dialogVisible, setDialogVisible] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [slot, setSlot] = useState<SlotForm>(EMPTY_SLOT);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('Créneau ajouté avec succès.');
 
   const endpoint = useMemo(() => {
     if (idClasse && idAnnee) return `/timetable?id_classe=${idClasse}&id_annee=${idAnnee}`;
@@ -68,7 +70,21 @@ export default function TimetableScreen() {
   }
 
   function openNewSlotDialog() {
+    setEditingId(null);
     setSlot(EMPTY_SLOT);
+    setError(null);
+    setDialogVisible(true);
+  }
+
+  function openEditSlotDialog(course: Course, jour: string) {
+    setEditingId(course.id);
+    setSlot({
+      jour,
+      id_matiere: course.id_matiere,
+      id_enseignant: course.id_enseignant,
+      heure_debut: course.heure_debut.slice(0, 5),
+      heure_fin: course.heure_fin.slice(0, 5),
+    });
     setError(null);
     setDialogVisible(true);
   }
@@ -80,21 +96,28 @@ export default function TimetableScreen() {
     }
     setIsSubmitting(true);
     setError(null);
+    const payload = {
+      id_classe: idClasse,
+      id_annee_scolaire: idAnnee,
+      id_matiere: slot.id_matiere,
+      id_enseignant: slot.id_enseignant,
+      jour: slot.jour,
+      heure_debut: slot.heure_debut,
+      heure_fin: slot.heure_fin,
+    };
     try {
-      await api.post('/timetable', {
-        id_classe: idClasse,
-        id_annee_scolaire: idAnnee,
-        id_matiere: slot.id_matiere,
-        id_enseignant: slot.id_enseignant,
-        jour: slot.jour,
-        heure_debut: slot.heure_debut,
-        heure_fin: slot.heure_fin,
-      });
+      if (editingId) {
+        await api.put(`/timetable/${editingId}`, payload);
+        setSuccessMessage('Créneau modifié avec succès.');
+      } else {
+        await api.post('/timetable', payload);
+        setSuccessMessage('Créneau ajouté avec succès.');
+      }
       setDialogVisible(false);
       setSuccessVisible(true);
       reload();
     } catch (err) {
-      setError(apiErrorMessage(err, 'Impossible d’ajouter ce créneau.'));
+      setError(apiErrorMessage(err, editingId ? 'Impossible de modifier ce créneau.' : 'Impossible d’ajouter ce créneau.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -137,7 +160,12 @@ export default function TimetableScreen() {
                         <Text style={styles.courseSubject}>{course.matiere?.nom_matiere ?? '—'}</Text>
                         <Text style={styles.meta}>{course.enseignant?.nom_prenom_enseignant ?? 'Sans enseignant'}</Text>
                       </View>
-                      {canManage ? <IconButton icon="delete-outline" onPress={() => handleDeleteSlot(course.id)} /> : null}
+                      {canManage ? (
+                        <View style={styles.courseActions}>
+                          <IconButton icon="pencil-outline" onPress={() => openEditSlotDialog(course, jour)} />
+                          <IconButton icon="delete-outline" onPress={() => handleDeleteSlot(course.id)} />
+                        </View>
+                      ) : null}
                     </View>
                   ))
                 )}
@@ -151,7 +179,7 @@ export default function TimetableScreen() {
 
       <Portal>
         <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
-          <Dialog.Title>Nouveau créneau</Dialog.Title>
+          <Dialog.Title>{editingId ? 'Modifier le créneau' : 'Nouveau créneau'}</Dialog.Title>
           <Dialog.Content>
             <SelectField
               label={requiredLabel('Jour')}
@@ -192,13 +220,13 @@ export default function TimetableScreen() {
           <Dialog.Actions>
             <Button onPress={() => setDialogVisible(false)}>Annuler</Button>
             <Button loading={isSubmitting} onPress={handleSaveSlot}>
-              Ajouter
+              {editingId ? 'Enregistrer' : 'Ajouter'}
             </Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
 
-      <SuccessSnackbar visible={successVisible} message="Créneau ajouté avec succès." onDismiss={() => setSuccessVisible(false)} />
+      <SuccessSnackbar visible={successVisible} message={successMessage} onDismiss={() => setSuccessVisible(false)} />
     </>
   );
 }
@@ -222,6 +250,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   courseInfo: { flex: 1 },
+  courseActions: { flexDirection: 'row' },
   courseTime: { fontWeight: '600' },
   courseSubject: { marginTop: 2 },
   meta: { opacity: 0.6, marginTop: 2 },

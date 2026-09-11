@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // "replay this HTTP call later" instruction, so adding offline support to a
 // new module is just: enqueue() instead of api.post() when offline, using
 // the same endpoint/payload the online path already sends.
-export type QueueKind = 'presence' | 'emargement' | 'paiement_classe';
+export type QueueKind = 'presence' | 'emargement' | 'paiement_classe' | 'paiement_eleve' | 'eleve' | 'evaluation' | 'caisse' | 'salaire' | 'enseignant' | 'parent' | 'annonce' | 'classe' | 'appel_epreuve';
 
 export type QueueStatus = 'pending' | 'conflict' | 'error';
 

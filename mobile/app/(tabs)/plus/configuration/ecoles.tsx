@@ -71,6 +71,7 @@ const CAP_REQUIRED_TYPES = ['Fondamentale I', 'Fondamentale II', 'Collège', 'Co
 
 export default function EcolesScreen() {
   const { user } = useAuth();
+  const isSupAdmin = user?.droit === 'SupAdmin';
   const list = usePaginatedApi<Ecole>('/configuration/ecoles');
   const { items: academies } = useAllPaginated<Academie>('/configuration/academies');
   const { items: caps } = useAllPaginated<Cap>('/configuration/caps');
@@ -213,18 +214,20 @@ export default function EcolesScreen() {
                 {item.typeEcole} · {item.statut === 'public' ? 'Public' : 'Privé'}
               </Text>
             </View>
-            <View style={styles.actions}>
-              <Button compact onPress={() => openDialog(item)}>
-                Modifier
-              </Button>
-              <Button compact textColor="#d33" onPress={() => handleDelete(item)}>
-                Supprimer
-              </Button>
-            </View>
+            {isSupAdmin ? (
+              <View style={styles.actions}>
+                <Button compact onPress={() => openDialog(item)}>
+                  Modifier
+                </Button>
+                <Button compact textColor="#d33" onPress={() => handleDelete(item)}>
+                  Supprimer
+                </Button>
+              </View>
+            ) : null}
           </View>
         )}
       />
-      <FAB icon="plus" style={styles.fab} onPress={() => openDialog()} />
+      {isSupAdmin ? <FAB icon="plus" style={styles.fab} onPress={() => openDialog()} /> : null}
 
       <Portal>
         <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)} style={styles.dialog}>

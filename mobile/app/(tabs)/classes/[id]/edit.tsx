@@ -8,7 +8,7 @@ import { Classe } from '@/types/api';
 
 export default function EditClasseScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data: classe, isLoading, error } = useApiGet<Classe>(`/classes/${id}`, [id]);
+  const { data: classe, isLoading, error } = useApiGet<Classe>(`/classes/${id}`, [id], { cacheKey: `classe-${id}` });
 
   if (isLoading) return <ActivityIndicator style={styles.spinner} size="large" />;
   if (error || !classe) return <Text style={styles.error}>{error ?? 'Classe introuvable.'}</Text>;

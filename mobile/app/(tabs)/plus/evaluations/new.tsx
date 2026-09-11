@@ -4,11 +4,14 @@ import { ScrollView, StyleSheet } from 'react-native';
 import { ActivityIndicator, Text, TextInput } from 'react-native-paper';
 
 import DateField from '@/components/DateField';
+import OfflineBanner from '@/components/OfflineBanner';
 import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
+import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
+import { getCached, setCached } from '@/lib/offlineCache';
 import { useApiGet } from '@/lib/useApi';
 import { AnneeScolaire, Classe, Trimestre } from '@/types/api';
 
@@ -26,7 +29,8 @@ interface EvaluationContext {
 }
 
 export default function NewEvaluationScreen() {
-  const { data: context } = useApiGet<EvaluationContext>('/evaluations');
+  const { isOnline, enqueueAction } = useOffline();
+  const { data: context, error: contextError } = useApiGet<EvaluationContext>('/evaluations', [], { cacheKey: 'evaluations-context' });
 
   const [idClasse, setIdClasse] = useState<number | null>(null);
   const [idMatiere, setIdMatiere] = useState<number | null>(null);
@@ -42,16 +46,24 @@ export default function NewEvaluationScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('Évaluation créée avec succès.');
 
   useEffect(() => {
     if (!idClasse) {
       setMatieres([]);
       return;
     }
+    const cacheKey = `evaluations-matieres-${idClasse}`;
     api
       .get<{ matiere: { id_matiere: number; nom_matiere: string }[] }>(`/evaluations/classes/${idClasse}/matieres`)
-      .then(({ data }) => setMatieres(data.matiere))
-      .catch(() => setMatieres([]));
+      .then(({ data }) => {
+        setMatieres(data.matiere);
+        setCached(cacheKey, data.matiere);
+      })
+      .catch(async () => {
+        const cached = await getCached<{ id_matiere: number; nom_matiere: string }[]>(cacheKey);
+        setMatieres(cached ?? []);
+      });
   }, [idClasse]);
 
   const isValid = idClasse && idMatiere && idAnnee && idNote && libeller.trim() && dateEvaluation && heureDebut && heureFin;
@@ -63,19 +75,35 @@ export default function NewEvaluationScreen() {
     }
     setError(null);
     setIsSubmitting(true);
+    const payload = {
+      id_classe: idClasse,
+      id_matiere: idMatiere,
+      id_annee_scolaire: idAnnee,
+      id_trimestre: idTrimestre,
+      mois,
+      id_note: idNote,
+      libeller: libeller.trim(),
+      date_evaluation: dateEvaluation,
+      heure_debut: heureDebut,
+      heure_fin: heureFin,
+    };
     try {
-      await api.post('/evaluations', {
-        id_classe: idClasse,
-        id_matiere: idMatiere,
-        id_annee_scolaire: idAnnee,
-        id_trimestre: idTrimestre,
-        mois,
-        id_note: idNote,
-        libeller: libeller.trim(),
-        date_evaluation: dateEvaluation,
-        heure_debut: heureDebut,
-        heure_fin: heureFin,
-      });
+      if (!isOnline) {
+        const classeLabel = context?.classes.find((c) => c.id_classe === idClasse)?.nom_classe ?? '';
+        await enqueueAction({
+          kind: 'evaluation',
+          label: `${libeller.trim()} · ${classeLabel}`,
+          endpoint: '/evaluations',
+          method: 'post',
+          payload,
+        });
+        setSuccessMessage('Évaluation mise en attente, sera synchronisée au retour du réseau.');
+        setSuccessVisible(true);
+        setTimeout(() => router.back(), 900);
+        return;
+      }
+      await api.post('/evaluations', payload);
+      setSuccessMessage('Évaluation créée avec succès.');
       setSuccessVisible(true);
       setTimeout(() => router.back(), 900);
     } catch (err) {
@@ -85,7 +113,13 @@ export default function NewEvaluationScreen() {
     }
   }
 
-  if (!context) return <ActivityIndicator style={styles.spinner} size="large" />;
+  if (!context) {
+    return contextError ? (
+      <Text style={styles.error}>{contextError}</Text>
+    ) : (
+      <ActivityIndicator style={styles.spinner} size="large" />
+    );
+  }
 
   const classeOptions = context.classes.map((c) => ({ value: c.id_classe, label: c.nom_classe }));
   const matiereOptions = matieres.map((m) => ({ value: m.id_matiere, label: m.nom_matiere }));
@@ -95,6 +129,7 @@ export default function NewEvaluationScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
+      <OfflineBanner />
       <SelectField label={requiredLabel('Classe')} value={idClasse} options={classeOptions} onChange={(v) => setIdClasse(v as number)} />
       <SelectField label={requiredLabel('Matière')} value={idMatiere} options={matiereOptions} onChange={(v) => setIdMatiere(v as number)} disabled={!idClasse} />
       <SelectField label={requiredLabel('Année scolaire')} value={idAnnee} options={anneeOptions} onChange={(v) => setIdAnnee(v as number)} />
@@ -117,7 +152,7 @@ export default function NewEvaluationScreen() {
 
       <SubmitButton label="Créer l'évaluation" onPress={handleSubmit} loading={isSubmitting} />
 
-      <SuccessSnackbar visible={successVisible} message="Évaluation créée avec succès." onDismiss={() => setSuccessVisible(false)} />
+      <SuccessSnackbar visible={successVisible} message={successMessage} onDismiss={() => setSuccessVisible(false)} />
     </ScrollView>
   );
 }

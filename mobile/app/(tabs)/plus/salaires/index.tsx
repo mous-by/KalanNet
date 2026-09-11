@@ -3,10 +3,13 @@ import { FlatList, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Button, Dialog, Portal, Text, TextInput } from 'react-native-paper';
 
 import DateField from '@/components/DateField';
+import OfflineBanner from '@/components/OfflineBanner';
 import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
+import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
+import { removeQueueItem } from '@/lib/offlineQueue';
 import { useApiGet } from '@/lib/useApi';
 import { Enseignant } from '@/types/api';
 
@@ -29,6 +32,8 @@ interface SalaryData {
 }
 
 export default function SalairesScreen() {
+  const { isOnline, enqueueAction, queue } = useOffline();
+  const queuedSalaires = queue.filter((item) => item.kind === 'salaire');
   const [mois, setMois] = useState<string | null>(null);
   const [annee, setAnnee] = useState('');
   const [source, setSource] = useState<string | null>(null);
@@ -38,6 +43,7 @@ export default function SalairesScreen() {
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('Paiement enregistré avec succès.');
 
   const endpoint = useMemo(() => {
     const params = new URLSearchParams();
@@ -48,7 +54,7 @@ export default function SalairesScreen() {
     return query ? `/salaires?${query}` : '/salaires';
   }, [mois, annee, source]);
 
-  const { data, isLoading, error, reload } = useApiGet<SalaryData>(endpoint, [endpoint]);
+  const { data, isLoading, error, reload } = useApiGet<SalaryData>(endpoint, [endpoint], { cacheKey: endpoint });
 
   function openPayDialog(row: SalaryRow) {
     setPayingFor(row);
@@ -64,15 +70,30 @@ export default function SalairesScreen() {
     }
     setIsSubmitting(true);
     setFormError(null);
+    const payload = {
+      id_enseignant: payingFor.enseignant.id_enseignant,
+      mois: data.filters.mois,
+      annee: Number(data.filters.annee),
+      source: data.filters.source,
+      montant_verse: Number(montant),
+      date_paiement: date,
+    };
     try {
-      await api.post('/salaires/payer', {
-        id_enseignant: payingFor.enseignant.id_enseignant,
-        mois: data.filters.mois,
-        annee: Number(data.filters.annee),
-        source: data.filters.source,
-        montant_verse: Number(montant),
-        date_paiement: date,
-      });
+      if (!isOnline) {
+        await enqueueAction({
+          kind: 'salaire',
+          label: `${payingFor.enseignant.nom_prenom_enseignant} · ${Number(montant).toLocaleString('fr-FR')} FCFA`,
+          endpoint: '/salaires/payer',
+          method: 'post',
+          payload,
+        });
+        setSuccessMessage('Paiement mis en attente, sera synchronisé au retour du réseau.');
+        setPayingFor(null);
+        setSuccessVisible(true);
+        return;
+      }
+      await api.post('/salaires/payer', payload);
+      setSuccessMessage('Paiement enregistré avec succès.');
       setPayingFor(null);
       setSuccessVisible(true);
       reload();
@@ -88,6 +109,26 @@ export default function SalairesScreen() {
 
   return (
     <View style={styles.container}>
+      <OfflineBanner />
+      {queuedSalaires.length > 0 ? (
+        <View style={styles.queuedSection}>
+          {queuedSalaires.map((item) => (
+            <View key={item.id} style={[styles.row, item.status === 'conflict' ? styles.conflictRow : styles.queuedRow]}>
+              <View style={styles.rowInfo}>
+                <Text style={styles.name}>{item.label}</Text>
+                <Text style={item.status === 'conflict' ? styles.conflictText : styles.queuedText}>
+                  {item.status === 'conflict' ? (item.message ?? 'Conflit à vérifier') : 'En attente de synchronisation'}
+                </Text>
+              </View>
+              {item.status === 'conflict' ? (
+                <Button compact textColor="#d33" onPress={() => removeQueueItem(item.id)}>
+                  Abandonner
+                </Button>
+              ) : null}
+            </View>
+          ))}
+        </View>
+      ) : null}
       <View style={styles.filters}>
         <SelectField label="Mois" value={mois ?? data?.filters.mois ?? null} options={monthOptions} onChange={(v) => setMois(v as string)} />
         <TextInput
@@ -157,7 +198,7 @@ export default function SalairesScreen() {
         </Dialog>
       </Portal>
 
-      <SuccessSnackbar visible={successVisible} message="Paiement enregistré avec succès." onDismiss={() => setSuccessVisible(false)} />
+      <SuccessSnackbar visible={successVisible} message={successMessage} onDismiss={() => setSuccessVisible(false)} />
     </View>
   );
 }
@@ -187,4 +228,9 @@ const styles = StyleSheet.create({
   name: { fontWeight: '600' },
   meta: { opacity: 0.6, marginTop: 2 },
   status: { marginTop: 4, fontSize: 12, opacity: 0.8 },
+  queuedSection: { paddingHorizontal: 16, paddingTop: 16 },
+  queuedRow: { borderColor: '#b8860b', backgroundColor: 'rgba(184,134,11,0.08)' },
+  conflictRow: { borderColor: '#d33', backgroundColor: 'rgba(211,51,51,0.06)' },
+  queuedText: { color: '#b8860b', marginTop: 6, fontSize: 12 },
+  conflictText: { color: '#d33', marginTop: 6, fontSize: 12 },
 });

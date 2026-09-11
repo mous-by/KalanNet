@@ -5,10 +5,12 @@ import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text, TextInput } from 'react-native-paper';
 
 import DateField from '@/components/DateField';
+import OfflineBanner from '@/components/OfflineBanner';
 import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
+import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
 import { AnneeScolaire, Classe, ParentEleve, Planification } from '@/types/api';
@@ -48,7 +50,10 @@ interface InscriptionOptions {
 }
 
 export default function NewEleveScreen() {
-  const { data: options } = useApiGet<InscriptionOptions>('/eleves/inscription-options');
+  const { isOnline, enqueueAction } = useOffline();
+  const { data: options, error: optionsError } = useApiGet<InscriptionOptions>('/eleves/inscription-options', [], {
+    cacheKey: 'eleves-inscription-options',
+  });
 
   const [prenom, setPrenom] = useState('');
   const [nom, setNom] = useState('');
@@ -72,6 +77,7 @@ export default function NewEleveScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('Élève inscrit avec succès.');
 
   const planificationRequired = options?.planification_required ?? false;
   const planificationLabel = options?.planification_label ?? 'Planification';
@@ -106,8 +112,44 @@ export default function NewEleveScreen() {
       setError('Veuillez renseigner tous les champs obligatoires.');
       return;
     }
+    if (!isOnline && avatarUri) {
+      setError('Une photo ne peut pas être envoyée hors ligne. Retirez-la ou connectez-vous pour l’ajouter.');
+      return;
+    }
     setIsSubmitting(true);
     try {
+      const classeLabel = classeOptions.find((c) => c.value === idClasse)?.label ?? '';
+      const jsonPayload: Record<string, unknown> = {
+        prenom_eleve: prenom.trim(),
+        nom_eleve: nom.trim(),
+        genre_eleve: genre,
+        date_naissance: dateNaissance || undefined,
+        lieu_naiss: lieuNaissance.trim() || undefined,
+        adresse_eleve: adresse.trim() || undefined,
+        matricule: matricule.trim() || undefined,
+        date_inscription: dateInscription || undefined,
+        cas_social: casSocial,
+        id_classe: idClasse,
+        mode_paiement: modePaiement || undefined,
+        id_annee: idAnnee,
+        id_planification: idPlanification || undefined,
+        ...(parentId ? { parent_id: parentId, lien_parent: lienParent, informer } : {}),
+      };
+
+      if (!isOnline) {
+        await enqueueAction({
+          kind: 'eleve',
+          label: `${prenom.trim()} ${nom.trim()} · ${classeLabel}`,
+          endpoint: '/eleves',
+          method: 'post',
+          payload: jsonPayload,
+        });
+        setSuccessMessage('Élève mis en attente, sera synchronisé au retour du réseau.');
+        setSuccessVisible(true);
+        setTimeout(() => router.back(), 900);
+        return;
+      }
+
       const form = new FormData();
       form.append('prenom_eleve', prenom.trim());
       form.append('nom_eleve', nom.trim());
@@ -130,6 +172,7 @@ export default function NewEleveScreen() {
       }
 
       await api.post('/eleves', form, { headers: { 'Content-Type': 'multipart/form-data' } });
+      setSuccessMessage('Élève inscrit avec succès.');
       setSuccessVisible(true);
       setTimeout(() => router.back(), 900);
     } catch (err) {
@@ -141,6 +184,8 @@ export default function NewEleveScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
+      <OfflineBanner />
+      {optionsError ? <Text style={styles.error}>{optionsError}</Text> : null}
       <View style={styles.avatarRow}>
         <Pressable onPress={pickAvatar}>
           {avatarUri ? (
@@ -203,7 +248,7 @@ export default function NewEleveScreen() {
 
       <SubmitButton label="Valider l'inscription" onPress={handleSubmit} loading={isSubmitting} />
 
-      <SuccessSnackbar visible={successVisible} message="Élève inscrit avec succès." onDismiss={() => setSuccessVisible(false)} />
+      <SuccessSnackbar visible={successVisible} message={successMessage} onDismiss={() => setSuccessVisible(false)} />
     </ScrollView>
   );
 }
