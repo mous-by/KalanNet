@@ -116,7 +116,7 @@
                             <span class="menu-icon rounded-circle d-flex align-items-center justify-content-center me-2">
                                 <i class="bi bi-calendar-check"></i>
                             </span>
-                            <span>{{ $isPublicSchool ? 'Coopérative' : 'Planification' }}</span>
+                            <span>{{ $isPublicSchool ? 'Coopérative' : 'Formule de paiement' }}</span>
                         </a>
                     </li>
                     <li class="nav-item">

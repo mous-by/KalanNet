@@ -80,7 +80,7 @@ export default function NewEleveScreen() {
   const [successMessage, setSuccessMessage] = useState('Élève inscrit avec succès.');
 
   const planificationRequired = options?.planification_required ?? false;
-  const planificationLabel = options?.planification_label ?? 'Planification';
+  const planificationLabel = options?.planification_label ?? 'Formule de paiement';
 
   const classeOptions = (options?.classes ?? []).map((c) => ({ value: c.id_classe, label: `${c.nom_classe} - ${c.ordreEnseignement}` }));
   const anneeOptions = (options?.annees ?? []).map((a) => ({ value: a.id_anneeScolaire, label: a.annee }));

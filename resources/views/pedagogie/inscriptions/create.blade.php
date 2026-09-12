@@ -101,7 +101,7 @@
                                 </select>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label small fw-bold text-uppercase">Planification <span class="text-danger">*</span></label>
+                                <label class="form-label small fw-bold text-uppercase">Formule de paiement <span class="text-danger">*</span></label>
                                 <select name="id_planification" class="form-select rounded-3" required>
                                     <option value="">Veuillez choisir</option>
                                     @foreach($planifications as $planification)

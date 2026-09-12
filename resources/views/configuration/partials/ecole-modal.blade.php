@@ -87,7 +87,7 @@
                                         </option>
                                     @endforeach
                                 </select>
-                                <small class="text-muted d-block mt-1">{{ $ecole ? 'Choisir un plan ajoute une nouvelle période.' : 'Optionnel, comme dans Alliance.' }} Seules les formules compatibles avec le statut choisi (public/privé) sont proposées.</small>
+                                <small class="text-muted d-block mt-1">{{ $ecole ? 'Choisir un plan ajoute une nouvelle période.' : 'Optionnel.' }} Seules les formules compatibles avec le statut choisi (public/privé) sont proposées.</small>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Apportée par un revendeur</label>

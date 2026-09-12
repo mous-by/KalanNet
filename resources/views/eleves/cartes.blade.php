@@ -57,13 +57,13 @@
                             'institutionnel' => ['Institutionnel', 'Sobre, administratif, très lisible'],
                             'moderne' => ['Moderne', 'Couleur forte, présentation plus actuelle'],
                             'vertical' => ['Badge vertical', 'Format carte professionnelle avec photo mise en avant'],
-                            'alliance_pro' => ['Alliance amélioré', 'Fond blanc, rendu plus propre'],
+                            'epure' => ['Épuré', 'Fond blanc, rendu plus propre'],
                             'horizon' => ['Horizon', 'Carte large avec bande officielle'],
                             'compact' => ['Compact', 'Plus de cartes par page, pratique pour les grands effectifs'],
                         ] as $value => [$label, $description])
                             <div class="col-md-4">
                                 <label class="card-template-option d-block">
-                                    <input type="radio" name="template" value="{{ $value }}" class="form-check-input me-2 card-config" @checked(request('template', 'alliance_pro') === $value)>
+                                    <input type="radio" name="template" value="{{ $value }}" class="form-check-input me-2 card-config" @checked(request('template', 'epure') === $value)>
                                     <span class="fw-bold">{{ $label }}</span>
                                     <small class="d-block text-muted mt-1">{{ $description }}</small>
                                 </label>
@@ -148,7 +148,7 @@
                         <input type="hidden" name="id_classe" value="{{ request('id_classe') }}">
                         <input type="hidden" name="id_annee" value="{{ request('id_annee') }}">
                         <input type="hidden" name="search" value="{{ request('search') }}">
-                        <input type="hidden" name="template" value="{{ request('template', 'alliance_pro') }}" data-card-config-target="template">
+                        <input type="hidden" name="template" value="{{ request('template', 'epure') }}" data-card-config-target="template">
                         <input type="hidden" name="primary_color" value="{{ request('primary_color', '#0f766e') }}" data-card-config-target="primary_color">
                         <input type="hidden" name="secondary_color" value="{{ request('secondary_color', '#f59e0b') }}" data-card-config-target="secondary_color">
                         <input type="hidden" name="card_title" value="{{ request('card_title', 'CARTE D’IDENTITÉ SCOLAIRE') }}" data-card-config-target="card_title">

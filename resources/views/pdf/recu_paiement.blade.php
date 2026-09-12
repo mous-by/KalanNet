@@ -144,7 +144,7 @@
     </div>
 
     <div style="text-align: center; margin-top: 50px; font-size: 9px; color: #888; border-top: 1px solid #eee; padding-top: 10px;">
-        Généré via GESCO - Alliance Team | {{ date('d/m/Y H:i') }}
+        Généré via KalanNet | {{ date('d/m/Y H:i') }}
     </div>
 </body>
 </html>

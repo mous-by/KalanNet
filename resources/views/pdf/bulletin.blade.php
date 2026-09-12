@@ -34,6 +34,6 @@
     </style>
 </head>
 <body>
-    @include('pdf.partials.bulletin_alliance')
+    @include('pdf.partials.bulletin_standard')
 </body>
 </html>

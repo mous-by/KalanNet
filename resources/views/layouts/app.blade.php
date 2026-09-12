@@ -49,7 +49,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('assets/css/bootstrap-icons.css') }}">
     
-    <title>{{ config('app.name', 'KalanNet') }} - Alliance Team</title>
+    <title>{{ config('app.name', 'KalanNet') }}</title>
     
     @stack('styles')
     <style>

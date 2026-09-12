@@ -143,7 +143,7 @@ return [
     'Composition' => 'اختبار',
 
     'Finances' => 'المالية',
-    'Planification' => 'التخطيط',
+    'Formule de paiement' => 'خطة الدفع',
     'Paiements Élèves' => 'مدفوعات التلاميذ',
     'Paiement' => 'دفع',
     'Paiements' => 'المدفوعات',

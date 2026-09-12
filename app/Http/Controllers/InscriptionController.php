@@ -28,7 +28,7 @@ class InscriptionController extends Controller
         $parents = ParentModel::where('idEcole', session('idEcole'))->orderBy('nom_prenom_parent')->get();
         $planifications = Planification::whereIn('id_classe', $classeIds)->orderBy('motif')->get();
         $planificationRequired = $this->schoolRequiresPlanification();
-        $planificationLabel = $planificationRequired ? 'Planification' : 'Coopérative';
+        $planificationLabel = $planificationRequired ? 'Formule de paiement' : 'Coopérative';
         $eleves = Eleve::where('id_ecole', session('idEcole'))
             ->where('etat_dossier', 0)
             ->with('classe')
@@ -443,7 +443,7 @@ class InscriptionController extends Controller
         $parents = ParentModel::where('idEcole', session('idEcole'))->orderBy('nom_prenom_parent')->get();
         $planifications = Planification::whereIn('id_classe', $classeIds)->orderBy('motif')->get();
         $planificationRequired = $this->schoolRequiresPlanification();
-        $planificationLabel = $planificationRequired ? 'Planification' : 'Coopérative';
+        $planificationLabel = $planificationRequired ? 'Formule de paiement' : 'Coopérative';
         $eleves = Eleve::where('id_ecole', session('idEcole'))
             ->where('etat_dossier', 0)
             ->with('classe')

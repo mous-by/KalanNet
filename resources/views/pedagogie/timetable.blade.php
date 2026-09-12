@@ -123,7 +123,7 @@
                     @endforeach
 
                     <div id="emploi" class="p-3 bg-white">
-                        {{-- Alliance (GESCO) School Header Layout --}}
+                        {{-- School header layout --}}
                         <div id="header_ecole" class="mb-4">
                             <table style="width: 100%; border-collapse: collapse;">
                                 <tr>
@@ -203,7 +203,7 @@
                                                         $heureFinVal = $course ? substr($course->heure_fin, 0, 5) : $heureFinLigne;
                                                     @endphp
                                                     
-                                                    {{-- Clean View Mode (GESCO Alliance Style with dynamic croix-case for empty cells) --}}
+                                                    {{-- Clean view mode (dynamic empty-cell styling) --}}
                                                     <div class="timetable-view-block py-2">
                                                         @if($course)
                                                             <div class="fw-bold text-primary mb-1" style="font-size: 13px;">{{ $course->matiere->nom_matiere ?? 'Matière' }}</div>
@@ -367,7 +367,7 @@
         .print-visible { display: block !important; }
         @media print { .no-print, .sidebar-wrapper, .top-header { display: none !important; } }
 
-        /* Alliance Parity Cross Case */
+        /* Empty-cell cross styling */
         .croix-case {
             display: inline-block;
             width: 20px;

@@ -32,7 +32,7 @@ class EleveController extends WebEleveController
             'parents' => ParentModel::where('idEcole', $idEcole)->orderBy('nom_prenom_parent')->get(),
             'planifications' => Planification::whereIn('id_classe', $classeIds)->orderBy('motif')->get(),
             'planification_required' => $planificationRequired,
-            'planification_label' => $planificationRequired ? 'Planification' : 'Coopérative',
+            'planification_label' => $planificationRequired ? 'Formule de paiement' : 'Coopérative',
         ]);
     }
 

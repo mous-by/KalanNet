@@ -21,7 +21,7 @@
         </div>
     @endif
 
-    <!-- Main Card (Disposition Alliance-Team) -->
+    <!-- Main Card -->
     <div class="card border-top border-4 border-primary shadow-sm mt-3">
         <div class="card-body">
             @if(session('success'))

@@ -103,7 +103,7 @@ return [
         'generate_bulletins' => 'إنشاء كشوف النقاط',
         'announcements' => 'الإعلانات',
         'finances' => 'المالية',
-        'planning' => 'التخطيط',
+        'planning' => 'خطة الدفع',
         'student_payments' => 'مدفوعات التلاميذ',
         'state_subsidies' => 'إعانات الدولة',
         'payment_history' => 'سجل المدفوعات',

@@ -86,7 +86,7 @@
                                 <span class="menu-icon rounded-circle d-flex align-items-center justify-content-center me-2">
                                     <i class="bi bi-calendar-check"></i>
                                 </span>
-                                <span>{{ $isPublicSchool ? 'Coopérative' : 'Planification' }}</span>
+                                <span>{{ $isPublicSchool ? 'Coopérative' : 'Formule de paiement' }}</span>
                             </a>
                         </li>
                         <li class="nav-item">
@@ -114,7 +114,7 @@
             <div class="card theme-card w-100">
                 <div class="card-header theme-header">
                     <i class="bi bi-table me-1"></i>
-                    {{ $isPublicSchool ? 'Coopérative scolaire' : 'Planification des paiements' }}
+                    {{ $isPublicSchool ? 'Coopérative scolaire' : 'Formule de paiement' }}
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -165,7 +165,7 @@
                                     <th class="text-center" style="width: 10%; font-size: 14px;">Action</th>
                                 </tr>
                             </thead>
-                            <tbody id="tableListe_Planification">
+                            <tbody id="tableListe_FormulePaiement">
                                 <tr id="form-fields" class="form-row">
                                     <td>
                                         <select name="motif[]" class="form-select planification-motif" required>

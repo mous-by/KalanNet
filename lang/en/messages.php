@@ -103,7 +103,7 @@ return [
         'generate_bulletins' => 'Generate Report Cards',
         'announcements' => 'Announcements',
         'finances' => 'Finances',
-        'planning' => 'Planning',
+        'planning' => 'Payment Plan',
         'student_payments' => 'Student Payments',
         'state_subsidies' => 'State Subsidies',
         'payment_history' => 'Payment History',

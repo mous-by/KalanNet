@@ -103,7 +103,7 @@ return [
         'generate_bulletins' => 'Générer Bulletins',
         'announcements' => 'Annonces',
         'finances' => 'Finances',
-        'planning' => 'Planification',
+        'planning' => 'Formule de paiement',
         'student_payments' => 'Paiements Élèves',
         'state_subsidies' => 'Subventions État',
         'payment_history' => 'Historique paiements',

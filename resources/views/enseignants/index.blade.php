@@ -19,7 +19,7 @@
         </div>
     </div>
 
-    <!-- Filters (Disposition Alliance-Team) -->
+    <!-- Filters -->
     <div class="col-12">
         <div class="card theme-card shadow-sm">
             <div class="card-body p-4">
@@ -39,7 +39,7 @@
         </div>
     </div>
 
-    <!-- Actions (Disposition Alliance-Team) -->
+    <!-- Actions -->
     <div class="row align-items-center mb-3">
         <div class="col-md-12 pt-2 text-end">
             <button type="button" class="btn px-4 theme-pill-active">
@@ -49,7 +49,7 @@
 
     </div>
 
-    <!-- Main Card (Disposition Alliance-Team) -->
+    <!-- Main Card -->
     <div class="card theme-card shadow-sm mt-3">
         <div class="card-body">
             @if(session('success'))

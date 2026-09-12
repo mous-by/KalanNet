@@ -479,7 +479,7 @@ class EleveController extends Controller
     private function cardPrintConfig(Request $request): array
     {
         $data = $request->validate([
-            'template' => 'nullable|string|in:institutionnel,moderne,vertical,alliance_pro,horizon,compact',
+            'template' => 'nullable|string|in:institutionnel,moderne,vertical,epure,horizon,compact',
             'primary_color' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
             'secondary_color' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
             'card_title' => 'nullable|string|max:80',

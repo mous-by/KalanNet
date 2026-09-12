@@ -119,7 +119,7 @@
 <body>
 
     @php
-        // Construct Dynamic Alliance School Header Name
+        // Construct dynamic school header name
         $typeEcole = strtolower(trim($ecole->typeEcole ?? ''));
         $ordre = trim($selectedClasse->ordreEnseignement ?? '');
 

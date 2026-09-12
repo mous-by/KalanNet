@@ -4,7 +4,7 @@
 @php
     $activeTab = request('tab', 'individual');
     $planificationRequired = $planificationRequired ?? true;
-    $planificationLabel = $planificationLabel ?? 'Planification';
+    $planificationLabel = $planificationLabel ?? 'Formule de paiement';
 @endphp
 
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">

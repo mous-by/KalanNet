@@ -96,7 +96,7 @@
         .school-contact { font-size: 7.5px; line-height: 1.2; color: #374151; }
         .name { font-weight: bold; text-transform: uppercase; color: #111827; }
 
-        .tpl-alliance_pro {
+        .tpl-epure {
             width: 48%;
             height: 220px;
             margin: 0 1% 13px 0;
@@ -104,14 +104,14 @@
             border: 2px solid {{ $config['primary_color'] }};
             background: #ffffff;
         }
-        .tpl-alliance_pro .head { text-align: center; padding: 8px 58px 4px; min-height: 55px; }
-        .tpl-alliance_pro .body { padding: 8px 12px 0; }
-        .tpl-alliance_pro .photo { width: 78px; height: 88px; line-height: 88px; border-radius: 8px; border: 2px solid {{ $config['secondary_color'] }}; }
-        .tpl-alliance_pro .info { line-height: 1.5; color: #111827; }
-        .tpl-alliance_pro .name { font-size: 12px; color: #111827; }
-        .tpl-alliance_pro .mat { clear: both; margin: 8px 12px 0; }
-        .tpl-alliance_pro .qr { position: absolute; right: 12px; bottom: 10px; }
-        .tpl-alliance_pro .sign { position: absolute; right: 76px; bottom: 10px; width: 82px; font-size: 9px; text-align: center; }
+        .tpl-epure .head { text-align: center; padding: 8px 58px 4px; min-height: 55px; }
+        .tpl-epure .body { padding: 8px 12px 0; }
+        .tpl-epure .photo { width: 78px; height: 88px; line-height: 88px; border-radius: 8px; border: 2px solid {{ $config['secondary_color'] }}; }
+        .tpl-epure .info { line-height: 1.5; color: #111827; }
+        .tpl-epure .name { font-size: 12px; color: #111827; }
+        .tpl-epure .mat { clear: both; margin: 8px 12px 0; }
+        .tpl-epure .qr { position: absolute; right: 12px; bottom: 10px; }
+        .tpl-epure .sign { position: absolute; right: 76px; bottom: 10px; width: 82px; font-size: 9px; text-align: center; }
 
         .tpl-institutionnel, .tpl-moderne, .tpl-horizon {
             width: 48%;

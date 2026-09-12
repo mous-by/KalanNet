@@ -44,7 +44,7 @@
                 </select>
             </div>
             <div class="col-md-4">
-                <label class="form-label">Planification</label>
+                <label class="form-label">Formule de paiement</label>
                 <select name="id_planification" class="form-select" required>
                     <option value="">Veuillez choisir</option>
                     @foreach($planifications as $planification)

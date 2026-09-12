@@ -50,7 +50,7 @@
         $ordre = $bulletin['ordre'];
     @endphp
     <div class="bulletin-page">
-        @include('pdf.partials.bulletin_alliance')
+        @include('pdf.partials.bulletin_standard')
     </div>
 @endforeach
 </body>

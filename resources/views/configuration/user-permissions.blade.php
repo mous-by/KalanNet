@@ -151,7 +151,7 @@
                         <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between">
                             <div>
                                 <strong>Organisation:</strong>
-                                permissions triées par module puis par action, comme Alliance-Team.
+                                permissions triées par module puis par action.
                             </div>
                             <div class="d-flex align-items-center gap-3">
                                 <div class="form-check m-0">

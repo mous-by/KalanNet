@@ -143,7 +143,7 @@ return [
     'Composition' => 'Exam',
 
     'Finances' => 'Finances',
-    'Planification' => 'Planning',
+    'Formule de paiement' => 'Payment plan',
     'Paiements Élèves' => 'Student payments',
     'Paiement' => 'Payment',
     'Paiements' => 'Payments',

@@ -24,7 +24,7 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
-        <h1 class="h3 mb-1">{{ $isPublicSchool ? 'Coopérative' : 'Planification' }}</h1>
+        <h1 class="h3 mb-1">{{ $isPublicSchool ? 'Coopérative' : 'Formule de paiement' }}</h1>
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-0">
                 <li class="breadcrumb-item"><a href="{{ route('finances.index') }}">Finances</a></li>
@@ -67,7 +67,7 @@
                             <span class="menu-icon rounded-circle d-flex align-items-center justify-content-center me-2">
                                 <i class="bi bi-calendar-check"></i>
                             </span>
-                            <span>{{ $isPublicSchool ? 'Coopérative' : 'Planification' }}</span>
+                            <span>{{ $isPublicSchool ? 'Coopérative' : 'Formule de paiement' }}</span>
                         </a>
                     </li>
                     <li class="nav-item">

@@ -271,7 +271,7 @@
         <figcaption>Paiements Élèves : choisissez la classe (1), puis validez les paiements (2).</figcaption>
     </figure>
     <ul>
-        <li><strong>Planification</strong> : préparez à l'avance les échéanciers de paiement (mensualités,
+        <li><strong>Formule de paiement</strong> : préparez à l'avance les échéanciers de paiement (mensualités,
         trimestres...) pour une ou plusieurs classes.</li>
         <li><strong>Subventions État</strong> : enregistrez un versement global reçu de l'État ; KalanNet le
         répartit automatiquement sur les élèves concernés.</li>
