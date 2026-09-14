@@ -84,6 +84,18 @@
                                 </select>
                             </div>
                             <div class="col-md-4">
+                                <label class="form-label small fw-bold text-uppercase">Langue LV2</label>
+                                <select name="id_matiere_lv2" class="form-select rounded-3">
+                                    <option value="">Non applicable / pas encore choisie</option>
+                                    @foreach($matieresLv2 as $matiereLv2)
+                                        <option value="{{ $matiereLv2->id_matiere }}" @selected(old('id_matiere_lv2') == $matiereLv2->id_matiere)>
+                                            {{ $matiereLv2->nom_matiere }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <small class="text-muted d-block mt-1">Secondaire Générale / Technique et Professionnel uniquement.</small>
+                            </div>
+                            <div class="col-md-4">
                                 <label class="form-label small fw-bold text-uppercase">Mode de paiement</label>
                                 <select name="mode_paiement" class="form-select rounded-3">
                                     @foreach(['' => 'Non défini', 'Mensuel' => 'Mensuel', 'Trimestriel' => 'Trimestriel', 'Annuel' => 'Annuel'] as $value => $label)

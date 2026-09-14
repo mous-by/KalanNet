@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class EleveController extends Controller
@@ -159,8 +160,9 @@ class EleveController extends Controller
         $eleve = Eleve::where('id_ecole', session('idEcole'))->findOrFail($id);
         $classes = Classe::where('idEcole', session('idEcole'))->orderBy('nom_classe')->get();
         $annees = AnneeScolaire::orderByDesc('id_anneeScolaire')->get();
+        $matieresLv2 = \App\Models\Matiere::lv2()->with('ordres')->orderBy('nom_matiere')->get();
 
-        return view('eleves.form', compact('eleve', 'classes', 'annees'));
+        return view('eleves.form', compact('eleve', 'classes', 'annees', 'matieresLv2'));
     }
 
     public function update(Request $request, $id)
@@ -181,9 +183,14 @@ class EleveController extends Controller
             'id_classe' => 'required|integer|exists:classe,id_classe',
             'id_annee' => 'required|integer|exists:anneescolaire,id_anneeScolaire',
             'date_inscription' => 'nullable|date',
+            'id_matiere_lv2' => ['nullable', 'integer', Rule::exists('matiere', 'id_matiere')->where('est_lv2', true)],
         ]);
 
-        Classe::where('idEcole', session('idEcole'))->findOrFail($data['id_classe']);
+        $classe = Classe::where('idEcole', session('idEcole'))->findOrFail($data['id_classe']);
+
+        if (!empty($data['id_matiere_lv2'])) {
+            $this->ensureMatiereLv2CompatibleWithClasse((int) $data['id_matiere_lv2'], $classe);
+        }
 
         $eleve->update([
             'prenom_eleve' => $data['prenom_eleve'],
@@ -199,9 +206,42 @@ class EleveController extends Controller
             'id_classe' => $data['id_classe'],
             'id_annee' => $data['id_annee'],
             'date_inscription' => $data['date_inscription'] ?? $eleve->date_inscription,
+            'id_matiere_lv2' => array_key_exists('id_matiere_lv2', $data) ? $data['id_matiere_lv2'] : $eleve->id_matiere_lv2,
         ]);
 
         return redirect()->route('eleves.index')->with('success', 'Élève modifié avec succès.');
+    }
+
+    /**
+     * Une langue LV2 n'a de sens que pour les ordres d'enseignement ou elle
+     * est proposee (Secondaire Generale / Secondaire Technique et
+     * Professionnel) — meme mapping slug -> libellé que
+     * ClasseController::ordreMatiereMap(). Protected : partagee avec
+     * Api\V1\EleveController (heritage) et dupliquee dans
+     * InscriptionController (classe independante, pas d'heritage).
+     */
+    protected function ensureMatiereLv2CompatibleWithClasse(int $idMatiereLv2, Classe $classe): void
+    {
+        $map = [
+            'fondamentale1' => 'Fondamentale I',
+            'fondamentale2' => 'Fondamentale II',
+            'secondairegenerale' => 'Secondaire Generale',
+            'secondairetechniqueetprofessionnel' => 'Secondaire Technique et Professionnel',
+            'secondaire' => 'Secondaire Generale',
+            'technique' => 'Secondaire Technique et Professionnel',
+        ];
+        $ordreLabel = $map[$classe->ordreEnseignement] ?? $classe->ordreEnseignement;
+
+        $compatible = DB::table('matiere_ordre')
+            ->where('id_matiere', $idMatiereLv2)
+            ->where('ordre_enseignement', $ordreLabel)
+            ->exists();
+
+        if (!$compatible) {
+            throw ValidationException::withMessages([
+                'id_matiere_lv2' => "Cette langue LV2 n'est pas proposée pour cette classe.",
+            ]);
+        }
     }
 
     public function destroy($id)

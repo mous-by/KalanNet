@@ -73,6 +73,7 @@
                             <th>Date naissance</th>
                             <th>Lieu naissance</th>
                             <th>Matricule</th>
+                            <th>Langue LV2</th>
                             <th class="text-center">Action</th>
                         </tr>
                     </thead>
@@ -90,6 +91,14 @@
                             <td><input type="date" name="eleves[0][date_naissance]" class="form-control"></td>
                             <td><input name="eleves[0][lieu_naiss]" class="form-control"></td>
                             <td><input name="eleves[0][matricule]" class="form-control" placeholder="Auto si vide"></td>
+                            <td>
+                                <select name="eleves[0][id_matiere_lv2]" class="form-select">
+                                    <option value="">—</option>
+                                    @foreach($matieresLv2 as $matiereLv2)
+                                        <option value="{{ $matiereLv2->id_matiere }}">{{ $matiereLv2->nom_matiere }}</option>
+                                    @endforeach
+                                </select>
+                            </td>
                             <td class="text-center">
                                 <button type="button" class="btn btn-primary add-row"><span style="font-size:18px;line-height:1;">+</span></button>
                             </td>

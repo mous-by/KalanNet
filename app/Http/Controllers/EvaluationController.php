@@ -76,9 +76,9 @@ class EvaluationController extends Controller
             abort(403, 'Seuls les enseignants peuvent programmer une évaluation.');
         }
 
-        $students = $this->studentsForEvaluation($data['id_classe'], $data['id_annee_scolaire'])->pluck('id_eleve')->all();
+        $students = $this->studentsForEvaluation($data['id_classe'], $data['id_annee_scolaire'], $data['id_matiere'])->pluck('id_eleve')->all();
         if (empty($students)) {
-            throw ValidationException::withMessages(['id_classe' => 'Aucun élève trouvé pour cette classe et cette année scolaire.']);
+            throw ValidationException::withMessages(['id_classe' => 'Aucun élève trouvé pour cette classe, cette année scolaire et — le cas échéant — cette langue LV2.']);
         }
 
         DB::transaction(function () use ($data, $idEnseignant, $students) {
@@ -194,9 +194,9 @@ class EvaluationController extends Controller
         $this->authorizeClasse($details->first()->classe);
 
         $data = $this->validateProgramme($request);
-        $students = $this->studentsForEvaluation($data['id_classe'], $data['id_annee_scolaire'])->pluck('id_eleve')->all();
+        $students = $this->studentsForEvaluation($data['id_classe'], $data['id_annee_scolaire'], $data['id_matiere'])->pluck('id_eleve')->all();
         if (empty($students)) {
-            throw ValidationException::withMessages(['id_classe' => 'Aucun élève trouvé pour cette classe et cette année scolaire.']);
+            throw ValidationException::withMessages(['id_classe' => 'Aucun élève trouvé pour cette classe, cette année scolaire et — le cas échéant — cette langue LV2.']);
         }
         $idEnseignant = Auth::user()->id_enseignant ?: $details->first()->id_enseignant;
 
@@ -237,7 +237,7 @@ class EvaluationController extends Controller
     {
         $this->authorizePermission('evaluation_modification');
         $evaluation = Evaluation::findOrFail($id);
-        $details = LigneEvaluation::with(['classe.ecole', 'noteType'])->where('id_evaluation', $evaluation->id_evaluation)->get();
+        $details = LigneEvaluation::with(['classe.ecole', 'noteType', 'matiere', 'eleve'])->where('id_evaluation', $evaluation->id_evaluation)->get();
         abort_if($details->isEmpty(), 404);
         $this->authorizeEvaluationLines($details);
         $this->authorizeClasse($details->first()->classe);
@@ -249,6 +249,21 @@ class EvaluationController extends Controller
             'note' => 'required|array|min:1',
             'note.*' => 'nullable|numeric|min:0|max:' . $maxNote,
         ]);
+
+        // Defense en profondeur : meme si studentsForEvaluation() n'aurait
+        // jamais du creer ces lignes pour ces eleves, on revalide ici la
+        // cohesion langue eleve/matiere avant d'ecrire une note — couvre
+        // notamment le cas d'un eleve qui a change de LV2 depuis la
+        // programmation de l'evaluation (voir §"anciennes notes" de l'audit).
+        $linesById = $details->keyBy('id_ligneEvaluation');
+        foreach ($data['id_ligneEvaluation'] as $lineId) {
+            $line = $linesById->get($lineId);
+            if ($line && $line->matiere?->est_lv2 && (int) $line->eleve?->id_matiere_lv2 !== (int) $line->id_matiere) {
+                throw ValidationException::withMessages([
+                    'id_ligneEvaluation' => "La langue LV2 de {$line->eleve?->nom_eleve} {$line->eleve?->prenom_eleve} ne correspond plus à la matière de cette évaluation.",
+                ]);
+            }
+        }
 
         DB::transaction(function () use ($evaluation, $data, $details) {
             $validationStatus = $this->requiresPrivateNoteValidation($details->first()->classe) ? 'en_attente' : 'valide';
@@ -330,9 +345,10 @@ class EvaluationController extends Controller
         $data = $request->validate([
             'id_classe' => 'required|integer|exists:classe,id_classe',
             'id_annee_scolaire' => 'required|integer|exists:anneescolaire,id_anneeScolaire',
+            'id_matiere' => 'nullable|integer|exists:matiere,id_matiere',
         ]);
 
-        $students = $this->studentsForEvaluation((int) $data['id_classe'], (int) $data['id_annee_scolaire'])
+        $students = $this->studentsForEvaluation((int) $data['id_classe'], (int) $data['id_annee_scolaire'], isset($data['id_matiere']) ? (int) $data['id_matiere'] : null)
             ->map(fn ($eleve) => [
                 'id_eleve' => $eleve->id_eleve,
                 'matricule' => $eleve->matricule,
@@ -396,15 +412,26 @@ class EvaluationController extends Controller
         return $data;
     }
 
-    protected function studentsForEvaluation(int $idClasse, int $idAnnee)
+    /**
+     * $idMatiere pilote le filtre LV2 : si la matiere programmee est une
+     * langue LV2 (Matiere::est_lv2), seuls les eleves ayant choisi
+     * exactement cette langue (Eleve::id_matiere_lv2) sont retournes — un
+     * professeur d'Arabe ne doit jamais voir un eleve germaniste, chinois
+     * ou russophone dans sa liste a noter. Pour toute autre matiere, le
+     * comportement reste inchange (filtre classe + annee uniquement).
+     */
+    protected function studentsForEvaluation(int $idClasse, int $idAnnee, ?int $idMatiere = null)
     {
         $classe = Classe::findOrFail($idClasse);
         $this->authorizeClasse($classe);
+
+        $isLv2 = $idMatiere && Matiere::where('id_matiere', $idMatiere)->where('est_lv2', true)->exists();
 
         return Eleve::query()
             ->where('id_classe', $idClasse)
             ->where('id_annee', $idAnnee)
             ->where('etat_dossier', 0)
+            ->when($isLv2, fn ($q) => $q->where('id_matiere_lv2', $idMatiere))
             ->orderBy('prenom_eleve')->orderBy('nom_eleve')
             ->get();
     }

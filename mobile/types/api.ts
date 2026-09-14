@@ -141,6 +141,7 @@ export interface Eleve {
   statut_paiement: string | null;
   id_classe: number;
   id_annee: number;
+  id_matiere_lv2: number | null;
   date_inscription: string | null;
   etat_dossier: number;
   classe?: Classe;

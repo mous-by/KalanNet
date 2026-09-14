@@ -428,8 +428,16 @@ class BulletinController extends Controller
         $matieres = DB::table('ligneclasse as lc')
             ->join('matiere as m', 'lc.id_matiere', '=', 'm.id_matiere')
             ->where('lc.id_classe', $classe->id_classe)
-            ->select('m.nom_matiere', 'lc.coefficient as coef', 'lc.id_matiere')
-            ->get();
+            ->select('m.nom_matiere', 'lc.coefficient as coef', 'lc.id_matiere', 'm.est_lv2')
+            ->get()
+            // Une classe de Secondaire peut avoir plusieurs langues LV2
+            // (Arabe/Allemand/Chinois/Russe...) affectees a des enseignants
+            // differents. Le bulletin ne doit jamais afficher ni compter
+            // dans la moyenne generale une langue LV2 que cet eleve n'a pas
+            // choisie — sinon des "0" de langues non etudiees viendraient
+            // gonfler le coefficient total et fausser sa moyenne.
+            ->reject(fn ($matiere) => $matiere->est_lv2 && (int) $matiere->id_matiere !== (int) $eleve->id_matiere_lv2)
+            ->values();
 
         foreach ($matieres as $matiere) {
             $matiere->M_Class = DB::table('ligne_evaluation as le')

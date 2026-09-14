@@ -22,6 +22,7 @@ class Eleve extends Model
         'image',
         'matricule',
         'id_classe',
+        'id_matiere_lv2',
         'cas_social',
         'mode_paiement',
         'statut_paiement',
@@ -39,6 +40,11 @@ class Eleve extends Model
     public function classe()
     {
         return $this->belongsTo(Classe::class, 'id_classe', 'id_classe');
+    }
+
+    public function matiereLv2()
+    {
+        return $this->belongsTo(Matiere::class, 'id_matiere_lv2', 'id_matiere');
     }
 
     public function parents()

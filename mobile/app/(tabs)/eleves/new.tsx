@@ -13,7 +13,7 @@ import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
-import { AnneeScolaire, Classe, ParentEleve, Planification } from '@/types/api';
+import { AnneeScolaire, Classe, Matiere, ParentEleve, Planification } from '@/types/api';
 
 const GENRE_OPTIONS = [
   { value: 'Masculin', label: 'Masculin' },
@@ -47,6 +47,7 @@ interface InscriptionOptions {
   planifications: Planification[];
   planification_required: boolean;
   planification_label: string;
+  matieres_lv2: Matiere[];
 }
 
 export default function NewEleveScreen() {
@@ -68,6 +69,7 @@ export default function NewEleveScreen() {
   const [modePaiement, setModePaiement] = useState<string>('');
   const [idAnnee, setIdAnnee] = useState<number | null>(null);
   const [idPlanification, setIdPlanification] = useState<number | null>(null);
+  const [idMatiereLv2, setIdMatiereLv2] = useState<number | null>(null);
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
 
   const [parentId, setParentId] = useState<number | null>(null);
@@ -85,6 +87,10 @@ export default function NewEleveScreen() {
   const classeOptions = (options?.classes ?? []).map((c) => ({ value: c.id_classe, label: `${c.nom_classe} - ${c.ordreEnseignement}` }));
   const anneeOptions = (options?.annees ?? []).map((a) => ({ value: a.id_anneeScolaire, label: a.annee }));
   const parentOptions = [{ value: 0, label: 'Aucun rattachement maintenant' }, ...(options?.parents ?? []).map((p) => ({ value: p.id_parent, label: p.nom_prenom_parent }))];
+  const matiereLv2Options = [
+    { value: 0, label: 'Non applicable / pas encore choisie' },
+    ...(options?.matieres_lv2 ?? []).map((m) => ({ value: m.id_matiere, label: m.nom_matiere })),
+  ];
 
   const planificationOptions = useMemo(() => {
     const filtered = (options?.planifications ?? []).filter((p) => p.id_classe === idClasse && p.id_annee === idAnnee);
@@ -133,6 +139,7 @@ export default function NewEleveScreen() {
         mode_paiement: modePaiement || undefined,
         id_annee: idAnnee,
         id_planification: idPlanification || undefined,
+        id_matiere_lv2: idMatiereLv2 || undefined,
         ...(parentId ? { parent_id: parentId, lien_parent: lienParent, informer } : {}),
       };
 
@@ -164,6 +171,7 @@ export default function NewEleveScreen() {
       if (modePaiement) form.append('mode_paiement', modePaiement);
       form.append('id_annee', String(idAnnee));
       if (idPlanification) form.append('id_planification', String(idPlanification));
+      if (idMatiereLv2) form.append('id_matiere_lv2', String(idMatiereLv2));
       if (avatarUri) form.append('image', { uri: avatarUri, name: 'eleve.jpg', type: 'image/jpeg' } as unknown as Blob);
       if (parentId) {
         form.append('parent_id', String(parentId));
@@ -218,6 +226,12 @@ export default function NewEleveScreen() {
         }}
       />
       <SelectField label="Mode de paiement" value={modePaiement} options={MODE_PAIEMENT_OPTIONS} onChange={(v) => setModePaiement(v as string)} />
+      <SelectField
+        label="Langue LV2"
+        value={idMatiereLv2 ?? 0}
+        options={matiereLv2Options}
+        onChange={(v) => setIdMatiereLv2((v as number) || null)}
+      />
       <SelectField
         label={requiredLabel('Année scolaire')}
         value={idAnnee}

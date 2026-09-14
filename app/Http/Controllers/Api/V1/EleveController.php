@@ -7,6 +7,7 @@ use App\Models\AnneeScolaire;
 use App\Models\Classe;
 use App\Models\Ecole;
 use App\Models\Eleve;
+use App\Models\Matiere;
 use App\Models\Paiement;
 use App\Models\ParentModel;
 use App\Models\Planification;
@@ -33,6 +34,12 @@ class EleveController extends WebEleveController
             'planifications' => Planification::whereIn('id_classe', $classeIds)->orderBy('motif')->get(),
             'planification_required' => $planificationRequired,
             'planification_label' => $planificationRequired ? 'Formule de paiement' : 'Coopérative',
+            // Langues LV2 disponibles — le frontend les filtre localement
+            // selon l'ordre d'enseignement de la classe choisie (meme
+            // pattern que "planifications" ci-dessus). N'est utile que pour
+            // les classes de Secondaire, mais on renvoie tout : peu de
+            // lignes, et ca evite un aller-retour reseau supplementaire.
+            'matieres_lv2' => Matiere::lv2()->orderBy('nom_matiere')->get(),
         ]);
     }
 
@@ -57,15 +64,20 @@ class EleveController extends WebEleveController
             'lien_parent' => 'nullable|string|max:100',
             'informer' => 'nullable|string|in:Oui,Non',
             'id_planification' => [$this->schoolRequiresPlanification() ? 'required' : 'nullable', 'integer', 'exists:planification,id_planification'],
+            'id_matiere_lv2' => ['nullable', 'integer', Rule::exists('matiere', 'id_matiere')->where('est_lv2', true)],
         ]);
 
-        Classe::where('idEcole', session('idEcole'))->findOrFail($data['id_classe']);
+        $classe = Classe::where('idEcole', session('idEcole'))->findOrFail($data['id_classe']);
 
         $planificationId = $data['id_planification'] ?? null;
         if ($planificationId) {
             Planification::where('id_classe', $data['id_classe'])
                 ->where('id_annee', $data['id_annee'])
                 ->findOrFail($planificationId);
+        }
+
+        if (!empty($data['id_matiere_lv2'])) {
+            $this->ensureMatiereLv2CompatibleWithClasse((int) $data['id_matiere_lv2'], $classe);
         }
 
         $eleve = DB::transaction(function () use ($request, $data, $planificationId) {
@@ -83,6 +95,7 @@ class EleveController extends WebEleveController
             $eleve->image = $this->storeImage($request);
             $eleve->cas_social = ($data['cas_social'] ?? null) ?: 'normal';
             $eleve->mode_paiement = $data['mode_paiement'] ?? null;
+            $eleve->id_matiere_lv2 = $data['id_matiere_lv2'] ?? null;
             $eleve->id_ecole = session('idEcole');
             $eleve->save();
 
@@ -116,6 +129,8 @@ class EleveController extends WebEleveController
 
         return $statut !== 'public';
     }
+
+    // ensureMatiereLv2CompatibleWithClasse() est heritee de WebEleveController.
 
     private function validDateOrNull(?string $value, string $field): ?string
     {
@@ -266,9 +281,14 @@ class EleveController extends WebEleveController
             'id_classe' => 'required|integer|exists:classe,id_classe',
             'id_annee' => 'required|integer|exists:anneescolaire,id_anneeScolaire',
             'date_inscription' => 'nullable|date',
+            'id_matiere_lv2' => ['nullable', 'integer', Rule::exists('matiere', 'id_matiere')->where('est_lv2', true)],
         ]);
 
-        Classe::where('idEcole', session('idEcole'))->findOrFail($data['id_classe']);
+        $classe = Classe::where('idEcole', session('idEcole'))->findOrFail($data['id_classe']);
+
+        if (!empty($data['id_matiere_lv2'])) {
+            $this->ensureMatiereLv2CompatibleWithClasse((int) $data['id_matiere_lv2'], $classe);
+        }
 
         $eleve->update([
             'prenom_eleve' => $data['prenom_eleve'],
@@ -284,6 +304,7 @@ class EleveController extends WebEleveController
             'id_classe' => $data['id_classe'],
             'id_annee' => $data['id_annee'],
             'date_inscription' => $data['date_inscription'] ?? $eleve->date_inscription,
+            'id_matiere_lv2' => array_key_exists('id_matiere_lv2', $data) ? $data['id_matiere_lv2'] : $eleve->id_matiere_lv2,
         ]);
 
         return response()->json($eleve->fresh('classe'));

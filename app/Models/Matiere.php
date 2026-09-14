@@ -15,6 +15,11 @@ class Matiere extends Model
     protected $fillable = [
         'nom_matiere',
         'id_ecole',
+        'est_lv2',
+    ];
+
+    protected $casts = [
+        'est_lv2' => 'boolean',
     ];
 
     public function ecole()
@@ -25,5 +30,10 @@ class Matiere extends Model
     public function ordres()
     {
         return $this->hasMany(MatiereOrdre::class, 'id_matiere', 'id_matiere');
+    }
+
+    public function scopeLv2($query)
+    {
+        return $query->where('est_lv2', true);
     }
 }

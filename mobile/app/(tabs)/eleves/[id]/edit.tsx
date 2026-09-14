@@ -12,7 +12,7 @@ import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
-import { AnneeScolaire, Classe, Eleve } from '@/types/api';
+import { AnneeScolaire, Classe, Eleve, Matiere } from '@/types/api';
 
 const GENRE_OPTIONS = [
   { value: 'Masculin', label: 'Masculin' },
@@ -45,8 +45,8 @@ export default function EditEleveScreen() {
   const { data, isLoading: isLoadingEleve, error: eleveError } = useApiGet<{ eleve: Eleve }>(`/eleves/${id}`, [id], {
     cacheKey: `eleve-${id}`,
   });
-  const { data: options } = useApiGet<{ classes: Classe[]; annees: AnneeScolaire[] }>('/eleves/cartes-scolaires', [], {
-    cacheKey: 'eleves-cartes-scolaires',
+  const { data: options } = useApiGet<{ classes: Classe[]; annees: AnneeScolaire[]; matieres_lv2: Matiere[] }>('/eleves/inscription-options', [], {
+    cacheKey: 'eleves-inscription-options',
   });
 
   const [form, setForm] = useState<Partial<Eleve>>({});
@@ -79,6 +79,7 @@ export default function EditEleveScreen() {
       statut_paiement: form.statut_paiement,
       id_classe: form.id_classe,
       id_annee: form.id_annee,
+      id_matiere_lv2: form.id_matiere_lv2 || null,
       date_inscription: form.date_inscription,
     };
     try {
@@ -115,6 +116,10 @@ export default function EditEleveScreen() {
 
   const classeOptions = (options?.classes ?? []).map((c) => ({ value: c.id_classe, label: c.nom_classe }));
   const anneeOptions = (options?.annees ?? []).map((a) => ({ value: a.id_anneeScolaire, label: a.annee }));
+  const matiereLv2Options = [
+    { value: 0, label: 'Non applicable / pas encore choisie' },
+    ...(options?.matieres_lv2 ?? []).map((m) => ({ value: m.id_matiere, label: m.nom_matiere })),
+  ];
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
@@ -127,6 +132,12 @@ export default function EditEleveScreen() {
       <TextInput mode="outlined" label="Lieu de naissance" value={form.lieu_naiss ?? ''} onChangeText={(v) => set('lieu_naiss', v)} style={styles.input} />
       <TextInput mode="outlined" label="Adresse" value={form.adresse_eleve ?? ''} onChangeText={(v) => set('adresse_eleve', v)} style={styles.input} />
       <SelectField label={requiredLabel('Classe')} value={form.id_classe ?? null} options={classeOptions} onChange={(v) => set('id_classe', v as number)} />
+      <SelectField
+        label="Langue LV2"
+        value={form.id_matiere_lv2 ?? 0}
+        options={matiereLv2Options}
+        onChange={(v) => set('id_matiere_lv2', (v as number) || null)}
+      />
       <SelectField label={requiredLabel('Année scolaire')} value={form.id_annee ?? null} options={anneeOptions} onChange={(v) => set('id_annee', v as number)} />
       <SelectField label="Cas social" value={form.cas_social ?? 'normal'} options={CAS_SOCIAL_OPTIONS} onChange={(v) => set('cas_social', v as string)} />
       <SelectField label="Mode de paiement" value={form.mode_paiement ?? ''} options={MODE_PAIEMENT_OPTIONS} onChange={(v) => set('mode_paiement', v as string)} />

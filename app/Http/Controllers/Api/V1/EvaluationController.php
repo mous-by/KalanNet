@@ -60,9 +60,9 @@ class EvaluationController extends WebEvaluationController
             abort(403, 'Seuls les enseignants peuvent programmer une évaluation.');
         }
 
-        $students = $this->studentsForEvaluation($data['id_classe'], $data['id_annee_scolaire'])->pluck('id_eleve')->all();
+        $students = $this->studentsForEvaluation($data['id_classe'], $data['id_annee_scolaire'], $data['id_matiere'])->pluck('id_eleve')->all();
         if (empty($students)) {
-            throw ValidationException::withMessages(['id_classe' => 'Aucun élève trouvé pour cette classe et cette année scolaire.']);
+            throw ValidationException::withMessages(['id_classe' => 'Aucun élève trouvé pour cette classe, cette année scolaire et — le cas échéant — cette langue LV2.']);
         }
 
         $evaluation = DB::transaction(function () use ($data, $idEnseignant, $students) {
@@ -129,9 +129,9 @@ class EvaluationController extends WebEvaluationController
         $this->authorizeClasse($details->first()->classe);
 
         $data = $this->validateProgramme($request);
-        $students = $this->studentsForEvaluation($data['id_classe'], $data['id_annee_scolaire'])->pluck('id_eleve')->all();
+        $students = $this->studentsForEvaluation($data['id_classe'], $data['id_annee_scolaire'], $data['id_matiere'])->pluck('id_eleve')->all();
         if (empty($students)) {
-            throw ValidationException::withMessages(['id_classe' => 'Aucun élève trouvé pour cette classe et cette année scolaire.']);
+            throw ValidationException::withMessages(['id_classe' => 'Aucun élève trouvé pour cette classe, cette année scolaire et — le cas échéant — cette langue LV2.']);
         }
         $idEnseignant = $request->user()->id_enseignant ?: $details->first()->id_enseignant;
 
@@ -172,7 +172,7 @@ class EvaluationController extends WebEvaluationController
     {
         $this->authorizePermission('evaluation_modification');
         $evaluation = Evaluation::findOrFail($id);
-        $details = LigneEvaluation::with(['classe.ecole', 'noteType'])->where('id_evaluation', $evaluation->id_evaluation)->get();
+        $details = LigneEvaluation::with(['classe.ecole', 'noteType', 'matiere', 'eleve'])->where('id_evaluation', $evaluation->id_evaluation)->get();
         abort_if($details->isEmpty(), 404);
         $this->authorizeEvaluationLines($details);
         $this->authorizeClasse($details->first()->classe);
@@ -184,6 +184,20 @@ class EvaluationController extends WebEvaluationController
             'note' => 'required|array|min:1',
             'note.*' => 'nullable|numeric|min:0|max:' . $maxNote,
         ]);
+
+        // Defense en profondeur : voir le meme controle dans le
+        // controleur web (EvaluationController::update()) — a garder
+        // synchronise, ce controleur duplique la methode plutot que d'en
+        // heriter.
+        $linesById = $details->keyBy('id_ligneEvaluation');
+        foreach ($data['id_ligneEvaluation'] as $lineId) {
+            $line = $linesById->get($lineId);
+            if ($line && $line->matiere?->est_lv2 && (int) $line->eleve?->id_matiere_lv2 !== (int) $line->id_matiere) {
+                throw ValidationException::withMessages([
+                    'id_ligneEvaluation' => "La langue LV2 de {$line->eleve?->nom_eleve} {$line->eleve?->prenom_eleve} ne correspond plus à la matière de cette évaluation.",
+                ]);
+            }
+        }
 
         DB::transaction(function () use ($evaluation, $data, $details) {
             $validationStatus = $this->requiresPrivateNoteValidation($details->first()->classe) ? 'en_attente' : 'valide';

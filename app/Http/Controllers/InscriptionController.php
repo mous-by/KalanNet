@@ -6,6 +6,7 @@ use App\Models\Eleve;
 use App\Models\Classe;
 use App\Models\AnneeScolaire;
 use App\Models\Ecole;
+use App\Models\Matiere;
 use App\Models\ParentModel;
 use App\Models\Planification;
 use Illuminate\Http\Request;
@@ -29,6 +30,7 @@ class InscriptionController extends Controller
         $planifications = Planification::whereIn('id_classe', $classeIds)->orderBy('motif')->get();
         $planificationRequired = $this->schoolRequiresPlanification();
         $planificationLabel = $planificationRequired ? 'Formule de paiement' : 'Coopérative';
+        $matieresLv2 = Matiere::lv2()->with('ordres')->orderBy('nom_matiere')->get();
         $eleves = Eleve::where('id_ecole', session('idEcole'))
             ->where('etat_dossier', 0)
             ->with('classe')
@@ -38,7 +40,7 @@ class InscriptionController extends Controller
         $reinscriptionFilters = $activeTab === 'reinscription' ? $this->defaultReinscriptionFilters($annees) : [];
         $reinscriptionPreview = null;
 
-        return view('pedagogie.inscriptions.index', compact('classes', 'annees', 'parents', 'planifications', 'planificationRequired', 'planificationLabel', 'eleves', 'activeTab', 'reinscriptionFilters', 'reinscriptionPreview'));
+        return view('pedagogie.inscriptions.index', compact('classes', 'annees', 'parents', 'planifications', 'planificationRequired', 'planificationLabel', 'matieresLv2', 'eleves', 'activeTab', 'reinscriptionFilters', 'reinscriptionPreview'));
     }
 
     public function create()
@@ -103,7 +105,7 @@ class InscriptionController extends Controller
         $highestRow = $worksheet->getHighestDataRow();
         $createdCount = 0;
 
-        DB::transaction(function () use ($worksheet, $highestRow, $data, $idEcole, $planificationId, &$createdCount) {
+        DB::transaction(function () use ($worksheet, $highestRow, $data, $idEcole, $classe, $planificationId, &$createdCount) {
             $dateInscription = $data['date_inscription'] ?? now()->toDateString();
 
             for ($row = 2; $row <= $highestRow; $row++) {
@@ -140,6 +142,19 @@ class InscriptionController extends Controller
                 }
                 $matricule = $this->normalizeMatricule((string) $worksheet->getCell('H' . $row)->getValue());
 
+                // Colonne optionnelle (fichiers existants sans cette colonne
+                // continuent de fonctionner normalement, l'eleve est juste
+                // cree sans langue LV2 — a completer ensuite sur sa fiche).
+                $langueLv2 = trim((string) $worksheet->getCell('I' . $row)->getValue());
+                $idMatiereLv2 = null;
+                if ($langueLv2 !== '') {
+                    $matiereLv2 = Matiere::lv2()->where('nom_matiere', $langueLv2 . ' LV2')->first();
+                    if ($matiereLv2) {
+                        $this->ensureMatiereLv2CompatibleWithClasse($matiereLv2->id_matiere, $classe);
+                        $idMatiereLv2 = $matiereLv2->id_matiere;
+                    }
+                }
+
                 $eleve = new Eleve();
                 $eleve->prenom_eleve = $prenom;
                 $eleve->nom_eleve = $nom;
@@ -154,6 +169,7 @@ class InscriptionController extends Controller
                 $eleve->image = 'assets/images/avatars/avatar-1.png';
                 $eleve->cas_social = $casSocial;
                 $eleve->mode_paiement = null;
+                $eleve->id_matiere_lv2 = $idMatiereLv2;
                 $eleve->id_ecole = $idEcole;
                 $eleve->etat_dossier = 0;
                 $eleve->save();
@@ -193,6 +209,7 @@ class InscriptionController extends Controller
         $sheet->setCellValue('F1', 'genre_eleve');
         $sheet->setCellValue('G1', 'cas_social');
         $sheet->setCellValue('H1', 'matricule');
+        $sheet->setCellValue('I1', 'langue_lv2 (optionnel — Secondaire uniquement : Arabe, Allemand, Chinois, Russe...)');
         $sheet->setCellValue('A2', 'Issa');
         $sheet->setCellValue('B2', 'Diallo');
         $sheet->setCellValue('C2', '2009-04-22');
@@ -200,6 +217,7 @@ class InscriptionController extends Controller
         $sheet->setCellValue('E2', 'Banankabougou');
         $sheet->setCellValue('F2', 'Masculin');
         $sheet->setCellValue('G2', 'normal');
+        $sheet->setCellValue('I2', 'Arabe');
 
         $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
 
@@ -263,13 +281,20 @@ class InscriptionController extends Controller
             'lien_parent' => 'nullable|string|max:100',
             'informer' => 'nullable|string|in:Oui,Non',
             'id_planification' => [$this->schoolRequiresPlanification() ? 'required' : 'nullable', 'integer', 'exists:planification,id_planification'],
+            'id_matiere_lv2' => ['nullable', 'integer', Rule::exists('matiere', 'id_matiere')->where('est_lv2', true)],
         ]);
+
+        $classe = Classe::where('idEcole', session('idEcole'))->findOrFail($data['id_classe']);
 
         $planificationId = $data['id_planification'] ?? null;
         if ($planificationId) {
             Planification::where('id_classe', $data['id_classe'])
                 ->where('id_annee', $data['id_annee'])
                 ->findOrFail($planificationId);
+        }
+
+        if (!empty($data['id_matiere_lv2'])) {
+            $this->ensureMatiereLv2CompatibleWithClasse((int) $data['id_matiere_lv2'], $classe);
         }
 
         DB::transaction(function () use ($request, $data, $planificationId) {
@@ -287,6 +312,7 @@ class InscriptionController extends Controller
             $eleve->image = $this->storeImage($request);
             $eleve->cas_social = $data['cas_social'] ?: 'normal';
             $eleve->mode_paiement = $data['mode_paiement'] ?? null;
+            $eleve->id_matiere_lv2 = $data['id_matiere_lv2'] ?? null;
             $eleve->id_ecole = session('idEcole');
             $eleve->save();
 
@@ -326,10 +352,16 @@ class InscriptionController extends Controller
             'eleves.*.date_naissance' => ['nullable', 'date_format:Y-m-d'],
             'eleves.*.lieu_naiss' => 'nullable|string|max:255',
             'eleves.*.matricule' => 'nullable|string|max:50',
+            'eleves.*.id_matiere_lv2' => ['nullable', 'integer', Rule::exists('matiere', 'id_matiere')->where('est_lv2', true)],
         ]);
 
         $idEcole = session('idEcole');
-        Classe::where('idEcole', $idEcole)->findOrFail($data['id_classe']);
+        $classe = Classe::where('idEcole', $idEcole)->findOrFail($data['id_classe']);
+        foreach ($data['eleves'] as $row) {
+            if (!empty($row['id_matiere_lv2'])) {
+                $this->ensureMatiereLv2CompatibleWithClasse((int) $row['id_matiere_lv2'], $classe);
+            }
+        }
         $planificationId = $data['id_planification'] ?? null;
         if ($planificationId) {
             Planification::where('id_classe', $data['id_classe'])
@@ -354,6 +386,7 @@ class InscriptionController extends Controller
                     'image' => 'assets/images/avatars/avatar-1.png',
                     'cas_social' => 'normal',
                     'mode_paiement' => null,
+                    'id_matiere_lv2' => $row['id_matiere_lv2'] ?? null,
                     'id_ecole' => $idEcole,
                     'etat_dossier' => 0,
                 ]);
@@ -444,6 +477,7 @@ class InscriptionController extends Controller
         $planifications = Planification::whereIn('id_classe', $classeIds)->orderBy('motif')->get();
         $planificationRequired = $this->schoolRequiresPlanification();
         $planificationLabel = $planificationRequired ? 'Formule de paiement' : 'Coopérative';
+        $matieresLv2 = Matiere::lv2()->with('ordres')->orderBy('nom_matiere')->get();
         $eleves = Eleve::where('id_ecole', session('idEcole'))
             ->where('etat_dossier', 0)
             ->with('classe')
@@ -464,6 +498,7 @@ class InscriptionController extends Controller
             'planifications',
             'planificationRequired',
             'planificationLabel',
+            'matieresLv2',
             'eleves',
             'activeTab',
             'reinscriptionPreview',
@@ -905,6 +940,34 @@ class InscriptionController extends Controller
         $statut = Str::lower(Str::ascii((string) ($ecole->statut ?? '')));
 
         return $statut !== 'public';
+    }
+
+    /**
+     * Meme regle que EleveController::ensureMatiereLv2CompatibleWithClasse()
+     * — dupliquee ici faute d'heritage entre les deux controleurs.
+     */
+    private function ensureMatiereLv2CompatibleWithClasse(int $idMatiereLv2, Classe $classe): void
+    {
+        $map = [
+            'fondamentale1' => 'Fondamentale I',
+            'fondamentale2' => 'Fondamentale II',
+            'secondairegenerale' => 'Secondaire Generale',
+            'secondairetechniqueetprofessionnel' => 'Secondaire Technique et Professionnel',
+            'secondaire' => 'Secondaire Generale',
+            'technique' => 'Secondaire Technique et Professionnel',
+        ];
+        $ordreLabel = $map[$classe->ordreEnseignement] ?? $classe->ordreEnseignement;
+
+        $compatible = DB::table('matiere_ordre')
+            ->where('id_matiere', $idMatiereLv2)
+            ->where('ordre_enseignement', $ordreLabel)
+            ->exists();
+
+        if (!$compatible) {
+            throw ValidationException::withMessages([
+                'id_matiere_lv2' => "Cette langue LV2 n'est pas proposée pour cette classe.",
+            ]);
+        }
     }
 
     private function validDateOrNull(?string $value, string $field): ?string
