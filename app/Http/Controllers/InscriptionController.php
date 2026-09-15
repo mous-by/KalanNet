@@ -645,9 +645,10 @@ class InscriptionController extends Controller
         $skipped = 0;
         $forced = 0;
         $sorties = 0;
+        $diplomes = 0;
         $ajournes = 0;
 
-        DB::transaction(function () use ($selectedRows, $data, $idEcole, $sourceClasse, $classes, $threshold, $dateReinscription, &$created, &$skipped, &$forced, &$sorties, &$ajournes) {
+        DB::transaction(function () use ($selectedRows, $data, $idEcole, $sourceClasse, $classes, $threshold, $dateReinscription, &$created, &$skipped, &$forced, &$sorties, &$diplomes, &$ajournes) {
             foreach ($selectedRows as $row) {
                 $eleve = Eleve::where('id_ecole', $idEcole)
                     ->where('id_classe', $sourceClasse->id_classe)
@@ -685,7 +686,11 @@ class InscriptionController extends Controller
                 }
 
                 $targetClasseId = !empty($row['id_classe']) ? (int) $row['id_classe'] : null;
-                if (in_array($decision, ['redoublant', 'ajourne', 'abandon', 'exclu'], true)) {
+                if (in_array($decision, ['redoublant', 'ajourne', 'abandon', 'exclu', 'admis_sortant', 'diplome_sortant'], true)) {
+                    // ligne_reinscription.id_classe est NOT NULL en base : pour
+                    // les sortants (DEF/BAC), on y trace la classe de depart
+                    // (ex: la Terminale), sans jamais reaffecter eleve.id_classe
+                    // qui reste sciemment fige (voir plus bas).
                     $targetClasseId = $sourceClasse->id_classe;
                 }
 
@@ -732,9 +737,12 @@ class InscriptionController extends Controller
                     $ajournes++;
                 } elseif (in_array($decision, ['admis_sortant', 'diplome_sortant'], true)) {
                     $eleve->id_annee = (int) $data['target_annee_id'];
-                    $eleve->etat_dossier = 2;
+                    // Statut distinct des retraits (etat_dossier=2) : une reussite
+                    // au DEF/BAC n'est pas un abandon et ne doit pas gonfler le
+                    // "Taux d'Abandon" du tableau de bord.
+                    $eleve->etat_dossier = 3;
                     $eleve->save();
-                    $sorties++;
+                    $diplomes++;
                 } else {
                     $eleve->id_classe = $targetClasseId;
                     $eleve->id_annee = (int) $data['target_annee_id'];
@@ -753,6 +761,9 @@ class InscriptionController extends Controller
         }
         if ($ajournes > 0) {
             $message .= " {$ajournes} ajourné(s).";
+        }
+        if ($diplomes > 0) {
+            $message .= " {$diplomes} diplômé(s) (DEF/BAC).";
         }
         if ($sorties > 0) {
             $message .= " {$sorties} sortie(s) pour abandon/exclusion.";

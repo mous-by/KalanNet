@@ -5,6 +5,7 @@
         $statusLabel = match((int) $eleve->etat_dossier) {
             1 => 'Transféré',
             2 => 'Retiré',
+            3 => 'Diplômé',
             default => 'Actif',
         };
         $user = Auth::user();
@@ -35,7 +36,7 @@
             <div class="student-title">
                 <div class="d-flex align-items-center gap-2 flex-wrap">
                     <h4 class="mb-0 fw-bold">{{ $eleve->prenom_eleve }} {{ $eleve->nom_eleve }}</h4>
-                    <span class="badge theme-icon-soft">{{ $statusLabel }}</span>
+                    <span class="badge {{ (int) $eleve->etat_dossier === 3 ? 'bg-success' : 'theme-icon-soft' }}">{{ $statusLabel }}</span>
                 </div>
                 <div class="student-subtitle">
                     Matricule <span class="font-monospace">{{ $eleve->matricule ?: 'Non renseigné' }}</span>

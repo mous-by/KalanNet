@@ -49,6 +49,7 @@
                     <select name="status" class="form-select">
                         <option value="actifs" @selected($status === 'actifs')>Actifs</option>
                         <option value="transferes" @selected($status === 'transferes')>Transférés</option>
+                        <option value="diplomes" @selected($status === 'diplomes')>Diplômés</option>
                         <option value="retires" @selected($status === 'retires')>Retirés</option>
                     </select>
                 </div>
@@ -94,7 +95,7 @@
                         <div class="card-body p-4 d-flex align-items-center justify-content-between">
                             <div>
                                 <p class="text-muted text-uppercase small fw-bold mb-1">Filtre statut</p>
-                                <h3 class="fw-bold mb-0">{{ ['actifs' => 'Actifs', 'transferes' => 'Transférés', 'retires' => 'Retirés'][$status] ?? 'Actifs' }}</h3>
+                                <h3 class="fw-bold mb-0">{{ ['actifs' => 'Actifs', 'transferes' => 'Transférés', 'diplomes' => 'Diplômés', 'retires' => 'Retirés'][$status] ?? 'Actifs' }}</h3>
                                 <small class="text-muted d-block mt-2">Dossiers concernés</small>
                             </div>
                             <div class="widget-icon theme-icon-box rounded-3"><i class="bi bi-funnel fs-4"></i></div>
@@ -134,6 +135,7 @@
                                     $statusLabel = match((int) $eleve->etat_dossier) {
                                         1 => 'Transféré',
                                         2 => 'Retiré',
+                                        3 => 'Diplômé',
                                         default => 'Actif',
                                     };
                                 @endphp
@@ -160,7 +162,7 @@
                                         <div>{{ $parent?->nom_prenom_parent ?? 'Non renseigné' }}</div>
                                         <small class="text-muted">{{ $parent?->telephone_parent ?? '' }}</small>
                                     </td>
-                                    <td><span class="badge theme-icon-soft">{{ $statusLabel }}</span></td>
+                                    <td><span class="badge {{ (int) $eleve->etat_dossier === 3 ? 'bg-success' : 'theme-icon-soft' }}">{{ $statusLabel }}</span></td>
                                     <td class="text-end">
                                         @if((int) $eleve->etat_dossier === 1 && (auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('eleves_modification')))
                                             <button type="button" class="btn btn-sm btn-outline-success me-1" data-bs-toggle="modal" data-bs-target="#reintegrateModal{{ $eleve->id_eleve }}">

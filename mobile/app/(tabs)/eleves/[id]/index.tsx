@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, Button, Card, Divider, Text } from 'react-native-paper';
+import { ActivityIndicator, Button, Card, Chip, Divider, Text } from 'react-native-paper';
 
 import { useAuth } from '@/context/AuthContext';
 import { hasPermission } from '@/lib/permissions';
@@ -39,6 +39,14 @@ export default function EleveDetailScreen() {
       <Text style={styles.meta}>
         {eleve.classe?.nom_classe ?? '—'} · Matricule {eleve.matricule ?? '—'}
       </Text>
+      {eleve.etat_dossier !== 0 ? (
+        <Chip
+          style={styles.statusChip}
+          mode="flat"
+          selectedColor={eleve.etat_dossier === 3 ? '#2e7d32' : undefined}>
+          {eleve.etat_dossier === 1 ? 'Transféré' : eleve.etat_dossier === 3 ? 'Diplômé' : 'Retiré'}
+        </Chip>
+      ) : null}
 
       {canManage ? (
         <View style={styles.actions}>
@@ -49,11 +57,11 @@ export default function EleveDetailScreen() {
             <Button mode="outlined" onPress={() => router.push(`/eleves/${eleve.id_eleve}/transfer`)} style={styles.actionButton}>
               Transférer
             </Button>
-          ) : (
+          ) : eleve.etat_dossier === 1 ? (
             <Button mode="outlined" onPress={() => router.push(`/eleves/${eleve.id_eleve}/reintegrate`)} style={styles.actionButton}>
               Réintégrer
             </Button>
-          )}
+          ) : null}
         </View>
       ) : null}
 
@@ -153,6 +161,10 @@ const styles = StyleSheet.create({
   meta: {
     opacity: 0.6,
     marginTop: 4,
+    marginBottom: 16,
+  },
+  statusChip: {
+    alignSelf: 'flex-start',
     marginBottom: 16,
   },
   actions: {

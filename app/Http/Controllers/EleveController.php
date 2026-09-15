@@ -126,6 +126,8 @@ class EleveController extends Controller
             $query->where('etat_dossier', 1);
         } elseif ($status === 'retires') {
             $query->where('etat_dossier', 2);
+        } elseif ($status === 'diplomes') {
+            $query->where('etat_dossier', 3);
         } else {
             $query->where('etat_dossier', 0);
         }
@@ -786,6 +788,8 @@ class EleveController extends Controller
             $alerts[] = ['type' => 'info', 'text' => 'Ce dossier est marqué comme transféré.'];
         } elseif ((int) $eleve->etat_dossier === 2) {
             $alerts[] = ['type' => 'secondary', 'text' => 'Ce dossier est retiré de la liste active.'];
+        } elseif ((int) $eleve->etat_dossier === 3) {
+            $alerts[] = ['type' => 'success', 'text' => 'Élève diplômé (DEF/BAC).'];
         }
 
         return $alerts;

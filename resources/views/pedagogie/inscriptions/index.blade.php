@@ -2,7 +2,11 @@
 
 @section('content')
 @php
-    $activeTab = request('tab', 'individual');
+    // Ne recalculer activeTab que si le controleur ne l'a pas deja fourni
+    // (ex: previewReinscription() force 'reinscription' meme quand la
+    // requete POST n'a pas de ?tab= dans l'URL — l'ecraser ici cachait la
+    // liste preparee derriere l'onglet "Inscription individuelle").
+    $activeTab = $activeTab ?? request('tab', 'individual');
     $planificationRequired = $planificationRequired ?? true;
     $planificationLabel = $planificationLabel ?? 'Formule de paiement';
 @endphp
@@ -620,7 +624,10 @@
             if (!sourceClassSelect?.value) missing.push('la classe actuelle');
             if (!sourceYearSelect?.value) missing.push('l’année actuelle');
             if (!targetYearSelect?.value) missing.push('l’année cible');
-            if (!targetClassSelect?.value) missing.push('la classe cible des passants');
+            // La classe cible des passants reste optionnelle : une classe
+            // terminale (BAC, ou DEF sans 10e dans l'ecole) n'en a jamais et
+            // le serveur sait deja s'en passer (suggestNextClasse()), donc on
+            // ne doit pas bloquer la preparation de la liste pour autant.
 
             if (missing.length === 0) {
                 prepareButton.classList.remove('d-none');
@@ -659,8 +666,16 @@
                 }
             } else if (classHelp) {
                 targetClassSelect.value = '';
-                classHelp.className = 'alert alert-warning py-2 px-3 mt-2 mb-0';
-                classHelp.textContent = 'La classe suivante n’est pas encore créée. Créez-la dans Classes avant de préparer la réinscription.';
+                if (sourceLevel === 12) {
+                    // La 12e (Terminale/BAC) est un niveau terminal : il n'y a
+                    // jamais de classe suivante a creer, ce n'est pas une
+                    // configuration manquante.
+                    classHelp.className = 'alert alert-info py-2 px-3 mt-2 mb-0';
+                    classHelp.textContent = 'Classe terminale (BAC) : pas de classe suivante. Les élèves admis seront proposés en « Diplômé sortant ».';
+                } else {
+                    classHelp.className = 'alert alert-warning py-2 px-3 mt-2 mb-0';
+                    classHelp.textContent = 'Aucune classe suivante trouvée. Si cette classe est terminale (ex : fin de DEF sans orientation interne), les élèves admis pourront être proposés en « Admis sortant ». Sinon, créez la classe suivante dans Classes.';
+                }
             }
 
             updatePrepareState();

@@ -81,6 +81,7 @@ class FicheEleveTool extends AbstractKalanbotTool
                     'statut_dossier' => match ((int) ($eleve?->etat_dossier ?? 0)) {
                         1 => 'transféré',
                         2 => 'retiré',
+                        3 => 'diplômé',
                         default => 'actif',
                     },
                     'statut_paiement' => $eleve?->statut_paiement,

@@ -206,6 +206,42 @@ html[data-theme] .theme-pill-active {
     background-color: var(--accent-light) !important;
     color: var(--theme-accent) !important;
 }
+
+/* Onglets (nav-pills / nav-tabs) : style "souligné", plus lisible que la
+   pilule discrète par défaut. Ne concerne que les vraies barres d'onglets
+   horizontales — le menu vertical de Configuration (.config-menu-link)
+   garde son propre style, non touché ici. */
+html[data-theme] .nav-pills,
+html[data-theme] .nav-tabs {
+    border: none !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    gap: 1.5rem;
+}
+html[data-theme] .nav-pills .nav-link,
+html[data-theme] .nav-tabs .nav-link {
+    border: none !important;
+    border-radius: 0 !important;
+    border-bottom: 3px solid transparent !important;
+    background-color: transparent !important;
+    color: var(--text-muted) !important;
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 0.65rem 0.25rem !important;
+}
+html[data-theme] .nav-pills .nav-link:hover,
+html[data-theme] .nav-tabs .nav-link:hover {
+    color: var(--theme-accent) !important;
+    border-bottom-color: var(--border-color) !important;
+}
+html[data-theme] .nav-pills .nav-link.active,
+html[data-theme] .nav-pills .nav-link.theme-pill-active,
+html[data-theme] .nav-tabs .nav-link.active,
+html[data-theme] .nav-tabs .nav-link.theme-pill-active {
+    color: var(--theme-accent) !important;
+    border-bottom-color: var(--theme-accent) !important;
+    background-color: transparent !important;
+}
+
 html[data-theme] .theme-icon-box {
     background-color: var(--theme-accent) !important;
     color: var(--text-on-accent) !important;

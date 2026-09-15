@@ -92,6 +92,12 @@ class DashboardController extends Controller
 
         $tauxAbandon = $totalEleves > 0 ? round(($totalAbandons / ($totalEleves + $totalAbandons)) * 100, 1) : 0;
 
+        $totalDiplomes = Eleve::when($schoolId, function ($query, $schoolId) {
+            $query->where('id_ecole', $schoolId);
+        })->when($idAnnee, function ($query, $idAnnee) {
+            $query->where('id_annee', $idAnnee);
+        })->where('etat_dossier', 3)->count();
+
         // Class distribution
         $classesData = Classe::when($schoolId, function ($query, $schoolId) {
             $query->where('idEcole', $schoolId);
@@ -136,6 +142,7 @@ class DashboardController extends Controller
             'anneeEnCours',
             'tauxAbandon',
             'totalAbandons',
+            'totalDiplomes',
             'classesData',
             'teacherProgressRows',
             'presenceProgressRows',
