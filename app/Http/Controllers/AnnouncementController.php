@@ -298,13 +298,20 @@ class AnnouncementController extends Controller
             }
 
             $fileName = uniqid('annonce_', true) . '.' . $file->getClientOriginalExtension();
+            // getSize() doit etre lu AVANT move() : une fois le fichier
+            // deplace, le chemin temporaire PHP d'origine n'existe plus et
+            // getSize() echoue (stat failed) alors que getClientOriginalName()
+            // / getClientMimeType() restent lisibles car deja en memoire.
+            $originalName = $file->getClientOriginalName();
+            $mimeType = $file->getClientMimeType();
+            $size = $file->getSize();
             $file->move($directory, $fileName);
             $stored[] = [
                 'title' => $titles[$index] ?? null,
                 'path' => 'annonces/' . $fileName,
-                'original' => $file->getClientOriginalName(),
-                'mime' => $file->getClientMimeType(),
-                'size' => $file->getSize(),
+                'original' => $originalName,
+                'mime' => $mimeType,
+                'size' => $size,
             ];
         }
 
