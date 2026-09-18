@@ -285,7 +285,13 @@ class AnnouncementController extends Controller
             return [];
         }
 
-        $directory = public_path('annonces');
+        // public_path('annonces') entre en conflit avec la route /annonces :
+        // des qu'un premier fichier est joint, ce dossier physique existe et
+        // le .htaccess de Laravel (RewriteCond %{REQUEST_FILENAME} !-d) ne
+        // renvoie alors plus jamais /annonces vers l'application (403 du
+        // serveur web, avant meme d'atteindre Laravel). D'ou le prefixe
+        // uploads/, comme les autres dossiers de fichiers utilisateur.
+        $directory = public_path('uploads/annonces');
         if (!File::exists($directory)) {
             File::makeDirectory($directory, 0755, true);
         }
@@ -308,7 +314,7 @@ class AnnouncementController extends Controller
             $file->move($directory, $fileName);
             $stored[] = [
                 'title' => $titles[$index] ?? null,
-                'path' => 'annonces/' . $fileName,
+                'path' => 'uploads/annonces/' . $fileName,
                 'original' => $originalName,
                 'mime' => $mimeType,
                 'size' => $size,
