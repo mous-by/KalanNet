@@ -28,4 +28,10 @@ class Planification extends Model
     {
         return $this->belongsTo(AnneeScolaire::class, 'id_annee', 'id_anneeScolaire');
     }
+
+    public function tranches()
+    {
+        return $this->hasMany(PlanificationTranche::class, 'id_planification', 'id_planification')
+            ->orderBy('numero');
+    }
 }

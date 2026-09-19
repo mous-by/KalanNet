@@ -16,6 +16,7 @@ use App\Models\FraisScolaire;
 use App\Models\LignePaiementEleve;
 use App\Models\ParentModel;
 use App\Models\Planification;
+use App\Models\PlanificationTranche;
 use App\Models\PlanPaiement;
 use App\Models\ReductionPaiementConfig;
 use App\Models\Retrait;
@@ -26,6 +27,7 @@ use App\Models\Versement;
 use App\Services\Paiements\EcheanceService;
 use App\Services\Paiements\PaiementEleveReportService;
 use App\Services\Paiements\PaiementEleveService;
+use App\Services\Paiements\PlanificationTrancheService;
 use App\Services\Paiements\ReferencePaiementService;
 use App\Rules\MaliPhone;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -180,7 +182,8 @@ class FinanceController extends Controller
 
         if (!empty($filters['id_classe']) && !empty($filters['id_annee'])) {
             Classe::where('idEcole', $idEcole)->findOrFail($filters['id_classe']);
-            $planifications = Planification::where('id_classe', $filters['id_classe'])
+            $planifications = Planification::with('tranches')
+                ->where('id_classe', $filters['id_classe'])
                 ->where('id_annee', $filters['id_annee'])
                 ->orderBy('motif')
                 ->get();
@@ -224,6 +227,13 @@ class FinanceController extends Controller
             'date_fin.*' => 'required|date',
             'montant' => 'required|array|min:1',
             'montant.*' => 'required|numeric|min:1',
+            'row_key' => 'nullable|array',
+            'row_key.*' => 'nullable|string|max:20',
+            'tranches' => 'nullable|array',
+            'tranches.*.montant' => 'nullable|array|max:' . PlanificationTranche::MAX_TRANCHES,
+            'tranches.*.montant.*' => 'required|numeric|min:1',
+            'tranches.*.date_limite' => 'nullable|array|max:' . PlanificationTranche::MAX_TRANCHES,
+            'tranches.*.date_limite.*' => 'required|date',
         ]);
 
         $idEcole = (int) session('idEcole');
@@ -243,8 +253,28 @@ class FinanceController extends Controller
         $errors = [];
         $created = 0;
 
+        // Les lignes "par tranche" sont analysees une seule fois (et non une
+        // fois par classe) pour ne pas dupliquer les messages d'erreur.
+        $tranchesByRow = [];
+        $invalidRows = [];
+        if (!$isPublicSchool) {
+            foreach ($data['motif'] as $index => $rawMotif) {
+                if (strtolower(trim((string) $rawMotif)) !== 'par_tranche') {
+                    continue;
+                }
+
+                $parsed = $this->parseTrancheRow($data, (int) $index);
+                if (isset($parsed['error'])) {
+                    $errors[] = $parsed['error'];
+                    $invalidRows[$index] = true;
+                    continue;
+                }
+                $tranchesByRow[$index] = $parsed;
+            }
+        }
+
         try {
-            DB::transaction(function () use ($data, $allowedClasseIds, $isPublicSchool, &$errors, &$created) {
+            DB::transaction(function () use ($data, $allowedClasseIds, $isPublicSchool, $tranchesByRow, $invalidRows, &$errors, &$created) {
                 $classNames = Classe::whereIn('id_classe', $allowedClasseIds)
                     ->pluck('nom_classe', 'id_classe');
 
@@ -256,7 +286,7 @@ class FinanceController extends Controller
                         ->all();
                     $requiredTypes = $isPublicSchool ? ['cooperative'] : ['annuelle', 'mensuelle', 'trimestrielle'];
 
-                    if (empty(array_diff($requiredTypes, $existing))) {
+                    if (empty(array_diff($requiredTypes, $existing)) && empty($tranchesByRow)) {
                         $errors[] = $isPublicSchool
                             ? "La coopérative existe déjà pour la classe {$classNames[$classeId]}."
                             : "La classe {$classNames[$classeId]} est déjà planifiée avec les trois types.";
@@ -264,10 +294,25 @@ class FinanceController extends Controller
                     }
 
                     foreach ($data['motif'] as $index => $motif) {
+                        if (isset($invalidRows[$index])) {
+                            continue;
+                        }
+
+                        $tranche = $tranchesByRow[$index] ?? null;
                         $motif = $isPublicSchool ? 'cooperative' : strtolower(trim((string) $motif));
                         $dateDebut = $data['date_debut'][$index] ?? null;
                         $dateFin = $data['date_fin'][$index] ?? null;
                         $montant = $data['montant'][$index] ?? null;
+
+                        if ($tranche) {
+                            // Le total et la date de fin de la formule sont
+                            // toujours deduits des tranches (source de verite),
+                            // ce qui garde intact tout le code qui lit
+                            // montant_planification / date_fin.
+                            $motif = count($tranche['lignes']) . ' tranches';
+                            $dateFin = $tranche['date_fin'];
+                            $montant = $tranche['total'];
+                        }
 
                         if (strtotime((string) $dateFin) <= strtotime((string) $dateDebut)) {
                             $errors[] = 'La date de fin doit être strictement postérieure à la date de début à la ligne ' . ($index + 1) . '.';
@@ -279,7 +324,7 @@ class FinanceController extends Controller
                             continue;
                         }
 
-                        Planification::create([
+                        $planification = Planification::create([
                             'motif' => $motif,
                             'id_classe' => $classeId,
                             'id_annee' => $data['id_annee'],
@@ -287,6 +332,18 @@ class FinanceController extends Controller
                             'date_fin' => $dateFin,
                             'montant_planification' => $montant,
                         ]);
+
+                        if ($tranche) {
+                            foreach ($tranche['lignes'] as $position => $ligne) {
+                                PlanificationTranche::create([
+                                    'id_planification' => $planification->id_planification,
+                                    'numero' => $position + 1,
+                                    'libelle' => PlanificationTranche::libelleFor($position + 1),
+                                    'montant' => $ligne['montant'],
+                                    'date_limite' => $ligne['date_limite'],
+                                ]);
+                            }
+                        }
 
                         $existing[] = $motif;
                         $created++;
@@ -307,6 +364,46 @@ class FinanceController extends Controller
         return redirect()->route('finances.planifications.create')
             ->with($created > 0 ? 'success' : 'error', $message)
             ->with('planification_errors', $errors);
+    }
+
+    /**
+     * Extrait et verifie les tranches d'une ligne "par tranche" du formulaire.
+     * Retourne ['lignes' => [...], 'total' => float, 'date_fin' => 'Y-m-d']
+     * ou ['error' => message].
+     */
+    protected function parseTrancheRow(array $data, int $index): array
+    {
+        $line = $index + 1;
+        $key = $data['row_key'][$index] ?? null;
+        $input = $key !== null ? ($data['tranches'][$key] ?? null) : null;
+        $montants = array_values($input['montant'] ?? []);
+        $dates = array_values($input['date_limite'] ?? []);
+        $count = count($montants);
+
+        if ($count < PlanificationTranche::MIN_TRANCHES
+            || $count > PlanificationTranche::MAX_TRANCHES
+            || $count !== count($dates)) {
+            return ['error' => 'Une formule par tranche doit avoir entre ' . PlanificationTranche::MIN_TRANCHES
+                . ' et ' . PlanificationTranche::MAX_TRANCHES . " tranches complètes (montant et date limite) à la ligne {$line}."];
+        }
+
+        $lignes = [];
+        $previousDate = null;
+        foreach ($montants as $position => $montant) {
+            $date = (string) $dates[$position];
+            if ($previousDate !== null && strtotime($date) <= strtotime($previousDate)) {
+                return ['error' => "Les dates limites des tranches doivent être strictement croissantes à la ligne {$line}."];
+            }
+
+            $lignes[] = ['montant' => round((float) $montant, 2), 'date_limite' => $date];
+            $previousDate = $date;
+        }
+
+        return [
+            'lignes' => $lignes,
+            'total' => round(array_sum(array_column($lignes, 'montant')), 2),
+            'date_fin' => $previousDate,
+        ];
     }
 
     public function updateLegacyPlanification(Request $request, $id)
@@ -364,7 +461,10 @@ class FinanceController extends Controller
                 ->with('error', 'Impossible de supprimer : des élèves sont liés à cette planification.');
         }
 
-        $planification->delete();
+        DB::transaction(function () use ($planification) {
+            PlanificationTranche::where('id_planification', $planification->id_planification)->delete();
+            $planification->delete();
+        });
 
         return redirect()->route('finances.planifications')->with('success', 'Suppression réussie.');
     }
@@ -1364,10 +1464,12 @@ class FinanceController extends Controller
     protected function legacyPaymentRows(int $classeId, int $anneeId, string $typePlanification = '')
     {
         $idEcole = (int) session('idEcole');
-        $planifications = Planification::where('id_classe', $classeId)
+        $planifications = Planification::with('tranches')
+            ->where('id_classe', $classeId)
             ->where('id_annee', $anneeId)
             ->get()
             ->keyBy('id_planification');
+        $trancheService = app(PlanificationTrancheService::class);
 
         $students = Eleve::with('parents')
             ->where('id_ecole', $idEcole)
@@ -1384,7 +1486,7 @@ class FinanceController extends Controller
             ->get()
             ->keyBy('id_eleve');
 
-        return $students->map(function ($student) use ($inscriptions, $planifications, $typePlanification, $anneeId) {
+        return $students->map(function ($student) use ($inscriptions, $planifications, $typePlanification, $anneeId, $trancheService) {
             $inscription = $inscriptions->get($student->id_eleve);
             $planification = $inscription ? $planifications->get($inscription->id_planification) : null;
             if (!$planification || !$this->legacyPlanMatchesType($planification->motif, $typePlanification)) {
@@ -1398,6 +1500,8 @@ class FinanceController extends Controller
                 return null;
             }
 
+            $tranche = $trancheService->summarize($planification, $paid);
+
             return (object) [
                 'eleve' => $student,
                 'planification' => $planification,
@@ -1405,7 +1509,13 @@ class FinanceController extends Controller
                 'montant_deja_paye' => $paid,
                 'reste_a_payer' => $remaining,
                 'parents' => $student->parents,
-                'row_class' => $this->legacyPaymentDelayClass($planification),
+                'tranche' => $tranche,
+                // Pour une formule par tranche, on propose par defaut de solder
+                // la tranche en cours (le caissier peut saisir plus).
+                'a_payer_maintenant' => min($remaining, (float) ($tranche['courante']['reste'] ?? $remaining)),
+                'row_class' => $tranche
+                    ? $trancheService->delayClass($tranche)
+                    : $this->legacyPaymentDelayClass($planification),
             ];
         })->filter()->values();
     }
@@ -1446,6 +1556,9 @@ class FinanceController extends Controller
         }
         if (str_contains($value, 'trimestr')) {
             return 'trimestriel';
+        }
+        if (str_contains($value, 'tranche')) {
+            return 'tranche';
         }
         if (str_contains($value, 'cooper') || str_contains($value, 'coop')) {
             return 'cooperative';

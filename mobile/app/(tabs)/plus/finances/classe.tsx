@@ -25,6 +25,13 @@ interface PaymentRow {
   montant_total: number;
   montant_deja_paye: number;
   reste_a_payer: number;
+  a_payer_maintenant?: number;
+  tranche?: {
+    soldees: number;
+    total: number;
+    en_retard: boolean;
+    courante: { libelle: string; reste: number; date_limite: string; en_retard: boolean } | null;
+  } | null;
   parents: ParentPayeur[];
 }
 
@@ -51,6 +58,7 @@ const TYPE_TABS_PRIVATE = [
   { value: 'trimestriel', label: 'Trimestriel' },
   { value: 'mensuel', label: 'Mensuel' },
   { value: 'annuel', label: 'Annuel' },
+  { value: 'tranche', label: 'Par tranche' },
 ];
 
 const TYPE_TABS_PUBLIC = [
@@ -91,7 +99,7 @@ export default function PaiementClasseScreen() {
     return {
       selected: false,
       motif: row.motif,
-      montant: String(row.reste_a_payer),
+      montant: String(row.a_payer_maintenant ?? row.reste_a_payer),
       parentId: null,
       autreNom: '',
       autreTelephone: '',
@@ -211,6 +219,14 @@ export default function PaiementClasseScreen() {
                     <Text style={styles.studentMeta}>
                       Total {row.montant_total.toLocaleString('fr-FR')} · Reste {row.reste_a_payer.toLocaleString('fr-FR')} FCFA
                     </Text>
+                    {row.tranche ? (
+                      <Text style={[styles.studentMeta, row.tranche.en_retard ? styles.trancheLate : null]}>
+                        {row.tranche.soldees}/{row.tranche.total} tranche(s) soldée(s)
+                        {row.tranche.courante
+                          ? ` · ${row.tranche.courante.libelle} : ${row.tranche.courante.reste.toLocaleString('fr-FR')} F avant le ${row.tranche.courante.date_limite.split('-').reverse().join('/')}${row.tranche.courante.en_retard ? ' (en retard)' : ''}`
+                          : ''}
+                      </Text>
+                    ) : null}
                   </View>
                 </View>
 
@@ -292,6 +308,7 @@ const styles = StyleSheet.create({
   },
   studentName: { fontWeight: '600' },
   studentMeta: { opacity: 0.6, fontSize: 12, marginTop: 2 },
+  trancheLate: { color: '#d33', opacity: 1 },
   studentBody: {
     marginTop: 8,
     paddingLeft: 8,

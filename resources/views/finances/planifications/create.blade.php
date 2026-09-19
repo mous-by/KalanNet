@@ -144,7 +144,7 @@
                             <select class="single-select form-select" id="id_annee" name="id_annee" required>
                                 <option value="">Sélectionner une année</option>
                                 @foreach($annees as $annee)
-                                    <option value="{{ $annee->id_anneeScolaire }}" @selected(old('id_annee') == $annee->id_anneeScolaire)>{{ $annee->annee }}</option>
+                                    <option value="{{ $annee->id_anneeScolaire }}" data-debut="{{ \Illuminate\Support\Carbon::parse($annee->date_debut)->toDateString() }}" data-fin="{{ \Illuminate\Support\Carbon::parse($annee->date_fin)->toDateString() }}" @selected(old('id_annee') == $annee->id_anneeScolaire)>{{ $annee->annee }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -168,6 +168,7 @@
                             <tbody id="tableListe_FormulePaiement">
                                 <tr id="form-fields" class="form-row">
                                     <td>
+                                        <input type="hidden" name="row_key[]" class="row-key-input" value="1">
                                         <select name="motif[]" class="form-select planification-motif" required>
                                             @if($isPublicSchool)
                                                 <option value="cooperative">Coopérative</option>
@@ -175,6 +176,7 @@
                                                 <option value="mensuelle">mensuelle</option>
                                                 <option value="trimestrielle">trimestrielle</option>
                                                 <option value="annuelle">annuelle</option>
+                                                <option value="par_tranche">par tranche</option>
                                             @endif
                                         </select>
                                     </td>
@@ -205,8 +207,17 @@
 
 @push('scripts')
 <script>
+let rowKeyCounter = 1;
+$('#form-fields').attr('data-row-key', 1);
+
+function assignRowKey(row) {
+    rowKeyCounter += 1;
+    row.attr('data-row-key', rowKeyCounter);
+    row.find('.row-key-input').val(rowKeyCounter);
+}
+
 $(document).on('click', '#add-more', function() {
-    const sourceRow = $('#dynamic-table tbody tr').last();
+    const sourceRow = $('#tableListe_FormulePaiement > tr.form-row').last();
     updateMonthlyReference(sourceRow);
 
     var newRow = $('#form-fields').clone();
@@ -216,7 +227,9 @@ $(document).on('click', '#add-more', function() {
     newRow.find('input').each(function() {
         $(this).val('');
     });
+    newRow.find('.planification-montant, .planification-date-fin').prop('readonly', false);
     newRow.removeAttr('id');
+    assignRowKey(newRow);
     newRow.find('.planification-motif').each(function() {
         $(this).val(nextMotifValue);
         $(this).data('previous-motif', nextMotifValue);
@@ -234,13 +247,15 @@ $(document).on('click', '#add-more', function() {
         </div>
     `);
 
-    $('#dynamic-table tbody').append(newRow);
+    $('#tableListe_FormulePaiement').append(newRow);
     refreshPlanificationEndDate(newRow);
     refreshPlanificationAmount(newRow, 'mensuelle');
 });
 
 $(document).on('click', '.remove', function() {
-    $(this).closest('tr').remove();
+    const row = $(this).closest('tr');
+    row.next('.tranche-editor-row').remove();
+    row.remove();
 });
 
 function formatDateForInput(date) {
@@ -356,6 +371,16 @@ function refreshPlanificationAmount(row, previousMotif) {
 $(document).on('change', '.planification-motif', function() {
     const row = $(this).closest('tr');
     const previousMotif = $(this).data('previous-motif') || $(this).val();
+
+    if ($(this).val() === 'par_tranche') {
+        enterTrancheMode(row);
+        $(this).data('previous-motif', 'par_tranche');
+        return;
+    }
+    if (previousMotif === 'par_tranche') {
+        leaveTrancheMode(row);
+    }
+
     const currentEndValue = row.find('.planification-date-fin').val();
 
     if (currentEndValue) {
@@ -398,6 +423,220 @@ function updateToggleClassesLabel() {
 
 $(document).on('change', '.classe-checkbox', updateToggleClassesLabel);
 updateToggleClassesLabel();
+
+// ---------- Formule "par tranche" ----------
+const TRANCHE_MIN = 2;
+const TRANCHE_MAX = 6;
+
+function trancheLabel(n) {
+    return n === 1 ? '1ère tranche' : n + 'e tranche';
+}
+
+function selectedAnneeDates() {
+    const option = $('#id_annee option:selected');
+
+    return { debut: option.data('debut') || '', fin: option.data('fin') || '' };
+}
+
+function endOfMonthIso(startDate, monthOffset) {
+    return formatDateForInput(new Date(startDate.getFullYear(), startDate.getMonth() + monthOffset + 1, 0));
+}
+
+function proposeTrancheDates(row, count) {
+    const annee = selectedAnneeDates();
+    const debut = annee.debut || row.find('.planification-date-debut').val();
+    if (!debut) {
+        return [];
+    }
+
+    const start = new Date(`${debut}T00:00:00`);
+    let span = 9;
+    if (annee.fin) {
+        const end = new Date(`${annee.fin}T00:00:00`);
+        span = Math.max(1, (end.getFullYear() - start.getFullYear()) * 12 + end.getMonth() - start.getMonth() + 1);
+    }
+
+    // 1re tranche en debut d'annee, derniere en fin d'annee, les autres reparties entre les deux.
+    const dates = [];
+    for (let i = 0; i < count; i++) {
+        dates.push(endOfMonthIso(start, Math.round(i * (span - 1) / (count - 1))));
+    }
+    for (let i = 1; i < dates.length; i++) {
+        if (dates[i] <= dates[i - 1]) {
+            dates[i] = endOfMonthIso(new Date(`${dates[i - 1]}T00:00:00`), 1);
+        }
+    }
+
+    return dates;
+}
+
+function distributeTotal(total, count) {
+    const base = Math.floor(total / count);
+    const amounts = Array(count).fill(base);
+    amounts[count - 1] = total - base * (count - 1);
+
+    return amounts;
+}
+
+function buildTrancheEditor(row) {
+    const key = row.attr('data-row-key');
+    let options = '';
+    for (let n = TRANCHE_MIN; n <= TRANCHE_MAX; n++) {
+        options += `<option value="${n}" ${n === 3 ? 'selected' : ''}>${n} tranches</option>`;
+    }
+
+    return $(`
+        <tr class="tranche-editor-row" data-for-key="${key}">
+            <td colspan="5" class="bg-light">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">Nombre de tranches</label>
+                        <select class="form-select tranche-count">${options}</select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Montant total (F CFA)</label>
+                        <input type="number" min="1" class="form-control tranche-total" placeholder="Ex : 150000">
+                    </div>
+                    <div class="col-md-5 small text-muted">
+                        Le total est réparti automatiquement entre les tranches. Vous pouvez ensuite modifier chaque montant et chaque date limite.
+                    </div>
+                </div>
+                <div class="table-responsive mt-3">
+                    <table class="table table-sm table-bordered mb-0 bg-white">
+                        <thead>
+                            <tr><th style="width: 30%;">Tranche</th><th style="width: 35%;">Montant (F CFA)</th><th style="width: 35%;">Date limite</th></tr>
+                        </thead>
+                        <tbody class="tranche-lines"></tbody>
+                        <tfoot>
+                            <tr><th>Total</th><th class="tranche-sum">0</th><th></th></tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </td>
+        </tr>
+    `);
+}
+
+function renderTrancheLines(row, count, amounts, dates) {
+    const key = row.attr('data-row-key');
+    const tbody = row.next('.tranche-editor-row').find('.tranche-lines').empty();
+
+    for (let i = 0; i < count; i++) {
+        tbody.append(`
+            <tr>
+                <td class="align-middle">${trancheLabel(i + 1)}</td>
+                <td><input type="number" min="1" class="form-control form-control-sm tranche-montant" name="tranches[${key}][montant][]" value="${amounts[i] ?? ''}" required></td>
+                <td><input type="date" class="form-control form-control-sm tranche-date" name="tranches[${key}][date_limite][]" value="${dates[i] ?? ''}" required></td>
+            </tr>
+        `);
+    }
+}
+
+function refreshTrancheTotals(row) {
+    const editor = row.next('.tranche-editor-row');
+    let sum = 0;
+    editor.find('.tranche-montant').each(function() {
+        sum += parseFloat($(this).val()) || 0;
+    });
+
+    editor.find('.tranche-sum').text(sum.toLocaleString('fr-FR'));
+    row.find('.planification-montant').val(sum > 0 ? sum : '');
+
+    const dates = editor.find('.tranche-date').map(function() { return $(this).val(); }).get().filter(Boolean);
+    if (dates.length) {
+        row.find('.planification-date-fin').val(dates[dates.length - 1]);
+    }
+
+    return sum;
+}
+
+function resetTrancheLines(row) {
+    const editor = row.next('.tranche-editor-row');
+    const count = parseInt(editor.find('.tranche-count').val(), 10);
+    const currentSum = editor.find('.tranche-montant').toArray().reduce((total, el) => total + (parseFloat($(el).val()) || 0), 0);
+    const total = parseInt(editor.find('.tranche-total').val(), 10) || currentSum;
+    const amounts = total > 0 ? distributeTotal(total, count) : Array(count).fill('');
+
+    renderTrancheLines(row, count, amounts, proposeTrancheDates(row, count));
+    refreshTrancheTotals(row);
+}
+
+function enterTrancheMode(row) {
+    row.find('.planification-montant, .planification-date-fin').prop('readonly', true);
+    if (row.next('.tranche-editor-row').length) {
+        return;
+    }
+
+    const debut = selectedAnneeDates().debut;
+    if (!row.find('.planification-date-debut').val() && debut) {
+        row.find('.planification-date-debut').val(debut);
+    }
+
+    const editor = buildTrancheEditor(row);
+    row.after(editor);
+    editor.find('.tranche-total').val(parseFloat(row.find('.planification-montant').val()) || '');
+    resetTrancheLines(row);
+}
+
+function leaveTrancheMode(row) {
+    row.next('.tranche-editor-row').remove();
+    row.find('.planification-montant, .planification-date-fin').prop('readonly', false).val('');
+}
+
+function trancheRowOf(element) {
+    return $(element).closest('tr.tranche-editor-row').prev('tr.form-row');
+}
+
+$(document).on('change', '.tranche-count', function() {
+    resetTrancheLines(trancheRowOf(this));
+});
+
+$(document).on('input', '.tranche-total', function() {
+    const row = trancheRowOf(this);
+    const editor = row.next('.tranche-editor-row');
+    const total = parseInt($(this).val(), 10) || 0;
+    const inputs = editor.find('.tranche-montant');
+
+    if (total > 0 && inputs.length) {
+        const amounts = distributeTotal(total, inputs.length);
+        inputs.each(function(index) {
+            $(this).val(amounts[index]);
+        });
+    }
+    refreshTrancheTotals(row);
+});
+
+$(document).on('input', '.tranche-montant', function() {
+    const row = trancheRowOf(this);
+    const sum = refreshTrancheTotals(row);
+    row.next('.tranche-editor-row').find('.tranche-total').val(sum > 0 ? sum : '');
+});
+
+$(document).on('change', '.tranche-date', function() {
+    $(this).data('manual', true);
+    refreshTrancheTotals(trancheRowOf(this));
+});
+
+$(document).on('change', '#id_annee', function() {
+    $('tr.tranche-editor-row').each(function() {
+        const row = trancheRowOf(this);
+        const debut = selectedAnneeDates().debut;
+        if (debut) {
+            row.find('.planification-date-debut').val(debut);
+        }
+
+        const dateInputs = $(this).find('.tranche-date');
+        const hasManualDate = dateInputs.toArray().some((el) => $(el).data('manual'));
+        if (!hasManualDate) {
+            const proposed = proposeTrancheDates(row, dateInputs.length);
+            dateInputs.each(function(index) {
+                $(this).val(proposed[index] || '');
+            });
+            refreshTrancheTotals(row);
+        }
+    });
+});
+
 $('.planification-motif').each(function() {
     $(this).data('previous-motif', $(this).val());
 });

@@ -136,7 +136,16 @@
                         <tbody>
                             @forelse($planifications as $planification)
                                 <tr>
-                                    <td>{{ $isPublicSchool ? 'Coopérative' : $planification->motif }}</td>
+                                    <td>
+                                        {{ $isPublicSchool ? 'Coopérative' : $planification->motif }}
+                                        @if($planification->tranches->isNotEmpty())
+                                            <ul class="list-unstyled small text-muted mb-0 mt-1">
+                                                @foreach($planification->tranches as $tranche)
+                                                    <li>{{ $tranche->libelle }} : {{ number_format((float) $tranche->montant, 0, ',', ' ') }} F avant le {{ $tranche->date_limite->format('d/m/Y') }}</li>
+                                                @endforeach
+                                            </ul>
+                                        @endif
+                                    </td>
                                     <td>{{ number_format((float) $planification->montant_planification, 0, ',', ' ') }} F CFA</td>
                                     <td class="text-center">
                                         <div class="dropdown">

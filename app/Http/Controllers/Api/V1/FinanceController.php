@@ -52,6 +52,13 @@ class FinanceController extends WebFinanceController
                 'montant_total' => $row->montant_total,
                 'montant_deja_paye' => $row->montant_deja_paye,
                 'reste_a_payer' => $row->reste_a_payer,
+                'a_payer_maintenant' => $row->a_payer_maintenant,
+                'tranche' => $row->tranche ? [
+                    'soldees' => $row->tranche['soldees'],
+                    'total' => $row->tranche['total'],
+                    'en_retard' => $row->tranche['en_retard'],
+                    'courante' => $row->tranche['courante'],
+                ] : null,
                 'parents' => $row->parents->map(fn ($parent) => [
                     'id_parent' => $parent->id_parent,
                     'nom_prenom_parent' => $parent->nom_prenom_parent,

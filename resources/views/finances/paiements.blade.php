@@ -227,6 +227,9 @@
                     <li class="nav-item" role="presentation">
                         <a class="nav-link @if($selectedType === 'annuel') active @endif" href="#" data-filter-type="annuel">Paiement Annuel</a>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link @if($selectedType === 'tranche') active @endif" href="#" data-filter-type="tranche">Par tranche</a>
+                    </li>
                     @endif
             </ul>
 
@@ -267,6 +270,15 @@
                                 </td>
                                 <td>
                                     <input type="text" name="motif[]" value="{{ $isPublicSchool ? 'Coopérative' : $row->planification->motif }}" class="form-control form-control-sm">
+                                    @if($row->tranche)
+                                        @php($courante = $row->tranche['courante'])
+                                        <div class="small mt-1 {{ $row->tranche['en_retard'] ? 'text-danger fw-semibold' : 'text-muted' }}">
+                                            {{ $row->tranche['soldees'] }}/{{ $row->tranche['total'] }} tranche(s) soldée(s)
+                                            @if($courante)
+                                                <br>{{ $courante['libelle'] }} : {{ number_format($courante['reste'], 0, ',', ' ') }} F avant le {{ \Illuminate\Support\Carbon::parse($courante['date_limite'])->format('d/m/Y') }}@if($courante['en_retard']) (en retard)@endif
+                                            @endif
+                                        </div>
+                                    @endif
                                 </td>
                                 <td style="min-width: 220px;">
                                     <select name="parent_id[]" class="form-select form-select-sm payer-select">
@@ -289,7 +301,7 @@
                                     <span class="current-reste">{{ number_format($row->reste_a_payer, 0, ',', ' ') }} F CFA</span>
                                 </td>
                                 <td>
-                                    <input type="number" name="montant_recu[]" class="form-control form-control-sm montant_recu" min="1" max="{{ $row->reste_a_payer }}" value="{{ $row->reste_a_payer }}">
+                                    <input type="number" name="montant_recu[]" class="form-control form-control-sm montant_recu" min="1" max="{{ $row->reste_a_payer }}" value="{{ $row->a_payer_maintenant }}">
                                 </td>
                             </tr>
                         @empty
