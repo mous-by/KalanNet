@@ -1,27 +1,6 @@
 @extends('layouts.app')
 
 @section('content')
-@push('styles')
-<style>
-    .finance-menu .nav-link {
-        color: var(--text-main);
-        border-radius: 8px;
-    }
-    .finance-menu .nav-link.active {
-        border-left: 4px solid var(--theme-accent);
-        background: var(--accent-light);
-        color: var(--theme-accent);
-        font-weight: 700;
-    }
-    .finance-menu .menu-icon {
-        width: 28px;
-        height: 28px;
-        background: var(--theme-primary);
-        color: var(--text-on-accent);
-    }
-</style>
-@endpush
-
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
         <h1 class="h3 mb-1">{{ $isPublicSchool ? 'Coopérative' : 'Formule de paiement' }}</h1>
@@ -39,6 +18,10 @@
     @endif
 </div>
 
+@php
+    $canEdit = auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('finances_planifications_modification');
+@endphp
+
 @if(session('success'))
     <div class="alert alert-success">{{ session('success') }}</div>
 @endif
@@ -48,47 +31,7 @@
 
 <div class="row g-4">
     <div class="col-12 col-md-3">
-        <div class="card theme-card h-100">
-            <div class="card-header theme-header">
-                <i class="bi bi-list me-2"></i> Menu
-            </div>
-            <div class="card-body p-2">
-                <ul class="nav flex-column gap-2 finance-menu">
-                    <li class="nav-item">
-                        <a class="nav-link d-flex align-items-center py-2" href="{{ route('finances.index') }}">
-                            <span class="menu-icon rounded-circle d-flex align-items-center justify-content-center me-2">
-                                <i class="bi bi-graph-up"></i>
-                            </span>
-                            <span>Tableau de bord</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active d-flex align-items-center py-2" href="{{ route('finances.planifications') }}">
-                            <span class="menu-icon rounded-circle d-flex align-items-center justify-content-center me-2">
-                                <i class="bi bi-calendar-check"></i>
-                            </span>
-                            <span>{{ $isPublicSchool ? 'Coopérative' : 'Formule de paiement' }}</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link d-flex align-items-center py-2" href="{{ route('finances.paiements') }}">
-                            <span class="menu-icon rounded-circle d-flex align-items-center justify-content-center me-2">
-                                <i class="bi bi-cash-stack"></i>
-                            </span>
-                            <span>Paiements</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link d-flex align-items-center py-2" href="{{ route('finances.paiements.historique') }}">
-                            <span class="menu-icon rounded-circle d-flex align-items-center justify-content-center me-2">
-                                <i class="bi bi-clock-history"></i>
-                            </span>
-                            <span>Historique</span>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
+        @include('finances.partials.menu', ['active' => 'planifications'])
     </div>
 
     <div class="col-12 col-lg-9">
@@ -153,11 +96,19 @@
                                                 <i class="bi bi-three-dots"></i>
                                             </a>
                                             <div class="dropdown-menu">
+                                                @if($canEdit)
+                                                    <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#editPlanificationModal{{ $planification->id_planification }}">
+                                                        <i class="bi bi-pencil me-1"></i> Modifier
+                                                    </button>
+                                                @endif
                                                 @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('finances_planifications_supprimer'))
-                                                    <form method="POST" action="{{ route('finances.planifications.destroy', $planification->id_planification) }}">
+                                                    <form method="POST" action="{{ route('finances.planifications.destroy', $planification->id_planification) }}"
+                                                          data-confirm-delete
+                                                          data-confirm-title="{{ $isPublicSchool ? 'Supprimer cette coopérative ?' : 'Supprimer cette formule de paiement ?' }}"
+                                                          data-confirm-text="Cette action est irréversible.">
                                                         @csrf
                                                         @method('DELETE')
-                                                        <button type="submit" class="dropdown-item" onclick="return confirm('{{ $isPublicSchool ? 'Supprimer cette coopérative ?' : 'Supprimer cette planification ?' }}')">
+                                                        <button type="submit" class="dropdown-item text-danger">
                                                             <i class="bi bi-trash me-1"></i> Supprimer
                                                         </button>
                                                     </form>
@@ -178,9 +129,122 @@
         </div>
     </div>
 </div>
+
+@if($canEdit)
+    @foreach($planifications as $planification)
+        @php
+            $tranches = $planification->tranches;
+            $linked = (int) ($linkedCounts[$planification->id_planification] ?? 0);
+        @endphp
+        <div class="modal fade" id="editPlanificationModal{{ $planification->id_planification }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered {{ $tranches->isNotEmpty() ? 'modal-lg' : '' }}">
+                <div class="modal-content border-0 rounded-4 shadow">
+                    <form method="POST" action="{{ route('finances.planifications.update', $planification->id_planification) }}">
+                        @csrf
+                        @method('PUT')
+                        <div class="modal-header theme-header">
+                            <h5 class="modal-title fw-bold">Modifier : {{ $isPublicSchool ? 'Coopérative' : $planification->motif }}</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                        </div>
+                        <div class="modal-body">
+                            @if($linked > 0)
+                                <div class="alert alert-info py-2 small">
+                                    {{ $linked }} élève(s) rattaché(s) à cette formule : les nouveaux montants s'appliquent à leur reste à payer. Le total ne peut pas descendre sous ce qu'un élève a déjà versé.
+                                </div>
+                            @endif
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Date de début</label>
+                                    <input type="date" name="date_debut" class="form-control" value="{{ $planification->date_debut }}" required>
+                                </div>
+
+                                @if($tranches->isEmpty())
+                                    <div class="col-md-6">
+                                        <label class="form-label">Date de fin</label>
+                                        <input type="date" name="date_fin" class="form-control" value="{{ $planification->date_fin }}" required>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">{{ $isPublicSchool ? 'Montant coopérative' : 'Coût total' }} (F CFA)</label>
+                                        <input type="number" name="montant_planification" class="form-control" min="1" value="{{ (float) $planification->montant_planification }}" required>
+                                    </div>
+                                @else
+                                    <div class="col-12">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-bordered align-middle mb-0">
+                                                <thead>
+                                                    <tr><th style="width: 30%;">Tranche</th><th style="width: 35%;">Montant (F CFA)</th><th style="width: 35%;">Date limite</th></tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach($tranches as $tranche)
+                                                        <tr>
+                                                            <td>{{ $tranche->libelle }}</td>
+                                                            <td><input type="number" name="tranche_montant[]" class="form-control form-control-sm edit-tranche-montant" min="1" value="{{ (float) $tranche->montant }}" required></td>
+                                                            <td><input type="date" name="tranche_date[]" class="form-control form-control-sm" value="{{ $tranche->date_limite->format('Y-m-d') }}" required></td>
+                                                        </tr>
+                                                    @endforeach
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr>
+                                                        <th>Total</th>
+                                                        <th colspan="2" class="edit-tranche-total">{{ number_format((float) $planification->montant_planification, 0, ',', ' ') }} F CFA</th>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                        <div class="form-text">Le total est la somme des tranches. Le nombre de tranches ne peut pas être modifié ici.</div>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+                            <button type="submit" class="btn btn-primary fw-bold">Enregistrer</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @endforeach
+@endif
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-confirm-delete]').forEach(function (deleteForm) {
+        deleteForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+            const title = deleteForm.dataset.confirmTitle || 'Confirmer la suppression ?';
+            const text = deleteForm.dataset.confirmText || '';
+            if (!window.Swal) {
+                if (confirm(title)) deleteForm.submit();
+                return;
+            }
+            Swal.fire({
+                title,
+                text,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Oui, supprimer',
+                cancelButtonText: 'Annuler',
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+            }).then(function (result) {
+                if (result.isConfirmed) deleteForm.submit();
+            });
+        });
+    });
+
+    document.querySelectorAll('.edit-tranche-montant').forEach(function (input) {
+        input.addEventListener('input', function () {
+            const modal = input.closest('.modal');
+            let sum = 0;
+            modal.querySelectorAll('.edit-tranche-montant').forEach(function (field) {
+                sum += parseFloat(field.value) || 0;
+            });
+            modal.querySelector('.edit-tranche-total').textContent = sum.toLocaleString('fr-FR') + ' F CFA';
+        });
+    });
+
     const form = document.getElementById('planificationFilterForm');
     document.querySelectorAll('.auto-submit-planification').forEach(function (field) {
         field.addEventListener('change', function () {

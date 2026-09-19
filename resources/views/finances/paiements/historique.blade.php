@@ -19,6 +19,12 @@
     </div>
 </div>
 
+<div class="row g-0">
+<div class="col-12 col-md-3">
+    @include('finances.partials.menu', ['active' => 'historique'])
+</div>
+
+<div class="col-12 col-md-9 pt-4 pt-md-0 p-md-3">
 <form method="POST" action="{{ route('finances.paiements.historique') }}" class="card theme-card mb-4" id="historyFilterForm" data-auto-filter="true">
     @csrf
     <div class="card-body row g-3 align-items-end">
@@ -103,6 +109,8 @@
     @if($paiements->hasPages())
         <div class="card-footer bg-white">{{ $paiements->links() }}</div>
     @endif
+</div>
+</div>
 </div>
 
 @push('styles')

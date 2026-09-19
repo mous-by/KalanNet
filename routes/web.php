@@ -146,6 +146,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/finances/planifications/filter', [FinanceController::class, 'listeLegacyPlanifications'])->name('finances.planifications.filter');
     Route::get('/finances/planifications/ajouter', [FinanceController::class, 'createLegacyPlanification'])->name('finances.planifications.create');
     Route::post('/finances/planifications', [FinanceController::class, 'storeLegacyPlanification'])->name('finances.planifications.store');
+    Route::put('/finances/planifications/{id}', [FinanceController::class, 'updateLegacyPlanification'])->name('finances.planifications.update');
     Route::delete('/finances/planifications/{id}', [FinanceController::class, 'deleteLegacyPlanification'])->name('finances.planifications.destroy');
     Route::get('/finances/paiements', [FinanceController::class, 'listePaiements'])->name('finances.paiements');
     Route::post('/finances/paiements/filter', [FinanceController::class, 'filterPaiements'])->name('finances.paiements.filter');

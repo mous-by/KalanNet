@@ -10,22 +10,6 @@
 
 @push('styles')
 <style>
-    .finance-menu .nav-link {
-        color: var(--text-main);
-        border-radius: 8px;
-    }
-    .finance-menu .nav-link.active {
-        border-left: 4px solid var(--theme-accent);
-        background: var(--accent-light);
-        color: var(--theme-accent);
-        font-weight: 700;
-    }
-    .finance-menu .menu-icon {
-        width: 28px;
-        height: 28px;
-        background: var(--theme-primary);
-        color: var(--text-on-accent);
-    }
     .finance-tabs .nav-link {
         color: var(--theme-accent);
         border-color: var(--border-color);
@@ -97,47 +81,7 @@
 
 <div class="row g-0">
     <div class="col-12 col-md-3">
-        <div class="card theme-card h-100">
-            <div class="card-header theme-header d-flex align-items-center">
-                <i class="bi bi-list me-2"></i> Menu
-            </div>
-            <div class="card-body p-2">
-                <ul class="nav flex-column gap-2 finance-menu">
-                    <li class="nav-item">
-                        <a class="nav-link d-flex align-items-center py-2" href="{{ route('finances.index') }}">
-                            <span class="menu-icon rounded-circle d-flex align-items-center justify-content-center me-2">
-                                <i class="bi bi-graph-up"></i>
-                            </span>
-                            <span>Tableau de bord</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link d-flex align-items-center py-2" href="{{ route('finances.planifications') }}">
-                            <span class="menu-icon rounded-circle d-flex align-items-center justify-content-center me-2">
-                                <i class="bi bi-calendar-check"></i>
-                            </span>
-                            <span>{{ $isPublicSchool ? 'Coopérative' : 'Formule de paiement' }}</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active d-flex align-items-center py-2" href="{{ route('finances.paiements') }}">
-                            <span class="menu-icon rounded-circle d-flex align-items-center justify-content-center me-2">
-                                <i class="bi bi-cash-stack"></i>
-                            </span>
-                            <span>Paiements</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link d-flex align-items-center py-2" href="{{ route('finances.paiements.historique') }}">
-                            <span class="menu-icon rounded-circle d-flex align-items-center justify-content-center me-2">
-                                <i class="bi bi-clock-history"></i>
-                            </span>
-                            <span>Historique</span>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
+        @include('finances.partials.menu', ['active' => 'paiements'])
     </div>
 
     <div class="col-12 col-md-9 pt-4 pt-md-0 p-md-3">

@@ -3,22 +3,6 @@
 @section('content')
 @push('styles')
 <style>
-    .finance-menu .nav-link {
-        color: var(--text-main);
-        border-radius: 8px;
-    }
-    .finance-menu .nav-link.active {
-        border-left: 4px solid var(--theme-accent);
-        background: var(--accent-light);
-        color: var(--theme-accent);
-        font-weight: 700;
-    }
-    .finance-menu .menu-icon {
-        width: 28px;
-        height: 28px;
-        background: var(--theme-primary);
-        color: var(--text-on-accent);
-    }
     .classe-choice-list {
         max-height: 260px;
         overflow-y: auto;
@@ -67,47 +51,7 @@
     @csrf
     <div class="row g-0">
         <div class="col-12 col-md-3">
-            <div class="card theme-card h-100">
-                <div class="card-header theme-header d-flex align-items-center">
-                    <i class="bi bi-list me-2"></i> Menu
-                </div>
-                <div class="card-body p-2">
-                    <ul class="nav flex-column gap-2 finance-menu">
-                        <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center py-2" href="{{ route('finances.index') }}">
-                                <span class="menu-icon rounded-circle d-flex align-items-center justify-content-center me-2">
-                                    <i class="bi bi-graph-up"></i>
-                                </span>
-                                <span>Tableau de bord</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link active d-flex align-items-center py-2" href="{{ route('finances.planifications') }}">
-                                <span class="menu-icon rounded-circle d-flex align-items-center justify-content-center me-2">
-                                    <i class="bi bi-calendar-check"></i>
-                                </span>
-                                <span>{{ $isPublicSchool ? 'Coopérative' : 'Formule de paiement' }}</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center py-2" href="{{ route('finances.paiements') }}">
-                                <span class="menu-icon rounded-circle d-flex align-items-center justify-content-center me-2">
-                                    <i class="bi bi-cash-stack"></i>
-                                </span>
-                                <span>Paiements</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center py-2" href="{{ route('finances.paiements.historique') }}">
-                                <span class="menu-icon rounded-circle d-flex align-items-center justify-content-center me-2">
-                                    <i class="bi bi-clock-history"></i>
-                                </span>
-                                <span>Historique</span>
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
+            @include('finances.partials.menu', ['active' => 'planifications'])
         </div>
 
         <div class="col-12 col-lg-9 pt-4 pt-lg-0 p-md-3">
@@ -470,10 +414,23 @@ function proposeTrancheDates(row, count) {
     return dates;
 }
 
+// Repartition proposee (en %) selon le nombre de tranches : la 1ere tranche est la
+// plus importante, le reste est reparti a parts egales. Modifiable par l'utilisateur.
+const TRANCHE_SHARES = {
+    2: [50, 50],
+    3: [40, 30, 30],
+    4: [40, 20, 20, 20],
+    5: [40, 15, 15, 15, 15],
+    6: [40, 12, 12, 12, 12, 12],
+};
+
+function trancheShares(count) {
+    return TRANCHE_SHARES[count] || Array(count).fill(100 / count);
+}
+
 function distributeTotal(total, count) {
-    const base = Math.floor(total / count);
-    const amounts = Array(count).fill(base);
-    amounts[count - 1] = total - base * (count - 1);
+    const amounts = trancheShares(count).map((share) => Math.floor(total * share / 100));
+    amounts[count - 1] = total - amounts.slice(0, -1).reduce((sum, amount) => sum + amount, 0);
 
     return amounts;
 }
@@ -498,7 +455,7 @@ function buildTrancheEditor(row) {
                         <input type="number" min="1" class="form-control tranche-total" placeholder="Ex : 150000">
                     </div>
                     <div class="col-md-5 small text-muted">
-                        Le total est réparti automatiquement entre les tranches. Vous pouvez ensuite modifier chaque montant et chaque date limite.
+                        Répartition proposée : <strong class="tranche-shares"></strong>. Vous pouvez ensuite modifier chaque montant et chaque date limite.
                     </div>
                 </div>
                 <div class="table-responsive mt-3">
@@ -557,6 +514,7 @@ function resetTrancheLines(row) {
     const total = parseInt(editor.find('.tranche-total').val(), 10) || currentSum;
     const amounts = total > 0 ? distributeTotal(total, count) : Array(count).fill('');
 
+    editor.find('.tranche-shares').text(trancheShares(count).join(' % / ') + ' %');
     renderTrancheLines(row, count, amounts, proposeTrancheDates(row, count));
     refreshTrancheTotals(row);
 }

@@ -13,6 +13,12 @@
         </div>
     </div>
 
+    <div class="row g-0">
+    <div class="col-12 col-md-3">
+        @include('finances.partials.menu', ['active' => 'index'])
+    </div>
+
+    <div class="col-12 col-md-9 pt-4 pt-md-0 p-md-3">
     <div class="mb-3 d-flex justify-content-end gap-2">
         <button class="btn px-4 theme-pill-active">
             <i class="bi bi-file-earmark-bar-graph me-2"></i>Rapport
@@ -139,6 +145,9 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    </div>
     </div>
 
     <style>
