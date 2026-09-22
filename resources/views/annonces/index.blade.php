@@ -142,6 +142,11 @@
                                         </td>
                                         <td>{{ $annonce->date_publication ? \Carbon\Carbon::parse($annonce->date_publication)->format('d/m/Y H:i') : 'Non publiée' }}</td>
                                         <td class="text-end">
+                                            @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('annonces_creation'))
+                                                <button type="button" class="btn btn-sm btn-outline-primary btn-announcement-readers" data-url="{{ route('annonces.readers', $annonce->id_annonce) }}" data-titre="{{ $annonce->titre }}">
+                                                    <i class="bi bi-eye me-1"></i>Lecteurs
+                                                </button>
+                                            @endif
                                             @if(($annonce->statut_annonce ?? 'publie') !== 'publie' && (auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('annonces_creation')))
                                                 <form action="{{ route('annonces.publish', $annonce->id_annonce) }}" method="POST" class="d-inline">
                                                     @csrf
@@ -176,6 +181,25 @@
                     @if(method_exists($annonces, 'hasPages') && $annonces->hasPages())
                         {{ $annonces->links() }}
                     @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="readersModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content border-0 rounded-4 shadow">
+                <div class="modal-header theme-header">
+                    <h5 class="modal-title fw-bold" id="readersModalTitle">Lecteurs</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="readersModalLoading" class="text-center text-muted py-4">Chargement...</div>
+                    <div id="readersModalError" class="alert alert-danger d-none"></div>
+                    <div id="readersModalContent" class="d-none">
+                        <p class="fw-bold mb-3"><span id="readersModalCount"></span> ont lu cette annonce</p>
+                        <ul class="list-group" id="readersModalList"></ul>
+                    </div>
                 </div>
             </div>
         </div>
@@ -235,6 +259,52 @@
                     }).then(result => {
                         if (result.isConfirmed) form.submit();
                     });
+                });
+            });
+
+            const readersModalEl = document.getElementById('readersModal');
+            const readersModal = readersModalEl ? new bootstrap.Modal(readersModalEl) : null;
+            document.querySelectorAll('.btn-announcement-readers').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    const loading = document.getElementById('readersModalLoading');
+                    const errorBox = document.getElementById('readersModalError');
+                    const content = document.getElementById('readersModalContent');
+                    document.getElementById('readersModalTitle').textContent = 'Lecteurs — ' + button.dataset.titre;
+                    loading.classList.remove('d-none');
+                    errorBox.classList.add('d-none');
+                    content.classList.add('d-none');
+                    readersModal.show();
+
+                    fetch(button.dataset.url, { headers: { 'Accept': 'application/json' } })
+                        .then(function (response) {
+                            if (!response.ok) throw new Error('http_' + response.status);
+                            return response.json();
+                        })
+                        .then(function (data) {
+                            document.getElementById('readersModalCount').textContent = data.lus + '/' + data.total;
+                            const list = document.getElementById('readersModalList');
+                            list.innerHTML = '';
+                            data.lecteurs.forEach(function (lecteur) {
+                                const item = document.createElement('li');
+                                item.className = 'list-group-item d-flex justify-content-between align-items-center';
+                                const ecole = lecteur.ecole ? ' <span class="text-muted small">(' + lecteur.ecole + ')</span>' : '';
+                                item.innerHTML = '<span>' + lecteur.nom + ecole + '</span>' +
+                                    (lecteur.lu_le
+                                        ? '<span class="badge bg-success">Lu le ' + lecteur.lu_le + '</span>'
+                                        : '<span class="badge bg-secondary">Non lu</span>');
+                                list.appendChild(item);
+                            });
+                            if (data.lecteurs.length === 0) {
+                                list.innerHTML = '<li class="list-group-item text-muted text-center">Aucun destinataire trouvé.</li>';
+                            }
+                            loading.classList.add('d-none');
+                            content.classList.remove('d-none');
+                        })
+                        .catch(function () {
+                            loading.classList.add('d-none');
+                            errorBox.textContent = 'Impossible de charger la liste des lecteurs.';
+                            errorBox.classList.remove('d-none');
+                        });
                 });
             });
         });

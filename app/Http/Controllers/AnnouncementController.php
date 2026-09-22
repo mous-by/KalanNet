@@ -172,6 +172,80 @@ class AnnouncementController extends Controller
         return back();
     }
 
+    public function readers(int $id)
+    {
+        $this->authorizeAnnouncementAccess('annonces_apercu');
+        $user = Auth::user();
+        $isSupAdmin = $user->droit === 'SupAdmin';
+
+        $annonce = $this->ownedAnnouncementQuery($id)->first();
+        abort_if(!$annonce, 404);
+        // Seul l'auteur de l'ecole ou un gestionnaire d'annonces peut consulter les
+        // lecteurs -- meme regle que pour publier/archiver/supprimer cette annonce.
+        if (!$isSupAdmin && !$user->userHasPermission('annonces_creation')) {
+            abort(403);
+        }
+
+        $recipients = $this->announcementRecipients($annonce);
+
+        $readAt = Schema::hasTable('annonces_lues')
+            ? DB::table('annonces_lues')
+                ->where('id_annonce', $id)
+                ->where('type_annonce', 'admin_gestionnaire')
+                ->whereIn('id_utilisateur', $recipients->pluck('idUtilisateur'))
+                ->pluck('date_lecture', 'id_utilisateur')
+            : collect();
+
+        $readers = $recipients->map(function ($recipient) use ($readAt) {
+            $recipient->date_lecture = $readAt->get($recipient->idUtilisateur);
+            return $recipient;
+        })->sortBy([
+            // Les non-lus d'abord : c'est l'information actionnable (a qui relancer).
+            fn ($a, $b) => ($a->date_lecture ? 1 : 0) <=> ($b->date_lecture ? 1 : 0),
+            fn ($a, $b) => strcasecmp((string) $a->nomPrenom, (string) $b->nomPrenom),
+        ])->values();
+
+        return response()->json([
+            'annonce' => ['id_annonce' => $annonce->id_annonce, 'titre' => $annonce->titre],
+            'total' => $readers->count(),
+            'lus' => $readers->filter(fn ($r) => $r->date_lecture !== null)->count(),
+            'lecteurs' => $readers->map(fn ($r) => [
+                'nom' => $r->nomPrenom,
+                'droit' => $r->droit,
+                'ecole' => $r->nomEcole ?? null,
+                'lu_le' => $r->date_lecture ? \Illuminate\Support\Carbon::parse($r->date_lecture)->format('d/m/Y H:i') : null,
+            ]),
+        ]);
+    }
+
+    /**
+     * Destinataires reels d'une annonce, selon sa cible (public_cible) et son
+     * perimetre (une ecole, ou toutes les ecoles pour une diffusion globale) --
+     * reflete la logique de visibleAnnouncementQuery() mais du point de vue de
+     * l'annonce plutot que du point de vue d'un utilisateur donne.
+     */
+    protected function announcementRecipients(object $annonce)
+    {
+        if ($annonce->id_ecole === null) {
+            // Diffusion globale : store() force toujours public_cible = 'admins'.
+            return User::where('droit', 'Admin')
+                ->leftJoin('ecole', 'ecole.idEcole', '=', 'utilisateurs.idEcole')
+                ->orderBy('utilisateurs.nomPrenom')
+                ->get(['utilisateurs.idUtilisateur', 'utilisateurs.nomPrenom', 'utilisateurs.droit', 'ecole.nomEcole']);
+        }
+
+        $query = User::where('idEcole', $annonce->id_ecole);
+
+        match ($annonce->public_cible) {
+            'parents' => $query->where('droit', 'parent'),
+            'enseignants' => $query->where('droit', 'enseignant'),
+            'gestionnaires' => $query->whereNotIn('droit', ['parent', 'enseignant']),
+            default => null, // 'tous' : pas de filtre supplementaire
+        };
+
+        return $query->orderBy('nomPrenom')->get(['idUtilisateur', 'nomPrenom', 'droit']);
+    }
+
     public function publish(int $id)
     {
         $this->authorizeAnnouncementAccess('annonces_creation');
