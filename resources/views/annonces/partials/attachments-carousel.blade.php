@@ -53,14 +53,17 @@
     </div>
 
     @once
-        @push('styles')
-            <style>
-                .annonce-attachments-carousel { max-width: 480px; }
-                .annonce-attachment-image { max-height: 260px; width: 100%; object-fit: contain; background: #f8f9fa; }
-                .annonce-attachment-card { background: #f8f9fa; }
-                .annonce-attachments-carousel .carousel-control-prev,
-                .annonce-attachments-carousel .carousel-control-next { width: 10%; }
-            </style>
-        @endpush
+        {{-- @push('styles') ne fonctionne pas ici : ce partiel est aussi inclus
+             depuis layouts.app APRES @yield('content') (pour le popup "Nouvelles
+             annonces"), donc apres que @stack('styles') du <head> ait deja ete
+             rendu — le style pousse serait silencieusement perdu. D'ou un <style>
+             en ligne, imprime une seule fois grace a @once. --}}
+        <style>
+            .annonce-attachments-carousel { max-width: 480px; }
+            .annonce-attachment-image { max-height: 420px; width: 100%; object-fit: contain; background: #f8f9fa; }
+            .annonce-attachment-card { background: #f8f9fa; }
+            .annonce-attachments-carousel .carousel-control-prev,
+            .annonce-attachments-carousel .carousel-control-next { width: 10%; }
+        </style>
     @endonce
 @endif
