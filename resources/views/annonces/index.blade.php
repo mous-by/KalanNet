@@ -121,18 +121,6 @@
                                                 @endif
                                             </div>
                                             <div class="small text-muted">{{ \Illuminate\Support\Str::limit($annonce->contenu, 100) }}</div>
-                                            @php($files = $filesByAnnouncement[$annonce->id_annonce] ?? collect())
-                                            @if($files->isNotEmpty())
-                                                <div class="small mt-1">
-                                                    @foreach($files as $file)
-                                                        <a href="{{ asset($file->nom_fichier) }}" target="_blank" class="d-inline-block me-2">
-                                                            <i class="bi bi-paperclip me-1"></i>{{ $file->titre ?: ($file->nom_original ?: 'Fichier') }}
-                                                        </a>
-                                                    @endforeach
-                                                </div>
-                                            @elseif($annonce->fichier_joint)
-                                                <a href="{{ asset($annonce->fichier_joint) }}" target="_blank" class="small"><i class="bi bi-paperclip me-1"></i>Pièce jointe</a>
-                                            @endif
                                         </td>
                                         <td>{{ ucfirst($annonce->public_cible) }}</td>
                                         <td>
@@ -170,6 +158,17 @@
                                             @endif
                                         </td>
                                     </tr>
+                                    @php($files = $filesByAnnouncement[$annonce->id_annonce] ?? collect())
+                                    @if($files->isEmpty() && $annonce->fichier_joint)
+                                        @php($files = collect([(object) ['nom_fichier' => $annonce->fichier_joint, 'type_mime' => $annonce->type_fichier ?? null, 'titre' => null, 'nom_original' => 'Pièce jointe']]))
+                                    @endif
+                                    @if($files->isNotEmpty())
+                                        <tr>
+                                            <td colspan="5" class="bg-light border-top-0">
+                                                @include('annonces.partials.attachments-carousel', ['files' => $files, 'carouselId' => 'annonceCarousel' . $annonce->id_annonce])
+                                            </td>
+                                        </tr>
+                                    @endif
                                 @empty
                                     <tr>
                                         <td colspan="5" class="text-center py-4 text-muted">Aucune annonce enregistrée.</td>

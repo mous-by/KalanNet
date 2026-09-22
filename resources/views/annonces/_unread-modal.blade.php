@@ -54,18 +54,13 @@
                             </div>
                             <div>{{ $annonce->contenu }}</div>
                             @php($files = $unreadAnnouncementFiles[$annonce->id_annonce] ?? collect())
+                            @if($files->isEmpty() && $annonce->fichier_joint)
+                                @php($files = collect([(object) ['nom_fichier' => $annonce->fichier_joint, 'type_mime' => $annonce->type_fichier ?? null, 'titre' => null, 'nom_original' => 'Pièce jointe']]))
+                            @endif
                             @if($files->isNotEmpty())
                                 <div class="mt-2">
-                                    @foreach($files as $file)
-                                        <a href="{{ asset($file->nom_fichier) }}" target="_blank" class="btn btn-sm btn-light border me-1 mb-1">
-                                            <i class="bi bi-paperclip me-1"></i>{{ $file->titre ?: ($file->nom_original ?: 'Fichier') }}
-                                        </a>
-                                    @endforeach
+                                    @include('annonces.partials.attachments-carousel', ['files' => $files, 'carouselId' => 'unreadCarousel' . $annonce->id_annonce])
                                 </div>
-                            @elseif($annonce->fichier_joint)
-                                <a href="{{ asset($annonce->fichier_joint) }}" target="_blank" class="btn btn-sm btn-light border mt-2">
-                                    <i class="bi bi-paperclip me-1"></i>Pièce jointe
-                                </a>
                             @endif
                         </div>
                     @endforeach
