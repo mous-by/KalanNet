@@ -138,7 +138,6 @@ class ClasseController extends Controller
                 'ordreEnseignement' => $estSante ? null : $data['ordre_enseignement'],
                 'idEcole' => $idEcole,
                 'id_filiere' => $estSante ? $data['id_filiere'] : null,
-                'annee' => $estSante ? $data['annee'] : null,
             ]);
 
             $this->syncLignesClasse($classe, $data);
@@ -209,7 +208,6 @@ class ClasseController extends Controller
                 'nom_classe' => $data['nom_classe'],
                 'ordreEnseignement' => $estSante ? null : $data['ordre_enseignement'],
                 'id_filiere' => $estSante ? $data['id_filiere'] : null,
-                'annee' => $estSante ? $data['annee'] : null,
             ]);
 
             $classe->ligneClasses()->delete();
@@ -258,7 +256,6 @@ class ClasseController extends Controller
 
         if ($estSante) {
             $rules['id_filiere'] = ['required', 'integer', Rule::exists('filieres', 'id_filiere')->where('id_ecole', $idEcole)];
-            $rules['annee'] = 'required|integer|min:1|max:8';
             $rules['ordre_enseignement'] = 'nullable|string|max:50';
         } else {
             $rules['ordre_enseignement'] = 'required|string|max:50';
@@ -269,7 +266,6 @@ class ClasseController extends Controller
             'coefficient.*.max' => 'Le coefficient ne peut pas dépasser 5.',
             'id_filiere.required' => 'La filière est obligatoire pour une École de Santé.',
             'id_filiere.exists' => 'La filière sélectionnée n’appartient pas à cette école.',
-            'annee.required' => 'L’année est obligatoire pour une École de Santé.',
         ]);
     }
 

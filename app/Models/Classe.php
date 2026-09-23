@@ -18,7 +18,6 @@ class Classe extends Model
         'idEcole',
         'id_classe_officielle',
         'id_filiere',
-        'annee',
     ];
 
     public function ecole()

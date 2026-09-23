@@ -12,6 +12,9 @@
     // national de type DEF/BAC).
     $adminEcoleType = $connectedUser->droit === 'Admin' ? ($connectedUser->ecole->typeEcole ?? null) : null;
     $showPays      = $connectedUser->droit === 'Admin' && $adminEcoleType !== 'École de Santé';
+    // Symétrique de Pays : les filières (Infirmier, Sage-femme...) ne
+    // concernent QUE les Écoles de Santé.
+    $showFilieres  = $connectedUser->droit === 'Admin' && $adminEcoleType === 'École de Santé';
     $showAcademies = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('academies_apercu');
     $showCaps      = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('dcap_apercu');
     $showAnnees    = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('annees_scolaires_apercu');
@@ -57,7 +60,7 @@
         @endif
 
         {{-- Structure scolaire --}}
-        @if($showEcoles || $showAcademies || $showCaps || $showPays)
+        @if($showEcoles || $showAcademies || $showCaps || $showPays || $showFilieres)
             <p class="text-uppercase fw-bold px-2 mb-1" class="config-menu-section-label">Structure</p>
             <ul class="nav flex-column mb-1">
                 @if($showEcoles)
@@ -78,6 +81,11 @@
                 @if($showPays)
                     <li class="nav-item">
                         @include('configuration._menu_link', ['route' => 'configuration.pays', 'icon' => 'bi-globe-americas', 'label' => 'Pays'])
+                    </li>
+                @endif
+                @if($showFilieres)
+                    <li class="nav-item">
+                        @include('configuration._menu_link', ['route' => 'configuration.filieres', 'icon' => 'bi-diagram-3-fill', 'label' => 'Filières'])
                     </li>
                 @endif
             </ul>

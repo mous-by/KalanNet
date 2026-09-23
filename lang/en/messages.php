@@ -94,7 +94,6 @@ return [
         'classes' => 'Classes',
         'associate_classes' => 'Associate Classes',
         'subjects' => 'Subjects',
-        'filieres' => 'Programs',
         'official_programs' => 'Official Programs',
         'timetable' => 'Timetable',
         'tests_evaluations' => 'Tests & Evaluations',

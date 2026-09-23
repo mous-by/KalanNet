@@ -227,10 +227,6 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/pedagogie/matieres/{id}', [MatiereController::class, 'update'])->name('pedagogie.matieres.update');
     Route::delete('/pedagogie/matieres/{id}', [MatiereController::class, 'destroy'])->name('pedagogie.matieres.destroy');
 
-    Route::get('/pedagogie/filieres', [FiliereController::class, 'index'])->name('pedagogie.filieres');
-    Route::post('/pedagogie/filieres', [FiliereController::class, 'store'])->name('pedagogie.filieres.store');
-    Route::put('/pedagogie/filieres/{id}', [FiliereController::class, 'update'])->name('pedagogie.filieres.update');
-    Route::delete('/pedagogie/filieres/{id}', [FiliereController::class, 'destroy'])->name('pedagogie.filieres.destroy');
     Route::get('/pedagogie/inscriptions', [InscriptionController::class, 'index'])->name('inscriptions.index');
     Route::get('/pedagogie/inscriptions/create', [InscriptionController::class, 'create'])->name('inscriptions.create');
     Route::post('/pedagogie/inscriptions', [InscriptionController::class, 'store'])->name('inscriptions.store');
@@ -252,6 +248,12 @@ Route::middleware(['auth'])->group(function () {
     // Config pays (examens nationaux) — Admin limité à son propre pays, SupAdmin à tous
     Route::get('/configuration/pays', [ConfigurationController::class, 'paysConfig'])->name('configuration.pays');
     Route::put('/configuration/pays/{id}', [ConfigurationController::class, 'updatePaysConfig'])->name('configuration.pays.update');
+
+    // Filières — propre aux Écoles de Santé, même principe que Pays pour les autres pays
+    Route::get('/configuration/filieres', [FiliereController::class, 'index'])->name('configuration.filieres');
+    Route::post('/configuration/filieres', [FiliereController::class, 'store'])->name('configuration.filieres.store');
+    Route::put('/configuration/filieres/{id}', [FiliereController::class, 'update'])->name('configuration.filieres.update');
+    Route::delete('/configuration/filieres/{id}', [FiliereController::class, 'destroy'])->name('configuration.filieres.destroy');
 
     // Revendeurs — gestion par le SupAdmin
     Route::get('/configuration/revendeurs', [RevendeurController::class, 'index'])->name('configuration.revendeurs');

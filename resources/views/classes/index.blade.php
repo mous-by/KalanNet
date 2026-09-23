@@ -52,7 +52,7 @@
                                 <td>{{ $classe->classeOfficielle->nom_classe_officielle ?? 'Non associée' }}</td>
                                 <td>
                                     @if($classe->id_filiere)
-                                        {{ $classe->filiere->nom_filiere ?? 'Filière supprimée' }} — {{ $classe->annee }}{{ $classe->annee == 1 ? 'ère' : 'ème' }} année
+                                        {{ $classe->filiere->nom_filiere ?? 'Filière supprimée' }}
                                     @else
                                         {{ $classe->ordreEnseignement }}
                                     @endif

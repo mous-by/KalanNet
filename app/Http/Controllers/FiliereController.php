@@ -18,7 +18,7 @@ class FiliereController extends Controller
             ->orderBy('nom_filiere')
             ->paginate(20);
 
-        return view('pedagogie.filieres', compact('filieres'));
+        return view('configuration.filieres', compact('filieres'));
     }
 
     public function store(Request $request)
@@ -32,7 +32,7 @@ class FiliereController extends Controller
             'actif' => true,
         ]);
 
-        return redirect()->route('pedagogie.filieres')->with('success', 'Filière créée avec succès.');
+        return redirect()->route('configuration.filieres')->with('success', 'Filière créée avec succès.');
     }
 
     public function update(Request $request, $id)
@@ -43,7 +43,7 @@ class FiliereController extends Controller
 
         $filiere->update(['nom_filiere' => $data['nom_filiere']]);
 
-        return redirect()->route('pedagogie.filieres')->with('success', 'Filière modifiée avec succès.');
+        return redirect()->route('configuration.filieres')->with('success', 'Filière modifiée avec succès.');
     }
 
     public function destroy($id)
@@ -53,13 +53,13 @@ class FiliereController extends Controller
 
         $usedInClasses = Classe::where('id_filiere', $filiere->id_filiere)->exists();
         if ($usedInClasses) {
-            return redirect()->route('pedagogie.filieres')
+            return redirect()->route('configuration.filieres')
                 ->with('error', 'Impossible de supprimer cette filière car elle est utilisée par une classe.');
         }
 
         $filiere->delete();
 
-        return redirect()->route('pedagogie.filieres')->with('success', 'Filière supprimée avec succès.');
+        return redirect()->route('configuration.filieres')->with('success', 'Filière supprimée avec succès.');
     }
 
     protected function validateFiliere(Request $request): array
