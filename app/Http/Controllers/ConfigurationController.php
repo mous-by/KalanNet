@@ -19,6 +19,7 @@ use App\Models\Revendeur;
 use App\Models\User;
 use App\Models\Note;
 use App\Models\Controle;
+use App\Support\ExamenNational;
 use App\Support\SchoolOrderAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -430,7 +431,7 @@ class ConfigurationController extends Controller
             'parents' => $this->parentsScope(ParentModel::query(), $authUser, $idEcole)->orderBy('nom_prenom_parent')->get(),
             'academies' => Academie::orderBy('nom_academie')->get(),
             'caps' => Cap::with('academie')->orderBy('nom_cap')->get(),
-            'complexeOrders' => SchoolOrderAccess::ORDERS,
+            'complexeOrders' => ExamenNational::ordresLabels($idEcole),
         ]);
     }
 
@@ -544,7 +545,7 @@ class ConfigurationController extends Controller
             'parents' => $this->parentsScope(ParentModel::query(), $authUser, $idEcole)->orderBy('nom_prenom_parent')->get(),
             'academies' => Academie::orderBy('nom_academie')->get(),
             'caps' => Cap::with('academie')->orderBy('nom_cap')->get(),
-            'complexeOrders' => SchoolOrderAccess::ORDERS,
+            'complexeOrders' => ExamenNational::ordresLabels($idEcole),
         ]);
     }
 
@@ -695,7 +696,7 @@ class ConfigurationController extends Controller
         }
 
         $availableUsers = $this->permissionAssignableUsers($authUser, $idEcole);
-        $complexeOrders = SchoolOrderAccess::ORDERS;
+        $complexeOrders = ExamenNational::ordresLabels($utilisateur->ecole ?? $idEcole);
 
         return view('configuration.user-permissions', compact(
             'utilisateur',
@@ -726,7 +727,6 @@ class ConfigurationController extends Controller
         $groupedPermissions = Permission::groupedByModule();
         $userPermissionIds = [];
         $userPermissionNames = [];
-        $complexeOrders = SchoolOrderAccess::ORDERS;
         $permissionsReadOnly = false;
 
         if ($selectedUserId > 0) {
@@ -753,6 +753,8 @@ class ConfigurationController extends Controller
                     ->all();
             }
         }
+
+        $complexeOrders = ExamenNational::ordresLabels($utilisateur?->ecole ?? $idEcole);
 
         return view('configuration.user-permissions', compact(
             'utilisateur',

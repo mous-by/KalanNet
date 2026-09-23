@@ -35,6 +35,37 @@ class ExamenNational
         return Devise::resolvePays($ecole)->code_iso === 'ML';
     }
 
+    /**
+     * Libelles (adaptes au pays) des 4 "ordres d'enseignement" reutilises tels
+     * quels pour tout pays (fondamentale1/2, secondairegenerale,
+     * secondairetechniqueetprofessionnel -- voir ClasseController et
+     * SchoolOrderAccess::ORDERS, dont les cles restent les memes partout).
+     * Seul l'AFFICHAGE change hors Mali, jamais le decoupage fonctionnel.
+     *
+     * @return array<string,string>
+     */
+    public static function ordresLabels(Ecole|Pays|int|null $ecole): array
+    {
+        if (static::estMali($ecole)) {
+            return [
+                'fondamentale1' => 'Fondamentale I (1 à 6)',
+                'fondamentale2' => 'Fondamentale II (7 à 9)',
+                'secondairegenerale' => 'Secondaire Général',
+                'secondairetechniqueetprofessionnel' => 'Secondaire Technique et Professionnel',
+            ];
+        }
+
+        $intermediaire = static::intermediaire($ecole)['grade'] ?? 9;
+        $final = static::final($ecole)['grade'] ?? 12;
+
+        return [
+            'fondamentale1' => 'Primaire (1 à 6)',
+            'fondamentale2' => "Secondaire 1er cycle (7 à {$intermediaire})",
+            'secondairegenerale' => 'Secondaire 2nd cycle (' . ($intermediaire + 1) . " à {$final})",
+            'secondairetechniqueetprofessionnel' => 'Secondaire Technique et Professionnel',
+        ];
+    }
+
     /** @return array{grade:int,nom:string}|null */
     public static function primaire(Ecole|Pays|int|null $ecole): ?array
     {

@@ -276,12 +276,7 @@ class ClasseController extends Controller
         $typeEcole = $ecole->typeEcole ?? null;
 
         if ($typeEcole === 'Complexe Scolaire' || ($user->droit === 'SupAdmin' && !$ecole)) {
-            $orders = [
-                'fondamentale1' => 'Fondamentale I (1 à 6)',
-                'fondamentale2' => 'Fondamentale II (7 à 9)',
-                'secondairegenerale' => 'Secondaire Général',
-                'secondairetechniqueetprofessionnel' => 'Secondaire Technique et Professionnel',
-            ];
+            $orders = ExamenNational::ordresLabels($ecole);
 
             if (SchoolOrderAccess::userNeedsOrderFilter($user, $ecole)) {
                 $allowed = SchoolOrderAccess::allowedOrders($user, $ecole);
@@ -299,16 +294,15 @@ class ClasseController extends Controller
         // sans changement), avec des libelles adaptes au decoupage reel du
         // pays de l'ecole (ExamenNational) plutot que la terminologie malienne.
         if (($typeEcole === 'Primaire' || $typeEcole === 'Secondaire Generale') && !ExamenNational::estMali($ecole)) {
-            $intermediaire = ExamenNational::intermediaire($ecole)['grade'] ?? 9;
-            $final = ExamenNational::final($ecole)['grade'] ?? 12;
+            $labels = ExamenNational::ordresLabels($ecole);
 
             if ($typeEcole === 'Primaire') {
-                return ['fondamentale1' => 'Primaire (1 à 6)'];
+                return ['fondamentale1' => $labels['fondamentale1']];
             }
 
             return [
-                'fondamentale2' => "Secondaire 1er cycle (7 à {$intermediaire})",
-                'secondairegenerale' => "Secondaire 2nd cycle (" . ($intermediaire + 1) . " à {$final})",
+                'fondamentale2' => $labels['fondamentale2'],
+                'secondairegenerale' => $labels['secondairegenerale'],
             ];
         }
 
