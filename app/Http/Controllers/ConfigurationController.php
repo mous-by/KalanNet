@@ -1380,11 +1380,19 @@ class ConfigurationController extends Controller
             $request->merge(['telephone' => Telephone::normalize($request->input('telephone'), $paysFormulaire)]);
         }
 
+        // Le referentiel academie/CAP est 100% malien (les 26 academies et 125
+        // CAP sont les vraies divisions administratives du Mali) -- l'imposer a
+        // une ecole d'un autre pays la forcerait a se rattacher a une academie
+        // malienne qui n'a aucun sens pour elle. Absence de pays soumis = Mali
+        // par defaut (voir plus bas), donc academie/CAP restent obligatoires
+        // dans ce cas pour ne rien changer au comportement existant.
+        $estMali = !$paysFormulaire || $paysFormulaire->code_iso === 'ML';
+
         $data = $request->validate([
             'nomEcole' => 'required|string|max:100',
             'typeEcole' => 'required|string|in:Complexe Scolaire,Fondamentale I,Fondamentale II,Collège,Secondaire Generale,Secondaire Technique et Professionnel',
             'statut' => 'required|in:public,prive',
-            'id_academie' => 'required|integer|exists:academie,id_academie',
+            'id_academie' => [$estMali ? 'required' : 'nullable', 'integer', 'exists:academie,id_academie'],
             'id_cap' => 'nullable|integer|exists:cap,id_cap',
             'id_pays' => 'nullable|integer|exists:pays,id',
             'adresse' => 'nullable|string|max:1000',
@@ -1414,7 +1422,7 @@ class ConfigurationController extends Controller
         $needsCap = in_array($data['typeEcole'], ['Fondamentale I', 'Fondamentale II', 'Collège'], true)
             || ($data['typeEcole'] === 'Complexe Scolaire' && !empty($data['nomFondamental']));
 
-        if ($needsCap && empty($data['id_cap'])) {
+        if ($estMali && $needsCap && empty($data['id_cap'])) {
             throw ValidationException::withMessages([
                 'id_cap' => 'Le CAP est obligatoire pour une école fondamentale ou un complexe avec fondamentale.',
             ]);

@@ -32,16 +32,19 @@
                                 <option value="prive" @selected(old('statut', $ecole->statut ?? 'public') === 'prive')>Privé</option>
                             </select>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Académie</label>
-                            <select name="id_academie" class="form-select js-academie-select" required>
-                                <option value="">Sélectionner</option>
-                                @foreach($academies as $academie)
-                                    <option value="{{ $academie->id_academie }}" @selected(old('id_academie', $ecole->id_academie ?? null) == $academie->id_academie)>
-                                        {{ $academie->nom_academie }}
-                                    </option>
-                                @endforeach
-                            </select>
+                        <div class="col-md-6 js-academie-field">
+                            <div class="js-academie-input-group">
+                                <label class="form-label">Académie</label>
+                                <select name="id_academie" class="form-select js-academie-select" required>
+                                    <option value="">Sélectionner</option>
+                                    @foreach($academies as $academie)
+                                        <option value="{{ $academie->id_academie }}" @selected(old('id_academie', $ecole->id_academie ?? null) == $academie->id_academie)>
+                                            {{ $academie->nom_academie }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="form-text js-academie-pays-help d-none">Académie/CAP : réservé aux écoles du Mali (référentiel non disponible pour les autres pays).</div>
                         </div>
                         <div class="col-md-6 js-cap-field">
                             <label class="form-label">CAP</label>
@@ -56,9 +59,9 @@
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Pays</label>
-                            <select name="id_pays" class="form-select">
+                            <select name="id_pays" class="form-select js-pays-select">
                                 @foreach($pays as $unPays)
-                                    <option value="{{ $unPays->id }}" @selected(old('id_pays', $ecole->id_pays ?? null) == $unPays->id)>
+                                    <option value="{{ $unPays->id }}" data-code-iso="{{ $unPays->code_iso }}" @selected(old('id_pays', $ecole->id_pays ?? null) == $unPays->id)>
                                         {{ $unPays->nom }} ({{ $unPays->devise_symbole }})
                                     </option>
                                 @endforeach
@@ -178,7 +181,10 @@
                 const typeSelect = form.querySelector('.js-ecole-type');
                 const statutSelect = form.querySelector('.js-statut-select');
                 const offreSelect = form.querySelector('.js-offre-select');
+                const paysSelect = form.querySelector('.js-pays-select');
+                const academieInputGroup = form.querySelector('.js-academie-input-group');
                 const academieSelect = form.querySelector('.js-academie-select');
+                const academiePaysHelp = form.querySelector('.js-academie-pays-help');
                 const capField = form.querySelector('.js-cap-field');
                 const capSelect = form.querySelector('.js-cap-select');
                 const nomFondamental = form.querySelector('.js-nom-fondamental');
@@ -223,7 +229,16 @@
                     return typeSelect?.value || '';
                 }
 
+                // Le referentiel academie/CAP est 100% malien -- pas de pays
+                // selectionne = Mali par defaut (meme regle que cote serveur).
+                function isMali() {
+                    if (!paysSelect) return true;
+                    const option = paysSelect.options[paysSelect.selectedIndex];
+                    return !option || option.dataset.codeIso === 'ML';
+                }
+
                 function shouldShowCap() {
+                    if (!isMali()) return false;
                     const type = selectedType();
                     return type === 'Fondamentale I'
                         || type === 'Fondamentale II'
@@ -292,6 +307,18 @@
                         });
                     });
 
+                    const academieVisible = isMali();
+                    academieInputGroup?.classList.toggle('d-none', !academieVisible);
+                    academiePaysHelp?.classList.toggle('d-none', academieVisible);
+                    if (academieSelect) {
+                        academieSelect.required = academieVisible;
+                        jQuery(academieSelect).prop('disabled', !academieVisible);
+                        if (!academieVisible) {
+                            academieSelect.value = '';
+                            jQuery(academieSelect).trigger('change.select2');
+                        }
+                    }
+
                     const capVisible = shouldShowCap();
                     capField?.classList.toggle('d-none', !capVisible);
                     if (capSelect) {
@@ -306,6 +333,7 @@
 
                 typeSelect?.addEventListener('change', updateFields);
                 statutSelect?.addEventListener('change', filterOffres);
+                paysSelect?.addEventListener('change', updateFields);
                 jQuery(academieSelect).on('change', filterCaps);
                 logoInput?.addEventListener('change', () => {
                     const file = logoInput.files?.[0];
