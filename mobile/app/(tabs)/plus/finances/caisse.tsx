@@ -155,7 +155,7 @@ export default function CaisseScreen() {
             </View>
             <Text style={item.type === 'RECETTE' ? styles.amountPositive : styles.amountNegative}>
               {item.type === 'RECETTE' ? '+' : '-'}
-              {Number(item.montant).toLocaleString('fr-FR')}
+              {formatMontant(Number(item.montant), user)}
             </Text>
           </View>
         )}

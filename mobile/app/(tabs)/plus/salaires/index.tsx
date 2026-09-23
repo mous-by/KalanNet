@@ -147,9 +147,9 @@ export default function SalairesScreen() {
 
       {data?.summary ? (
         <View style={styles.summaryRow}>
-          <Text style={styles.summaryItem}>Dû: {Number(data.summary.due).toLocaleString('fr-FR')}</Text>
-          <Text style={styles.summaryItem}>Payé: {Number(data.summary.paid).toLocaleString('fr-FR')}</Text>
-          <Text style={styles.summaryItem}>Reste: {Number(data.summary.remaining).toLocaleString('fr-FR')}</Text>
+          <Text style={styles.summaryItem}>Dû: {formatMontant(Number(data.summary.due), user)}</Text>
+          <Text style={styles.summaryItem}>Payé: {formatMontant(Number(data.summary.paid), user)}</Text>
+          <Text style={styles.summaryItem}>Reste: {formatMontant(Number(data.summary.remaining), user)}</Text>
         </View>
       ) : null}
 
@@ -170,7 +170,7 @@ export default function SalairesScreen() {
               <View style={styles.rowInfo}>
                 <Text style={styles.name}>{item.enseignant.nom_prenom_enseignant}</Text>
                 <Text style={styles.meta}>
-                  {item.contract} · dû {Number(item.amount_due).toLocaleString('fr-FR')} · reste {Number(item.remaining).toLocaleString('fr-FR')}
+                  {item.contract} · dû {formatMontant(Number(item.amount_due), user)} · reste {formatMontant(Number(item.remaining), user)}
                 </Text>
                 <Text style={styles.status}>{item.status}</Text>
               </View>
