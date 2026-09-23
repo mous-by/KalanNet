@@ -18,12 +18,18 @@ class Pays extends Model
         'devise_symbole',
         'devise_decimales',
         'actif',
+        'niveau_examen_intermediaire',
+        'nom_examen_intermediaire',
+        'niveau_examen_final',
+        'nom_examen_final',
     ];
 
     protected $casts = [
         'telephone_longueur' => 'integer',
         'devise_decimales' => 'integer',
         'actif' => 'boolean',
+        'niveau_examen_intermediaire' => 'integer',
+        'niveau_examen_final' => 'integer',
     ];
 
     public function ecoles()

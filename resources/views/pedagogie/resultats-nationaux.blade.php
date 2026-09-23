@@ -46,7 +46,7 @@
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-0 p-0">
                 <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bi bi-house-door"></i></a></li>
-                <li class="breadcrumb-item active" aria-current="page">DEF / BAC</li>
+                <li class="breadcrumb-item active" aria-current="page">{{ $examensLabel }}</li>
             </ol>
         </nav>
     </div>
@@ -68,7 +68,7 @@
 
 <div class="card theme-card shadow-sm mb-4">
     <div class="card-header theme-header border-0">
-        <h5 class="fw-bold mb-0"><i class="bi bi-award me-2"></i>Saisie des résultats DEF / BAC</h5>
+        <h5 class="fw-bold mb-0"><i class="bi bi-award me-2"></i>Saisie des résultats {{ $examensLabel }}</h5>
     </div>
     <div class="card-body">
         <div class="alert alert-info border-0 border-start border-info border-4">
@@ -80,10 +80,7 @@
                 <select name="id_classe" class="form-select" required data-national-class>
                     <option value="">Choisir une classe...</option>
                     @foreach($classes as $classe)
-                        @php
-                            preg_match('/\d+/', \Illuminate\Support\Str::ascii((string) $classe->nom_classe), $levelMatch);
-                            $exam = ((int) ($levelMatch[0] ?? 0)) === 9 ? 'DEF' : 'BAC';
-                        @endphp
+                        @php $exam = $classeExamens[$classe->id_classe] ?? ''; @endphp
                         <option value="{{ $classe->id_classe }}" data-exam="{{ $exam }}" @selected(($filters['id_classe'] ?? null) == $classe->id_classe)>
                             {{ $classe->nom_classe }} - {{ $exam }}
                         </option>
@@ -103,12 +100,9 @@
                 <label class="form-label small fw-bold text-uppercase">Examen</label>
                 <select name="niveau_examen" class="form-select" data-national-exam>
                     <option value="">Auto</option>
-                    @if(in_array('DEF', $examensDisponibles, true))
-                        <option value="DEF" @selected(($niveauExamen ?? null) === 'DEF')>DEF</option>
-                    @endif
-                    @if(in_array('BAC', $examensDisponibles, true))
-                        <option value="BAC" @selected(($niveauExamen ?? null) === 'BAC')>BAC</option>
-                    @endif
+                    @foreach($examensDisponibles as $niveau)
+                        <option value="{{ $niveau }}" @selected(($niveauExamen ?? null) === $niveau)>{{ $niveau }}</option>
+                    @endforeach
                 </select>
             </div>
         </form>
@@ -130,10 +124,7 @@
                 <select name="id_classe" class="form-select" required data-national-import-class>
                     <option value="">Choisir une classe...</option>
                     @foreach($classes as $classe)
-                        @php
-                            preg_match('/\d+/', \Illuminate\Support\Str::ascii((string) $classe->nom_classe), $levelMatch);
-                            $exam = ((int) ($levelMatch[0] ?? 0)) === 9 ? 'DEF' : 'BAC';
-                        @endphp
+                        @php $exam = $classeExamens[$classe->id_classe] ?? ''; @endphp
                         <option value="{{ $classe->id_classe }}" data-exam="{{ $exam }}" @selected(($filters['id_classe'] ?? null) == $classe->id_classe)>
                             {{ $classe->nom_classe }} - {{ $exam }}
                         </option>
@@ -152,12 +143,9 @@
             <div class="col-md-2">
                 <label class="form-label small fw-bold text-uppercase">Examen</label>
                 <select name="niveau_examen" class="form-select" required data-national-import-exam>
-                    @if(in_array('DEF', $examensDisponibles, true))
-                        <option value="DEF" @selected(($niveauExamen ?? null) === 'DEF')>DEF</option>
-                    @endif
-                    @if(in_array('BAC', $examensDisponibles, true))
-                        <option value="BAC" @selected(($niveauExamen ?? null) === 'BAC')>BAC</option>
-                    @endif
+                    @foreach($examensDisponibles as $niveau)
+                        <option value="{{ $niveau }}" @selected(($niveauExamen ?? null) === $niveau)>{{ $niveau }}</option>
+                    @endforeach
                 </select>
             </div>
             <div class="col-md-2">
@@ -250,7 +238,7 @@
         <div class="card-body text-center py-5">
             <i class="bi bi-filter-circle fs-1 d-block mb-3" style="color: var(--theme-accent);"></i>
             <h5 class="fw-bold mb-2">Choisissez une classe d’examen</h5>
-            <p class="text-muted mb-0">Les classes 9ème alimentent le DEF, les classes 12ème alimentent le BAC.</p>
+            <p class="text-muted mb-0">{{ $examensAide }}</p>
         </div>
     </div>
 @endif
