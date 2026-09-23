@@ -6,6 +6,7 @@ use App\Models\Matiere;
 use App\Models\LigneClasse;
 use App\Models\LigneEvaluation;
 use App\Models\MatiereOrdre;
+use App\Support\ExamenNational;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -135,6 +136,17 @@ class MatiereController extends Controller
 
         if ($user->droit === 'SupAdmin' || $typeEcole === 'Complexe Scolaire') {
             return array_keys($this->allOrdres());
+        }
+
+        // Meme logique país-aware que ClasseController::ordresDisponibles() --
+        // "Primaire"/"Secondaire Generale" hors Mali reutilisent les memes
+        // libelles Fondamentale I/II que le Mali (c'est ce que produit
+        // ordreMatiereMap() pour ces classes), pour que les matieres
+        // assignees a un ordre restent compatibles quel que soit le pays.
+        if (in_array($typeEcole, ['Primaire', 'Secondaire Generale'], true) && !ExamenNational::estMali($user->ecole)) {
+            return $typeEcole === 'Primaire'
+                ? ['Fondamentale I']
+                : ['Fondamentale II', 'Secondaire Generale'];
         }
 
         if ($typeEcole === 'Fondamentale' || $typeEcole === 'Collège') {

@@ -21,6 +21,18 @@ use Illuminate\Support\Str;
  */
 class ExamenNational
 {
+    /**
+     * Le Mali est le seul pays dont la structure scolaire (types d'ecole,
+     * ordres d'enseignement, seuils de passage...) est modelisee finement
+     * dans l'appli -- utilise pour brancher vers ce comportement precis vs
+     * un comportement generique base sur les numeros de classe pour les
+     * autres pays (ex: ClasseController::ordresDisponibles()).
+     */
+    public static function estMali(Ecole|Pays|int|null $ecole): bool
+    {
+        return Devise::resolvePays($ecole)->code_iso === 'ML';
+    }
+
     /** @return array{grade:int,nom:string}|null */
     public static function intermediaire(Ecole|Pays|int|null $ecole): ?array
     {
@@ -88,8 +100,26 @@ class ExamenNational
             return array_values(array_filter([$intermediaire, $final]));
         }
 
+        // Hors Mali, "Secondaire Generale" designe un seul etablissement
+        // couvrant tout le secondaire (7e a la Terminale, cf. ecole-modal),
+        // donc les deux examens -- contrairement au Mali ou ce type
+        // n'existe qu'a partir de la 10e (l'examen intermediaire y releve du
+        // type distinct "Fondamentale II"/"College", plus bas).
+        if (str_contains($type, 'secondaire generale') && !static::estMali($ecole)) {
+            return array_values(array_filter([$intermediaire, $final]));
+        }
+
         if (str_contains($type, 'fondamentale ii') || str_contains($type, 'college')) {
             return array_values(array_filter([$intermediaire]));
+        }
+
+        // "Fondamentale I" (Mali) et "Primaire" (autres pays) couvrent tous
+        // les deux les niveaux 1 a 6 : aucun examen national n'y a jamais
+        // lieu. Comparaison exacte (pas str_contains) : "fondamentale i" est
+        // un prefixe de "fondamentale ii", donc une correspondance partielle
+        // capturerait aussi a tort le type "Fondamentale II".
+        if ($type === 'fondamentale i' || $type === 'primaire') {
+            return [];
         }
 
         if (str_contains($type, 'secondaire') || str_contains($type, 'lycee') || str_contains($type, 'technique')) {

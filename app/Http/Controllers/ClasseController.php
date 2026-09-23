@@ -8,6 +8,7 @@ use App\Models\Ecole;
 use App\Models\Matiere;
 use App\Models\Enseignant;
 use App\Models\LigneClasse;
+use App\Support\ExamenNational;
 use App\Support\SchoolOrderAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -288,6 +289,27 @@ class ClasseController extends Controller
             }
 
             return $orders;
+        }
+
+        // Hors Mali, "Primaire" et "Secondaire Generale" sont les types
+        // proposes a la creation d'ecole (voir ecole-modal.blade.php) --
+        // reutilise les memes slugs fondamentale1/fondamentale2/
+        // secondairegenerale que le Mali (donc tout ce qui en depend deja --
+        // seuil de passage, LV2 par ordre, etc. -- continue de fonctionner
+        // sans changement), avec des libelles adaptes au decoupage reel du
+        // pays de l'ecole (ExamenNational) plutot que la terminologie malienne.
+        if (($typeEcole === 'Primaire' || $typeEcole === 'Secondaire Generale') && !ExamenNational::estMali($ecole)) {
+            $intermediaire = ExamenNational::intermediaire($ecole)['grade'] ?? 9;
+            $final = ExamenNational::final($ecole)['grade'] ?? 12;
+
+            if ($typeEcole === 'Primaire') {
+                return ['fondamentale1' => 'Primaire (1 à 6)'];
+            }
+
+            return [
+                'fondamentale2' => "Secondaire 1er cycle (7 à {$intermediaire})",
+                'secondairegenerale' => "Secondaire 2nd cycle (" . ($intermediaire + 1) . " à {$final})",
+            ];
         }
 
         if ($typeEcole === 'Collège') {

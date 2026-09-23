@@ -1461,7 +1461,7 @@ class ConfigurationController extends Controller
 
         $data = $request->validate([
             'nomEcole' => 'required|string|max:100',
-            'typeEcole' => 'required|string|in:Complexe Scolaire,Fondamentale I,Fondamentale II,Collège,Secondaire Generale,Secondaire Technique et Professionnel',
+            'typeEcole' => 'required|string|in:Complexe Scolaire,Fondamentale I,Fondamentale II,Collège,Secondaire Generale,Secondaire Technique et Professionnel,Primaire',
             'statut' => 'required|in:public,prive',
             'id_academie' => ['nullable', 'integer', Rule::exists('academie', 'id_academie')->where('id_pays', $paysId)],
             'nouvelle_academie_nom' => 'nullable|string|max:100',
@@ -1517,7 +1517,7 @@ class ConfigurationController extends Controller
         // pour le secondaire ci-dessous) ; hors Mali, id_cap est une étiquette
         // de localité libre-service sans lien avec ce découpage, donc on ne la
         // réinitialise pas.
-        if ($data['typeEcole'] === 'Fondamentale I' || $data['typeEcole'] === 'Fondamentale II' || $data['typeEcole'] === 'Collège') {
+        if ($data['typeEcole'] === 'Fondamentale I' || $data['typeEcole'] === 'Fondamentale II' || $data['typeEcole'] === 'Collège' || $data['typeEcole'] === 'Primaire') {
             $data['nomFondamental'] = $data['nomEcole'];
             $data['nomLycee'] = null;
             $data['nomProfessionnel'] = null;

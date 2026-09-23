@@ -20,9 +20,15 @@
                             <label class="form-label">Type</label>
                             <select name="typeEcole" class="form-select js-ecole-type" required>
                                 <option value="">Sélectionnez le type d'établissement</option>
-                                @foreach(['Complexe Scolaire', 'Fondamentale I', 'Fondamentale II', 'Collège', 'Secondaire Generale', 'Secondaire Technique et Professionnel'] as $type)
-                                    <option value="{{ $type }}" @selected(old('typeEcole', $ecole->typeEcole ?? '') === $type)>{{ $type }}</option>
+                                <option value="Complexe Scolaire" @selected(old('typeEcole', $ecole->typeEcole ?? '') === 'Complexe Scolaire')>Complexe Scolaire</option>
+                                {{-- Mali : cycles decoupes finement (voir ExamenNational/ClasseController::ordresDisponibles) --}}
+                                @foreach(['Fondamentale I', 'Fondamentale II', 'Collège'] as $type)
+                                    <option value="{{ $type }}" data-mali-only="1" @selected(old('typeEcole', $ecole->typeEcole ?? '') === $type)>{{ $type }}</option>
                                 @endforeach
+                                {{-- Hors Mali : un seul cycle primaire (1 a 6), le secondaire ne se decoupe pas en etablissements distincts --}}
+                                <option value="Primaire" data-non-mali-only="1" @selected(old('typeEcole', $ecole->typeEcole ?? '') === 'Primaire')>Primaire</option>
+                                <option value="Secondaire Generale" @selected(old('typeEcole', $ecole->typeEcole ?? '') === 'Secondaire Generale')>Secondaire Generale</option>
+                                <option value="Secondaire Technique et Professionnel" @selected(old('typeEcole', $ecole->typeEcole ?? '') === 'Secondaire Technique et Professionnel')>Secondaire Technique et Professionnel</option>
                             </select>
                         </div>
                         <div class="col-md-3">
@@ -392,7 +398,32 @@
                     }
                 }
 
+                function filterTypeEcoleByPays() {
+                    if (!typeSelect) return;
+
+                    const mali = isMali();
+                    let currentOptionStillValid = true;
+
+                    Array.from(typeSelect.options).forEach((option) => {
+                        if (option.dataset.maliOnly) {
+                            option.hidden = !mali;
+                            option.disabled = !mali;
+                            if (option.selected && !mali) currentOptionStillValid = false;
+                        }
+                        if (option.dataset.nonMaliOnly) {
+                            option.hidden = mali;
+                            option.disabled = mali;
+                            if (option.selected && mali) currentOptionStillValid = false;
+                        }
+                    });
+
+                    if (!currentOptionStillValid) {
+                        typeSelect.value = '';
+                    }
+                }
+
                 function updateFields() {
+                    filterTypeEcoleByPays();
                     const type = selectedType();
                     typeFields.forEach((field) => {
                         const visible = fieldMatches(field, type);
