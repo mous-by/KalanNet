@@ -220,13 +220,13 @@ export default function PaiementClasseScreen() {
                       {row.eleve.prenom_eleve} {row.eleve.nom_eleve}
                     </Text>
                     <Text style={styles.studentMeta}>
-                      Total {row.montant_total.toLocaleString('fr-FR')} · Reste {formatMontant(row.reste_a_payer, user)}
+                      Total {formatMontant(row.montant_total, user)} · Reste {formatMontant(row.reste_a_payer, user)}
                     </Text>
                     {row.tranche ? (
                       <Text style={[styles.studentMeta, row.tranche.en_retard ? styles.trancheLate : null]}>
                         {row.tranche.soldees}/{row.tranche.total} tranche(s) soldée(s)
                         {row.tranche.courante
-                          ? ` · ${row.tranche.courante.libelle} : ${row.tranche.courante.reste.toLocaleString('fr-FR')} F avant le ${row.tranche.courante.date_limite.split('-').reverse().join('/')}${row.tranche.courante.en_retard ? ' (en retard)' : ''}`
+                          ? ` · ${row.tranche.courante.libelle} : ${formatMontant(row.tranche.courante.reste, user)} avant le ${row.tranche.courante.date_limite.split('-').reverse().join('/')}${row.tranche.courante.en_retard ? ' (en retard)' : ''}`
                           : ''}
                       </Text>
                     ) : null}
