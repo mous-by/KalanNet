@@ -99,8 +99,8 @@
                     <div class="card-body p-4 d-flex align-items-center justify-content-between">
                         <div>
                             <p class="text-muted text-uppercase small fw-bold mb-1">Payé</p>
-                            <h3 class="fw-bold mb-0">{{ number_format($paymentSummary['montant_paye'], 0, ',', ' ') }}</h3>
-                            <small class="text-muted d-block mt-2">FCFA encaissés</small>
+                            <h3 class="fw-bold mb-0">{{ number_format($paymentSummary['montant_paye'], \App\Support\Devise::decimales($eleve->ecole ?? null), ',', ' ') }}</h3>
+                            <small class="text-muted d-block mt-2">{{ \App\Support\Devise::symbole($eleve->ecole ?? null) }} encaissés</small>
                         </div>
                         <div class="widget-icon theme-icon-box rounded-3"><i class="bi bi-cash-stack fs-4"></i></div>
                     </div>
@@ -111,8 +111,8 @@
                     <div class="card-body p-4 d-flex align-items-center justify-content-between">
                         <div>
                             <p class="text-muted text-uppercase small fw-bold mb-1">Reste</p>
-                            <h3 class="fw-bold mb-0">{{ number_format($paymentSummary['reste'], 0, ',', ' ') }}</h3>
-                            <small class="text-muted d-block mt-2">FCFA à régler</small>
+                            <h3 class="fw-bold mb-0">{{ number_format($paymentSummary['reste'], \App\Support\Devise::decimales($eleve->ecole ?? null), ',', ' ') }}</h3>
+                            <small class="text-muted d-block mt-2">{{ \App\Support\Devise::symbole($eleve->ecole ?? null) }} à régler</small>
                         </div>
                         <div class="widget-icon theme-icon-box rounded-3"><i class="bi bi-wallet2 fs-4"></i></div>
                     </div>
@@ -176,8 +176,8 @@
                                 <div class="progress-bar" style="width: {{ $paymentSummary['progress'] }}%;"></div>
                             </div>
                         </div>
-                        <div class="info-row"><span>Total prévu</span><strong>{{ number_format($paymentSummary['montant_final'], 0, ',', ' ') }} FCFA</strong></div>
-                        <div class="info-row"><span>Réduction</span><strong>{{ number_format($paymentSummary['reduction'], 0, ',', ' ') }} FCFA</strong></div>
+                        <div class="info-row"><span>Total prévu</span><strong>{{ \App\Support\Devise::format($paymentSummary['montant_final'], $eleve->ecole ?? null) }}</strong></div>
+                        <div class="info-row"><span>Réduction</span><strong>{{ \App\Support\Devise::format($paymentSummary['reduction'], $eleve->ecole ?? null) }}</strong></div>
                         <div class="info-row"><span>Mode</span><strong>{{ $paymentSummary['plan']?->mode_paiement ?: $eleve->mode_paiement ?: 'Non renseigné' }}</strong></div>
                         <div class="info-row"><span>Payeur</span><strong>{{ $paymentSummary['plan']?->payeur_libelle ?: 'Non renseigné' }}</strong></div>
                     </div>
@@ -194,10 +194,10 @@
                                 <div class="flex-grow-1">
                                     <div class="d-flex justify-content-between gap-2">
                                         <strong>{{ $echeance['libelle'] }}</strong>
-                                        <span>{{ number_format($echeance['reste'], 0, ',', ' ') }} FCFA restant</span>
+                                        <span>{{ \App\Support\Devise::format($echeance['reste'], $eleve->ecole ?? null) }} restant</span>
                                     </div>
                                     <div class="small text-muted">
-                                        Prévu : {{ number_format($echeance['montant_prevu'], 0, ',', ' ') }} FCFA
+                                        Prévu : {{ \App\Support\Devise::format($echeance['montant_prevu'], $eleve->ecole ?? null) }}
                                         @if($echeance['date_limite']) • Limite : {{ $echeance['date_limite']->format('d/m/Y') }} @endif
                                     </div>
                                 </div>

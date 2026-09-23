@@ -13,11 +13,17 @@ class ClasseOfficielle extends Model
     protected $fillable = [
         'nom_classe_officielle',
         'ordre_enseignement',
+        'id_pays',
     ];
 
     public function classes()
     {
         return $this->hasMany(Classe::class, 'id_classe_officielle', 'id_classe_officielle');
+    }
+
+    public function pays()
+    {
+        return $this->belongsTo(Pays::class, 'id_pays');
     }
 
 }

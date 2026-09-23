@@ -607,6 +607,12 @@
             filterPlanifications();
         });
 
+        // Niveau (numero de classe) de l'examen final du pays de l'ecole active
+        // (ex: 12 = BAC au Mali) -- null si ce pays n'a pas d'examen national
+        // configure, auquel cas une classe sans classe suivante est toujours
+        // traitee comme une configuration manquante (branche "warning" ci-dessous).
+        const examenFinalGrade = @json($examenFinalGrade);
+
         const reinscriptionForm = document.querySelector('[data-reinscription-form]');
         const sourceClassSelect = document.querySelector('[data-reinscription-source-class]');
         const targetClassSelect = document.querySelector('[data-reinscription-target-class]');
@@ -666,15 +672,14 @@
                 }
             } else if (classHelp) {
                 targetClassSelect.value = '';
-                if (sourceLevel === 12) {
-                    // La 12e (Terminale/BAC) est un niveau terminal : il n'y a
-                    // jamais de classe suivante a creer, ce n'est pas une
-                    // configuration manquante.
+                if (examenFinalGrade && sourceLevel === examenFinalGrade) {
+                    // Le niveau terminal (BAC au Mali) n'a jamais de classe
+                    // suivante a creer, ce n'est pas une configuration manquante.
                     classHelp.className = 'alert alert-info py-2 px-3 mt-2 mb-0';
-                    classHelp.textContent = 'Classe terminale (BAC) : pas de classe suivante. Les élèves admis seront proposés en « Diplômé sortant ».';
+                    classHelp.textContent = 'Classe terminale : pas de classe suivante. Les élèves admis seront proposés en « Diplômé sortant ».';
                 } else {
                     classHelp.className = 'alert alert-warning py-2 px-3 mt-2 mb-0';
-                    classHelp.textContent = 'Aucune classe suivante trouvée. Si cette classe est terminale (ex : fin de DEF sans orientation interne), les élèves admis pourront être proposés en « Admis sortant ». Sinon, créez la classe suivante dans Classes.';
+                    classHelp.textContent = 'Aucune classe suivante trouvée. Si cette classe est terminale (fin de cycle sans orientation interne), les élèves admis pourront être proposés en « Admis sortant ». Sinon, créez la classe suivante dans Classes.';
                 }
             }
 

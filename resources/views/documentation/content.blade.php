@@ -227,8 +227,12 @@
         <figcaption>Notes &amp; Évaluations : « Préparer une évaluation » pour en programmer une nouvelle.</figcaption>
     </figure>
 
-    <p><strong>Résultats nationaux</strong> : enregistrez les résultats du DEF ou du BAC pour les classes
-    concernées. <strong>Générer Bulletins</strong> : choisissez une classe puis une période (mois ou trimestre) ;
+    @php
+        $examensDocConfigures = \App\Support\ExamenNational::niveauxConfigures(session('idEcole'));
+        $examensDocListe = $examensDocConfigures ? implode(', ', $examensDocConfigures) : 'DEF, BAC...';
+    @endphp
+    <p><strong>Résultats nationaux</strong> : enregistrez les résultats des examens nationaux ({{ $examensDocListe }})
+    pour les classes concernées. <strong>Générer Bulletins</strong> : choisissez une classe puis une période (mois ou trimestre) ;
     KalanNet calcule automatiquement les moyennes et le classement, et vous pouvez imprimer un bulletin individuel
     ou toute une classe d'un coup. Un bouton <strong>Publier</strong> rend les bulletins visibles pour les parents
     dans leur propre espace.</p>

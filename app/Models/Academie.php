@@ -13,6 +13,7 @@ class Academie extends Model
         'nom_academie',
         'code_academie',
         'localite_academie',
+        'id_pays',
     ];
 
     public function caps()
@@ -23,5 +24,10 @@ class Academie extends Model
     public function ecoles()
     {
         return $this->hasMany(Ecole::class, 'id_academie', 'id_academie');
+    }
+
+    public function pays()
+    {
+        return $this->belongsTo(Pays::class, 'id_pays');
     }
 }

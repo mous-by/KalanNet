@@ -65,9 +65,9 @@ class CreerCaisseTool extends AbstractKalanbotTool
     public function confirmationMessage(array $args, User $user): string
     {
         return sprintf(
-            "Je vais créer la caisse « %s » avec un montant initial de %s FCFA. Confirmez-vous ?",
+            "Je vais créer la caisse « %s » avec un montant initial de %s. Confirmez-vous ?",
             $args['libelle'] ?? '',
-            number_format((float) ($args['montant_initial'] ?? 0), 0, ',', ' ')
+            \App\Support\Devise::format((float) ($args['montant_initial'] ?? 0), session('idEcole'))
         );
     }
 

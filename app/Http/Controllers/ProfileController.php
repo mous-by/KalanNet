@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Rules\MaliPhone;
+use App\Rules\PaysPhone;
+use App\Support\Telephone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
@@ -22,13 +23,13 @@ class ProfileController extends Controller
         $user = Auth::user();
 
         if ($request->filled('telephone')) {
-            $request->merge(['telephone' => MaliPhone::normalize($request->input('telephone'))]);
+            $request->merge(['telephone' => Telephone::normalize($request->input('telephone'), $user->idEcole)]);
         }
 
         $data = $request->validate([
             'nomPrenom' => 'required|string|max:150',
             'email' => ['required', 'email', 'max:150', Rule::unique('utilisateurs', 'email')->ignore($user->idUtilisateur, 'idUtilisateur')],
-            'telephone' => ['nullable', 'string', 'max:20', new MaliPhone()],
+            'telephone' => ['nullable', 'string', 'max:20', new PaysPhone($user->idEcole)],
             'image' => ['nullable', 'image', 'max:5120'],
         ]);
 

@@ -8,6 +8,7 @@ use App\Models\AnneeScolaire;
 use App\Models\Ecole;
 use App\Models\Paiement;
 use App\Models\User;
+use App\Support\ExamenNational;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Writer\PngWriter;
@@ -789,7 +790,8 @@ class EleveController extends Controller
         } elseif ((int) $eleve->etat_dossier === 2) {
             $alerts[] = ['type' => 'secondary', 'text' => 'Ce dossier est retiré de la liste active.'];
         } elseif ((int) $eleve->etat_dossier === 3) {
-            $alerts[] = ['type' => 'success', 'text' => 'Élève diplômé (DEF/BAC).'];
+            $examensLabel = implode('/', ExamenNational::niveauxConfigures($eleve->ecole)) ?: 'examen national';
+            $alerts[] = ['type' => 'success', 'text' => "Élève diplômé ({$examensLabel})."];
         }
 
         return $alerts;

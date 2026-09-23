@@ -32,7 +32,7 @@
                     <td class="px-4">{{ $versement->date_versement?->format('d/m/Y') }}</td>
                     <td>{{ $versement->banque?->nom_banque }}</td>
                     <td>{{ $versement->motif_versement }}</td>
-                    <td class="text-end fw-bold">{{ number_format($versement->montant_versement, 0, ',', ' ') }} FCFA</td>
+                    <td class="text-end fw-bold">@devise($versement->montant_versement)</td>
                 </tr>
             @empty
                 <tr><td colspan="4" class="text-center text-muted py-5">Aucun versement.</td></tr>
@@ -49,7 +49,7 @@
             <div class="modal-header"><h5 class="modal-title">Ajouter un versement</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
             <div class="modal-body">
                 @if($caisse)
-                    <div class="alert alert-light">Caisse active : {{ $caisse->reference }} - {{ number_format($caisse->montant_net, 0, ',', ' ') }} FCFA</div>
+                    <div class="alert alert-light">Caisse active : {{ $caisse->reference }} - @devise($caisse->montant_net)</div>
                 @endif
                 <label class="form-label">Banque</label>
                 <select name="id_banque" class="form-select mb-3" required>

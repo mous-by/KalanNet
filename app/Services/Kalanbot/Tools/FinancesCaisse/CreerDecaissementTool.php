@@ -68,9 +68,9 @@ class CreerDecaissementTool extends AbstractKalanbotTool
     public function confirmationMessage(array $args, User $user): string
     {
         return sprintf(
-            "💸 Je vais soumettre une dépense de %s FCFA (%s). Si vous avez le droit de validation, elle sera "
+            "💸 Je vais soumettre une dépense de %s (%s). Si vous avez le droit de validation, elle sera "
             . "déduite immédiatement de la caisse ; sinon elle attendra une validation. Confirmez-vous ?",
-            number_format((float) ($args['montant_decaissement'] ?? 0), 0, ',', ' '),
+            \App\Support\Devise::format((float) ($args['montant_decaissement'] ?? 0), session('idEcole')),
             $args['motif_decaissement'] ?? ''
         );
     }

@@ -20,18 +20,16 @@ interface PermissionsData {
   grouped_permissions: Record<string, PermissionItem[]>;
   permission_ids: number[];
   read_only: boolean;
+  // Memes cles partout (fondamentale1/2, secondairegenerale,
+  // secondairetechniqueetprofessionnel), libelles deja adaptes au pays de
+  // l'ecole par l'API (App\Support\ExamenNational::ordresLabels()).
+  complexe_orders?: Record<string, string>;
 }
-
-const MANAGED_ORDERS_OPTIONS: { value: string; label: string }[] = [
-  { value: 'fondamentale1', label: 'Fondamentale I' },
-  { value: 'fondamentale2', label: 'Fondamentale II' },
-  { value: 'secondairegenerale', label: 'Secondaire Général' },
-  { value: 'secondairetechniqueetprofessionnel', label: 'Secondaire Technique et Professionnel' },
-];
 
 export default function UserPermissionsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data, isLoading, error } = useApiGet<PermissionsData>(`/configuration/utilisateurs/${id}/permissions`, [id]);
+  const managedOrdersOptions = Object.entries(data?.complexe_orders ?? {}).map(([value, label]) => ({ value, label }));
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [managedOrders, setManagedOrders] = useState<Set<string>>(new Set());
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -100,7 +98,7 @@ export default function UserPermissionsScreen() {
             Ordres d'enseignement gérés <Text style={styles.required}>*</Text>
           </Text>
           <Text style={styles.note}>Ce gestionnaire d'un complexe scolaire doit être limité à un ou plusieurs ordres.</Text>
-          {MANAGED_ORDERS_OPTIONS.map((option) => (
+          {managedOrdersOptions.map((option) => (
             <Checkbox.Item
               key={option.value}
               label={option.label}

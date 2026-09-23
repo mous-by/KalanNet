@@ -9,6 +9,7 @@ use App\Models\Filiere;
 use App\Models\Matiere;
 use App\Models\Enseignant;
 use App\Models\LigneClasse;
+use App\Support\ExamenNational;
 use App\Support\SchoolOrderAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -76,11 +77,18 @@ class ClasseController extends Controller
             ->orderBy('nom_classe')
             ->get();
 
-        $classesOfficielles = ClasseOfficielle::orderBy('ordre_enseignement')
+        // Scope par le pays de L'ECOLE SELECTIONNEE (pas forcement celle de la
+        // session) : ce sont ses propres classes qu'on associe, donc son
+        // propre referentiel de classes officielles -- jamais celui d'un
+        // autre pays.
+        $classesOfficielles = ClasseOfficielle::where('id_pays', \App\Support\Devise::resolvePays($idEcole)->id)
+            ->orderBy('ordre_enseignement')
             ->orderBy('nom_classe_officielle')
             ->get();
 
-        return view('classes.associations', compact('ecoles', 'idEcole', 'classes', 'classesOfficielles'));
+        $ordresLabels = ExamenNational::ordresLabels($idEcole);
+
+        return view('classes.associations', compact('ecoles', 'idEcole', 'classes', 'classesOfficielles', 'ordresLabels'));
     }
 
     public function updateAssociations(Request $request)
@@ -91,11 +99,12 @@ class ClasseController extends Controller
         }
 
         $idEcole = $request->integer('id_ecole') ?: session('idEcole') ?: $user->idEcole;
+        $paysId = \App\Support\Devise::resolvePays($idEcole)->id;
 
         $data = $request->validate([
             'id_ecole' => 'nullable|integer|exists:ecole,idEcole',
             'associations' => 'required|array',
-            'associations.*' => 'nullable|integer|exists:classes_officielles,id_classe_officielle',
+            'associations.*' => ['nullable', 'integer', Rule::exists('classes_officielles', 'id_classe_officielle')->where('id_pays', $paysId)],
         ]);
 
         DB::transaction(function () use ($data, $idEcole) {
@@ -322,12 +331,7 @@ class ClasseController extends Controller
         $typeEcole = $ecole->typeEcole ?? null;
 
         if ($typeEcole === 'Complexe Scolaire' || ($user->droit === 'SupAdmin' && !$ecole)) {
-            $orders = [
-                'fondamentale1' => 'Fondamentale I (1 à 6)',
-                'fondamentale2' => 'Fondamentale II (7 à 9)',
-                'secondairegenerale' => 'Secondaire Général',
-                'secondairetechniqueetprofessionnel' => 'Secondaire Technique et Professionnel',
-            ];
+            $orders = ExamenNational::ordresLabels($ecole);
 
             if (SchoolOrderAccess::userNeedsOrderFilter($user, $ecole)) {
                 $allowed = SchoolOrderAccess::allowedOrders($user, $ecole);
@@ -335,6 +339,26 @@ class ClasseController extends Controller
             }
 
             return $orders;
+        }
+
+        // Hors Mali, "Primaire" et "Secondaire Generale" sont les types
+        // proposes a la creation d'ecole (voir ecole-modal.blade.php) --
+        // reutilise les memes slugs fondamentale1/fondamentale2/
+        // secondairegenerale que le Mali (donc tout ce qui en depend deja --
+        // seuil de passage, LV2 par ordre, etc. -- continue de fonctionner
+        // sans changement), avec des libelles adaptes au decoupage reel du
+        // pays de l'ecole (ExamenNational) plutot que la terminologie malienne.
+        if (($typeEcole === 'Primaire' || $typeEcole === 'Secondaire Generale') && !ExamenNational::estMali($ecole)) {
+            $labels = ExamenNational::ordresLabels($ecole);
+
+            if ($typeEcole === 'Primaire') {
+                return ['fondamentale1' => $labels['fondamentale1']];
+            }
+
+            return [
+                'fondamentale2' => $labels['fondamentale2'],
+                'secondairegenerale' => $labels['secondairegenerale'],
+            ];
         }
 
         if ($typeEcole === 'Collège') {

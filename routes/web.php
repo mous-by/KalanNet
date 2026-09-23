@@ -249,6 +249,10 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/configuration/ecoles/{id}', [ConfigurationController::class, 'updateEcole'])->name('configuration.ecoles.update');
     Route::delete('/configuration/ecoles/{id}', [ConfigurationController::class, 'destroyEcole'])->name('configuration.ecoles.destroy');
 
+    // Config pays (examens nationaux) — Admin limité à son propre pays, SupAdmin à tous
+    Route::get('/configuration/pays', [ConfigurationController::class, 'paysConfig'])->name('configuration.pays');
+    Route::put('/configuration/pays/{id}', [ConfigurationController::class, 'updatePaysConfig'])->name('configuration.pays.update');
+
     // Revendeurs — gestion par le SupAdmin
     Route::get('/configuration/revendeurs', [RevendeurController::class, 'index'])->name('configuration.revendeurs');
     Route::post('/configuration/revendeurs', [RevendeurController::class, 'store'])->name('configuration.revendeurs.store');

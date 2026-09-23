@@ -17,6 +17,7 @@ use App\Models\Paiement;
 use App\Models\ParentModel;
 use App\Models\PlanPaiement;
 use App\Models\Presence;
+use App\Support\ExamenNational;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -98,6 +99,8 @@ class DashboardController extends Controller
             $query->where('id_annee', $idAnnee);
         })->where('etat_dossier', 3)->count();
 
+        $examensLabel = implode('/', ExamenNational::niveauxConfigures($schoolId)) ?: 'examens nationaux';
+
         // Class distribution
         $classesData = Classe::when($schoolId, function ($query, $schoolId) {
             $query->where('idEcole', $schoolId);
@@ -143,6 +146,7 @@ class DashboardController extends Controller
             'tauxAbandon',
             'totalAbandons',
             'totalDiplomes',
+            'examensLabel',
             'classesData',
             'teacherProgressRows',
             'presenceProgressRows',

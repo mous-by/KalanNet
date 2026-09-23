@@ -270,9 +270,9 @@
                                     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
                                         <div>
                                             <div class="fw-bold">Base de paiement VCT</div>
-                                            <div class="small text-muted">{{ number_format($vctPayment['heures_validees'], 2, ',', ' ') }} heure(s) validée(s) x {{ number_format($vctPayment['prix_heure'], 0, ',', ' ') }} FCFA</div>
+                                            <div class="small text-muted">{{ number_format($vctPayment['heures_validees'], 2, ',', ' ') }} heure(s) validée(s) x @devise($vctPayment['prix_heure'])</div>
                                         </div>
-                                        <div class="h5 fw-bold mb-0">{{ number_format($vctPayment['montant'], 0, ',', ' ') }} FCFA</div>
+                                        <div class="h5 fw-bold mb-0">@devise($vctPayment['montant'])</div>
                                     </div>
                                 </div>
                             @endif

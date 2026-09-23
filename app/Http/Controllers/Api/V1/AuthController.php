@@ -6,7 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\UserResource;
 use App\Models\Ecole;
 use App\Models\User;
-use App\Rules\MaliPhone;
+use App\Rules\PaysPhone;
+use App\Support\Telephone;
 use App\Support\SubscriptionGate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
@@ -36,10 +37,10 @@ class AuthController extends Controller
         }
 
         $identifier = trim($credentials['identifier']);
-        $phoneIdentifier = MaliPhone::normalize($identifier);
+        $phoneIdentifier = Telephone::normalize($identifier);
 
         $users = User::with(['ecole' => function ($q) {
-            $q->withoutGlobalScopes();
+            $q->withoutGlobalScopes()->with('pays');
         }])
             ->where(function ($query) use ($identifier, $phoneIdentifier) {
                 $query->where('email', $identifier)
@@ -118,7 +119,7 @@ class AuthController extends Controller
     public function me(Request $request)
     {
         $user = $request->user();
-        $user->loadMissing(['ecole' => fn ($q) => $q->withoutGlobalScopes()]);
+        $user->loadMissing(['ecole' => fn ($q) => $q->withoutGlobalScopes()->with('pays')]);
 
         $ecoleId = $user->idEcole;
 
@@ -159,13 +160,13 @@ class AuthController extends Controller
         $user = $request->user();
 
         if ($request->filled('telephone')) {
-            $request->merge(['telephone' => MaliPhone::normalize($request->input('telephone'))]);
+            $request->merge(['telephone' => Telephone::normalize($request->input('telephone'), $user->idEcole)]);
         }
 
         $data = $request->validate([
             'nomPrenom' => 'required|string|max:150',
             'email' => ['required', 'email', 'max:150', Rule::unique('utilisateurs', 'email')->ignore($user->idUtilisateur, 'idUtilisateur')],
-            'telephone' => ['nullable', 'string', 'max:20', new MaliPhone()],
+            'telephone' => ['nullable', 'string', 'max:20', new PaysPhone($user->idEcole)],
             'image' => ['nullable', 'image', 'max:5120'],
         ]);
 
@@ -221,7 +222,7 @@ class AuthController extends Controller
         $user->last_activity = now();
         $user->save();
 
-        $user->loadMissing(['ecole' => fn ($q) => $q->withoutGlobalScopes(), 'enseignant', 'parent']);
+        $user->loadMissing(['ecole' => fn ($q) => $q->withoutGlobalScopes()->with('pays'), 'enseignant', 'parent']);
         $ecoleId = $user->idEcole ?: $user->enseignant?->id_ecole ?: $user->parent?->idEcole;
 
         if ($ecoleId && !$user->relationLoaded('ecole')) {
@@ -241,7 +242,7 @@ class AuthController extends Controller
     private function throttleKey(Request $request): string
     {
         $identifier = strtolower(trim((string) $request->input('identifier', '')));
-        $normalized = filter_var($identifier, FILTER_VALIDATE_EMAIL) ? $identifier : MaliPhone::normalize($identifier);
+        $normalized = filter_var($identifier, FILTER_VALIDATE_EMAIL) ? $identifier : Telephone::normalize($identifier);
 
         return 'api-login:' . $normalized . '|' . $request->ip();
     }

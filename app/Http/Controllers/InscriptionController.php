@@ -9,6 +9,7 @@ use App\Models\Ecole;
 use App\Models\Matiere;
 use App\Models\ParentModel;
 use App\Models\Planification;
+use App\Support\ExamenNational;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
@@ -39,8 +40,9 @@ class InscriptionController extends Controller
         $activeTab = in_array($request->query('tab'), ['group', 'reinscription'], true) ? $request->query('tab') : 'individual';
         $reinscriptionFilters = $activeTab === 'reinscription' ? $this->defaultReinscriptionFilters($annees) : [];
         $reinscriptionPreview = null;
+        $examenFinalGrade = ExamenNational::final(session('idEcole'))['grade'] ?? null;
 
-        return view('pedagogie.inscriptions.index', compact('classes', 'annees', 'parents', 'planifications', 'planificationRequired', 'planificationLabel', 'matieresLv2', 'eleves', 'activeTab', 'reinscriptionFilters', 'reinscriptionPreview'));
+        return view('pedagogie.inscriptions.index', compact('classes', 'annees', 'parents', 'planifications', 'planificationRequired', 'planificationLabel', 'matieresLv2', 'eleves', 'activeTab', 'reinscriptionFilters', 'reinscriptionPreview', 'examenFinalGrade'));
     }
 
     public function create()
@@ -490,6 +492,7 @@ class InscriptionController extends Controller
             $this->defaultReinscriptionFilters($annees),
             array_filter($request->only(['source_classe_id', 'source_annee_id', 'target_annee_id', 'target_classe_id', 'date_reinscription']), fn ($value) => $value !== null && $value !== '')
         );
+        $examenFinalGrade = ExamenNational::final(session('idEcole'))['grade'] ?? null;
 
         return compact(
             'classes',
@@ -502,7 +505,8 @@ class InscriptionController extends Controller
             'eleves',
             'activeTab',
             'reinscriptionPreview',
-            'reinscriptionFilters'
+            'reinscriptionFilters',
+            'examenFinalGrade'
         );
     }
 
@@ -580,9 +584,11 @@ class InscriptionController extends Controller
             ];
         });
 
+        $examLevelEstFinal = $examLevel && ExamenNational::estFinal($examLevel, session('idEcole'));
+
         return [
             'sourceClasse' => $sourceClasse,
-            'targetClasse' => $examLevel === 'BAC' || ($examLevel === 'DEF' && !$suggestedTargetClasse) ? null : $defaultTargetClasse,
+            'targetClasse' => $examLevelEstFinal || ($examLevel && !$examLevelEstFinal && !$suggestedTargetClasse) ? null : $defaultTargetClasse,
             'sourceAnnee' => $sourceAnnee,
             'targetAnnee' => $targetAnnee,
             'date' => $data['date_reinscription'] ?? now()->toDateString(),
@@ -763,7 +769,7 @@ class InscriptionController extends Controller
             $message .= " {$ajournes} ajourné(s).";
         }
         if ($diplomes > 0) {
-            $message .= " {$diplomes} diplômé(s) (DEF/BAC).";
+            $message .= " {$diplomes} diplômé(s).";
         }
         if ($sorties > 0) {
             $message .= " {$sorties} sortie(s) pour abandon/exclusion.";
@@ -815,11 +821,7 @@ class InscriptionController extends Controller
 
     private function nationalExamLevel(Classe $classe): ?string
     {
-        return match ($this->extractClasseLevel($classe->nom_classe)) {
-            9 => 'DEF',
-            12 => 'BAC',
-            default => null,
-        };
+        return ExamenNational::pourClasse($classe, session('idEcole'));
     }
 
     private function resultatNational(int $idEleve, int $idClasse, int $idAnnee, string $niveau): ?object
@@ -848,7 +850,7 @@ class InscriptionController extends Controller
 
         $decision = Str::lower(Str::ascii((string) $resultat->decision));
         if ($decision === 'admis') {
-            if ($niveau === 'BAC') {
+            if (ExamenNational::estFinal($niveau, session('idEcole'))) {
                 return 'diplome_sortant';
             }
 
@@ -873,11 +875,7 @@ class InscriptionController extends Controller
 
     private function extractClasseLevel(?string $name): ?int
     {
-        if (!$name) {
-            return null;
-        }
-
-        return preg_match('/\d+/', Str::ascii($name), $matches) ? (int) $matches[0] : null;
+        return ExamenNational::extractClasseLevel($name);
     }
 
     private function defaultReinscriptionFilters($annees): array

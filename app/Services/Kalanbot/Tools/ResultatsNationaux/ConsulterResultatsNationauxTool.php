@@ -5,6 +5,8 @@ namespace App\Services\Kalanbot\Tools\ResultatsNationaux;
 use App\Http\Controllers\ResultatNationalController;
 use App\Models\User;
 use App\Services\Kalanbot\Tools\AbstractKalanbotTool;
+use App\Support\ExamenNational;
+use Illuminate\Validation\Rule;
 
 class ConsulterResultatsNationauxTool extends AbstractKalanbotTool
 {
@@ -20,17 +22,21 @@ class ConsulterResultatsNationauxTool extends AbstractKalanbotTool
 
     public function description(): string
     {
-        return "Consulter les résultats aux examens nationaux (DEF ou BAC) d'une classe pour une année scolaire.";
+        $niveaux = implode(' ou ', ExamenNational::niveauxConfigures(session('idEcole'))) ?: 'DEF ou BAC';
+
+        return "Consulter les résultats aux examens nationaux ({$niveaux}) d'une classe pour une année scolaire.";
     }
 
     public function parametersSchema(): array
     {
+        $niveaux = implode(' ou ', ExamenNational::niveauxConfigures(session('idEcole'))) ?: 'DEF ou BAC';
+
         return [
             'type' => 'OBJECT',
             'properties' => [
                 'id_classe' => ['type' => 'INTEGER'],
                 'id_annee' => ['type' => 'INTEGER'],
-                'niveau_examen' => ['type' => 'STRING', 'description' => 'DEF ou BAC (déduit de la classe si omis).'],
+                'niveau_examen' => ['type' => 'STRING', 'description' => $niveaux . ' (déduit de la classe si omis).'],
             ],
             'required' => ['id_classe', 'id_annee'],
         ];
@@ -41,7 +47,7 @@ class ConsulterResultatsNationauxTool extends AbstractKalanbotTool
         return [
             'id_classe' => 'required|integer',
             'id_annee' => 'required|integer',
-            'niveau_examen' => 'nullable|string|in:DEF,BAC',
+            'niveau_examen' => ['nullable', 'string', Rule::in(ExamenNational::niveauxConfigures(session('idEcole')))],
         ];
     }
 

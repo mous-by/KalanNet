@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use App\Rules\MaliPhone;
+use App\Support\Telephone;
 use App\Support\SubscriptionGate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -38,7 +38,7 @@ class AuthController extends Controller
             return $identifier;
         }
 
-        return MaliPhone::normalize($identifier);
+        return Telephone::normalize($identifier);
     }
 
     public function login(Request $request)
@@ -61,7 +61,7 @@ class AuthController extends Controller
         }
 
         $identifier = trim($credentials['identifier']);
-        $phoneIdentifier = MaliPhone::normalize($identifier);
+        $phoneIdentifier = Telephone::normalize($identifier);
 
         // Eager load ecole relationship without global scope restrictions during lookup
         $users = User::with(['ecole' => function ($q) {

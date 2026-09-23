@@ -159,6 +159,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/configuration/ecoles', [ConfigurationController::class, 'storeEcole']);
         Route::put('/configuration/ecoles/{id}', [ConfigurationController::class, 'updateEcole']);
         Route::delete('/configuration/ecoles/{id}', [ConfigurationController::class, 'destroyEcole']);
+        Route::get('/pays', [ConfigurationController::class, 'pays']);
 
         Route::get('/configuration/annees', [ConfigurationController::class, 'annees']);
         Route::post('/configuration/annees', [ConfigurationController::class, 'storeAnnee']);

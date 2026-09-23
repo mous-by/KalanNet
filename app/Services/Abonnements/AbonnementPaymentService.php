@@ -448,7 +448,7 @@ class AbonnementPaymentService
         ];
 
         if ($paiement->numero_payeur) {
-            $payload['restrict_payer_mobile'] = $this->normalizePhone($paiement->numero_payeur);
+            $payload['restrict_payer_mobile'] = $this->normalizePhone($paiement->numero_payeur, $paiement->ecole);
         }
 
         if (config('services.abonnements.wave.aggregated_merchant_id')) {
@@ -505,7 +505,7 @@ class AbonnementPaymentService
         return number_format((float) $paiement->montant, 2, '.', '');
     }
 
-    private function normalizePhone(string $phone): string
+    private function normalizePhone(string $phone, ?Ecole $ecole = null): string
     {
         $phone = preg_replace('/\s+/', '', $phone) ?: $phone;
 
@@ -517,7 +517,11 @@ class AbonnementPaymentService
             return '+' . substr($phone, 2);
         }
 
-        return '+223' . ltrim($phone, '0');
+        // Numero local sans indicatif : on prefixe celui du pays de l'ecole
+        // qui paie (Mali par defaut si non resolu, comme avant).
+        $indicatif = \App\Support\Devise::resolvePays($ecole)->indicatif_telephone;
+
+        return $indicatif . ltrim($phone, '0');
     }
 
     private function reference(): string

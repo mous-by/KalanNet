@@ -53,8 +53,8 @@
             <div class="card-body p-4 d-flex align-items-center justify-content-between">
                 <div>
                     <p class="text-muted text-uppercase small fw-bold mb-1">Montant prévu</p>
-                    <h3 class="fw-bold mb-0">{{ number_format($totalExpected, 0, ',', ' ') }}</h3>
-                    <small class="text-muted">FCFA</small>
+                    <h3 class="fw-bold mb-0">{{ number_format($totalExpected, \App\Support\Devise::decimales(), ',', ' ') }}</h3>
+                    <small class="text-muted">{{ \App\Support\Devise::symbole() }}</small>
                 </div>
                 <div class="widget-icon theme-icon-box rounded-3"><i class="bi bi-receipt fs-4"></i></div>
             </div>
@@ -65,8 +65,8 @@
             <div class="card-body p-4 d-flex align-items-center justify-content-between">
                 <div>
                     <p class="text-muted text-uppercase small fw-bold mb-1">Déjà payé</p>
-                    <h3 class="fw-bold mb-0 text-success">{{ number_format($totalPaid, 0, ',', ' ') }}</h3>
-                    <small class="text-muted">FCFA</small>
+                    <h3 class="fw-bold mb-0 text-success">{{ number_format($totalPaid, \App\Support\Devise::decimales(), ',', ' ') }}</h3>
+                    <small class="text-muted">{{ \App\Support\Devise::symbole() }}</small>
                 </div>
                 <div class="widget-icon bg-success-soft text-success rounded-3"><i class="bi bi-check2-circle fs-4"></i></div>
             </div>

@@ -12,8 +12,10 @@ use App\Models\Ecole;
 use App\Models\Enseignant;
 use App\Models\Note;
 use App\Models\ParentModel;
+use App\Models\Pays;
 use App\Models\Permission;
 use App\Models\User;
+use App\Support\ExamenNational;
 use App\Support\SchoolOrderAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -36,7 +38,7 @@ class ConfigurationController extends WebConfigurationController
         $idEcole = session('idEcole');
         $search = $request->get('search');
 
-        $ecoles = $this->ecoleScope(Ecole::with(['academieRef', 'capRef']), $user, $idEcole)
+        $ecoles = $this->ecoleScope(Ecole::with(['academieRef', 'capRef', 'pays']), $user, $idEcole)
             ->when($search, fn ($q) => $q->where(fn ($inner) => $inner
                 ->where('nomEcole', 'like', "%{$search}%")
                 ->orWhere('typeEcole', 'like', "%{$search}%")))
@@ -45,6 +47,19 @@ class ConfigurationController extends WebConfigurationController
             ->withQueryString();
 
         return response()->json($ecoles);
+    }
+
+    /**
+     * Liste des pays (referentiel), pour le selecteur "Pays" du formulaire
+     * ecole cote mobile -- academies/CAP sont deja disponibles via les
+     * endpoints /configuration/academies et /configuration/caps existants,
+     * seul ce referentiel manquait cote API.
+     */
+    public function pays(Request $request)
+    {
+        $this->authorizeAnyPermission($request->user(), ['ecoles_apercu']);
+
+        return response()->json(Pays::where('actif', true)->orderBy('nom')->get());
     }
 
     public function storeEcole(Request $request)
@@ -357,6 +372,9 @@ class ConfigurationController extends WebConfigurationController
             'grouped_permissions' => $groupedPermissions,
             'permission_ids' => $permissionIds,
             'read_only' => $readOnly,
+            // Memes cles partout (voir SchoolOrderAccess::ORDERS), seuls les
+            // libelles s'adaptent au pays de l'ecole de l'utilisateur cible.
+            'complexe_orders' => ExamenNational::ordresLabels($utilisateur->ecole ?? $idEcole),
         ]);
     }
 
@@ -595,7 +613,9 @@ class ConfigurationController extends WebConfigurationController
     {
         $this->authorizeAnyPermission($request->user(), ['classes_officielles_apercu']);
 
+        $idEcole = session('idEcole') ?: $request->user()->idEcole;
         $classesOfficielles = ClasseOfficielle::query()
+            ->where('id_pays', $this->paysIdPourEcole($idEcole))
             ->withCount('classes')
             ->when($request->get('search'), fn ($q, $search) => $q->where('nom_classe_officielle', 'like', "%{$search}%"))
             ->orderBy('ordre_enseignement')
@@ -605,7 +625,7 @@ class ConfigurationController extends WebConfigurationController
 
         return response()->json([
             'data' => $classesOfficielles,
-            'ordres' => $this->ordresClassesOfficielles(),
+            'ordres' => $this->ordresClassesOfficielles($idEcole),
         ]);
     }
 
@@ -613,7 +633,11 @@ class ConfigurationController extends WebConfigurationController
     {
         $this->authorizeAnyPermission($request->user(), ['classes_officielles_apercu']);
 
-        $classeOfficielle = ClasseOfficielle::create($this->validateClasseOfficielle($request));
+        $idEcole = session('idEcole') ?: $request->user()->idEcole;
+        $data = $this->validateClasseOfficielle($request, $idEcole);
+        $data['id_pays'] = $this->paysIdPourEcole($idEcole);
+
+        $classeOfficielle = ClasseOfficielle::create($data);
 
         return response()->json($classeOfficielle, 201);
     }
@@ -622,17 +646,21 @@ class ConfigurationController extends WebConfigurationController
     {
         $this->authorizeAnyPermission($request->user(), ['classes_officielles_apercu']);
 
-        $classeOfficielle = ClasseOfficielle::findOrFail($id);
-        $classeOfficielle->update($this->validateClasseOfficielle($request));
+        $idEcole = session('idEcole') ?: $request->user()->idEcole;
+        $classeOfficielle = ClasseOfficielle::where('id_pays', $this->paysIdPourEcole($idEcole))->findOrFail($id);
+        $classeOfficielle->update($this->validateClasseOfficielle($request, $idEcole));
 
         return response()->json($classeOfficielle->fresh());
     }
 
     public function destroyClasseOfficielle($id)
     {
-        $this->authorizeAnyPermission(request()->user(), ['classes_officielles_apercu']);
+        $user = request()->user();
+        $this->authorizeAnyPermission($user, ['classes_officielles_apercu']);
 
-        $classeOfficielle = ClasseOfficielle::withCount('classes')->findOrFail($id);
+        $idEcole = session('idEcole') ?: $user->idEcole;
+        $classeOfficielle = ClasseOfficielle::where('id_pays', $this->paysIdPourEcole($idEcole))
+            ->withCount('classes')->findOrFail($id);
         if ($classeOfficielle->classes_count > 0) {
             return response()->json(['message' => 'Impossible de supprimer cette classe officielle : elle est utilisée par une classe.'], 422);
         }

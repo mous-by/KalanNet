@@ -68,7 +68,7 @@
                                                 <option value="{{ $officielle->id_classe_officielle }}"
                                                         data-ordre="{{ $officielle->ordre_enseignement }}"
                                                         @selected((int) $classe->id_classe_officielle === (int) $officielle->id_classe_officielle)>
-                                                    {{ $officielle->nom_classe_officielle }} - {{ $officielle->ordre_enseignement }}
+                                                    {{ $officielle->nom_classe_officielle }} - {{ $ordresLabels[$officielle->ordre_enseignement] ?? $officielle->ordre_enseignement }}
                                                 </option>
                                             @endforeach
                                         </select>

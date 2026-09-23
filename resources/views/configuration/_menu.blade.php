@@ -5,6 +5,10 @@
     $showAssign = in_array($connectedUser->droit, ['SupAdmin', 'Admin'], true)
                   || $connectedUser->userHasAnyPermission(['permissions_assigner', 'permission_assigner', 'dae_permission', 'dcap_permission']);
     $showEcoles    = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('ecoles_apercu');
+    // Reserve a l'Admin : c'est lui qui connait le systeme scolaire de son
+    // propre pays, pas le SupAdmin (base au Mali) pour chaque pays ou
+    // KalanNet s'etend -- meme principe que le libre-service academie/CAP.
+    $showPays      = $connectedUser->droit === 'Admin';
     $showAcademies = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('academies_apercu');
     $showCaps      = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('dcap_apercu');
     $showAnnees    = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('annees_scolaires_apercu');
@@ -50,7 +54,7 @@
         @endif
 
         {{-- Structure scolaire --}}
-        @if($showEcoles || $showAcademies || $showCaps)
+        @if($showEcoles || $showAcademies || $showCaps || $showPays)
             <p class="text-uppercase fw-bold px-2 mb-1" class="config-menu-section-label">Structure</p>
             <ul class="nav flex-column mb-1">
                 @if($showEcoles)
@@ -66,6 +70,11 @@
                 @if($showCaps)
                     <li class="nav-item">
                         @include('configuration._menu_link', ['route' => 'configuration.caps', 'icon' => 'bi-diagram-3-fill', 'label' => 'CAP'])
+                    </li>
+                @endif
+                @if($showPays)
+                    <li class="nav-item">
+                        @include('configuration._menu_link', ['route' => 'configuration.pays', 'icon' => 'bi-globe-americas', 'label' => 'Pays'])
                     </li>
                 @endif
             </ul>

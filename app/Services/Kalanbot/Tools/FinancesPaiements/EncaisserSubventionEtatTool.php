@@ -70,9 +70,9 @@ class EncaisserSubventionEtatTool extends AbstractKalanbotTool
     public function confirmationMessage(array $args, User $user): string
     {
         return sprintf(
-            "💰 Je vais encaisser %s FCFA de subvention État, répartis automatiquement sur les échéances "
+            "💰 Je vais encaisser %s de subvention État, répartis automatiquement sur les échéances "
             . "subventionnées ouvertes, créditant la caisse active. Confirmez-vous ?",
-            number_format((float) ($args['montant_recu'] ?? 0), 0, ',', ' ')
+            \App\Support\Devise::format((float) ($args['montant_recu'] ?? 0), session('idEcole'))
         );
     }
 

@@ -89,7 +89,7 @@
                 <div>
                     <p class="text-muted text-uppercase small fw-bold mb-1">Diplômés</p>
                     <h3 class="fw-bold mb-0 text-success">{{ number_format($totalDiplomes) }}</h3>
-                    <small class="text-muted d-block mt-2">Admis DEF/BAC, sortis avec succès</small>
+                    <small class="text-muted d-block mt-2">Admis {{ $examensLabel }}, sortis avec succès</small>
                 </div>
                 <div class="widget-icon bg-success-soft text-success rounded-3 p-3">
                     <i class="bi bi-mortarboard fs-4"></i>
@@ -283,11 +283,11 @@
                 <h5 class="fw-bold mb-3">Solde Caisse</h5>
                 <div class="p-3 rounded-4 text-white mb-3" style="background-color: var(--theme-accent) !important;">
                     <p class="small mb-1 opacity-75">Disponible actuellement</p>
-                    <h2 class="mb-0 fw-bold">{{ number_format($soldeCaisse, 0, ',', ' ') }} <small class="fs-6">FCFA</small></h2>
+                    <h2 class="mb-0 fw-bold">{{ number_format($soldeCaisse, \App\Support\Devise::decimales(), ',', ' ') }} <small class="fs-6">{{ \App\Support\Devise::symbole() }}</small></h2>
                 </div>
                 <div class="d-flex align-items-center justify-content-between small">
                     <span class="text-muted">Recettes Totales</span>
-                    <span class="fw-bold text-success">{{ number_format($totalRecettes, 0, ',', ' ') }} FCFA</span>
+                    <span class="fw-bold text-success">@devise($totalRecettes)</span>
                 </div>
             </div>
         </div>

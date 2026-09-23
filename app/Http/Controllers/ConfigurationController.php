@@ -3,7 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Academie;
-use App\Rules\MaliPhone;
+use App\Rules\PaysPhone;
+use App\Support\Telephone;
 use App\Models\Abonnement;
 use App\Models\AbonnementOffre;
 use App\Models\AnneeScolaire;
@@ -12,11 +13,13 @@ use App\Models\ClasseOfficielle;
 use App\Models\Ecole;
 use App\Models\Enseignant;
 use App\Models\ParentModel;
+use App\Models\Pays;
 use App\Models\Permission;
 use App\Models\Revendeur;
 use App\Models\User;
 use App\Models\Note;
 use App\Models\Controle;
+use App\Support\ExamenNational;
 use App\Support\SchoolOrderAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +27,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -72,7 +76,7 @@ class ConfigurationController extends Controller
         $idEcole = session('idEcole');
         $search = $request->get('search');
 
-        $ecoles = $this->ecoleScope(Ecole::with(['academieRef', 'capRef']), $user, $idEcole)
+        $ecoles = $this->ecoleScope(Ecole::with(['academieRef', 'capRef', 'pays']), $user, $idEcole)
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($inner) use ($search) {
                     $inner->where('nomEcole', 'like', "%{$search}%")
@@ -87,6 +91,7 @@ class ConfigurationController extends Controller
 
         $academies = Academie::orderBy('nom_academie')->get();
         $caps = Cap::with('academie')->orderBy('nom_cap')->get();
+        $pays = Pays::where('actif', true)->orderBy('nom')->get();
         $abonnementOffres = Auth::user()->droit === 'SupAdmin'
             ? AbonnementOffre::where('actif', true)->orderBy('montant')->get()
             : collect();
@@ -94,7 +99,7 @@ class ConfigurationController extends Controller
             ? Revendeur::where('actif', true)->orderBy('nom')->get()
             : collect();
 
-        return view('configuration.ecoles', compact('ecoles', 'academies', 'caps', 'abonnementOffres', 'revendeurs'));
+        return view('configuration.ecoles', compact('ecoles', 'academies', 'caps', 'pays', 'abonnementOffres', 'revendeurs'));
     }
 
     public function storeEcole(Request $request)
@@ -142,6 +147,64 @@ class ConfigurationController extends Controller
         $ecole->delete();
 
         return redirect()->route('configuration.ecoles')->with('success', 'École supprimée avec succès.');
+    }
+
+    /**
+     * Configuration par pays des examens nationaux (App\Support\ExamenNational) :
+     * un Admin ne voit/modifie que le pays de sa propre ecole (c'est lui qui
+     * connait reellement le systeme scolaire de son pays -- pas le SupAdmin,
+     * base au Mali, pour chaque pays ou KalanNet s'etend). Le SupAdmin garde
+     * un acces a tous les pays pour supervision/correction.
+     */
+    public function paysConfig()
+    {
+        $user = Auth::user();
+        // Reserve a l'Admin : SupAdmin (base au Mali) n'a pas plus de raison
+        // de configurer le systeme scolaire d'un pays etranger qu'un Admin
+        // malien n'en aurait de configurer celui de la Guinee.
+        if ($user->droit !== 'Admin') {
+            abort(403);
+        }
+
+        $idEcole = session('idEcole') ?: $user->idEcole;
+        $paysId = $idEcole ? Ecole::withoutGlobalScopes()->find($idEcole)?->id_pays : null;
+        if (!$paysId) {
+            abort(403, "Votre école n'est rattachée à aucun pays pour l'instant.");
+        }
+
+        $pays = Pays::findOrFail($paysId);
+
+        return view('configuration.pays', compact('pays'));
+    }
+
+    public function updatePaysConfig(Request $request, int $id)
+    {
+        $user = Auth::user();
+        if ($user->droit !== 'Admin') {
+            abort(403);
+        }
+
+        $pays = Pays::findOrFail($id);
+
+        $idEcole = session('idEcole') ?: $user->idEcole;
+        $ecolePaysId = $idEcole ? Ecole::withoutGlobalScopes()->find($idEcole)?->id_pays : null;
+        if ($ecolePaysId !== $pays->id) {
+            abort(403, 'Vous ne pouvez configurer que le pays de votre propre école.');
+        }
+
+        $data = $request->validate([
+            'niveau_examen_primaire' => 'nullable|integer|min:1|max:20|required_with:nom_examen_primaire',
+            'nom_examen_primaire' => 'nullable|string|max:30|required_with:niveau_examen_primaire',
+            'niveau_examen_intermediaire' => 'nullable|integer|min:1|max:20|required_with:nom_examen_intermediaire',
+            'nom_examen_intermediaire' => 'nullable|string|max:30|required_with:niveau_examen_intermediaire',
+            'niveau_examen_final' => 'nullable|integer|min:1|max:20|required_with:nom_examen_final',
+            'nom_examen_final' => 'nullable|string|max:30|required_with:niveau_examen_final',
+        ]);
+
+        $pays->update($data);
+
+        return redirect()->route('configuration.pays')
+            ->with('success', "Configuration des examens nationaux mise à jour pour {$pays->nom}.");
     }
 
     public function academies(Request $request)
@@ -368,7 +431,7 @@ class ConfigurationController extends Controller
             'parents' => $this->parentsScope(ParentModel::query(), $authUser, $idEcole)->orderBy('nom_prenom_parent')->get(),
             'academies' => Academie::orderBy('nom_academie')->get(),
             'caps' => Cap::with('academie')->orderBy('nom_cap')->get(),
-            'complexeOrders' => SchoolOrderAccess::ORDERS,
+            'complexeOrders' => ExamenNational::ordresLabels($idEcole),
         ]);
     }
 
@@ -482,7 +545,7 @@ class ConfigurationController extends Controller
             'parents' => $this->parentsScope(ParentModel::query(), $authUser, $idEcole)->orderBy('nom_prenom_parent')->get(),
             'academies' => Academie::orderBy('nom_academie')->get(),
             'caps' => Cap::with('academie')->orderBy('nom_cap')->get(),
-            'complexeOrders' => SchoolOrderAccess::ORDERS,
+            'complexeOrders' => ExamenNational::ordresLabels($idEcole),
         ]);
     }
 
@@ -633,7 +696,7 @@ class ConfigurationController extends Controller
         }
 
         $availableUsers = $this->permissionAssignableUsers($authUser, $idEcole);
-        $complexeOrders = SchoolOrderAccess::ORDERS;
+        $complexeOrders = ExamenNational::ordresLabels($utilisateur->ecole ?? $idEcole);
 
         return view('configuration.user-permissions', compact(
             'utilisateur',
@@ -664,7 +727,6 @@ class ConfigurationController extends Controller
         $groupedPermissions = Permission::groupedByModule();
         $userPermissionIds = [];
         $userPermissionNames = [];
-        $complexeOrders = SchoolOrderAccess::ORDERS;
         $permissionsReadOnly = false;
 
         if ($selectedUserId > 0) {
@@ -691,6 +753,8 @@ class ConfigurationController extends Controller
                     ->all();
             }
         }
+
+        $complexeOrders = ExamenNational::ordresLabels($utilisateur?->ecole ?? $idEcole);
 
         return view('configuration.user-permissions', compact(
             'utilisateur',
@@ -1136,7 +1200,7 @@ class ConfigurationController extends Controller
     protected function validateUtilisateurByType(Request $request, int $type, ?User $existingUser = null): array
     {
         if ($request->filled('telephone')) {
-            $request->merge(['telephone' => MaliPhone::normalize($request->input('telephone'))]);
+            $request->merge(['telephone' => Telephone::normalize($request->input('telephone'), session('idEcole'))]);
         }
 
         $base = [
@@ -1165,7 +1229,7 @@ class ConfigurationController extends Controller
             return $request->validate($base + [
                 'nomPrenom' => 'required|string|max:150',
                 'email' => ['required', 'email', 'max:150', $emailRule],
-                'telephone' => ['required', 'string', 'max:20', new MaliPhone()],
+                'telephone' => ['required', 'string', 'max:20', new PaysPhone(session('idEcole'))],
                 'genre' => 'required|string|max:20',
                 'fonction' => 'nullable|string|max:50',
                 'id_academie' => 'required|integer|exists:academie,id_academie',
@@ -1176,7 +1240,7 @@ class ConfigurationController extends Controller
             return $request->validate($base + [
                 'nomPrenom' => 'required|string|max:150',
                 'email' => ['required', 'email', 'max:150', $emailRule],
-                'telephone' => ['required', 'string', 'max:20', new MaliPhone()],
+                'telephone' => ['required', 'string', 'max:20', new PaysPhone(session('idEcole'))],
                 'genre' => 'required|string|max:20',
                 'fonction' => 'nullable|string|max:50',
                 'id_cap' => 'required|integer|exists:cap,id_cap',
@@ -1186,7 +1250,7 @@ class ConfigurationController extends Controller
         return $request->validate($base + [
             'nomPrenom' => 'required|string|max:150',
             'email' => ['required', 'email', 'max:150', $emailRule],
-            'telephone' => ['required', 'string', 'max:20', new MaliPhone()],
+            'telephone' => ['required', 'string', 'max:20', new PaysPhone(session('idEcole'))],
             'genre' => 'required|string|max:20',
             'fonction' => 'nullable|string|max:50',
             'droit' => 'required|string|in:' . (Auth::user()->droit === 'SupAdmin' ? 'SupAdmin,Admin,Gestionnaire' : 'Gestionnaire'),
@@ -1369,20 +1433,37 @@ class ConfigurationController extends Controller
 
     protected function validateEcole(Request $request): array
     {
+        // Le pays choisi DANS ce meme formulaire sert de contexte au numero de
+        // l'ecole elle-meme (il n'y a pas encore d'Ecole existante a interroger
+        // au moment de la creation).
+        $paysFormulaire = $request->filled('id_pays') ? Pays::find($request->input('id_pays')) : null;
         if ($request->filled('telephone')) {
-            $request->merge(['telephone' => MaliPhone::normalize($request->input('telephone'))]);
+            $request->merge(['telephone' => Telephone::normalize($request->input('telephone'), $paysFormulaire)]);
         }
+
+        // Le referentiel academie/CAP est 100% malien a l'origine (les 26
+        // academies et 125 CAP sont les vraies divisions administratives du
+        // Mali). Pour un autre pays, l'academie/CAP existant n'a aucun sens --
+        // mais plutot que de l'interdire, on laisse l'admin de CE pays creer
+        // (ou choisir, s'il en existe deja un) son propre equivalent, scope a
+        // son pays (voir findOrCreateAcademie()/findOrCreateCap() plus bas).
+        // Absence de pays soumis = Mali par defaut, calcule une seule fois ici
+        // pour rester coherent entre la validation et le fallback applique
+        // plus bas a $data['id_pays'].
+        $estMali = !$paysFormulaire || $paysFormulaire->code_iso === 'ML';
+        $paysId = $paysFormulaire?->id ?? Pays::where('code_iso', 'ML')->value('id');
 
         $data = $request->validate([
             'nomEcole' => 'required|string|max:100',
-            'typeEcole' => 'required|string|in:Complexe Scolaire,Fondamentale I,Fondamentale II,Collège,Secondaire Generale,Secondaire Technique et Professionnel,École de Santé',
+            'typeEcole' => 'required|string|in:Complexe Scolaire,Fondamentale I,Fondamentale II,Collège,Secondaire Generale,Secondaire Technique et Professionnel,Primaire,École de Santé',
             'statut' => 'required|in:public,prive',
-            'id_academie' => $request->input('typeEcole') === 'École de Santé'
-                ? 'nullable|integer|exists:academie,id_academie'
-                : 'required|integer|exists:academie,id_academie',
-            'id_cap' => 'nullable|integer|exists:cap,id_cap',
+            'id_academie' => ['nullable', 'integer', Rule::exists('academie', 'id_academie')->where('id_pays', $paysId)],
+            'nouvelle_academie_nom' => 'nullable|string|max:100',
+            'id_cap' => ['nullable', 'integer', Rule::exists('cap', 'id_cap')->where('id_pays', $paysId)],
+            'nouveau_cap_nom' => 'nullable|string|max:100',
+            'id_pays' => 'nullable|integer|exists:pays,id',
             'adresse' => 'nullable|string|max:1000',
-            'telephone' => ['nullable', 'string', 'max:20', new MaliPhone()],
+            'telephone' => ['nullable', 'string', 'max:20', new PaysPhone($paysFormulaire)],
             'email' => 'nullable|email|max:100',
             'nomFondamental' => 'nullable|string|max:255',
             'nomLycee' => 'nullable|string|max:255',
@@ -1396,29 +1477,62 @@ class ConfigurationController extends Controller
         ]);
 
         unset($data['abonnement_offre_id']);
+        $data['id_pays'] = $paysId;
+
+        // La creation a la volee n'est offerte que hors Mali : les 26
+        // academies/125 CAP maliens sont le vrai referentiel ministeriel, pas
+        // une liste qu'un admin d'ecole devrait pouvoir completer lui-meme.
+        if (!$estMali && empty($data['id_academie']) && $request->filled('nouvelle_academie_nom')) {
+            $data['id_academie'] = $this->findOrCreateAcademie($request->input('nouvelle_academie_nom'), $paysId)->id_academie;
+        }
+        unset($data['nouvelle_academie_nom']);
+
+        if (!$estMali && empty($data['id_cap']) && $request->filled('nouveau_cap_nom') && !empty($data['id_academie'])) {
+            $data['id_cap'] = $this->findOrCreateCap($request->input('nouveau_cap_nom'), (int) $data['id_academie'], $paysId)->id_cap;
+        }
+        unset($data['nouveau_cap_nom']);
+
+        // L'Académie/CAP est la subdivision administrative du fondamental/
+        // secondaire classique : elle ne s'applique pas à une École de Santé,
+        // même au Mali.
+        $estSante = $data['typeEcole'] === 'École de Santé';
+
+        if ($estMali && !$estSante && empty($data['id_academie'])) {
+            throw ValidationException::withMessages([
+                'id_academie' => "L'académie est obligatoire pour une école malienne.",
+            ]);
+        }
 
         $needsCap = in_array($data['typeEcole'], ['Fondamentale I', 'Fondamentale II', 'Collège'], true)
             || ($data['typeEcole'] === 'Complexe Scolaire' && !empty($data['nomFondamental']));
 
-        if ($needsCap && empty($data['id_cap'])) {
+        if ($estMali && $needsCap && empty($data['id_cap'])) {
             throw ValidationException::withMessages([
                 'id_cap' => 'Le CAP est obligatoire pour une école fondamentale ou un complexe avec fondamentale.',
             ]);
         }
 
-        if ($data['typeEcole'] === 'Fondamentale I' || $data['typeEcole'] === 'Fondamentale II' || $data['typeEcole'] === 'Collège') {
+        // Le CAP n'existe qu'au niveau fondamental au Mali (d'ou le null forcé
+        // pour le secondaire ci-dessous) ; hors Mali, id_cap est une étiquette
+        // de localité libre-service sans lien avec ce découpage, donc on ne la
+        // réinitialise pas.
+        if ($data['typeEcole'] === 'Fondamentale I' || $data['typeEcole'] === 'Fondamentale II' || $data['typeEcole'] === 'Collège' || $data['typeEcole'] === 'Primaire') {
             $data['nomFondamental'] = $data['nomEcole'];
             $data['nomLycee'] = null;
             $data['nomProfessionnel'] = null;
             $data['nomComplexe'] = null;
         } elseif ($data['typeEcole'] === 'Secondaire Generale') {
-            $data['id_cap'] = null;
+            if ($estMali) {
+                $data['id_cap'] = null;
+            }
             $data['nomFondamental'] = null;
             $data['nomLycee'] = $data['nomEcole'];
             $data['nomProfessionnel'] = null;
             $data['nomComplexe'] = null;
         } elseif ($data['typeEcole'] === 'Secondaire Technique et Professionnel') {
-            $data['id_cap'] = null;
+            if ($estMali) {
+                $data['id_cap'] = null;
+            }
             $data['nomFondamental'] = null;
             $data['nomLycee'] = null;
             $data['nomProfessionnel'] = $data['nomEcole'];
@@ -1426,6 +1540,77 @@ class ConfigurationController extends Controller
         }
 
         return $data;
+    }
+
+    /**
+     * Reutilise l'academie du pays si un admin en a deja cree une du meme nom
+     * (comparaison insensible a la casse/aux accents), sinon en cree une
+     * nouvelle scopee a ce pays -- evite qu'un deuxieme admin du meme pays,
+     * ignorant qu'une premiere academie existe deja, en duplique une.
+     */
+    protected function findOrCreateAcademie(string $nom, int $paysId): Academie
+    {
+        $nom = trim($nom);
+        $comparable = Str::lower(Str::ascii($nom));
+
+        $existante = Academie::where('id_pays', $paysId)->get()
+            ->first(fn (Academie $a) => Str::lower(Str::ascii($a->nom_academie)) === $comparable);
+        if ($existante) {
+            return $existante;
+        }
+
+        return Academie::create([
+            'nom_academie' => $nom,
+            'code_academie' => $this->uniqueReferentialCode('academie', 'code_academie', $paysId, $nom),
+            'localite_academie' => $nom,
+            'id_pays' => $paysId,
+        ]);
+    }
+
+    protected function findOrCreateCap(string $nom, int $academieId, int $paysId): Cap
+    {
+        $nom = trim($nom);
+        $comparable = Str::lower(Str::ascii($nom));
+
+        $existant = Cap::where('id_academie', $academieId)->get()
+            ->first(fn (Cap $c) => Str::lower(Str::ascii($c->nom_cap)) === $comparable);
+        if ($existant) {
+            return $existant;
+        }
+
+        return Cap::create([
+            'nom_cap' => $nom,
+            'code_cap' => $this->uniqueReferentialCode('cap', 'code_cap', $paysId, $nom),
+            'localite_cap' => $nom,
+            'id_academie' => $academieId,
+            'id_pays' => $paysId,
+        ]);
+    }
+
+    /**
+     * code_academie/code_cap sont NOT NULL + UNIQUE sur toute la table (pas
+     * seulement par pays) dans le schema existant -- genere un code lisible
+     * (indicatif ISO du pays + slug du nom), avec un suffixe numerique en cas
+     * de collision improbable, plutot que de demander a l'admin d'inventer un
+     * code administratif qu'il n'a aucune raison de connaitre.
+     */
+    protected function uniqueReferentialCode(string $table, string $column, int $paysId, string $nom): string
+    {
+        // code_academie/code_cap sont des varchar(20) : reserve 2 pour
+        // l'indicatif pays, 1 pour le separateur, jusqu'a 3 pour un eventuel
+        // suffixe "-99" anti-collision, le slug du nom prend le reste.
+        $prefixe = Str::upper(Pays::find($paysId)?->code_iso ?? 'XX');
+        $slug = Str::upper(Str::substr(Str::slug($nom, '-'), 0, 20 - strlen($prefixe) - 4)) ?: 'X';
+        $base = "{$prefixe}-{$slug}";
+        $code = $base;
+        $suffixe = 1;
+
+        while (DB::table($table)->where($column, $code)->exists()) {
+            $suffixe++;
+            $code = Str::substr($base, 0, 20 - strlen("-{$suffixe}")) . "-{$suffixe}";
+        }
+
+        return $code;
     }
 
     protected function storeEcoleLogo(Request $request, ?string $currentLogo = null): ?string
@@ -1539,8 +1724,12 @@ class ConfigurationController extends Controller
         $user = Auth::user();
         $this->authorizeAnyPermission($user, ['classes_officielles_apercu']);
 
+        $idEcole = session('idEcole') ?: $user->idEcole;
+        $paysId = $this->paysIdPourEcole($idEcole);
+
         $search = $request->get('search');
         $classesOfficielles = ClasseOfficielle::query()
+            ->where('id_pays', $paysId)
             ->withCount('classes')
             ->when($search, function ($query) use ($search) {
                 $query->where('nom_classe_officielle', 'like', "%{$search}%")
@@ -1551,7 +1740,7 @@ class ConfigurationController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        $ordres = $this->ordresClassesOfficielles();
+        $ordres = $this->ordresClassesOfficielles($idEcole);
 
         return view('configuration.classes-officielles', compact('classesOfficielles', 'ordres'));
     }
@@ -1561,7 +1750,9 @@ class ConfigurationController extends Controller
         $user = Auth::user();
         $this->authorizeAnyPermission($user, ['classes_officielles_apercu']);
 
-        $data = $this->validateClasseOfficielle($request);
+        $idEcole = session('idEcole') ?: $user->idEcole;
+        $data = $this->validateClasseOfficielle($request, $idEcole);
+        $data['id_pays'] = $this->paysIdPourEcole($idEcole);
 
         ClasseOfficielle::create($data);
 
@@ -1573,8 +1764,9 @@ class ConfigurationController extends Controller
         $user = Auth::user();
         $this->authorizeAnyPermission($user, ['classes_officielles_apercu']);
 
-        $classeOfficielle = ClasseOfficielle::findOrFail($id);
-        $classeOfficielle->update($this->validateClasseOfficielle($request));
+        $idEcole = session('idEcole') ?: $user->idEcole;
+        $classeOfficielle = ClasseOfficielle::where('id_pays', $this->paysIdPourEcole($idEcole))->findOrFail($id);
+        $classeOfficielle->update($this->validateClasseOfficielle($request, $idEcole));
 
         return redirect()->route('configuration.classes-officielles')->with('success', 'Classe officielle modifiée avec succès.');
     }
@@ -1584,7 +1776,9 @@ class ConfigurationController extends Controller
         $user = Auth::user();
         $this->authorizeAnyPermission($user, ['classes_officielles_apercu']);
 
-        $classeOfficielle = ClasseOfficielle::withCount('classes')->findOrFail($id);
+        $idEcole = session('idEcole') ?: $user->idEcole;
+        $classeOfficielle = ClasseOfficielle::where('id_pays', $this->paysIdPourEcole($idEcole))
+            ->withCount('classes')->findOrFail($id);
         if ($classeOfficielle->classes_count > 0) {
             return redirect()->route('configuration.classes-officielles')
                 ->with('error', 'Impossible de supprimer cette classe officielle : elle est utilisée par une classe.');
@@ -1593,6 +1787,19 @@ class ConfigurationController extends Controller
         $classeOfficielle->delete();
 
         return redirect()->route('configuration.classes-officielles')->with('success', 'Classe officielle supprimée avec succès.');
+    }
+
+    /**
+     * classes_officielles/programmes_officiels sont partages entre toutes les
+     * ecoles d'un MEME pays (le "programme officiel" y est reellement
+     * national), mais pas au-dela -- une ecole guineenne ne doit jamais voir
+     * ni pouvoir modifier le referentiel malien, et inversement.
+     */
+    protected function paysIdPourEcole(?int $idEcole): int
+    {
+        $paysId = $idEcole ? Ecole::withoutGlobalScopes()->find($idEcole)?->id_pays : null;
+
+        return $paysId ?: Pays::where('code_iso', 'ML')->value('id');
     }
 
     public function storeTypeNote(Request $request)
@@ -1642,22 +1849,22 @@ class ConfigurationController extends Controller
         return redirect()->route('configuration.types-notes')->with('success', 'Type de note supprimé avec succès.');
     }
 
-    protected function validateClasseOfficielle(Request $request): array
+    protected function validateClasseOfficielle(Request $request, ?int $idEcole = null): array
     {
         return $request->validate([
             'nom_classe_officielle' => 'required|string|max:255',
-            'ordre_enseignement' => ['required', 'string', Rule::in(array_keys($this->ordresClassesOfficielles()))],
+            'ordre_enseignement' => ['required', 'string', Rule::in(array_keys($this->ordresClassesOfficielles($idEcole)))],
         ]);
     }
 
-    protected function ordresClassesOfficielles(): array
+    /**
+     * Cles fixes (les 4 slugs deja partages avec Classe.ordreEnseignement,
+     * cf. ExamenNational/SchoolOrderAccess) -- seuls les libelles affiches
+     * s'adaptent au pays de l'ecole (Mali vs "Primaire"/"Secondaire ...").
+     */
+    protected function ordresClassesOfficielles(?int $idEcole = null): array
     {
-        return [
-            'Fondamentale I' => 'Fondamentale I',
-            'Fondamentale II' => 'Fondamentale II',
-            'Secondaire Generale' => 'Secondaire Général',
-            'Secondaire Technique et Professionnel' => 'Secondaire Technique et Professionnel',
-        ];
+        return ExamenNational::ordresLabels($idEcole);
     }
 
     public function statusControles(Request $request)

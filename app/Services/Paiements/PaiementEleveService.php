@@ -12,7 +12,8 @@ use App\Models\Paiement;
 use App\Models\ParentModel;
 use App\Models\PlanPaiement;
 use App\Models\ReductionPaiementConfig;
-use App\Rules\MaliPhone;
+use App\Rules\PaysPhone;
+use App\Support\Telephone;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -328,14 +329,14 @@ class PaiementEleveService
         }
 
         $nom = trim((string) ($payload['nom_payeur'] ?? ''));
-        $telephone = MaliPhone::normalize((string) ($payload['telephone'] ?? ''));
+        $telephone = Telephone::normalize((string) ($payload['telephone'] ?? ''), $eleve->id_ecole);
 
         if ($nom === '' || $telephone === '') {
             throw ValidationException::withMessages(['nom_payeur' => 'Le nom et le téléphone du payeur sont obligatoires.']);
         }
 
         $phoneRuleFailed = false;
-        (new MaliPhone())->validate('telephone', $telephone, function () use (&$phoneRuleFailed) {
+        (new PaysPhone($eleve->id_ecole))->validate('telephone', $telephone, function () use (&$phoneRuleFailed) {
             $phoneRuleFailed = true;
         });
         if ($phoneRuleFailed) {
