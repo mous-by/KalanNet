@@ -38,24 +38,28 @@
                                 <select name="id_academie" class="form-select js-academie-select" required>
                                     <option value="">Sélectionner</option>
                                     @foreach($academies as $academie)
-                                        <option value="{{ $academie->id_academie }}" @selected(old('id_academie', $ecole->id_academie ?? null) == $academie->id_academie)>
+                                        <option value="{{ $academie->id_academie }}" data-pays="{{ $academie->id_pays }}" @selected(old('id_academie', $ecole->id_academie ?? null) == $academie->id_academie)>
                                             {{ $academie->nom_academie }}
                                         </option>
                                     @endforeach
                                 </select>
+                                <button type="button" class="btn btn-link btn-sm px-0 mt-1 js-academie-new-toggle">+ Créer une nouvelle académie</button>
+                                <input type="text" name="nouvelle_academie_nom" class="form-control mt-1 d-none js-academie-new-input" placeholder="Nom de la nouvelle académie" value="{{ old('nouvelle_academie_nom') }}">
                             </div>
-                            <div class="form-text js-academie-pays-help d-none">Académie/CAP : réservé aux écoles du Mali (référentiel non disponible pour les autres pays).</div>
+                            <div class="form-text js-academie-pays-help d-none">Optionnel hors Mali — sélectionnez une académie déjà créée par une autre école de ce pays, ou créez la vôtre.</div>
                         </div>
                         <div class="col-md-6 js-cap-field">
                             <label class="form-label">CAP</label>
                             <select name="id_cap" class="form-select js-cap-select">
                                 <option value="">Sélectionner</option>
                                 @foreach($caps as $cap)
-                                    <option value="{{ $cap->id_cap }}" data-academie="{{ $cap->id_academie }}" @selected(old('id_cap', $ecole->id_cap ?? null) == $cap->id_cap)>
+                                    <option value="{{ $cap->id_cap }}" data-academie="{{ $cap->id_academie }}" data-pays="{{ $cap->id_pays }}" @selected(old('id_cap', $ecole->id_cap ?? null) == $cap->id_cap)>
                                         {{ $cap->nom_cap }} - {{ $cap->academie->nom_academie ?? 'N/A' }}
                                     </option>
                                 @endforeach
                             </select>
+                            <button type="button" class="btn btn-link btn-sm px-0 mt-1 js-cap-new-toggle">+ Créer un nouveau CAP</button>
+                            <input type="text" name="nouveau_cap_nom" class="form-control mt-1 d-none js-cap-new-input" placeholder="Nom du nouveau CAP" value="{{ old('nouveau_cap_nom') }}">
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Pays</label>
@@ -185,8 +189,12 @@
                 const academieInputGroup = form.querySelector('.js-academie-input-group');
                 const academieSelect = form.querySelector('.js-academie-select');
                 const academiePaysHelp = form.querySelector('.js-academie-pays-help');
+                const academieNewToggle = form.querySelector('.js-academie-new-toggle');
+                const academieNewInput = form.querySelector('.js-academie-new-input');
                 const capField = form.querySelector('.js-cap-field');
                 const capSelect = form.querySelector('.js-cap-select');
+                const capNewToggle = form.querySelector('.js-cap-new-toggle');
+                const capNewInput = form.querySelector('.js-cap-new-input');
                 const nomFondamental = form.querySelector('.js-nom-fondamental');
                 const typeFields = Array.from(form.querySelectorAll('.js-type-field'));
                 const logoInput = form.querySelector('.js-logo-input');
@@ -195,14 +203,23 @@
                 const modalEl = form.closest('.modal');
                 const $modal = modalEl ? jQuery(modalEl) : undefined;
 
-                // Snapshot of every CAP option as originally rendered by the server,
-                // used to rebuild the select whenever the Academie changes (rather than
-                // just toggling `hidden`, which Select2 does not react to).
+                // Snapshot of every Academie/CAP option as originally rendered by the
+                // server, used to rebuild each select whenever Pays (or Academie, for
+                // CAP) changes, rather than just toggling `hidden`, which Select2 does
+                // not react to.
+                const allAcademieOptions = academieSelect
+                    ? Array.from(academieSelect.querySelectorAll('option[data-pays]')).map((opt) => ({
+                        value: opt.value,
+                        text: opt.textContent,
+                        paysId: opt.dataset.pays,
+                    }))
+                    : [];
                 const allCapOptions = capSelect
                     ? Array.from(capSelect.querySelectorAll('option[data-academie]')).map((opt) => ({
                         value: opt.value,
                         text: opt.textContent,
                         academieId: opt.dataset.academie,
+                        paysId: opt.dataset.pays,
                     }))
                     : [];
 
@@ -237,8 +254,17 @@
                     return !option || option.dataset.codeIso === 'ML';
                 }
 
+                function selectedPaysId() {
+                    if (!paysSelect) return '';
+                    const option = paysSelect.options[paysSelect.selectedIndex];
+                    return option ? option.value : '';
+                }
+
+                // Hors Mali, academie/CAP restent optionnels quel que soit le
+                // type d'ecole (rien a imposer sur un referentiel que l'ecole
+                // elle-meme est en train de construire).
                 function shouldShowCap() {
-                    if (!isMali()) return false;
+                    if (!isMali()) return true;
                     const type = selectedType();
                     return type === 'Fondamentale I'
                         || type === 'Fondamentale II'
@@ -251,17 +277,52 @@
                     return false;
                 }
 
+                // Reconstruit le select Academie a partir des seules options du
+                // pays choisi (propose d'abord l'existant). Si ce pays n'a
+                // encore aucune academie enregistree, bascule directement sur
+                // la saisie libre plutot que de laisser un select vide.
+                function filterAcademies() {
+                    if (!academieSelect) return;
+
+                    const paysId = selectedPaysId();
+                    const currentValue = academieSelect.value;
+
+                    academieSelect.innerHTML = '';
+                    academieSelect.appendChild(new Option('Sélectionner', '', false, false));
+
+                    allAcademieOptions
+                        .filter((opt) => paysId === '' || opt.paysId === paysId)
+                        .forEach((opt) => {
+                            const isSelected = opt.value === currentValue;
+                            academieSelect.appendChild(new Option(opt.text, opt.value, isSelected, isSelected));
+                        });
+
+                    if (!Array.from(academieSelect.options).some((o) => o.value === currentValue)) {
+                        academieSelect.value = '';
+                    }
+
+                    jQuery(academieSelect).trigger('change.select2');
+
+                    if (!isMali() && academieSelect.options.length <= 1) {
+                        toggleAcademieNew(true);
+                    }
+                }
+
+                // Filtre par academie quand elle est choisie ; sinon (academie
+                // pas encore selectionnee, notamment hors Mali) filtre au
+                // minimum par pays pour ne jamais melanger les CAP d'un autre pays.
                 function filterCaps() {
                     if (!capSelect) return;
 
                     const academieId = academieSelect?.value || '';
+                    const paysId = selectedPaysId();
                     const currentValue = capSelect.value;
 
                     capSelect.innerHTML = '';
                     capSelect.appendChild(new Option('Sélectionner', '', false, false));
 
                     allCapOptions
-                        .filter((opt) => academieId === '' || opt.academieId === academieId)
+                        .filter((opt) => academieId ? opt.academieId === academieId : (paysId === '' || opt.paysId === paysId))
                         .forEach((opt) => {
                             const isSelected = opt.value === currentValue;
                             capSelect.appendChild(new Option(opt.text, opt.value, isSelected, isSelected));
@@ -273,6 +334,40 @@
 
                     jQuery(capSelect).trigger('change.select2');
                 }
+
+                function toggleAcademieNew(show) {
+                    academieNewInput?.classList.toggle('d-none', !show);
+                    if (academieSelect) {
+                        jQuery(academieSelect).prop('disabled', show);
+                        if (show) {
+                            academieSelect.value = '';
+                            jQuery(academieSelect).trigger('change.select2');
+                        }
+                    }
+                    if (!show && academieNewInput) academieNewInput.value = '';
+                    filterCaps();
+                }
+
+                function toggleCapNew(show) {
+                    capNewInput?.classList.toggle('d-none', !show);
+                    if (capSelect) {
+                        jQuery(capSelect).prop('disabled', show);
+                        if (show) {
+                            capSelect.value = '';
+                            jQuery(capSelect).trigger('change.select2');
+                        }
+                    }
+                    if (!show && capNewInput) capNewInput.value = '';
+                }
+
+                academieNewToggle?.addEventListener('click', () => toggleAcademieNew(academieNewInput?.classList.contains('d-none')));
+                capNewToggle?.addEventListener('click', () => toggleCapNew(capNewInput?.classList.contains('d-none')));
+                jQuery(academieSelect).on('change', function () {
+                    if (this.value) toggleAcademieNew(false);
+                });
+                jQuery(capSelect).on('change', function () {
+                    if (this.value) toggleCapNew(false);
+                });
 
                 // Une formule réservée au public ou au privé (data-type-ecole) ne
                 // doit être proposable que pour une école du même statut — sinon le
@@ -307,22 +402,24 @@
                         });
                     });
 
-                    const academieVisible = isMali();
-                    academieInputGroup?.classList.toggle('d-none', !academieVisible);
-                    academiePaysHelp?.classList.toggle('d-none', academieVisible);
+                    // Academie/CAP restent visibles pour tout pays : seul change
+                    // le caractere obligatoire (Mali) vs libre-service optionnel
+                    // (les autres pays creent/choisissent le leur, voir plus haut).
+                    const mali = isMali();
+                    academiePaysHelp?.classList.toggle('d-none', mali);
+                    academieNewToggle?.classList.toggle('d-none', mali);
+                    if (mali) toggleAcademieNew(false);
                     if (academieSelect) {
-                        academieSelect.required = academieVisible;
-                        jQuery(academieSelect).prop('disabled', !academieVisible);
-                        if (!academieVisible) {
-                            academieSelect.value = '';
-                            jQuery(academieSelect).trigger('change.select2');
-                        }
+                        academieSelect.required = mali;
                     }
+                    filterAcademies();
 
                     const capVisible = shouldShowCap();
                     capField?.classList.toggle('d-none', !capVisible);
+                    capNewToggle?.classList.toggle('d-none', mali);
+                    if (mali) toggleCapNew(false);
                     if (capSelect) {
-                        capSelect.required = capVisible;
+                        capSelect.required = mali && capVisible;
                         jQuery(capSelect).prop('disabled', !capVisible);
                         if (!capVisible) capSelect.value = '';
                     }

@@ -26,6 +26,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -145,6 +146,72 @@ class ConfigurationController extends Controller
         $ecole->delete();
 
         return redirect()->route('configuration.ecoles')->with('success', 'École supprimée avec succès.');
+    }
+
+    /**
+     * Configuration par pays des examens nationaux (App\Support\ExamenNational) :
+     * un Admin ne voit/modifie que le pays de sa propre ecole (c'est lui qui
+     * connait reellement le systeme scolaire de son pays -- pas le SupAdmin,
+     * base au Mali, pour chaque pays ou KalanNet s'etend). Le SupAdmin garde
+     * un acces a tous les pays pour supervision/correction.
+     */
+    public function paysConfig(Request $request)
+    {
+        $user = Auth::user();
+        if (!in_array($user->droit, ['SupAdmin', 'Admin'], true)) {
+            abort(403);
+        }
+
+        if ($user->droit === 'SupAdmin') {
+            $paysListe = Pays::orderBy('nom')->get();
+            $paysId = $request->integer('id_pays') ?: null;
+            if (!$paysId) {
+                $idEcole = session('idEcole') ?: $user->idEcole;
+                $paysId = $idEcole ? Ecole::withoutGlobalScopes()->find($idEcole)?->id_pays : null;
+            }
+            $paysId = $paysId ?: Pays::where('code_iso', 'ML')->value('id');
+        } else {
+            $paysListe = collect();
+            $idEcole = session('idEcole') ?: $user->idEcole;
+            $paysId = $idEcole ? Ecole::withoutGlobalScopes()->find($idEcole)?->id_pays : null;
+            if (!$paysId) {
+                abort(403, "Votre école n'est rattachée à aucun pays pour l'instant.");
+            }
+        }
+
+        $pays = Pays::findOrFail($paysId);
+
+        return view('configuration.pays', compact('pays', 'paysListe'));
+    }
+
+    public function updatePaysConfig(Request $request, int $id)
+    {
+        $user = Auth::user();
+        if (!in_array($user->droit, ['SupAdmin', 'Admin'], true)) {
+            abort(403);
+        }
+
+        $pays = Pays::findOrFail($id);
+
+        if ($user->droit !== 'SupAdmin') {
+            $idEcole = session('idEcole') ?: $user->idEcole;
+            $ecolePaysId = $idEcole ? Ecole::withoutGlobalScopes()->find($idEcole)?->id_pays : null;
+            if ($ecolePaysId !== $pays->id) {
+                abort(403, 'Vous ne pouvez configurer que le pays de votre propre école.');
+            }
+        }
+
+        $data = $request->validate([
+            'niveau_examen_intermediaire' => 'nullable|integer|min:1|max:20|required_with:nom_examen_intermediaire',
+            'nom_examen_intermediaire' => 'nullable|string|max:30|required_with:niveau_examen_intermediaire',
+            'niveau_examen_final' => 'nullable|integer|min:1|max:20|required_with:nom_examen_final',
+            'nom_examen_final' => 'nullable|string|max:30|required_with:niveau_examen_final',
+        ]);
+
+        $pays->update($data);
+
+        return redirect()->route('configuration.pays', ['id_pays' => $pays->id])
+            ->with('success', "Configuration des examens nationaux mise à jour pour {$pays->nom}.");
     }
 
     public function academies(Request $request)
@@ -1380,20 +1447,26 @@ class ConfigurationController extends Controller
             $request->merge(['telephone' => Telephone::normalize($request->input('telephone'), $paysFormulaire)]);
         }
 
-        // Le referentiel academie/CAP est 100% malien (les 26 academies et 125
-        // CAP sont les vraies divisions administratives du Mali) -- l'imposer a
-        // une ecole d'un autre pays la forcerait a se rattacher a une academie
-        // malienne qui n'a aucun sens pour elle. Absence de pays soumis = Mali
-        // par defaut (voir plus bas), donc academie/CAP restent obligatoires
-        // dans ce cas pour ne rien changer au comportement existant.
+        // Le referentiel academie/CAP est 100% malien a l'origine (les 26
+        // academies et 125 CAP sont les vraies divisions administratives du
+        // Mali). Pour un autre pays, l'academie/CAP existant n'a aucun sens --
+        // mais plutot que de l'interdire, on laisse l'admin de CE pays creer
+        // (ou choisir, s'il en existe deja un) son propre equivalent, scope a
+        // son pays (voir findOrCreateAcademie()/findOrCreateCap() plus bas).
+        // Absence de pays soumis = Mali par defaut, calcule une seule fois ici
+        // pour rester coherent entre la validation et le fallback applique
+        // plus bas a $data['id_pays'].
         $estMali = !$paysFormulaire || $paysFormulaire->code_iso === 'ML';
+        $paysId = $paysFormulaire?->id ?? Pays::where('code_iso', 'ML')->value('id');
 
         $data = $request->validate([
             'nomEcole' => 'required|string|max:100',
             'typeEcole' => 'required|string|in:Complexe Scolaire,Fondamentale I,Fondamentale II,Collège,Secondaire Generale,Secondaire Technique et Professionnel',
             'statut' => 'required|in:public,prive',
-            'id_academie' => [$estMali ? 'required' : 'nullable', 'integer', 'exists:academie,id_academie'],
-            'id_cap' => 'nullable|integer|exists:cap,id_cap',
+            'id_academie' => ['nullable', 'integer', Rule::exists('academie', 'id_academie')->where('id_pays', $paysId)],
+            'nouvelle_academie_nom' => 'nullable|string|max:100',
+            'id_cap' => ['nullable', 'integer', Rule::exists('cap', 'id_cap')->where('id_pays', $paysId)],
+            'nouveau_cap_nom' => 'nullable|string|max:100',
             'id_pays' => 'nullable|integer|exists:pays,id',
             'adresse' => 'nullable|string|max:1000',
             'telephone' => ['nullable', 'string', 'max:20', new PaysPhone($paysFormulaire)],
@@ -1410,13 +1483,25 @@ class ConfigurationController extends Controller
         ]);
 
         unset($data['abonnement_offre_id']);
+        $data['id_pays'] = $paysId;
 
-        // Mali par defaut si le formulaire ne l'a pas soumis (compatibilite
-        // avec un appel programmatique de cette methode qui ignorerait ce
-        // nouveau champ) -- toutes les ecoles existantes sont deja rattachees
-        // au Mali depuis la migration de seed, ce defaut ne change rien pour elles.
-        if (empty($data['id_pays'])) {
-            $data['id_pays'] = Pays::where('code_iso', 'ML')->value('id');
+        // La creation a la volee n'est offerte que hors Mali : les 26
+        // academies/125 CAP maliens sont le vrai referentiel ministeriel, pas
+        // une liste qu'un admin d'ecole devrait pouvoir completer lui-meme.
+        if (!$estMali && empty($data['id_academie']) && $request->filled('nouvelle_academie_nom')) {
+            $data['id_academie'] = $this->findOrCreateAcademie($request->input('nouvelle_academie_nom'), $paysId)->id_academie;
+        }
+        unset($data['nouvelle_academie_nom']);
+
+        if (!$estMali && empty($data['id_cap']) && $request->filled('nouveau_cap_nom') && !empty($data['id_academie'])) {
+            $data['id_cap'] = $this->findOrCreateCap($request->input('nouveau_cap_nom'), (int) $data['id_academie'], $paysId)->id_cap;
+        }
+        unset($data['nouveau_cap_nom']);
+
+        if ($estMali && empty($data['id_academie'])) {
+            throw ValidationException::withMessages([
+                'id_academie' => "L'académie est obligatoire pour une école malienne.",
+            ]);
         }
 
         $needsCap = in_array($data['typeEcole'], ['Fondamentale I', 'Fondamentale II', 'Collège'], true)
@@ -1428,19 +1513,27 @@ class ConfigurationController extends Controller
             ]);
         }
 
+        // Le CAP n'existe qu'au niveau fondamental au Mali (d'ou le null forcé
+        // pour le secondaire ci-dessous) ; hors Mali, id_cap est une étiquette
+        // de localité libre-service sans lien avec ce découpage, donc on ne la
+        // réinitialise pas.
         if ($data['typeEcole'] === 'Fondamentale I' || $data['typeEcole'] === 'Fondamentale II' || $data['typeEcole'] === 'Collège') {
             $data['nomFondamental'] = $data['nomEcole'];
             $data['nomLycee'] = null;
             $data['nomProfessionnel'] = null;
             $data['nomComplexe'] = null;
         } elseif ($data['typeEcole'] === 'Secondaire Generale') {
-            $data['id_cap'] = null;
+            if ($estMali) {
+                $data['id_cap'] = null;
+            }
             $data['nomFondamental'] = null;
             $data['nomLycee'] = $data['nomEcole'];
             $data['nomProfessionnel'] = null;
             $data['nomComplexe'] = null;
         } elseif ($data['typeEcole'] === 'Secondaire Technique et Professionnel') {
-            $data['id_cap'] = null;
+            if ($estMali) {
+                $data['id_cap'] = null;
+            }
             $data['nomFondamental'] = null;
             $data['nomLycee'] = null;
             $data['nomProfessionnel'] = $data['nomEcole'];
@@ -1448,6 +1541,77 @@ class ConfigurationController extends Controller
         }
 
         return $data;
+    }
+
+    /**
+     * Reutilise l'academie du pays si un admin en a deja cree une du meme nom
+     * (comparaison insensible a la casse/aux accents), sinon en cree une
+     * nouvelle scopee a ce pays -- evite qu'un deuxieme admin du meme pays,
+     * ignorant qu'une premiere academie existe deja, en duplique une.
+     */
+    protected function findOrCreateAcademie(string $nom, int $paysId): Academie
+    {
+        $nom = trim($nom);
+        $comparable = Str::lower(Str::ascii($nom));
+
+        $existante = Academie::where('id_pays', $paysId)->get()
+            ->first(fn (Academie $a) => Str::lower(Str::ascii($a->nom_academie)) === $comparable);
+        if ($existante) {
+            return $existante;
+        }
+
+        return Academie::create([
+            'nom_academie' => $nom,
+            'code_academie' => $this->uniqueReferentialCode('academie', 'code_academie', $paysId, $nom),
+            'localite_academie' => $nom,
+            'id_pays' => $paysId,
+        ]);
+    }
+
+    protected function findOrCreateCap(string $nom, int $academieId, int $paysId): Cap
+    {
+        $nom = trim($nom);
+        $comparable = Str::lower(Str::ascii($nom));
+
+        $existant = Cap::where('id_academie', $academieId)->get()
+            ->first(fn (Cap $c) => Str::lower(Str::ascii($c->nom_cap)) === $comparable);
+        if ($existant) {
+            return $existant;
+        }
+
+        return Cap::create([
+            'nom_cap' => $nom,
+            'code_cap' => $this->uniqueReferentialCode('cap', 'code_cap', $paysId, $nom),
+            'localite_cap' => $nom,
+            'id_academie' => $academieId,
+            'id_pays' => $paysId,
+        ]);
+    }
+
+    /**
+     * code_academie/code_cap sont NOT NULL + UNIQUE sur toute la table (pas
+     * seulement par pays) dans le schema existant -- genere un code lisible
+     * (indicatif ISO du pays + slug du nom), avec un suffixe numerique en cas
+     * de collision improbable, plutot que de demander a l'admin d'inventer un
+     * code administratif qu'il n'a aucune raison de connaitre.
+     */
+    protected function uniqueReferentialCode(string $table, string $column, int $paysId, string $nom): string
+    {
+        // code_academie/code_cap sont des varchar(20) : reserve 2 pour
+        // l'indicatif pays, 1 pour le separateur, jusqu'a 3 pour un eventuel
+        // suffixe "-99" anti-collision, le slug du nom prend le reste.
+        $prefixe = Str::upper(Pays::find($paysId)?->code_iso ?? 'XX');
+        $slug = Str::upper(Str::substr(Str::slug($nom, '-'), 0, 20 - strlen($prefixe) - 4)) ?: 'X';
+        $base = "{$prefixe}-{$slug}";
+        $code = $base;
+        $suffixe = 1;
+
+        while (DB::table($table)->where($column, $code)->exists()) {
+            $suffixe++;
+            $code = Str::substr($base, 0, 20 - strlen("-{$suffixe}")) . "-{$suffixe}";
+        }
+
+        return $code;
     }
 
     protected function storeEcoleLogo(Request $request, ?string $currentLogo = null): ?string
