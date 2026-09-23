@@ -8,7 +8,10 @@
     // Reserve a l'Admin : c'est lui qui connait le systeme scolaire de son
     // propre pays, pas le SupAdmin (base au Mali) pour chaque pays ou
     // KalanNet s'etend -- meme principe que le libre-service academie/CAP.
-    $showPays      = $connectedUser->droit === 'Admin';
+    // Sans objet pour une Ecole de Sante (filiere/annee, pas d'examen
+    // national de type DEF/BAC).
+    $adminEcoleType = $connectedUser->droit === 'Admin' ? ($connectedUser->ecole->typeEcole ?? null) : null;
+    $showPays      = $connectedUser->droit === 'Admin' && $adminEcoleType !== 'École de Santé';
     $showAcademies = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('academies_apercu');
     $showCaps      = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('dcap_apercu');
     $showAnnees    = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('annees_scolaires_apercu');

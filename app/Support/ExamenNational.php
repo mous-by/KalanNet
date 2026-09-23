@@ -146,6 +146,12 @@ class ExamenNational
         $final = static::final($ecole)['nom'] ?? null;
         $type = Str::lower(Str::ascii((string) $typeEcole));
 
+        // Ecole de Sante : filiere/annee, pas de cycle Fondamentale/Secondaire
+        // -- aucun des examens nationaux (DEF/BAC ou equivalents) ne s'y applique.
+        if (str_contains($type, 'sante')) {
+            return [];
+        }
+
         if (str_contains($type, 'complexe')) {
             return array_values(array_filter([$primaire, $intermediaire, $final]));
         }

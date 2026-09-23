@@ -102,9 +102,22 @@ class MatiereController extends Controller
         ]);
     }
 
+    /**
+     * L'ecole actuellement geree : celle selectionnee en session, jamais
+     * seulement Auth::user()->ecole -- sinon un SupAdmin (qui n'a pas de
+     * propre ecole) navigue toujours "hors Ecole de Sante", meme quand il
+     * gere une ecole de sante via la selection d'ecole.
+     */
+    protected function currentEcole(): ?\App\Models\Ecole
+    {
+        $idEcole = session('idEcole') ?: Auth::user()->idEcole;
+
+        return $idEcole ? \App\Models\Ecole::withoutGlobalScopes()->find($idEcole) : null;
+    }
+
     protected function estSante(): bool
     {
-        return (Auth::user()->ecole->typeEcole ?? null) === 'École de Santé';
+        return ($this->currentEcole()->typeEcole ?? null) === 'École de Santé';
     }
 
     protected function syncOrdres(Matiere $matiere, array $ordres): void
@@ -147,7 +160,7 @@ class MatiereController extends Controller
     protected function ordresAutorises(): array
     {
         $user = Auth::user();
-        $typeEcole = $user->ecole->typeEcole ?? null;
+        $typeEcole = $this->currentEcole()->typeEcole ?? null;
 
         if ($typeEcole === 'École de Santé') {
             return [];

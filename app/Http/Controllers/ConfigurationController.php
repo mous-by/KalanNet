@@ -167,7 +167,12 @@ class ConfigurationController extends Controller
         }
 
         $idEcole = session('idEcole') ?: $user->idEcole;
-        $paysId = $idEcole ? Ecole::withoutGlobalScopes()->find($idEcole)?->id_pays : null;
+        $ecole = $idEcole ? Ecole::withoutGlobalScopes()->find($idEcole) : null;
+        if ($ecole?->typeEcole === 'École de Santé') {
+            abort(403, "La configuration des examens nationaux ne s'applique pas à une École de Santé.");
+        }
+
+        $paysId = $ecole?->id_pays;
         if (!$paysId) {
             abort(403, "Votre école n'est rattachée à aucun pays pour l'instant.");
         }
@@ -187,7 +192,12 @@ class ConfigurationController extends Controller
         $pays = Pays::findOrFail($id);
 
         $idEcole = session('idEcole') ?: $user->idEcole;
-        $ecolePaysId = $idEcole ? Ecole::withoutGlobalScopes()->find($idEcole)?->id_pays : null;
+        $ecole = $idEcole ? Ecole::withoutGlobalScopes()->find($idEcole) : null;
+        if ($ecole?->typeEcole === 'École de Santé') {
+            abort(403, "La configuration des examens nationaux ne s'applique pas à une École de Santé.");
+        }
+
+        $ecolePaysId = $ecole?->id_pays;
         if ($ecolePaysId !== $pays->id) {
             abort(403, 'Vous ne pouvez configurer que le pays de votre propre école.');
         }

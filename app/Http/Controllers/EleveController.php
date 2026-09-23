@@ -790,8 +790,10 @@ class EleveController extends Controller
         } elseif ((int) $eleve->etat_dossier === 2) {
             $alerts[] = ['type' => 'secondary', 'text' => 'Ce dossier est retiré de la liste active.'];
         } elseif ((int) $eleve->etat_dossier === 3) {
-            $examensLabel = implode('/', ExamenNational::niveauxConfigures($eleve->ecole)) ?: 'examen national';
-            $alerts[] = ['type' => 'success', 'text' => "Élève diplômé ({$examensLabel})."];
+            $niveauxExamens = ExamenNational::niveauxDisponibles($eleve->ecole, $eleve->ecole?->typeEcole);
+            $alerts[] = $niveauxExamens
+                ? ['type' => 'success', 'text' => 'Élève diplômé (' . implode('/', $niveauxExamens) . ').']
+                : ['type' => 'success', 'text' => 'Élève diplômé.'];
         }
 
         return $alerts;

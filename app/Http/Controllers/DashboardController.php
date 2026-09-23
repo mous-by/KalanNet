@@ -99,7 +99,10 @@ class DashboardController extends Controller
             $query->where('id_annee', $idAnnee);
         })->where('etat_dossier', 3)->count();
 
-        $examensLabel = implode('/', ExamenNational::niveauxConfigures($schoolId)) ?: 'examens nationaux';
+        $typeEcole = $schoolId ? Ecole::withoutGlobalScopes()->find($schoolId)?->typeEcole : null;
+        $estSante = $typeEcole === 'École de Santé';
+        $niveauxExamens = ExamenNational::niveauxDisponibles($schoolId, $typeEcole);
+        $examensLabel = $niveauxExamens ? implode('/', $niveauxExamens) : 'examens nationaux';
 
         // Class distribution
         $classesData = Classe::when($schoolId, function ($query, $schoolId) {
@@ -147,6 +150,7 @@ class DashboardController extends Controller
             'totalAbandons',
             'totalDiplomes',
             'examensLabel',
+            'estSante',
             'classesData',
             'teacherProgressRows',
             'presenceProgressRows',
