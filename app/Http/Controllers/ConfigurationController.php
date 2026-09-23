@@ -12,6 +12,7 @@ use App\Models\ClasseOfficielle;
 use App\Models\Ecole;
 use App\Models\Enseignant;
 use App\Models\ParentModel;
+use App\Models\Pays;
 use App\Models\Permission;
 use App\Models\Revendeur;
 use App\Models\User;
@@ -87,6 +88,7 @@ class ConfigurationController extends Controller
 
         $academies = Academie::orderBy('nom_academie')->get();
         $caps = Cap::with('academie')->orderBy('nom_cap')->get();
+        $pays = Pays::where('actif', true)->orderBy('nom')->get();
         $abonnementOffres = Auth::user()->droit === 'SupAdmin'
             ? AbonnementOffre::where('actif', true)->orderBy('montant')->get()
             : collect();
@@ -94,7 +96,7 @@ class ConfigurationController extends Controller
             ? Revendeur::where('actif', true)->orderBy('nom')->get()
             : collect();
 
-        return view('configuration.ecoles', compact('ecoles', 'academies', 'caps', 'abonnementOffres', 'revendeurs'));
+        return view('configuration.ecoles', compact('ecoles', 'academies', 'caps', 'pays', 'abonnementOffres', 'revendeurs'));
     }
 
     public function storeEcole(Request $request)
@@ -1379,6 +1381,7 @@ class ConfigurationController extends Controller
             'statut' => 'required|in:public,prive',
             'id_academie' => 'required|integer|exists:academie,id_academie',
             'id_cap' => 'nullable|integer|exists:cap,id_cap',
+            'id_pays' => 'nullable|integer|exists:pays,id',
             'adresse' => 'nullable|string|max:1000',
             'telephone' => ['nullable', 'string', 'max:20', new MaliPhone()],
             'email' => 'nullable|email|max:100',
@@ -1394,6 +1397,14 @@ class ConfigurationController extends Controller
         ]);
 
         unset($data['abonnement_offre_id']);
+
+        // Mali par defaut si le formulaire ne l'a pas soumis (compatibilite
+        // avec un appel programmatique de cette methode qui ignorerait ce
+        // nouveau champ) -- toutes les ecoles existantes sont deja rattachees
+        // au Mali depuis la migration de seed, ce defaut ne change rien pour elles.
+        if (empty($data['id_pays'])) {
+            $data['id_pays'] = Pays::where('code_iso', 'ML')->value('id');
+        }
 
         $needsCap = in_array($data['typeEcole'], ['Fondamentale I', 'Fondamentale II', 'Collège'], true)
             || ($data['typeEcole'] === 'Complexe Scolaire' && !empty($data['nomFondamental']));

@@ -54,6 +54,16 @@
                                 @endforeach
                             </select>
                         </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Pays</label>
+                            <select name="id_pays" class="form-select">
+                                @foreach($pays as $unPays)
+                                    <option value="{{ $unPays->id }}" @selected(old('id_pays', $ecole->id_pays ?? null) == $unPays->id)>
+                                        {{ $unPays->nom }} ({{ $unPays->devise_symbole }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
                         <div class="col-md-4">
                             <label class="form-label">Téléphone</label>
                             <input type="text" name="telephone" class="form-control" value="{{ old('telephone', $ecole->telephone ?? '') }}">
