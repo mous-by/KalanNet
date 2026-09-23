@@ -20,28 +20,35 @@ class Devise
 {
     protected static ?Pays $maliFallback = null;
 
-    public static function format(float|int $montant, Ecole|int|null $ecole = null): string
+    public static function format(float|int $montant, Ecole|Pays|int|null $ecole = null): string
     {
         return static::resolvePays($ecole)->formatMontant((float) $montant);
     }
 
-    public static function symbole(Ecole|int|null $ecole = null): string
+    public static function symbole(Ecole|Pays|int|null $ecole = null): string
     {
         return static::resolvePays($ecole)->devise_symbole;
     }
 
-    public static function code(Ecole|int|null $ecole = null): string
+    public static function code(Ecole|Pays|int|null $ecole = null): string
     {
         return static::resolvePays($ecole)->devise_code;
     }
 
-    public static function decimales(Ecole|int|null $ecole = null): int
+    public static function decimales(Ecole|Pays|int|null $ecole = null): int
     {
         return static::resolvePays($ecole)->devise_decimales;
     }
 
-    public static function resolvePays(Ecole|int|null $ecole = null): Pays
+    /**
+     * $ecole accepte aussi directement un Pays (ex: un id_pays choisi dans un
+     * formulaire d'ecole avant meme que l'ecole existe) -- utilise tel quel.
+     */
+    public static function resolvePays(Ecole|Pays|int|null $ecole = null): Pays
     {
+        if ($ecole instanceof Pays) {
+            return $ecole;
+        }
         if ($ecole === null) {
             $ecole = session('idEcole');
         }

@@ -217,11 +217,21 @@
     </form>
 @endsection
 
+@php
+    $paysPourJs = [
+        'nom' => $pays->nom,
+        'indicatif' => $pays->indicatif_telephone,
+        'indicatifSansPlus' => ltrim($pays->indicatif_telephone, '+'),
+        'longueur' => $pays->telephone_longueur,
+        'premierChiffreMin' => $pays->telephone_premier_chiffre_min,
+    ];
+@endphp
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const eleves       = @json($elevesForPicker);
     const liens        = @json($liens);
+    const pays         = @json($paysPourJs);
     const picker       = document.getElementById('eleve_picker');
     const classeFilter = document.getElementById('classe_filter');
     const textFilter   = document.getElementById('eleve_filter');
@@ -231,27 +241,36 @@ document.addEventListener('DOMContentLoaded', function () {
     const telInput     = document.getElementById('telephone_parent');
     const telFeedback  = document.getElementById('tel-feedback');
 
-    // ── Téléphone Mali ──────────────────────────────────────────────────────
-    function validateMaliPhone(raw) {
+    // ── Téléphone (format du pays de l'école active) ────────────────────────
+    function stripPhonePrefix(raw) {
         let v = raw.replace(/[\s\-\.]/g, '');
-        if (v.startsWith('+223'))  v = v.slice(4);
-        if (v.startsWith('00223')) v = v.slice(5);
-        if (!/^[0-9]{8}$/.test(v)) return 'Le numéro doit contenir 8 chiffres (ex : 76 12 34 56).';
-        if (parseInt(v[0]) < 2)    return 'Préfixe invalide pour le Mali.';
+        if (v.startsWith(pays.indicatif)) return v.slice(pays.indicatif.length);
+        if (v.startsWith('00' + pays.indicatifSansPlus)) return v.slice(2 + pays.indicatifSansPlus.length);
+        return v;
+    }
+
+    function validatePaysPhone(raw) {
+        const v = stripPhonePrefix(raw);
+        if (!new RegExp('^[0-9]{' + pays.longueur + '}$').test(v)) {
+            return `Le numéro doit contenir ${pays.longueur} chiffres (indicatif ${pays.indicatif} optionnel).`;
+        }
+        if (pays.premierChiffreMin !== null && parseInt(v[0], 10) < pays.premierChiffreMin) {
+            return `Préfixe invalide pour ${pays.nom}.`;
+        }
         return null;
     }
 
-    function formatMaliDisplay(raw) {
-        let v = raw.replace(/[\s\-\.]/g, '');
-        if (v.startsWith('+223'))  v = v.slice(4);
-        if (v.startsWith('00223')) v = v.slice(5);
-        if (v.length === 8) return v.replace(/(\d{2})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4');
+    function formatPaysDisplay(raw) {
+        const v = stripPhonePrefix(raw);
+        if (v.length === pays.longueur) {
+            return v.replace(/(\d{2})(?=\d)/g, '$1 ').trim();
+        }
         return raw;
     }
 
     if (telInput) {
         telInput.addEventListener('input', function () {
-            const err = validateMaliPhone(this.value);
+            const err = validatePaysPhone(this.value);
             if (err) {
                 this.classList.add('is-invalid');
                 this.classList.remove('is-valid');
@@ -265,8 +284,8 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         telInput.addEventListener('blur', function () {
-            if (!validateMaliPhone(this.value)) {
-                this.value = formatMaliDisplay(this.value);
+            if (!validatePaysPhone(this.value)) {
+                this.value = formatPaysDisplay(this.value);
             }
         });
     }
@@ -336,7 +355,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.getElementById('parent-form').addEventListener('submit', function (e) {
         // Block if phone invalid
-        if (telInput && validateMaliPhone(telInput.value)) {
+        if (telInput && validatePaysPhone(telInput.value)) {
             e.preventDefault();
             telInput.focus();
             telInput.classList.add('is-invalid');

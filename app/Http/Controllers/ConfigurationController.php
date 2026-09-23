@@ -3,7 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Academie;
-use App\Rules\MaliPhone;
+use App\Rules\PaysPhone;
+use App\Support\Telephone;
 use App\Models\Abonnement;
 use App\Models\AbonnementOffre;
 use App\Models\AnneeScolaire;
@@ -1138,7 +1139,7 @@ class ConfigurationController extends Controller
     protected function validateUtilisateurByType(Request $request, int $type, ?User $existingUser = null): array
     {
         if ($request->filled('telephone')) {
-            $request->merge(['telephone' => MaliPhone::normalize($request->input('telephone'))]);
+            $request->merge(['telephone' => Telephone::normalize($request->input('telephone'), session('idEcole'))]);
         }
 
         $base = [
@@ -1167,7 +1168,7 @@ class ConfigurationController extends Controller
             return $request->validate($base + [
                 'nomPrenom' => 'required|string|max:150',
                 'email' => ['required', 'email', 'max:150', $emailRule],
-                'telephone' => ['required', 'string', 'max:20', new MaliPhone()],
+                'telephone' => ['required', 'string', 'max:20', new PaysPhone(session('idEcole'))],
                 'genre' => 'required|string|max:20',
                 'fonction' => 'nullable|string|max:50',
                 'id_academie' => 'required|integer|exists:academie,id_academie',
@@ -1178,7 +1179,7 @@ class ConfigurationController extends Controller
             return $request->validate($base + [
                 'nomPrenom' => 'required|string|max:150',
                 'email' => ['required', 'email', 'max:150', $emailRule],
-                'telephone' => ['required', 'string', 'max:20', new MaliPhone()],
+                'telephone' => ['required', 'string', 'max:20', new PaysPhone(session('idEcole'))],
                 'genre' => 'required|string|max:20',
                 'fonction' => 'nullable|string|max:50',
                 'id_cap' => 'required|integer|exists:cap,id_cap',
@@ -1188,7 +1189,7 @@ class ConfigurationController extends Controller
         return $request->validate($base + [
             'nomPrenom' => 'required|string|max:150',
             'email' => ['required', 'email', 'max:150', $emailRule],
-            'telephone' => ['required', 'string', 'max:20', new MaliPhone()],
+            'telephone' => ['required', 'string', 'max:20', new PaysPhone(session('idEcole'))],
             'genre' => 'required|string|max:20',
             'fonction' => 'nullable|string|max:50',
             'droit' => 'required|string|in:' . (Auth::user()->droit === 'SupAdmin' ? 'SupAdmin,Admin,Gestionnaire' : 'Gestionnaire'),
@@ -1371,8 +1372,12 @@ class ConfigurationController extends Controller
 
     protected function validateEcole(Request $request): array
     {
+        // Le pays choisi DANS ce meme formulaire sert de contexte au numero de
+        // l'ecole elle-meme (il n'y a pas encore d'Ecole existante a interroger
+        // au moment de la creation).
+        $paysFormulaire = $request->filled('id_pays') ? Pays::find($request->input('id_pays')) : null;
         if ($request->filled('telephone')) {
-            $request->merge(['telephone' => MaliPhone::normalize($request->input('telephone'))]);
+            $request->merge(['telephone' => Telephone::normalize($request->input('telephone'), $paysFormulaire)]);
         }
 
         $data = $request->validate([
@@ -1383,7 +1388,7 @@ class ConfigurationController extends Controller
             'id_cap' => 'nullable|integer|exists:cap,id_cap',
             'id_pays' => 'nullable|integer|exists:pays,id',
             'adresse' => 'nullable|string|max:1000',
-            'telephone' => ['nullable', 'string', 'max:20', new MaliPhone()],
+            'telephone' => ['nullable', 'string', 'max:20', new PaysPhone($paysFormulaire)],
             'email' => 'nullable|email|max:100',
             'nomFondamental' => 'nullable|string|max:255',
             'nomLycee' => 'nullable|string|max:255',
