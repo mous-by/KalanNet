@@ -34,7 +34,6 @@ class MatiereController extends Controller
             'matieres' => $matieres,
             'allOrdres' => $this->allOrdres(),
             'ordresAutorises' => $ordresAutorises,
-            'estSante' => $this->estSante(),
         ]);
     }
 
@@ -95,7 +94,7 @@ class MatiereController extends Controller
     {
         return $request->validate([
             'nom_matiere' => 'required|string|max:50',
-            'ordre_enseignement' => $this->estSante() ? 'nullable|array' : 'required|array|min:1',
+            'ordre_enseignement' => 'required|array|min:1',
             'ordre_enseignement.*' => 'required|string|in:' . implode(',', array_keys($this->allOrdres())),
         ], [
             'ordre_enseignement.required' => 'Veuillez sélectionner au moins un ordre d’enseignement.',
@@ -113,11 +112,6 @@ class MatiereController extends Controller
         $idEcole = session('idEcole') ?: Auth::user()->idEcole;
 
         return $idEcole ? \App\Models\Ecole::withoutGlobalScopes()->find($idEcole) : null;
-    }
-
-    protected function estSante(): bool
-    {
-        return ($this->currentEcole()->typeEcole ?? null) === 'École de Santé';
     }
 
     protected function syncOrdres(Matiere $matiere, array $ordres): void
@@ -146,6 +140,12 @@ class MatiereController extends Controller
             'Fondamentale II' => $labels['fondamentale2'],
             'Secondaire Generale' => $labels['secondairegenerale'],
             'Secondaire Technique et Professionnel' => $labels['secondairetechniqueetprofessionnel'],
+            // Pas un ordre d'enseignement au sens Fondamentale/Secondaire :
+            // sert uniquement a marquer une matiere (Anatomie, Pharmacologie...)
+            // comme partagee par toutes les Ecoles de Sante, sur le meme
+            // principe que les matieres globales du Mali (id_ecole=null) --
+            // voir ClasseController::matieresDisponibles().
+            'École de Santé' => 'École de Santé',
         ];
     }
 
@@ -162,12 +162,16 @@ class MatiereController extends Controller
         $user = Auth::user();
         $typeEcole = $this->currentEcole()->typeEcole ?? null;
 
-        if ($typeEcole === 'École de Santé') {
-            return [];
+        if ($user->droit === 'SupAdmin') {
+            return array_keys($this->allOrdres());
         }
 
-        if ($user->droit === 'SupAdmin' || $typeEcole === 'Complexe Scolaire') {
-            return array_keys($this->allOrdres());
+        if ($typeEcole === 'École de Santé') {
+            return ['École de Santé'];
+        }
+
+        if ($typeEcole === 'Complexe Scolaire') {
+            return ['Fondamentale I', 'Fondamentale II', 'Secondaire Generale', 'Secondaire Technique et Professionnel'];
         }
 
         // Meme logique país-aware que ClasseController::ordresDisponibles() --

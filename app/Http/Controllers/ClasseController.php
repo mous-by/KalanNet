@@ -37,8 +37,9 @@ class ClasseController extends Controller
         $idEcole = session('idEcole');
         $user = Auth::user();
         $ecole = $this->resolveEcole($user, $idEcole);
+        $estSante = $this->estSante($ecole);
 
-        $matieres = $this->matieresDisponibles($user, $idEcole);
+        $matieres = $this->matieresDisponibles($user, $idEcole, $estSante);
         $enseignants = $this->enseignantsDisponibles($user, $idEcole);
         $ordres = $this->ordresDisponibles($user, $idEcole);
         $ordreMatiereMap = $this->ordreMatiereMap();
@@ -51,7 +52,7 @@ class ClasseController extends Controller
             'ordres' => $ordres,
             'ordreMatiereMap' => $ordreMatiereMap,
             'filieres' => $filieres,
-            'estSante' => $this->estSante($ecole),
+            'estSante' => $estSante,
             'lignes' => collect(),
             'mode' => 'create',
         ]);
@@ -303,11 +304,26 @@ class ClasseController extends Controller
         }
     }
 
-    protected function matieresDisponibles($user, ?int $idEcole)
+    protected function matieresDisponibles($user, ?int $idEcole, bool $estSante = false)
     {
         return Matiere::query()
             ->with('ordres')
-            ->when($user->droit !== 'SupAdmin', function ($query) use ($idEcole) {
+            // Une Ecole de Sante ne voit jamais le referentiel Fondamentale/
+            // Secondaire (global ou d'une autre ecole) : seulement ses propres
+            // matieres, plus les matieres globales explicitement marquees
+            // "École de Santé" par le SupAdmin (catalogue partage entre toutes
+            // les ecoles de sante, meme principe que le referentiel malien
+            // partage entre toutes les ecoles classiques).
+            ->when($estSante, function ($query) use ($idEcole) {
+                $query->where(function ($inner) use ($idEcole) {
+                    $inner->where('id_ecole', $idEcole)
+                        ->orWhere(function ($global) {
+                            $global->whereNull('id_ecole')
+                                ->whereHas('ordres', fn ($o) => $o->where('ordre_enseignement', 'École de Santé'));
+                        });
+                });
+            })
+            ->when(!$estSante && $user->droit !== 'SupAdmin', function ($query) use ($idEcole) {
                 $query->where(function ($inner) use ($idEcole) {
                     $inner->whereNull('id_ecole')->orWhere('id_ecole', $idEcole);
                 });

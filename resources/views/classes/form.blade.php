@@ -98,12 +98,8 @@
             </div>
             <div class="card-body">
                 <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label" for="nom_classe">Nom de la classe <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="nom_classe" name="nom_classe" value="{{ old('nom_classe', $classe->nom_classe) }}" placeholder="{{ $estSante ? 'Ex: Infirmier 1ère année A' : 'Ex: 7eme année A' }}" required>
-                    </div>
                     @if($estSante)
-                        <div class="col-md-3">
+                        <div class="col-md-5">
                             <label class="form-label" for="id_filiere">Filière <span class="text-danger">*</span></label>
                             <select class="form-select" id="id_filiere" name="id_filiere" required>
                                 <option value="">Choisir...</option>
@@ -115,11 +111,20 @@
                                 <small class="text-danger d-block mt-1">Aucune filière créée. <a href="{{ route('pedagogie.filieres') }}">En créer une</a>.</small>
                             @endif
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label class="form-label" for="annee">Année <span class="text-danger">*</span></label>
                             <input type="number" class="form-control" id="annee" name="annee" min="1" max="8" value="{{ old('annee', $classe->annee) }}" required>
                         </div>
+                        <div class="col-md-5">
+                            <label class="form-label" for="nom_classe">Nom de la classe <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="nom_classe" name="nom_classe" value="{{ old('nom_classe', $classe->nom_classe) }}" placeholder="Proposé automatiquement (ex: Infirmier 1ère année)" required>
+                            <small class="text-muted d-block mt-1">Proposé à partir de la filière et de l'année — modifiable.</small>
+                        </div>
                     @else
+                        <div class="col-md-6">
+                            <label class="form-label" for="nom_classe">Nom de la classe <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="nom_classe" name="nom_classe" value="{{ old('nom_classe', $classe->nom_classe) }}" placeholder="Ex: 7eme année A" required>
+                        </div>
                         <div class="col-md-6">
                             <label class="form-label" for="ordre_enseignement">Ordre d'enseignement <span class="text-danger">*</span></label>
                             <select class="form-select" id="ordre_enseignement" name="ordre_enseignement" required>
@@ -247,6 +252,9 @@
             const tbody = document.getElementById('table-matieres');
             const nomClasse = document.getElementById('nom_classe');
             const ordreSelect = document.getElementById('ordre_enseignement');
+            const filiereSelect = document.getElementById('id_filiere');
+            const anneeInput = document.getElementById('annee');
+            const filiereNoms = @json($filieres->pluck('nom_filiere', 'id_filiere'));
             const help = document.getElementById('matiere-order-help');
             const matieresModalEl = document.getElementById('matieresModal');
             const matiereList = document.getElementById('matiere_checkbox_list');
@@ -398,6 +406,33 @@
                     this.value = value + ' année';
                 }
             });
+
+            // École de Santé : propose "Filière Xème année" a partir des deux
+            // champs choisis en premier, sans ecraser une saisie manuelle.
+            if (filiereSelect && anneeInput) {
+                let nomClasseDirty = nomClasse.value.trim() !== '';
+
+                function ordinalAnnee(n) {
+                    n = parseInt(n, 10);
+                    if (!n || n < 1) return '';
+                    return n === 1 ? '1ère année' : n + 'ème année';
+                }
+
+                function suggestNomClasse() {
+                    if (nomClasseDirty) return;
+                    const filiereNom = filiereNoms[filiereSelect.value];
+                    const anneeLabel = ordinalAnnee(anneeInput.value);
+                    if (!filiereNom || !anneeLabel) return;
+                    nomClasse.value = filiereNom + ' ' + anneeLabel;
+                }
+
+                nomClasse.addEventListener('input', function () {
+                    nomClasseDirty = this.value.trim() !== '';
+                });
+
+                filiereSelect.addEventListener('change', suggestNomClasse);
+                anneeInput.addEventListener('input', suggestNomClasse);
+            }
         });
     </script>
 @endpush
