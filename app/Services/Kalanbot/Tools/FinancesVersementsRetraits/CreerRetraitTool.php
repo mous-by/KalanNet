@@ -70,7 +70,7 @@ class CreerRetraitTool extends AbstractKalanbotTool
 
         return sprintf(
             "💸 Je vais effectuer un retrait de %s sur le compte %s (motif : %s). Confirmez-vous ?",
-            \App\Support\Devise::format((float) ($args['montant_retrait'] ?? 0), $user),
+            \App\Support\Devise::format((float) ($args['montant_retrait'] ?? 0), session('idEcole')),
             $banque?->nom_banque ?? 'inconnu',
             $args['motif_retrait'] ?? ''
         );

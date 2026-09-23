@@ -66,7 +66,7 @@ class ModifierBanqueTool extends AbstractKalanbotTool
         return sprintf(
             "⚠️ Je vais modifier le compte %s : nouveau solde %s (remplacement direct, pas un mouvement). Confirmez-vous ?",
             $banque?->nom_banque ?? 'inconnu',
-            \App\Support\Devise::format((float) ($args['solde'] ?? 0), $user)
+            \App\Support\Devise::format((float) ($args['solde'] ?? 0), session('idEcole'))
         );
     }
 

@@ -70,7 +70,7 @@ class ValiderRetraitTool extends AbstractKalanbotTool
 
         return sprintf(
             "💸 Je vais valider le retrait de %s sur le compte %s. Confirmez-vous ?",
-            \App\Support\Devise::format((float) ($retrait?->montant_retrait ?? 0), $user),
+            \App\Support\Devise::format((float) ($retrait?->montant_retrait ?? 0), session('idEcole')),
             $retrait?->banque?->nom_banque ?? 'inconnu'
         );
     }

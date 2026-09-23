@@ -70,7 +70,7 @@ class AnnulerPaiementTool extends AbstractKalanbotTool
         return sprintf(
             "⚠️ Cette action est irréversible. Je vais annuler comptablement le paiement de %s de %s "
             . "(reçu N° %s), retiré de la caisse. Motif : « %s ». Confirmez-vous ?",
-            \App\Support\Devise::format($montant, $user),
+            \App\Support\Devise::format($montant, session('idEcole')),
             $nomEleve,
             $paiement?->numero_recu ?? '?',
             $args['motif_annulation'] ?? ''

@@ -69,7 +69,7 @@ class ConfigurerFraisTool extends AbstractKalanbotTool
         return sprintf(
             "Je vais configurer le frais « %s » à %s%s. Confirmez-vous ?",
             $args['type_frais'] ?? '',
-            \App\Support\Devise::format((float) ($args['montant'] ?? 0), $user),
+            \App\Support\Devise::format((float) ($args['montant'] ?? 0), session('idEcole')),
             $classe ? " pour la classe {$classe->nom_classe}" : ''
         );
     }

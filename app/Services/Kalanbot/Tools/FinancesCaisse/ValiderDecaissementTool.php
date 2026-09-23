@@ -72,7 +72,7 @@ class ValiderDecaissementTool extends AbstractKalanbotTool
         return sprintf(
             "💸 Je vais valider la dépense « %s » de %s, déduite de la caisse. Confirmez-vous ?",
             $decaissement?->motif_decaissement ?? '?',
-            \App\Support\Devise::format((float) ($decaissement?->montant_decaissement ?? 0), $user)
+            \App\Support\Devise::format((float) ($decaissement?->montant_decaissement ?? 0), session('idEcole'))
         );
     }
 

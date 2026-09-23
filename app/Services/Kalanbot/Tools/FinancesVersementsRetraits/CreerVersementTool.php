@@ -68,7 +68,7 @@ class CreerVersementTool extends AbstractKalanbotTool
 
         return sprintf(
             "💰 Je vais verser %s de la caisse vers le compte %s (motif : %s). Confirmez-vous ?",
-            \App\Support\Devise::format((float) ($args['montant_versement'] ?? 0), $user),
+            \App\Support\Devise::format((float) ($args['montant_versement'] ?? 0), session('idEcole')),
             $banque?->nom_banque ?? 'inconnu',
             $args['motif_versement'] ?? ''
         );

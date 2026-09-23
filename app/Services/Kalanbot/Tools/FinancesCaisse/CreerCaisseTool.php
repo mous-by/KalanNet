@@ -67,7 +67,7 @@ class CreerCaisseTool extends AbstractKalanbotTool
         return sprintf(
             "Je vais créer la caisse « %s » avec un montant initial de %s. Confirmez-vous ?",
             $args['libelle'] ?? '',
-            \App\Support\Devise::format((float) ($args['montant_initial'] ?? 0), $user)
+            \App\Support\Devise::format((float) ($args['montant_initial'] ?? 0), session('idEcole'))
         );
     }
 

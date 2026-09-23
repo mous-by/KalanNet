@@ -72,7 +72,7 @@ class EncaisserSubventionEtatTool extends AbstractKalanbotTool
         return sprintf(
             "💰 Je vais encaisser %s de subvention État, répartis automatiquement sur les échéances "
             . "subventionnées ouvertes, créditant la caisse active. Confirmez-vous ?",
-            \App\Support\Devise::format((float) ($args['montant_recu'] ?? 0), $user)
+            \App\Support\Devise::format((float) ($args['montant_recu'] ?? 0), session('idEcole'))
         );
     }
 

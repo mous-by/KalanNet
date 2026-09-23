@@ -61,7 +61,7 @@ class CreerBanqueTool extends AbstractKalanbotTool
             "Je vais créer le compte bancaire « %s » (n° %s) avec un solde initial de %s. Confirmez-vous ?",
             $args['nom_banque'] ?? '',
             $args['numero_compte'] ?? '',
-            \App\Support\Devise::format((float) ($args['montant_initial'] ?? 0), $user)
+            \App\Support\Devise::format((float) ($args['montant_initial'] ?? 0), session('idEcole'))
         );
     }
 

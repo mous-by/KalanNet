@@ -76,7 +76,7 @@ class CreerEncaissementTool extends AbstractKalanbotTool
     {
         return sprintf(
             "💰 Je vais enregistrer un encaissement de %s (%s), qui créditera immédiatement la caisse. Confirmez-vous ?",
-            \App\Support\Devise::format((float) ($args['montant_encaissement'] ?? 0), $user),
+            \App\Support\Devise::format((float) ($args['montant_encaissement'] ?? 0), session('idEcole')),
             $args['motif_encaissement'] ?? ''
         );
     }

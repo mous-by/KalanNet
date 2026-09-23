@@ -70,7 +70,7 @@ class CreerDecaissementTool extends AbstractKalanbotTool
         return sprintf(
             "💸 Je vais soumettre une dépense de %s (%s). Si vous avez le droit de validation, elle sera "
             . "déduite immédiatement de la caisse ; sinon elle attendra une validation. Confirmez-vous ?",
-            \App\Support\Devise::format((float) ($args['montant_decaissement'] ?? 0), $user),
+            \App\Support\Devise::format((float) ($args['montant_decaissement'] ?? 0), session('idEcole')),
             $args['motif_decaissement'] ?? ''
         );
     }

@@ -89,7 +89,7 @@ class EnregistrerPaiementTool extends AbstractKalanbotTool
         return sprintf(
             "💰 Je vais enregistrer un paiement de %s (%s) pour %s, échéance « %s », payé par %s. Ceci "
             . "créditera la caisse active de l'école. Confirmez-vous ?",
-            \App\Support\Devise::format((float) ($args['montant_paye'] ?? 0), $user),
+            \App\Support\Devise::format((float) ($args['montant_paye'] ?? 0), session('idEcole')),
             $args['mode_reglement'] ?? '',
             $nomEleve,
             $echeance?->libelle ?? '?',
