@@ -15,6 +15,7 @@ use App\Models\ParentModel;
 use App\Models\Pays;
 use App\Models\Permission;
 use App\Models\User;
+use App\Support\ExamenNational;
 use App\Support\SchoolOrderAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -371,6 +372,9 @@ class ConfigurationController extends WebConfigurationController
             'grouped_permissions' => $groupedPermissions,
             'permission_ids' => $permissionIds,
             'read_only' => $readOnly,
+            // Memes cles partout (voir SchoolOrderAccess::ORDERS), seuls les
+            // libelles s'adaptent au pays de l'ecole de l'utilisateur cible.
+            'complexe_orders' => ExamenNational::ordresLabels($utilisateur->ecole ?? $idEcole),
         ]);
     }
 
