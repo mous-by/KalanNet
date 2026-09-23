@@ -67,9 +67,23 @@ class ClasseController extends Controller
 
         $idEcole = $request->integer('id_ecole') ?: session('idEcole') ?: $user->idEcole;
 
+        // Le referentiel "classes officielles" est le curriculum publie par le
+        // ministere malien : seules les ecoles maliennes non-Ecole de Sante
+        // y ont quelque chose a associer (les ecoles de sante ont leurs
+        // filieres, les autres pays n'ont aucun referentiel gouvernemental
+        // modelise dans l'appli).
+        $maliId = \App\Models\Pays::where('code_iso', 'ML')->value('id');
         $ecoles = Ecole::query()
+            ->where('typeEcole', '!=', 'École de Santé')
+            ->where(function ($q) use ($maliId) {
+                $q->whereNull('id_pays')->orWhere('id_pays', $maliId);
+            })
             ->orderBy('nomEcole')
             ->get();
+
+        if (!$ecoles->contains('idEcole', $idEcole)) {
+            $idEcole = $ecoles->first()?->idEcole;
+        }
 
         $classes = Classe::query()
             ->where('idEcole', $idEcole)

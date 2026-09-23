@@ -19,7 +19,13 @@
     $showCaps      = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('dcap_apercu');
     $showAnnees    = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('annees_scolaires_apercu');
     $showNotes     = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('types_notes_apercu');
-    $showClasses   = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('classes_officielles_apercu');
+    // Le referentiel "classes officielles" est le curriculum publie par le
+    // ministere malien : sans objet pour une Ecole de Sante et pour les
+    // ecoles des autres pays (meme raisonnement que Pays/Filieres ci-dessus).
+    $showClasses   = $connectedUser->droit === 'SupAdmin'
+                     || ($connectedUser->userHasPermission('classes_officielles_apercu')
+                         && ($connectedUser->ecole->typeEcole ?? null) !== 'École de Santé'
+                         && \App\Support\ExamenNational::estMali($connectedUser->ecole));
     $showStatus    = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('status_controles_apercu');
     $showPerms     = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasAnyPermission(['permissions_apercu', 'permission_voir']);
 @endphp
