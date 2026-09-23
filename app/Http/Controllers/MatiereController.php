@@ -33,6 +33,7 @@ class MatiereController extends Controller
             'matieres' => $matieres,
             'allOrdres' => $this->allOrdres(),
             'ordresAutorises' => $ordresAutorises,
+            'estSante' => $this->estSante(),
         ]);
     }
 
@@ -47,7 +48,7 @@ class MatiereController extends Controller
                 'id_ecole' => Auth::user()->droit === 'SupAdmin' ? null : session('idEcole'),
             ]);
 
-            $this->syncOrdres($matiere, $data['ordre_enseignement']);
+            $this->syncOrdres($matiere, $data['ordre_enseignement'] ?? []);
         });
 
         return redirect()->route('pedagogie.matieres')->with('success', 'Insertion faite avec succès.');
@@ -62,7 +63,7 @@ class MatiereController extends Controller
         DB::transaction(function () use ($matiere, $data) {
             $matiere->update(['nom_matiere' => $data['nom_matiere']]);
             $matiere->ordres()->delete();
-            $this->syncOrdres($matiere, $data['ordre_enseignement']);
+            $this->syncOrdres($matiere, $data['ordre_enseignement'] ?? []);
         });
 
         return redirect()->route('pedagogie.matieres')->with('success', 'La matière a été modifiée avec succès.');
@@ -93,11 +94,16 @@ class MatiereController extends Controller
     {
         return $request->validate([
             'nom_matiere' => 'required|string|max:50',
-            'ordre_enseignement' => 'required|array|min:1',
+            'ordre_enseignement' => $this->estSante() ? 'nullable|array' : 'required|array|min:1',
             'ordre_enseignement.*' => 'required|string|in:' . implode(',', array_keys($this->allOrdres())),
         ], [
             'ordre_enseignement.required' => 'Veuillez sélectionner au moins un ordre d’enseignement.',
         ]);
+    }
+
+    protected function estSante(): bool
+    {
+        return (Auth::user()->ecole->typeEcole ?? null) === 'École de Santé';
     }
 
     protected function syncOrdres(Matiere $matiere, array $ordres): void
@@ -132,6 +138,10 @@ class MatiereController extends Controller
     {
         $user = Auth::user();
         $typeEcole = $user->ecole->typeEcole ?? null;
+
+        if ($typeEcole === 'École de Santé') {
+            return [];
+        }
 
         if ($user->droit === 'SupAdmin' || $typeEcole === 'Complexe Scolaire') {
             return array_keys($this->allOrdres());

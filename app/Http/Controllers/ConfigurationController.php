@@ -1375,9 +1375,11 @@ class ConfigurationController extends Controller
 
         $data = $request->validate([
             'nomEcole' => 'required|string|max:100',
-            'typeEcole' => 'required|string|in:Complexe Scolaire,Fondamentale I,Fondamentale II,Collège,Secondaire Generale,Secondaire Technique et Professionnel',
+            'typeEcole' => 'required|string|in:Complexe Scolaire,Fondamentale I,Fondamentale II,Collège,Secondaire Generale,Secondaire Technique et Professionnel,École de Santé',
             'statut' => 'required|in:public,prive',
-            'id_academie' => 'required|integer|exists:academie,id_academie',
+            'id_academie' => $request->input('typeEcole') === 'École de Santé'
+                ? 'nullable|integer|exists:academie,id_academie'
+                : 'required|integer|exists:academie,id_academie',
             'id_cap' => 'nullable|integer|exists:cap,id_cap',
             'adresse' => 'nullable|string|max:1000',
             'telephone' => ['nullable', 'string', 'max:20', new MaliPhone()],

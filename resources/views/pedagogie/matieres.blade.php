@@ -43,7 +43,9 @@
                     <thead>
                         <tr>
                             <th>Matière</th>
-                            <th>Ordre(s) d'enseignement</th>
+                            @unless($estSante)
+                                <th>Ordre(s) d'enseignement</th>
+                            @endunless
                             <th class="text-center dt-no-sorting">Action</th>
                         </tr>
                     </thead>
@@ -51,7 +53,9 @@
                         @forelse($matieres as $matiere)
                             <tr>
                                 <td class="fw-bold">{{ $matiere->nom_matiere }}</td>
-                                <td>{{ $matiere->ordres->pluck('ordre_enseignement')->join(', ') }}</td>
+                                @unless($estSante)
+                                    <td>{{ $matiere->ordres->pluck('ordre_enseignement')->join(', ') }}</td>
+                                @endunless
                                 <td class="text-center">
                                     @if($canEditMatiere || $canDeleteMatiere)
                                         <div class="dropdown">
@@ -89,7 +93,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="3" class="text-center py-4 text-muted">Aucune matière n'a encore été créée.</td>
+                                <td colspan="{{ $estSante ? 2 : 3 }}" class="text-center py-4 text-muted">Aucune matière n'a encore été créée.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -118,17 +122,19 @@
                             <label class="form-label">Nom de la matière <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" name="nom_matiere" placeholder="Nom de la matière" required>
                         </div>
-                        <div class="mb-2">
-                            <label class="form-label">Ordre(s) d'enseignement <span class="text-danger">*</span></label>
-                            <div class="d-flex flex-wrap gap-3">
-                                @foreach($allOrdres as $value => $label)
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="ordre_enseignement[]" id="ordre_{{ $loop->index }}" value="{{ $value }}" @disabled(!in_array($value, $ordresAutorises, true))>
-                                        <label class="form-check-label" for="ordre_{{ $loop->index }}">{{ $label }}</label>
-                                    </div>
-                                @endforeach
+                        @unless($estSante)
+                            <div class="mb-2">
+                                <label class="form-label">Ordre(s) d'enseignement <span class="text-danger">*</span></label>
+                                <div class="d-flex flex-wrap gap-3">
+                                    @foreach($allOrdres as $value => $label)
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="ordre_enseignement[]" id="ordre_{{ $loop->index }}" value="{{ $value }}" @disabled(!in_array($value, $ordresAutorises, true))>
+                                            <label class="form-check-label" for="ordre_{{ $loop->index }}">{{ $label }}</label>
+                                        </div>
+                                    @endforeach
+                                </div>
                             </div>
-                        </div>
+                        @endunless
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
@@ -154,17 +160,19 @@
                             <label class="form-label">Nom matière</label>
                             <input type="text" id="edit_nom_matiere" class="form-control" name="nom_matiere" placeholder="Nom de la matière" required>
                         </div>
-                        <div class="mb-2">
-                            <label class="form-label">Ordre(s) d'enseignement</label>
-                            <div class="d-flex flex-wrap gap-3">
-                                @foreach($allOrdres as $value => $label)
-                                    <div class="form-check">
-                                        <input class="form-check-input edit-ordre" type="checkbox" name="ordre_enseignement[]" id="edit_ordre_{{ $loop->index }}" value="{{ $value }}" @disabled(!in_array($value, $ordresAutorises, true))>
-                                        <label class="form-check-label" for="edit_ordre_{{ $loop->index }}">{{ $label }}</label>
-                                    </div>
-                                @endforeach
+                        @unless($estSante)
+                            <div class="mb-2">
+                                <label class="form-label">Ordre(s) d'enseignement</label>
+                                <div class="d-flex flex-wrap gap-3">
+                                    @foreach($allOrdres as $value => $label)
+                                        <div class="form-check">
+                                            <input class="form-check-input edit-ordre" type="checkbox" name="ordre_enseignement[]" id="edit_ordre_{{ $loop->index }}" value="{{ $value }}" @disabled(!in_array($value, $ordresAutorises, true))>
+                                            <label class="form-check-label" for="edit_ordre_{{ $loop->index }}">{{ $label }}</label>
+                                        </div>
+                                    @endforeach
+                                </div>
                             </div>
-                        </div>
+                        @endunless
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-light" data-bs-dismiss="modal">Fermer</button>

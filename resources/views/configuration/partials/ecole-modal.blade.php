@@ -20,7 +20,7 @@
                             <label class="form-label">Type</label>
                             <select name="typeEcole" class="form-select js-ecole-type" required>
                                 <option value="">Sélectionnez le type d'établissement</option>
-                                @foreach(['Complexe Scolaire', 'Fondamentale I', 'Fondamentale II', 'Collège', 'Secondaire Generale', 'Secondaire Technique et Professionnel'] as $type)
+                                @foreach(['Complexe Scolaire', 'Fondamentale I', 'Fondamentale II', 'Collège', 'Secondaire Generale', 'Secondaire Technique et Professionnel', 'École de Santé'] as $type)
                                     <option value="{{ $type }}" @selected(old('typeEcole', $ecole->typeEcole ?? '') === $type)>{{ $type }}</option>
                                 @endforeach
                             </select>
@@ -32,7 +32,7 @@
                                 <option value="prive" @selected(old('statut', $ecole->statut ?? 'public') === 'prive')>Privé</option>
                             </select>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-6 js-academie-field">
                             <label class="form-label">Académie</label>
                             <select name="id_academie" class="form-select js-academie-select" required>
                                 <option value="">Sélectionner</option>
@@ -169,6 +169,7 @@
                 const statutSelect = form.querySelector('.js-statut-select');
                 const offreSelect = form.querySelector('.js-offre-select');
                 const academieSelect = form.querySelector('.js-academie-select');
+                const academieField = form.querySelector('.js-academie-field');
                 const capField = form.querySelector('.js-cap-field');
                 const capSelect = form.querySelector('.js-cap-select');
                 const nomFondamental = form.querySelector('.js-nom-fondamental');
@@ -219,6 +220,12 @@
                         || type === 'Fondamentale II'
                         || type === 'Collège'
                         || type === 'Complexe Scolaire';
+                }
+
+                // Les Académies/CAP sont la subdivision administrative du fondamental/
+                // secondaire classique : elles ne s'appliquent pas à une École de Santé.
+                function shouldShowAcademie() {
+                    return selectedType() !== 'École de Santé';
                 }
 
                 function fieldMatches(field, type) {
@@ -282,7 +289,15 @@
                         });
                     });
 
-                    const capVisible = shouldShowCap();
+                    const academieVisible = shouldShowAcademie();
+                    academieField?.classList.toggle('d-none', !academieVisible);
+                    if (academieSelect) {
+                        academieSelect.required = academieVisible;
+                        jQuery(academieSelect).prop('disabled', !academieVisible);
+                        if (!academieVisible) academieSelect.value = '';
+                    }
+
+                    const capVisible = academieVisible && shouldShowCap();
                     capField?.classList.toggle('d-none', !capVisible);
                     if (capSelect) {
                         capSelect.required = capVisible;

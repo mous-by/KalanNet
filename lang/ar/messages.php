@@ -94,6 +94,7 @@ return [
         'classes' => 'الأقسام',
         'associate_classes' => 'ربط الأقسام',
         'subjects' => 'المواد',
+        'filieres' => 'الشعب',
         'official_programs' => 'البرامج الرسمية',
         'timetable' => 'جدول الحصص',
         'tests_evaluations' => 'الفروض والتقييمات',

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Classe;
 use App\Models\ClasseOfficielle;
 use App\Models\Ecole;
+use App\Models\Filiere;
 use App\Models\Matiere;
 use App\Models\Enseignant;
 use App\Models\LigneClasse;
@@ -12,6 +13,7 @@ use App\Support\SchoolOrderAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class ClasseController extends Controller
 {
@@ -21,9 +23,9 @@ class ClasseController extends Controller
         $user = Auth::user();
 
         if ($user->droit === 'SupAdmin') {
-            $classes = Classe::with(['ecole', 'classeOfficielle'])->withCount('eleves')->get();
+            $classes = Classe::with(['ecole', 'classeOfficielle', 'filiere'])->withCount('eleves')->get();
         } else {
-            $classes = Classe::with('classeOfficielle')->where('idEcole', $idEcole)->withCount('eleves')->get();
+            $classes = Classe::with(['classeOfficielle', 'filiere'])->where('idEcole', $idEcole)->withCount('eleves')->get();
         }
 
         return view('classes.index', compact('classes'));
@@ -33,11 +35,13 @@ class ClasseController extends Controller
     {
         $idEcole = session('idEcole');
         $user = Auth::user();
+        $ecole = $this->resolveEcole($user, $idEcole);
 
         $matieres = $this->matieresDisponibles($user, $idEcole);
         $enseignants = $this->enseignantsDisponibles($user, $idEcole);
         $ordres = $this->ordresDisponibles($user, $idEcole);
         $ordreMatiereMap = $this->ordreMatiereMap();
+        $filieres = $this->filieresDisponibles($idEcole);
 
         return view('classes.form', [
             'classe' => new Classe(),
@@ -45,6 +49,8 @@ class ClasseController extends Controller
             'enseignants' => $enseignants,
             'ordres' => $ordres,
             'ordreMatiereMap' => $ordreMatiereMap,
+            'filieres' => $filieres,
+            'estSante' => $this->estSante($ecole),
             'lignes' => collect(),
             'mode' => 'create',
         ]);
@@ -107,15 +113,22 @@ class ClasseController extends Controller
     public function store(Request $request)
     {
         $this->authorizePermission('classes_creation');
-        $data = $this->validateClasse($request);
         $idEcole = session('idEcole');
-        $this->ensureOrdreAllowed($data['ordre_enseignement'], Auth::user(), $idEcole);
+        $ecole = $this->resolveEcole(Auth::user(), $idEcole);
+        $estSante = $this->estSante($ecole);
+        $data = $this->validateClasse($request, $ecole);
 
-        DB::transaction(function () use ($data, $idEcole) {
+        if (!$estSante) {
+            $this->ensureOrdreAllowed($data['ordre_enseignement'], Auth::user(), $idEcole);
+        }
+
+        DB::transaction(function () use ($data, $idEcole, $estSante) {
             $classe = Classe::create([
                 'nom_classe' => $data['nom_classe'],
-                'ordreEnseignement' => $data['ordre_enseignement'],
+                'ordreEnseignement' => $estSante ? null : $data['ordre_enseignement'],
                 'idEcole' => $idEcole,
+                'id_filiere' => $estSante ? $data['id_filiere'] : null,
+                'annee' => $estSante ? $data['annee'] : null,
             ]);
 
             $this->syncLignesClasse($classe, $data);
@@ -149,6 +162,7 @@ class ClasseController extends Controller
         $enseignants = $this->enseignantsDisponibles($user, session('idEcole'));
         $ordres = $this->ordresDisponibles($user, session('idEcole'));
         $ordreMatiereMap = $this->ordreMatiereMap();
+        $filieres = $this->filieresDisponibles($classe->idEcole);
 
         return view('classes.form', [
             'classe' => $classe,
@@ -156,6 +170,8 @@ class ClasseController extends Controller
             'enseignants' => $enseignants,
             'ordres' => $ordres,
             'ordreMatiereMap' => $ordreMatiereMap,
+            'filieres' => $filieres,
+            'estSante' => $this->estSante($classe->ecole),
             'lignes' => $classe->ligneClasses,
             'mode' => 'edit',
         ]);
@@ -171,13 +187,19 @@ class ClasseController extends Controller
             abort(403);
         }
 
-        $data = $this->validateClasse($request);
-        $this->ensureOrdreAllowed($data['ordre_enseignement'], $user, $classe->idEcole);
+        $estSante = $this->estSante($classe->ecole);
+        $data = $this->validateClasse($request, $classe->ecole);
 
-        DB::transaction(function () use ($classe, $data) {
+        if (!$estSante) {
+            $this->ensureOrdreAllowed($data['ordre_enseignement'], $user, $classe->idEcole);
+        }
+
+        DB::transaction(function () use ($classe, $data, $estSante) {
             $classe->update([
                 'nom_classe' => $data['nom_classe'],
-                'ordreEnseignement' => $data['ordre_enseignement'],
+                'ordreEnseignement' => $estSante ? null : $data['ordre_enseignement'],
+                'id_filiere' => $estSante ? $data['id_filiere'] : null,
+                'annee' => $estSante ? $data['annee'] : null,
             ]);
 
             $classe->ligneClasses()->delete();
@@ -209,21 +231,46 @@ class ClasseController extends Controller
         return redirect()->route('classes.index')->with('success', 'Classe supprimée avec succès.');
     }
 
-    protected function validateClasse(Request $request): array
+    protected function validateClasse(Request $request, ?Ecole $ecole = null): array
     {
-        return $request->validate([
+        $estSante = $this->estSante($ecole);
+        $idEcole = $ecole?->idEcole ?? session('idEcole');
+
+        $rules = [
             'nom_classe' => 'required|string|max:50',
-            'ordre_enseignement' => 'required|string|max:50',
             'id_matiere' => 'required|array|min:1',
             'id_matiere.*' => 'required|integer|exists:matiere,id_matiere',
             'id_enseignants' => 'nullable|array',
             'id_enseignants.*' => 'nullable|integer|exists:enseignants,id_enseignant',
             'coefficient' => 'required|array|min:1',
             'coefficient.*' => 'required|numeric|min:0|max:5',
-        ], [
+        ];
+
+        if ($estSante) {
+            $rules['id_filiere'] = ['required', 'integer', Rule::exists('filieres', 'id_filiere')->where('id_ecole', $idEcole)];
+            $rules['annee'] = 'required|integer|min:1|max:8';
+            $rules['ordre_enseignement'] = 'nullable|string|max:50';
+        } else {
+            $rules['ordre_enseignement'] = 'required|string|max:50';
+        }
+
+        return $request->validate($rules, [
             'id_matiere.required' => 'Au moins une matière doit être sélectionnée.',
             'coefficient.*.max' => 'Le coefficient ne peut pas dépasser 5.',
+            'id_filiere.required' => 'La filière est obligatoire pour une École de Santé.',
+            'id_filiere.exists' => 'La filière sélectionnée n’appartient pas à cette école.',
+            'annee.required' => 'L’année est obligatoire pour une École de Santé.',
         ]);
+    }
+
+    protected function filieresDisponibles(?int $idEcole)
+    {
+        return Filiere::where('id_ecole', $idEcole)->orderBy('nom_filiere')->get();
+    }
+
+    protected function estSante(?Ecole $ecole): bool
+    {
+        return ($ecole->typeEcole ?? null) === 'École de Santé';
     }
 
     protected function syncLignesClasse(Classe $classe, array $data): void

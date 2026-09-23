@@ -94,6 +94,7 @@ return [
         'classes' => 'Classes',
         'associate_classes' => 'Associer classes',
         'subjects' => 'Matières',
+        'filieres' => 'Filières',
         'official_programs' => 'Programmes officiels',
         'timetable' => 'Emploi du temps',
         'tests_evaluations' => 'Contrôles & Évaluations',

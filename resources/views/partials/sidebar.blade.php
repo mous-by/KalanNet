@@ -203,6 +203,9 @@
                 @if ($user->userHasPermission('matieres_apercu'))
                 <li><a href="{{ route('pedagogie.matieres') }}"><i class="bi bi-circle"></i>{{ __('messages.menu.subjects') }}</a></li>
                 @endif
+                @if ($user->userHasPermission('filieres_apercu'))
+                <li><a href="{{ route('pedagogie.filieres') }}"><i class="bi bi-circle"></i>{{ __('messages.menu.filieres') }}</a></li>
+                @endif
                 @if ($user->userHasAnyPermission(['programmes_apercu', 'programme_apercu', 'appercu_programm', 'programmes_pdf', 'voir_pdf_programme', 'programmes_creation', 'programme_création', 'programmes_modification', 'programme_modification', 'programmes_supprimer', 'programme_supprimer']) || $user->droit === 'SupAdmin')
                 <li><a href="{{ route('programmes.index') }}"><i class="bi bi-circle"></i>{{ __('messages.menu.official_programs') }}</a></li>
                 @endif

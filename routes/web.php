@@ -6,6 +6,7 @@ use App\Http\Controllers\BulletinController;
 use App\Http\Controllers\TimetableController;
 use App\Http\Controllers\ParentController;
 use App\Http\Controllers\MatiereController;
+use App\Http\Controllers\FiliereController;
 use App\Http\Controllers\InscriptionController;
 use App\Http\Controllers\PresenceController;
 use App\Http\Controllers\ThemeController;
@@ -225,6 +226,11 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/pedagogie/matieres', [MatiereController::class, 'store'])->name('pedagogie.matieres.store');
     Route::put('/pedagogie/matieres/{id}', [MatiereController::class, 'update'])->name('pedagogie.matieres.update');
     Route::delete('/pedagogie/matieres/{id}', [MatiereController::class, 'destroy'])->name('pedagogie.matieres.destroy');
+
+    Route::get('/pedagogie/filieres', [FiliereController::class, 'index'])->name('pedagogie.filieres');
+    Route::post('/pedagogie/filieres', [FiliereController::class, 'store'])->name('pedagogie.filieres.store');
+    Route::put('/pedagogie/filieres/{id}', [FiliereController::class, 'update'])->name('pedagogie.filieres.update');
+    Route::delete('/pedagogie/filieres/{id}', [FiliereController::class, 'destroy'])->name('pedagogie.filieres.destroy');
     Route::get('/pedagogie/inscriptions', [InscriptionController::class, 'index'])->name('inscriptions.index');
     Route::get('/pedagogie/inscriptions/create', [InscriptionController::class, 'create'])->name('inscriptions.create');
     Route::post('/pedagogie/inscriptions', [InscriptionController::class, 'store'])->name('inscriptions.store');

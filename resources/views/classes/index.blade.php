@@ -40,7 +40,7 @@
                         <tr>
                             <th>Nom de la classe</th>
                             <th>Classe officielle</th>
-                            <th>Ordre Enseignement</th>
+                            <th>Ordre / Filière</th>
                             <th>Effectif</th>
                             <th class="text-center dt-no-sorting">Action</th>
                         </tr>
@@ -50,7 +50,13 @@
                             <tr>
                                 <td class="fw-bold">{{ $classe->nom_classe }}</td>
                                 <td>{{ $classe->classeOfficielle->nom_classe_officielle ?? 'Non associée' }}</td>
-                                <td>{{ $classe->ordreEnseignement }}</td>
+                                <td>
+                                    @if($classe->id_filiere)
+                                        {{ $classe->filiere->nom_filiere ?? 'Filière supprimée' }} — {{ $classe->annee }}{{ $classe->annee == 1 ? 'ère' : 'ème' }} année
+                                    @else
+                                        {{ $classe->ordreEnseignement }}
+                                    @endif
+                                </td>
                                 <td><span class="badge bg-light text-primary border border-primary-subtle rounded-pill">{{ $classe->eleves_count }} élèves</span></td>
                                 <td class="text-center">
                                     <div class="dropdown">

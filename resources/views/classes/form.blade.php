@@ -100,17 +100,36 @@
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label" for="nom_classe">Nom de la classe <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="nom_classe" name="nom_classe" value="{{ old('nom_classe', $classe->nom_classe) }}" placeholder="Ex: 7eme année A" required>
+                        <input type="text" class="form-control" id="nom_classe" name="nom_classe" value="{{ old('nom_classe', $classe->nom_classe) }}" placeholder="{{ $estSante ? 'Ex: Infirmier 1ère année A' : 'Ex: 7eme année A' }}" required>
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label" for="ordre_enseignement">Ordre d'enseignement <span class="text-danger">*</span></label>
-                        <select class="form-select" id="ordre_enseignement" name="ordre_enseignement" required>
-                            <option value="">Choisir...</option>
-                            @foreach($ordres as $value => $label)
-                                <option value="{{ $value }}" @selected(old('ordre_enseignement', $classe->ordreEnseignement) === $value)>{{ $label }}</option>
-                            @endforeach
-                        </select>
-                    </div>
+                    @if($estSante)
+                        <div class="col-md-3">
+                            <label class="form-label" for="id_filiere">Filière <span class="text-danger">*</span></label>
+                            <select class="form-select" id="id_filiere" name="id_filiere" required>
+                                <option value="">Choisir...</option>
+                                @foreach($filieres as $filiere)
+                                    <option value="{{ $filiere->id_filiere }}" @selected((string) old('id_filiere', $classe->id_filiere) === (string) $filiere->id_filiere)>{{ $filiere->nom_filiere }}</option>
+                                @endforeach
+                            </select>
+                            @if($filieres->isEmpty())
+                                <small class="text-danger d-block mt-1">Aucune filière créée. <a href="{{ route('pedagogie.filieres') }}">En créer une</a>.</small>
+                            @endif
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="annee">Année <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="annee" name="annee" min="1" max="8" value="{{ old('annee', $classe->annee) }}" required>
+                        </div>
+                    @else
+                        <div class="col-md-6">
+                            <label class="form-label" for="ordre_enseignement">Ordre d'enseignement <span class="text-danger">*</span></label>
+                            <select class="form-select" id="ordre_enseignement" name="ordre_enseignement" required>
+                                <option value="">Choisir...</option>
+                                @foreach($ordres as $value => $label)
+                                    <option value="{{ $value }}" @selected(old('ordre_enseignement', $classe->ordreEnseignement) === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -121,7 +140,7 @@
             </div>
             <div class="card-body">
                 <div class="alert alert-info border-0 border-start border-info border-4 py-2" id="matiere-order-help">
-                    Choisissez l’ordre d’enseignement pour afficher automatiquement les matières correspondantes.
+                    {{ $estSante ? 'Toutes les matières disponibles sont proposées.' : 'Choisissez l’ordre d’enseignement pour afficher automatiquement les matières correspondantes.' }}
                 </div>
                 <div class="d-flex justify-content-center mb-3">
                     <button type="button" class="btn btn-primary px-4" data-bs-toggle="modal" data-bs-target="#matieresModal">
@@ -271,8 +290,8 @@
             }
 
             function filterMatiereCheckboxes() {
-                const selectedOrder = ordreSelect.value;
-                const expectedOrder = ordreMatiereMap[selectedOrder] || '';
+                const selectedOrder = ordreSelect ? ordreSelect.value : '';
+                const expectedOrder = ordreSelect ? (ordreMatiereMap[selectedOrder] || '') : '';
                 const search = matiereSearch.value.trim().toLowerCase();
                 let visibleCount = 0;
 
@@ -299,6 +318,11 @@
             }
 
             function filterMatieresByOrder() {
+                if (!ordreSelect) {
+                    filterMatiereCheckboxes();
+                    return;
+                }
+
                 const selectedOrder = ordreSelect.value;
                 const expectedOrder = ordreMatiereMap[selectedOrder] || '';
 
@@ -316,8 +340,13 @@
                     : 'Choisissez l’ordre d’enseignement pour afficher automatiquement les matières correspondantes.';
             }
 
-            ordreSelect.addEventListener('change', filterMatieresByOrder);
-            filterMatieresByOrder();
+            if (ordreSelect) {
+                ordreSelect.addEventListener('change', filterMatieresByOrder);
+                filterMatieresByOrder();
+            } else if (help) {
+                help.textContent = 'Toutes les matières disponibles sont proposées.';
+                filterMatiereCheckboxes();
+            }
 
             matiereSearch.addEventListener('input', filterMatiereCheckboxes);
 
