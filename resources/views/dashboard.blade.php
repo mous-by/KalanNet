@@ -89,7 +89,7 @@
                 <div>
                     <p class="text-muted text-uppercase small fw-bold mb-1">Diplômés</p>
                     <h3 class="fw-bold mb-0 text-success">{{ number_format($totalDiplomes) }}</h3>
-                    <small class="text-muted d-block mt-2">Admis DEF/BAC, sortis avec succès</small>
+                    <small class="text-muted d-block mt-2">Admis {{ $examensLabel }}, sortis avec succès</small>
                 </div>
                 <div class="widget-icon bg-success-soft text-success rounded-3 p-3">
                     <i class="bi bi-mortarboard fs-4"></i>
