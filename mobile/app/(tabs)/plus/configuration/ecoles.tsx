@@ -15,6 +15,7 @@ interface Ecole {
   nomEcole: string;
   typeEcole: string;
   statut: string;
+  id_pays: number | null;
   id_academie: number | null;
   id_cap: number | null;
   telephone: string | null;
@@ -31,12 +32,20 @@ interface Ecole {
 interface Academie {
   id_academie: number;
   nom_academie: string;
+  id_pays: number | null;
 }
 
 interface Cap {
   id_cap: number;
   nom_cap: string;
   id_academie: number;
+  id_pays: number | null;
+}
+
+interface Pays {
+  id: number;
+  nom: string;
+  code_iso: string;
 }
 
 interface Offre {
@@ -48,14 +57,19 @@ interface Offre {
   actif: boolean;
 }
 
-const TYPE_OPTIONS = [
+// Le Mali decoupe le fondamental/secondaire en 6 types distincts ; les autres
+// pays utilisent un decoupage plus simple (Primaire + Secondaire Generale
+// couvrant a elle seule tout le secondaire) -- voir ClasseController::
+// ordresDisponibles() cote backend pour la meme logique.
+const MALI_TYPE_OPTIONS = [
   'Complexe Scolaire',
   'Fondamentale I',
   'Fondamentale II',
   'Collège',
   'Secondaire Generale',
   'Secondaire Technique et Professionnel',
-].map((t) => ({ value: t, label: t }));
+];
+const NON_MALI_TYPE_OPTIONS = ['Complexe Scolaire', 'Primaire', 'Secondaire Generale', 'Secondaire Technique et Professionnel'];
 
 const STATUT_OPTIONS = [
   { value: 'public', label: 'Public' },
@@ -67,7 +81,11 @@ const OUI_NON_OPTIONS = [
   { value: '1', label: 'Oui' },
 ];
 
-const CAP_REQUIRED_TYPES = ['Fondamentale I', 'Fondamentale II', 'Collège', 'Complexe Scolaire'];
+// Le CAP n'existe qu'au Mali : obligatoire pour Fondamentale I/II/Collège, et
+// pour un Complexe Scolaire seulement s'il contient une fondamentale (meme
+// regle que ConfigurationController::validateEcole() cote backend).
+const CAP_ALWAYS_REQUIRED_TYPES = ['Fondamentale I', 'Fondamentale II', 'Collège'];
+const MALI_CODE_ISO = 'ML';
 
 export default function EcolesScreen() {
   const { user } = useAuth();
@@ -76,12 +94,14 @@ export default function EcolesScreen() {
   const { items: academies } = useAllPaginated<Academie>('/configuration/academies');
   const { items: caps } = useAllPaginated<Cap>('/configuration/caps');
   const { data: abonnementData } = useApiGet<{ all_offres: Offre[] }>('/abonnements');
+  const { data: paysListe } = useApiGet<Pays[]>('/pays');
 
   const [editing, setEditing] = useState<Ecole | null>(null);
   const [dialogVisible, setDialogVisible] = useState(false);
   const [nomEcole, setNomEcole] = useState('');
   const [typeEcole, setTypeEcole] = useState<string | null>(null);
   const [statut, setStatut] = useState('public');
+  const [idPays, setIdPays] = useState<number | null>(null);
   const [idAcademie, setIdAcademie] = useState<number | null>(null);
   const [idCap, setIdCap] = useState<number | null>(null);
   const [telephone, setTelephone] = useState('');
@@ -99,11 +119,14 @@ export default function EcolesScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
 
+  const maliPays = (paysListe ?? []).find((p) => p.code_iso === MALI_CODE_ISO) ?? null;
+
   function openDialog(item?: Ecole) {
     setEditing(item ?? null);
     setNomEcole(item?.nomEcole ?? '');
     setTypeEcole(item?.typeEcole ?? null);
     setStatut(item?.statut ?? 'public');
+    setIdPays(item?.id_pays ?? maliPays?.id ?? null);
     setIdAcademie(item?.id_academie ?? null);
     setIdCap(item?.id_cap ?? null);
     setTelephone(item?.telephone ?? '');
@@ -128,11 +151,19 @@ export default function EcolesScreen() {
     if (!result.canceled && result.assets[0]) setLogoUri(result.assets[0].uri);
   }
 
+  // Pas de pays choisi = Mali par defaut, meme regle que
+  // ConfigurationController::validateEcole() cote backend.
+  const selectedPays = (paysListe ?? []).find((p) => p.id === idPays) ?? null;
+  const estMali = !selectedPays || selectedPays.code_iso === MALI_CODE_ISO;
   const isComplexe = typeEcole === 'Complexe Scolaire';
-  const needsCap = typeEcole ? CAP_REQUIRED_TYPES.includes(typeEcole) : false;
+  const needsCap =
+    estMali && typeEcole
+      ? CAP_ALWAYS_REQUIRED_TYPES.includes(typeEcole) || (typeEcole === 'Complexe Scolaire' && nomFondamental.trim() !== '')
+      : false;
+  const typeOptions = (estMali ? MALI_TYPE_OPTIONS : NON_MALI_TYPE_OPTIONS).map((t) => ({ value: t, label: t }));
 
   async function handleSubmit() {
-    if (!nomEcole.trim() || !typeEcole || !statut || !idAcademie || (needsCap && !idCap)) {
+    if (!nomEcole.trim() || !typeEcole || !statut || (estMali && !idAcademie) || (needsCap && !idCap)) {
       setFormError('Veuillez remplir tous les champs obligatoires.');
       return;
     }
@@ -143,7 +174,8 @@ export default function EcolesScreen() {
       form.append('nomEcole', nomEcole.trim());
       form.append('typeEcole', typeEcole);
       form.append('statut', statut);
-      form.append('id_academie', String(idAcademie));
+      if (idPays) form.append('id_pays', String(idPays));
+      if (idAcademie) form.append('id_academie', String(idAcademie));
       if (idCap) form.append('id_cap', String(idCap));
       if (telephone.trim()) form.append('telephone', telephone.trim());
       if (email.trim()) form.append('email', email.trim());
@@ -186,10 +218,15 @@ export default function EcolesScreen() {
     }
   }
 
-  const academieOptions = academies.map((a) => ({ value: a.id_academie, label: a.nom_academie }));
+  // Le referentiel academie/CAP est propre a chaque pays (cf. Phase 5 backend)
+  // -- ne proposer que celles du pays choisi dans le formulaire.
+  const academieOptions = academies
+    .filter((a) => !idPays || a.id_pays === idPays)
+    .map((a) => ({ value: a.id_academie, label: a.nom_academie }));
   const capOptions = caps
-    .filter((c) => !idAcademie || c.id_academie === idAcademie)
+    .filter((c) => (!idAcademie || c.id_academie === idAcademie) && (!idPays || c.id_pays === idPays))
     .map((c) => ({ value: c.id_cap, label: c.nom_cap }));
+  const paysOptions = (paysListe ?? []).map((p) => ({ value: p.id, label: p.nom }));
   const offreOptions = (abonnementData?.all_offres ?? [])
     .filter((o) => o.actif)
     .map((o) => ({ value: o.id, label: `${o.nom} — ${Number(o.montant).toLocaleString('fr-FR')} ${o.devise}` }));
@@ -235,9 +272,33 @@ export default function EcolesScreen() {
           <Dialog.ScrollArea style={styles.dialogScroll}>
             <ScrollView contentContainerStyle={styles.dialogContent}>
               <TextInput mode="outlined" label={requiredLabel("Nom de l'école")} value={nomEcole} onChangeText={setNomEcole} style={styles.input} />
-              <SelectField label={requiredLabel('Type')} value={typeEcole} options={TYPE_OPTIONS} onChange={(v) => setTypeEcole(v as string)} />
+              <SelectField
+                label={requiredLabel('Pays')}
+                value={idPays}
+                options={paysOptions}
+                onChange={(v) => {
+                  setIdPays(v as number);
+                  setTypeEcole(null);
+                  setIdAcademie(null);
+                  setIdCap(null);
+                }}
+              />
+              <SelectField label={requiredLabel('Type')} value={typeEcole} options={typeOptions} onChange={(v) => setTypeEcole(v as string)} />
               <SelectField label={requiredLabel('Statut')} value={statut} options={STATUT_OPTIONS} onChange={(v) => setStatut(v as string)} />
-              <SelectField label={requiredLabel('Académie')} value={idAcademie} options={academieOptions} onChange={(v) => setIdAcademie(v as number)} />
+              <SelectField
+                label={estMali ? requiredLabel('Académie') : 'Académie (optionnel hors Mali)'}
+                value={idAcademie}
+                options={academieOptions}
+                onChange={(v) => {
+                  setIdAcademie(v as number);
+                  setIdCap(null);
+                }}
+              />
+              {!estMali ? (
+                <Text style={styles.helperText}>
+                  Aucune académie qui convient ? Créez-la d’abord depuis l’écran Académies, puis revenez ici la sélectionner.
+                </Text>
+              ) : null}
               {needsCap ? <SelectField label={requiredLabel('CAP')} value={idCap} options={capOptions} onChange={(v) => setIdCap(v as number)} /> : null}
               <TextInput mode="outlined" label="Téléphone (optionnel)" value={telephone} onChangeText={setTelephone} keyboardType="phone-pad" style={styles.input} />
               <TextInput mode="outlined" label="Email (optionnel)" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" style={styles.input} />
@@ -305,4 +366,5 @@ const styles = StyleSheet.create({
   dialogContent: { paddingHorizontal: 24, paddingBottom: 8 },
   input: { marginBottom: 8 },
   error: { color: '#d33', marginTop: 4 },
+  helperText: { opacity: 0.6, fontSize: 12, marginTop: -4, marginBottom: 8 },
 });

@@ -12,6 +12,7 @@ use App\Models\Ecole;
 use App\Models\Enseignant;
 use App\Models\Note;
 use App\Models\ParentModel;
+use App\Models\Pays;
 use App\Models\Permission;
 use App\Models\User;
 use App\Support\SchoolOrderAccess;
@@ -36,7 +37,7 @@ class ConfigurationController extends WebConfigurationController
         $idEcole = session('idEcole');
         $search = $request->get('search');
 
-        $ecoles = $this->ecoleScope(Ecole::with(['academieRef', 'capRef']), $user, $idEcole)
+        $ecoles = $this->ecoleScope(Ecole::with(['academieRef', 'capRef', 'pays']), $user, $idEcole)
             ->when($search, fn ($q) => $q->where(fn ($inner) => $inner
                 ->where('nomEcole', 'like', "%{$search}%")
                 ->orWhere('typeEcole', 'like', "%{$search}%")))
@@ -45,6 +46,19 @@ class ConfigurationController extends WebConfigurationController
             ->withQueryString();
 
         return response()->json($ecoles);
+    }
+
+    /**
+     * Liste des pays (referentiel), pour le selecteur "Pays" du formulaire
+     * ecole cote mobile -- academies/CAP sont deja disponibles via les
+     * endpoints /configuration/academies et /configuration/caps existants,
+     * seul ce referentiel manquait cote API.
+     */
+    public function pays(Request $request)
+    {
+        $this->authorizeAnyPermission($request->user(), ['ecoles_apercu']);
+
+        return response()->json(Pays::where('actif', true)->orderBy('nom')->get());
     }
 
     public function storeEcole(Request $request)
