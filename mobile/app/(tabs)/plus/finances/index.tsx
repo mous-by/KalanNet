@@ -3,6 +3,8 @@ import { StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 
 import PaginatedList from '@/components/PaginatedList';
+import { useAuth } from '@/context/AuthContext';
+import { formatMontant } from '@/lib/currency';
 import { usePaginatedApi } from '@/lib/useApi';
 import { Classe, Eleve } from '@/types/api';
 
@@ -17,6 +19,7 @@ interface Paiement {
 }
 
 export default function FinancesScreen() {
+  const { user } = useAuth();
   const list = usePaginatedApi<Paiement>('/finances/paiements', {}, 'paiements');
 
   return (
@@ -47,7 +50,7 @@ export default function FinancesScreen() {
             <Text style={styles.meta}>
               {item.classe?.nom_classe ?? '—'} · {item.date_paiement}
             </Text>
-            <Text style={styles.amount}>{Number(item.montant_paye).toLocaleString('fr-FR')} FCFA</Text>
+            <Text style={styles.amount}>{formatMontant(item.montant_paye, user)}</Text>
           </View>
         )}
       />

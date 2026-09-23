@@ -67,8 +67,8 @@ class CreerVersementTool extends AbstractKalanbotTool
         $banque = Banque::find($args['id_banque'] ?? null);
 
         return sprintf(
-            "💰 Je vais verser %s FCFA de la caisse vers le compte %s (motif : %s). Confirmez-vous ?",
-            number_format((float) ($args['montant_versement'] ?? 0), 0, ',', ' '),
+            "💰 Je vais verser %s de la caisse vers le compte %s (motif : %s). Confirmez-vous ?",
+            \App\Support\Devise::format((float) ($args['montant_versement'] ?? 0), $user),
             $banque?->nom_banque ?? 'inconnu',
             $args['motif_versement'] ?? ''
         );

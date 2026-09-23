@@ -65,7 +65,7 @@
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
                     <small class="text-muted text-uppercase fw-bold">Montant attendu État</small>
-                    <h4 class="fw-bold text-warning mb-0">{{ number_format($subventionRows->sum('reste'), 0, ',', ' ') }} FCFA</h4>
+                    <h4 class="fw-bold text-warning mb-0">@devise($subventionRows->sum('reste'))</h4>
                 </div>
             </div>
         </div>
@@ -104,8 +104,8 @@
                             <td>{{ $row->plan->classe?->nom_classe }}</td>
                             <td>{{ $row->echeance->libelle }}</td>
                             <td>{{ $row->echeance->date_limite?->format('d/m/Y') }}</td>
-                            <td class="text-end">{{ number_format($row->deja_paye, 0, ',', ' ') }} FCFA</td>
-                            <td class="text-end px-4 fw-bold text-warning">{{ number_format($row->reste, 0, ',', ' ') }} FCFA</td>
+                            <td class="text-end">@devise($row->deja_paye)</td>
+                            <td class="text-end px-4 fw-bold text-warning">@devise($row->reste)</td>
                         </tr>
                     @empty
                         <tr>

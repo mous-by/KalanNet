@@ -3,6 +3,7 @@ import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Button, Card, Chip, Divider, Text } from 'react-native-paper';
 
 import { useAuth } from '@/context/AuthContext';
+import { formatMontant } from '@/lib/currency';
 import { hasPermission } from '@/lib/permissions';
 import { useApiGet } from '@/lib/useApi';
 import { Eleve } from '@/types/api';
@@ -89,9 +90,9 @@ export default function EleveDetailScreen() {
         <Card style={styles.card}>
           <Card.Title title="Paiements" />
           <Card.Content>
-            <InfoRow label="Attendu" value={formatAmount(payment_summary.attendu)} />
-            <InfoRow label="Payé" value={formatAmount(payment_summary.paye)} />
-            <InfoRow label="Reste" value={formatAmount(payment_summary.reste)} />
+            <InfoRow label="Attendu" value={formatAmount(payment_summary.attendu, user)} />
+            <InfoRow label="Payé" value={formatAmount(payment_summary.paye, user)} />
+            <InfoRow label="Reste" value={formatAmount(payment_summary.reste, user)} />
           </Card.Content>
         </Card>
       ) : null}
@@ -103,7 +104,7 @@ export default function EleveDetailScreen() {
             {paiements_recents.map((paiement, index) => (
               <View key={paiement.id_paiement ?? index}>
                 {index > 0 ? <Divider style={styles.divider} /> : null}
-                <InfoRow label={paiement.reference ?? paiement.date_paiement ?? '—'} value={formatAmount(paiement.montant_paye)} />
+                <InfoRow label={paiement.reference ?? paiement.date_paiement ?? '—'} value={formatAmount(paiement.montant_paye, user)} />
               </View>
             ))}
           </Card.Content>
@@ -136,9 +137,9 @@ function InfoRow({ label, value }: { label: string; value: string | number | nul
   );
 }
 
-function formatAmount(value: number | undefined | null): string {
+function formatAmount(value: number | undefined | null, user: Parameters<typeof formatMontant>[1]): string {
   if (value == null) return '—';
-  return `${Number(value).toLocaleString('fr-FR')} FCFA`;
+  return formatMontant(value, user);
 }
 
 const styles = StyleSheet.create({

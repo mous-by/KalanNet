@@ -67,9 +67,9 @@ class ConfigurerFraisTool extends AbstractKalanbotTool
         $classe = !empty($args['classe_id']) ? Classe::find($args['classe_id']) : null;
 
         return sprintf(
-            "Je vais configurer le frais « %s » à %s FCFA%s. Confirmez-vous ?",
+            "Je vais configurer le frais « %s » à %s%s. Confirmez-vous ?",
             $args['type_frais'] ?? '',
-            number_format((float) ($args['montant'] ?? 0), 0, ',', ' '),
+            \App\Support\Devise::format((float) ($args['montant'] ?? 0), $user),
             $classe ? " pour la classe {$classe->nom_classe}" : ''
         );
     }

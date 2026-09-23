@@ -69,8 +69,8 @@ class ValiderRetraitTool extends AbstractKalanbotTool
             ->find($args['id_retrait'] ?? null);
 
         return sprintf(
-            "💸 Je vais valider le retrait de %s FCFA sur le compte %s. Confirmez-vous ?",
-            number_format((float) ($retrait?->montant_retrait ?? 0), 0, ',', ' '),
+            "💸 Je vais valider le retrait de %s sur le compte %s. Confirmez-vous ?",
+            \App\Support\Devise::format((float) ($retrait?->montant_retrait ?? 0), $user),
             $retrait?->banque?->nom_banque ?? 'inconnu'
         );
     }

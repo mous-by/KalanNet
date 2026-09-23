@@ -7,8 +7,10 @@ import OfflineBanner from '@/components/OfflineBanner';
 import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
+import { useAuth } from '@/context/AuthContext';
 import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
+import { formatMontant } from '@/lib/currency';
 import { removeQueueItem } from '@/lib/offlineQueue';
 import { useApiGet } from '@/lib/useApi';
 import { Enseignant } from '@/types/api';
@@ -32,6 +34,7 @@ interface SalaryData {
 }
 
 export default function SalairesScreen() {
+  const { user } = useAuth();
   const { isOnline, enqueueAction, queue } = useOffline();
   const queuedSalaires = queue.filter((item) => item.kind === 'salaire');
   const [mois, setMois] = useState<string | null>(null);
@@ -82,7 +85,7 @@ export default function SalairesScreen() {
       if (!isOnline) {
         await enqueueAction({
           kind: 'salaire',
-          label: `${payingFor.enseignant.nom_prenom_enseignant} · ${Number(montant).toLocaleString('fr-FR')} FCFA`,
+          label: `${payingFor.enseignant.nom_prenom_enseignant} · ${formatMontant(Number(montant), user)}`,
           endpoint: '/salaires/payer',
           method: 'post',
           payload,

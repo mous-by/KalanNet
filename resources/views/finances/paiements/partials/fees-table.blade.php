@@ -14,7 +14,7 @@
                 <td>{{ $item->type_frais }}</td>
                 @if($showClass)<td>{{ $item->classe?->nom_classe }}</td>@endif
                 <td>{{ $item->anneeScolaire?->annee }}</td>
-                <td class="text-end fw-bold">{{ number_format($item->montant, 0, ',', ' ') }} FCFA</td>
+                <td class="text-end fw-bold">@devise($item->montant)</td>
             </tr>
         @empty
             <tr>

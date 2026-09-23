@@ -76,8 +76,8 @@
             <div class="card theme-card shadow-sm h-100">
                 <div class="card-body p-3">
                     <small class="text-muted text-uppercase fw-bold">Paiement VCT estimé</small>
-                    <h4 class="fw-bold mb-0">{{ number_format($emargementSummary['vct_amount'], 0, ',', ' ') }}</h4>
-                    <span class="small text-muted">FCFA sur heures validées</span>
+                    <h4 class="fw-bold mb-0">{{ number_format($emargementSummary['vct_amount'], \App\Support\Devise::decimales(), ',', ' ') }}</h4>
+                    <span class="small text-muted">{{ \App\Support\Devise::symbole() }} sur heures validées</span>
                 </div>
             </div>
         </div>

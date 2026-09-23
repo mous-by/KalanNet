@@ -58,10 +58,10 @@ class CreerBanqueTool extends AbstractKalanbotTool
     public function confirmationMessage(array $args, User $user): string
     {
         return sprintf(
-            "Je vais créer le compte bancaire « %s » (n° %s) avec un solde initial de %s FCFA. Confirmez-vous ?",
+            "Je vais créer le compte bancaire « %s » (n° %s) avec un solde initial de %s. Confirmez-vous ?",
             $args['nom_banque'] ?? '',
             $args['numero_compte'] ?? '',
-            number_format((float) ($args['montant_initial'] ?? 0), 0, ',', ' ')
+            \App\Support\Devise::format((float) ($args['montant_initial'] ?? 0), $user)
         );
     }
 

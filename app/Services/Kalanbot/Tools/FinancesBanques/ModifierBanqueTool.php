@@ -64,9 +64,9 @@ class ModifierBanqueTool extends AbstractKalanbotTool
         $banque = Banque::find($args['id_banque'] ?? null);
 
         return sprintf(
-            "⚠️ Je vais modifier le compte %s : nouveau solde %s FCFA (remplacement direct, pas un mouvement). Confirmez-vous ?",
+            "⚠️ Je vais modifier le compte %s : nouveau solde %s (remplacement direct, pas un mouvement). Confirmez-vous ?",
             $banque?->nom_banque ?? 'inconnu',
-            number_format((float) ($args['solde'] ?? 0), 0, ',', ' ')
+            \App\Support\Devise::format((float) ($args['solde'] ?? 0), $user)
         );
     }
 

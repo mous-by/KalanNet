@@ -25,7 +25,7 @@
         <tr><th>Élève</th><td>{{ $paiement->eleve?->nom_eleve }} {{ $paiement->eleve?->prenom_eleve }}</td></tr>
         <tr><th>Classe</th><td>{{ $paiement->classe?->nom_classe }}</td></tr>
         <tr><th>Échéance</th><td>{{ $paiement->echeance?->libelle ?? $paiement->motif }}</td></tr>
-        <tr><th>Montant payé</th><td><strong>{{ number_format($paiement->montant_paye ?? $paiement->montant, 0, ',', ' ') }} FCFA</strong></td></tr>
+        <tr><th>Montant payé</th><td><strong>{{ \App\Support\Devise::format($paiement->montant_paye ?? $paiement->montant, $paiement->ecole ?? null) }}</strong></td></tr>
         <tr><th>Payeur</th><td>{{ $paiement->nom_payeur }} {{ $paiement->telephone ? ' - '.$paiement->telephone : '' }}</td></tr>
         <tr><th>Mode de règlement</th><td>{{ $paiement->mode_reglement }}</td></tr>
     </table>

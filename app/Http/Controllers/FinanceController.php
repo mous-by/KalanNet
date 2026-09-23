@@ -1075,15 +1075,15 @@ class FinanceController extends Controller
         }
 
         $message = 'Subvention État enregistrée : '
-            . number_format($result['allocated'], 0, ',', ' ')
-            . ' FCFA répartis sur '
+            . \App\Support\Devise::format($result['allocated'])
+            . ' répartis sur '
             . $result['count']
             . ' échéance(s). Référence : '
             . $result['reference']
             . '.';
 
         if ($result['remaining'] > 0) {
-            $message .= ' Reliquat non affecté : ' . number_format($result['remaining'], 0, ',', ' ') . ' FCFA.';
+            $message .= ' Reliquat non affecté : ' . \App\Support\Devise::format($result['remaining']) . '.';
         }
 
         return redirect()->route('finances.subventions-etat', $request->only(['annee_scolaire_id', 'classe_id']))
@@ -1734,8 +1734,8 @@ class FinanceController extends Controller
                 'type' => 'decaissement_validation',
                 'title' => 'Dépense à valider',
                 'message' => 'Une sortie de caisse de '
-                    . number_format((float) $decaissement->montant_decaissement, 0, ',', ' ')
-                    . ' FCFA attend votre validation.',
+                    . \App\Support\Devise::format((float) $decaissement->montant_decaissement)
+                    . ' attend votre validation.',
                 'link' => route('finances.depenses', [], false) . '#decaissement-' . $decaissement->id_decaissement,
                 'data' => [
                     'id_decaissement' => $decaissement->id_decaissement,

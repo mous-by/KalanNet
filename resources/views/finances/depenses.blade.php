@@ -35,7 +35,7 @@
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-body">
                         <small class="text-muted text-uppercase fw-bold">Solde actuel</small>
-                        <h4 class="fw-bold text-primary mb-0">{{ number_format($caisse->montant_net, 0, ',', ' ') }} FCFA</h4>
+                        <h4 class="fw-bold text-primary mb-0">@devise($caisse->montant_net)</h4>
                     </div>
                 </div>
             </div>
@@ -84,7 +84,7 @@
                                 <td class="fw-semibold py-3">{{ $depense->motif_decaissement }}</td>
                                 <td>{{ $depense->utilisateur?->nomPrenom ?? 'Utilisateur' }}</td>
                                 <td class="text-end fw-bold {{ $depense->valide ? 'text-danger' : 'text-warning' }}">
-                                    {{ $depense->valide ? '-' : '' }} {{ number_format($depense->montant_decaissement, 0, ',', ' ') }} FCFA
+                                    {{ $depense->valide ? '-' : '' }} @devise($depense->montant_decaissement)
                                 </td>
                                 <td>
                                     <span class="badge bg-{{ $depense->valide ? 'success' : 'warning' }} rounded-pill px-3">
@@ -140,7 +140,7 @@
                             <div class="row g-3">
                                 <div class="col-md-4">
                                     <label class="form-label">Caisse référence</label>
-                                    <input type="text" class="form-control" value="{{ $caisse->reference }} ({{ number_format($caisse->montant_net, 0, ',', ' ') }} FCFA)" disabled>
+                                    <input type="text" class="form-control" value="{{ $caisse->reference }} ({{ \App\Support\Devise::format($caisse->montant_net) }})" disabled>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">Année scolaire <span class="text-danger">*</span></label>

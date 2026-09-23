@@ -37,7 +37,7 @@
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
                             <h6 class="text-muted text-uppercase fw-bold small mb-3">Total Recettes</h6>
-                            <h2 class="fw-bold mb-0 text-success">{{ number_format($totalRecettes, 0, ',', ' ') }} <small class="fs-6">FCFA</small></h2>
+                            <h2 class="fw-bold mb-0 text-success">{{ number_format($totalRecettes, \App\Support\Devise::decimales(), ',', ' ') }} <small class="fs-6">{{ \App\Support\Devise::symbole() }}</small></h2>
                         </div>
                         <div class="widget-icon theme-icon-box rounded-3">
                             <i class="bi bi-graph-up-arrow fs-4"></i>
@@ -52,7 +52,7 @@
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
                             <h6 class="text-muted text-uppercase fw-bold small mb-3">Total Dépenses</h6>
-                            <h2 class="fw-bold mb-0 text-danger">{{ number_format($totalDepenses, 0, ',', ' ') }} <small class="fs-6">FCFA</small></h2>
+                            <h2 class="fw-bold mb-0 text-danger">{{ number_format($totalDepenses, \App\Support\Devise::decimales(), ',', ' ') }} <small class="fs-6">{{ \App\Support\Devise::symbole() }}</small></h2>
                         </div>
                         <div class="widget-icon theme-icon-box rounded-3">
                             <i class="bi bi-graph-down-arrow fs-4"></i>
@@ -67,7 +67,7 @@
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
                             <h6 class="text-muted text-uppercase fw-bold small mb-3">Solde en Caisse</h6>
-                            <h2 class="fw-bold mb-0 text-primary">{{ number_format($caisse ? $caisse->montant_net : 0, 0, ',', ' ') }} <small class="fs-6">FCFA</small></h2>
+                            <h2 class="fw-bold mb-0 text-primary">{{ number_format($caisse ? $caisse->montant_net : 0, \App\Support\Devise::decimales(), ',', ' ') }} <small class="fs-6">{{ \App\Support\Devise::symbole() }}</small></h2>
                         </div>
                         <div class="widget-icon theme-icon-box rounded-3">
                             <i class="bi bi-safe2 fs-4"></i>

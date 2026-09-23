@@ -31,7 +31,7 @@
                 <tr>
                     <td class="px-4 fw-bold">{{ $banque->numero_compte }}</td>
                     <td>{{ $banque->nom_banque }}</td>
-                    <td class="text-end text-success fw-bold">{{ number_format($banque->solde, 0, ',', ' ') }} FCFA</td>
+                    <td class="text-end text-success fw-bold">@devise($banque->solde)</td>
                     <td class="text-end px-4">
                         @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('banques_modification'))
                             <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#editBanque{{ $banque->id_banques }}">Modifier</button>

@@ -1,10 +1,17 @@
 export type Droit = 'SupAdmin' | 'DAE' | 'DCAP' | 'Admin' | 'Gestionnaire' | 'enseignant' | 'parent';
 
+export interface Devise {
+  code: string;
+  symbole: string;
+  decimales: number;
+}
+
 export interface Ecole {
   id: number;
   nom: string;
   type: string;
   logo: string | null;
+  devise?: Devise;
 }
 
 export interface User {

@@ -39,7 +39,7 @@ class AuthController extends Controller
         $phoneIdentifier = MaliPhone::normalize($identifier);
 
         $users = User::with(['ecole' => function ($q) {
-            $q->withoutGlobalScopes();
+            $q->withoutGlobalScopes()->with('pays');
         }])
             ->where(function ($query) use ($identifier, $phoneIdentifier) {
                 $query->where('email', $identifier)
@@ -118,7 +118,7 @@ class AuthController extends Controller
     public function me(Request $request)
     {
         $user = $request->user();
-        $user->loadMissing(['ecole' => fn ($q) => $q->withoutGlobalScopes()]);
+        $user->loadMissing(['ecole' => fn ($q) => $q->withoutGlobalScopes()->with('pays')]);
 
         $ecoleId = $user->idEcole;
 
@@ -221,7 +221,7 @@ class AuthController extends Controller
         $user->last_activity = now();
         $user->save();
 
-        $user->loadMissing(['ecole' => fn ($q) => $q->withoutGlobalScopes(), 'enseignant', 'parent']);
+        $user->loadMissing(['ecole' => fn ($q) => $q->withoutGlobalScopes()->with('pays'), 'enseignant', 'parent']);
         $ecoleId = $user->idEcole ?: $user->enseignant?->id_ecole ?: $user->parent?->idEcole;
 
         if ($ecoleId && !$user->relationLoaded('ecole')) {

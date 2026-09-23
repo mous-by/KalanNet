@@ -74,9 +74,9 @@ class PayerSalaireTool extends AbstractKalanbotTool
         $sourceLabel = ($args['source'] ?? '') === 'presence' ? 'cahier de présence' : 'émargements';
 
         return sprintf(
-            "💰 Je vais enregistrer un versement de %s FCFA pour %s, salaire de %s/%s (source : %s), débité de la "
+            "💰 Je vais enregistrer un versement de %s pour %s, salaire de %s/%s (source : %s), débité de la "
             . "caisse active de l'école. Confirmez-vous ?",
-            number_format((float) ($args['montant_verse'] ?? 0), 0, ',', ' '),
+            \App\Support\Devise::format((float) ($args['montant_verse'] ?? 0), $user),
             $enseignant?->nom_prenom_enseignant ?? 'enseignant inconnu',
             $args['mois'] ?? '?',
             $args['annee'] ?? '?',
