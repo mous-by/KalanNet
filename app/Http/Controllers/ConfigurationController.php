@@ -75,7 +75,7 @@ class ConfigurationController extends Controller
         $idEcole = session('idEcole');
         $search = $request->get('search');
 
-        $ecoles = $this->ecoleScope(Ecole::with(['academieRef', 'capRef']), $user, $idEcole)
+        $ecoles = $this->ecoleScope(Ecole::with(['academieRef', 'capRef', 'pays']), $user, $idEcole)
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($inner) use ($search) {
                     $inner->where('nomEcole', 'like', "%{$search}%")
