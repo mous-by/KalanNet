@@ -13,6 +13,7 @@ use App\Support\SchoolOrderAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class ClasseController extends Controller
 {
@@ -71,11 +72,18 @@ class ClasseController extends Controller
             ->orderBy('nom_classe')
             ->get();
 
-        $classesOfficielles = ClasseOfficielle::orderBy('ordre_enseignement')
+        // Scope par le pays de L'ECOLE SELECTIONNEE (pas forcement celle de la
+        // session) : ce sont ses propres classes qu'on associe, donc son
+        // propre referentiel de classes officielles -- jamais celui d'un
+        // autre pays.
+        $classesOfficielles = ClasseOfficielle::where('id_pays', \App\Support\Devise::resolvePays($idEcole)->id)
+            ->orderBy('ordre_enseignement')
             ->orderBy('nom_classe_officielle')
             ->get();
 
-        return view('classes.associations', compact('ecoles', 'idEcole', 'classes', 'classesOfficielles'));
+        $ordresLabels = ExamenNational::ordresLabels($idEcole);
+
+        return view('classes.associations', compact('ecoles', 'idEcole', 'classes', 'classesOfficielles', 'ordresLabels'));
     }
 
     public function updateAssociations(Request $request)
@@ -86,11 +94,12 @@ class ClasseController extends Controller
         }
 
         $idEcole = $request->integer('id_ecole') ?: session('idEcole') ?: $user->idEcole;
+        $paysId = \App\Support\Devise::resolvePays($idEcole)->id;
 
         $data = $request->validate([
             'id_ecole' => 'nullable|integer|exists:ecole,idEcole',
             'associations' => 'required|array',
-            'associations.*' => 'nullable|integer|exists:classes_officielles,id_classe_officielle',
+            'associations.*' => ['nullable', 'integer', Rule::exists('classes_officielles', 'id_classe_officielle')->where('id_pays', $paysId)],
         ]);
 
         DB::transaction(function () use ($data, $idEcole) {

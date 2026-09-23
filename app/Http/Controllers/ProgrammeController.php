@@ -9,6 +9,7 @@ use App\Models\Ecole;
 use App\Models\ProgrammeClasse;
 use App\Models\ProgrammeLecon;
 use App\Models\ProgrammeOfficiel;
+use App\Support\ExamenNational;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -29,18 +30,22 @@ class ProgrammeController extends Controller
         $canCreateProgramme = $this->canCreateProgramme($user);
         $canUpdateProgramme = $this->canUpdateProgramme($user);
         $canDeleteProgramme = $this->canDeleteProgramme($user);
+        $ordresLabels = ExamenNational::ordresLabels(session('idEcole') ?: $user->idEcole);
 
-        return view('programmes.index', compact('classesOfficielles', 'programmes', 'idClasseOfficielle', 'canDownloadProgrammePdf', 'canCreateProgramme', 'canUpdateProgramme', 'canDeleteProgramme'));
+        return view('programmes.index', compact('classesOfficielles', 'programmes', 'idClasseOfficielle', 'canDownloadProgrammePdf', 'canCreateProgramme', 'canUpdateProgramme', 'canDeleteProgramme', 'ordresLabels'));
     }
 
     public function create()
     {
         $this->authorizeProgrammesCreation();
+        $idEcole = session('idEcole') ?: Auth::user()->idEcole;
         return view('programmes.form', [
             'programme' => new ProgrammeOfficiel(),
             'programmeClasses' => collect(),
-            'classesOfficielles' => ClasseOfficielle::orderBy('ordre_enseignement')->orderBy('nom_classe_officielle')->get(),
+            'classesOfficielles' => ClasseOfficielle::where('id_pays', \App\Support\Devise::resolvePays($idEcole)->id)
+                ->orderBy('ordre_enseignement')->orderBy('nom_classe_officielle')->get(),
             'matieres' => Matiere::with('ordres')->orderBy('nom_matiere')->get(),
+            'ordresLabels' => ExamenNational::ordresLabels($idEcole),
             'mode' => 'create',
         ]);
     }
@@ -67,12 +72,15 @@ class ProgrammeController extends Controller
     {
         $this->authorizeProgrammesUpdate();
         $programme = ProgrammeOfficiel::with(['classes.matiere', 'classes.lecons', 'classes.classeOfficielle'])->findOrFail($id);
+        $idEcole = session('idEcole') ?: Auth::user()->idEcole;
 
         return view('programmes.form', [
             'programme' => $programme,
             'programmeClasses' => $programme->classes,
-            'classesOfficielles' => ClasseOfficielle::orderBy('ordre_enseignement')->orderBy('nom_classe_officielle')->get(),
+            'classesOfficielles' => ClasseOfficielle::where('id_pays', \App\Support\Devise::resolvePays($idEcole)->id)
+                ->orderBy('ordre_enseignement')->orderBy('nom_classe_officielle')->get(),
             'matieres' => Matiere::with('ordres')->orderBy('nom_matiere')->get(),
+            'ordresLabels' => ExamenNational::ordresLabels($idEcole),
             'mode' => 'edit',
         ]);
     }
@@ -139,8 +147,11 @@ class ProgrammeController extends Controller
 
     protected function validateProgramme(Request $request): array
     {
+        $idEcole = session('idEcole') ?: Auth::user()->idEcole;
+        $paysId = \App\Support\Devise::resolvePays($idEcole)->id;
+
         return $request->validate([
-            'id_classe_officielle' => 'required|integer|exists:classes_officielles,id_classe_officielle',
+            'id_classe_officielle' => ['required', 'integer', \Illuminate\Validation\Rule::exists('classes_officielles', 'id_classe_officielle')->where('id_pays', $paysId)],
             'matieres' => 'required|array|min:1',
             'matieres.*.id_matiere' => 'required|integer|exists:matiere,id_matiere',
             'matieres.*.lecons' => 'required|array|min:1',
@@ -257,31 +268,34 @@ class ProgrammeController extends Controller
     protected function programmesData(?int $idClasseOfficielle = null): array
     {
         $user = Auth::user();
+        $idEcole = session('idEcole') ?: $user->idEcole;
         $allowedClasses = $this->allowedClasses();
         $allowedClasseIds = $allowedClasses->pluck('id_classe')->all();
         $allowedClasseOfficielleIds = $allowedClasses->pluck('id_classe_officielle')->filter()->unique()->values()->all();
 
+        // classes_officielles/programmes_officiels sont partages par pays, pas
+        // globalement -- meme le SupAdmin reste scope au pays de l'ecole
+        // active en session (comme l'ecran configuration/pays), pour ne
+        // jamais melanger le programme malien avec celui d'un autre pays.
         $visibleClasseOfficielleIds = $user->droit === 'SupAdmin'
-            ? ClasseOfficielle::query()->pluck('id_classe_officielle')->all()
+            ? ClasseOfficielle::where('id_pays', \App\Support\Devise::resolvePays($idEcole)->id)->pluck('id_classe_officielle')->all()
             : $allowedClasseOfficielleIds;
 
-        if ($idClasseOfficielle && $user->droit !== 'SupAdmin' && !in_array($idClasseOfficielle, $allowedClasseOfficielleIds, true)) {
+        if ($idClasseOfficielle && !in_array($idClasseOfficielle, $visibleClasseOfficielleIds, true)) {
             abort(403);
         }
 
         $programmeQuery = ProgrammeClasse::with(['programme', 'classeOfficielle', 'matiere', 'lecons']);
 
-        if ($user->droit !== 'SupAdmin') {
-            $programmeQuery->where(function ($query) use ($allowedClasseIds, $allowedClasseOfficielleIds) {
-                $query->whereIn('id_classe', $allowedClasseIds);
+        $programmeQuery->where(function ($query) use ($allowedClasseIds, $visibleClasseOfficielleIds) {
+            $query->whereIn('id_classe', $allowedClasseIds);
 
-                if (!empty($allowedClasseOfficielleIds)) {
-                    $query->orWhereIn('id_classe', $allowedClasseOfficielleIds);
-                }
+            if (!empty($visibleClasseOfficielleIds)) {
+                $query->orWhereIn('id_classe', $visibleClasseOfficielleIds);
+            }
 
-                $query->orWhereNull('id_classe');
-            });
-        }
+            $query->orWhereNull('id_classe');
+        });
 
         $programmeRows = $programmeQuery
             ->orderBy('id_classe')

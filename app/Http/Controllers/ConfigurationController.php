@@ -1719,8 +1719,12 @@ class ConfigurationController extends Controller
         $user = Auth::user();
         $this->authorizeAnyPermission($user, ['classes_officielles_apercu']);
 
+        $idEcole = session('idEcole') ?: $user->idEcole;
+        $paysId = $this->paysIdPourEcole($idEcole);
+
         $search = $request->get('search');
         $classesOfficielles = ClasseOfficielle::query()
+            ->where('id_pays', $paysId)
             ->withCount('classes')
             ->when($search, function ($query) use ($search) {
                 $query->where('nom_classe_officielle', 'like', "%{$search}%")
@@ -1731,7 +1735,7 @@ class ConfigurationController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        $ordres = $this->ordresClassesOfficielles();
+        $ordres = $this->ordresClassesOfficielles($idEcole);
 
         return view('configuration.classes-officielles', compact('classesOfficielles', 'ordres'));
     }
@@ -1741,7 +1745,9 @@ class ConfigurationController extends Controller
         $user = Auth::user();
         $this->authorizeAnyPermission($user, ['classes_officielles_apercu']);
 
-        $data = $this->validateClasseOfficielle($request);
+        $idEcole = session('idEcole') ?: $user->idEcole;
+        $data = $this->validateClasseOfficielle($request, $idEcole);
+        $data['id_pays'] = $this->paysIdPourEcole($idEcole);
 
         ClasseOfficielle::create($data);
 
@@ -1753,8 +1759,9 @@ class ConfigurationController extends Controller
         $user = Auth::user();
         $this->authorizeAnyPermission($user, ['classes_officielles_apercu']);
 
-        $classeOfficielle = ClasseOfficielle::findOrFail($id);
-        $classeOfficielle->update($this->validateClasseOfficielle($request));
+        $idEcole = session('idEcole') ?: $user->idEcole;
+        $classeOfficielle = ClasseOfficielle::where('id_pays', $this->paysIdPourEcole($idEcole))->findOrFail($id);
+        $classeOfficielle->update($this->validateClasseOfficielle($request, $idEcole));
 
         return redirect()->route('configuration.classes-officielles')->with('success', 'Classe officielle modifiée avec succès.');
     }
@@ -1764,7 +1771,9 @@ class ConfigurationController extends Controller
         $user = Auth::user();
         $this->authorizeAnyPermission($user, ['classes_officielles_apercu']);
 
-        $classeOfficielle = ClasseOfficielle::withCount('classes')->findOrFail($id);
+        $idEcole = session('idEcole') ?: $user->idEcole;
+        $classeOfficielle = ClasseOfficielle::where('id_pays', $this->paysIdPourEcole($idEcole))
+            ->withCount('classes')->findOrFail($id);
         if ($classeOfficielle->classes_count > 0) {
             return redirect()->route('configuration.classes-officielles')
                 ->with('error', 'Impossible de supprimer cette classe officielle : elle est utilisée par une classe.');
@@ -1773,6 +1782,19 @@ class ConfigurationController extends Controller
         $classeOfficielle->delete();
 
         return redirect()->route('configuration.classes-officielles')->with('success', 'Classe officielle supprimée avec succès.');
+    }
+
+    /**
+     * classes_officielles/programmes_officiels sont partages entre toutes les
+     * ecoles d'un MEME pays (le "programme officiel" y est reellement
+     * national), mais pas au-dela -- une ecole guineenne ne doit jamais voir
+     * ni pouvoir modifier le referentiel malien, et inversement.
+     */
+    protected function paysIdPourEcole(?int $idEcole): int
+    {
+        $paysId = $idEcole ? Ecole::withoutGlobalScopes()->find($idEcole)?->id_pays : null;
+
+        return $paysId ?: Pays::where('code_iso', 'ML')->value('id');
     }
 
     public function storeTypeNote(Request $request)
@@ -1822,22 +1844,22 @@ class ConfigurationController extends Controller
         return redirect()->route('configuration.types-notes')->with('success', 'Type de note supprimé avec succès.');
     }
 
-    protected function validateClasseOfficielle(Request $request): array
+    protected function validateClasseOfficielle(Request $request, ?int $idEcole = null): array
     {
         return $request->validate([
             'nom_classe_officielle' => 'required|string|max:255',
-            'ordre_enseignement' => ['required', 'string', Rule::in(array_keys($this->ordresClassesOfficielles()))],
+            'ordre_enseignement' => ['required', 'string', Rule::in(array_keys($this->ordresClassesOfficielles($idEcole)))],
         ]);
     }
 
-    protected function ordresClassesOfficielles(): array
+    /**
+     * Cles fixes (les 4 slugs deja partages avec Classe.ordreEnseignement,
+     * cf. ExamenNational/SchoolOrderAccess) -- seuls les libelles affiches
+     * s'adaptent au pays de l'ecole (Mali vs "Primaire"/"Secondaire ...").
+     */
+    protected function ordresClassesOfficielles(?int $idEcole = null): array
     {
-        return [
-            'Fondamentale I' => 'Fondamentale I',
-            'Fondamentale II' => 'Fondamentale II',
-            'Secondaire Generale' => 'Secondaire Général',
-            'Secondaire Technique et Professionnel' => 'Secondaire Technique et Professionnel',
-        ];
+        return ExamenNational::ordresLabels($idEcole);
     }
 
     public function statusControles(Request $request)

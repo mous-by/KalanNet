@@ -50,7 +50,10 @@ class EmargementController extends WebEmargementController
             'matieres' => $this->matieresForUser($user, $idEcole)->orderBy('nom_matiere')->get(),
             'trimestres' => Trimestre::orderBy('id_trimestre')->get(),
             'annees' => AnneeScolaire::orderByDesc('id_anneeScolaire')->get(),
-            'lecons' => ProgrammeLecon::orderBy('numero')->orderBy('titre')->get(),
+            'lecons' => ProgrammeLecon::whereHas(
+                'programmeClasse.classeOfficielle',
+                fn ($q) => $q->where('id_pays', \App\Support\Devise::resolvePays($idEcole)->id)
+            )->orderBy('numero')->orderBy('titre')->get(),
             'formData' => $this->emargementFormData($user, $idEcole),
             'permissions' => $this->emargementPermissions($user),
             'summary' => $emargementSummary,

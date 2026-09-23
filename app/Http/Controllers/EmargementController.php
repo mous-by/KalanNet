@@ -70,7 +70,13 @@ class EmargementController extends Controller
             'matieres' => $this->matieresForUser($user, $idEcole)->orderBy('nom_matiere')->get(),
             'trimestres' => Trimestre::orderBy('id_trimestre')->get(),
             'annees' => AnneeScolaire::orderByDesc('id_anneeScolaire')->get(),
-            'lecons' => ProgrammeLecon::orderBy('numero')->orderBy('titre')->get(),
+            // Les lecons du programme officiel sont partagees par pays, pas
+            // globalement -- un enseignant ne doit voir que celles du pays de
+            // son ecole (jamais le programme malien depuis une ecole guineenne).
+            'lecons' => ProgrammeLecon::whereHas(
+                'programmeClasse.classeOfficielle',
+                fn ($q) => $q->where('id_pays', \App\Support\Devise::resolvePays($idEcole)->id)
+            )->orderBy('numero')->orderBy('titre')->get(),
             'emargementFormData' => $this->emargementFormData($user, $idEcole),
             'emargementPermissions' => $this->emargementPermissions($user),
             'emargementSummary' => $emargementSummary,
