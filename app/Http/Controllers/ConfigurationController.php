@@ -155,17 +155,16 @@ class ConfigurationController extends Controller
      * base au Mali, pour chaque pays ou KalanNet s'etend). Le SupAdmin garde
      * un acces a tous les pays pour supervision/correction.
      */
-    public function paysConfig(Request $request)
+    public function paysConfig()
     {
         $user = Auth::user();
-        if (!in_array($user->droit, ['SupAdmin', 'Admin'], true)) {
+        // Reserve a l'Admin : SupAdmin (base au Mali) n'a pas plus de raison
+        // de configurer le systeme scolaire d'un pays etranger qu'un Admin
+        // malien n'en aurait de configurer celui de la Guinee.
+        if ($user->droit !== 'Admin') {
             abort(403);
         }
 
-        // SupAdmin n'a pas de selecteur pour choisir un pays au hasard : il
-        // ne connait pas mieux le systeme scolaire d'un pays etranger qu'un
-        // Admin malien ne connait celui de la Guinee. Meme resolution pour
-        // les deux droits, scopee a l'ecole active en session.
         $idEcole = session('idEcole') ?: $user->idEcole;
         $paysId = $idEcole ? Ecole::withoutGlobalScopes()->find($idEcole)?->id_pays : null;
         if (!$paysId) {
@@ -180,7 +179,7 @@ class ConfigurationController extends Controller
     public function updatePaysConfig(Request $request, int $id)
     {
         $user = Auth::user();
-        if (!in_array($user->droit, ['SupAdmin', 'Admin'], true)) {
+        if ($user->droit !== 'Admin') {
             abort(403);
         }
 

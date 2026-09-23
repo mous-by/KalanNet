@@ -5,7 +5,10 @@
     $showAssign = in_array($connectedUser->droit, ['SupAdmin', 'Admin'], true)
                   || $connectedUser->userHasAnyPermission(['permissions_assigner', 'permission_assigner', 'dae_permission', 'dcap_permission']);
     $showEcoles    = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('ecoles_apercu');
-    $showPays      = in_array($connectedUser->droit, ['SupAdmin', 'Admin'], true);
+    // Reserve a l'Admin : c'est lui qui connait le systeme scolaire de son
+    // propre pays, pas le SupAdmin (base au Mali) pour chaque pays ou
+    // KalanNet s'etend -- meme principe que le libre-service academie/CAP.
+    $showPays      = $connectedUser->droit === 'Admin';
     $showAcademies = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('academies_apercu');
     $showCaps      = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('dcap_apercu');
     $showAnnees    = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('annees_scolaires_apercu');
