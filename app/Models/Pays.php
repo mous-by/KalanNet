@@ -18,6 +18,8 @@ class Pays extends Model
         'devise_symbole',
         'devise_decimales',
         'actif',
+        'niveau_examen_primaire',
+        'nom_examen_primaire',
         'niveau_examen_intermediaire',
         'nom_examen_intermediaire',
         'niveau_examen_final',
@@ -28,6 +30,7 @@ class Pays extends Model
         'telephone_longueur' => 'integer',
         'devise_decimales' => 'integer',
         'actif' => 'boolean',
+        'niveau_examen_primaire' => 'integer',
         'niveau_examen_intermediaire' => 'integer',
         'niveau_examen_final' => 'integer',
     ];

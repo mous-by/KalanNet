@@ -31,26 +31,27 @@
                         configuration centrale qui ne peut pas deviner le système de chaque pays.
                     </div>
 
-                    @if($paysListe->isNotEmpty())
-                        <form method="GET" action="{{ route('configuration.pays') }}" class="row g-2 mb-4" data-auto-filter="true">
-                            <div class="col-md-5">
-                                <label class="form-label small fw-bold text-uppercase">Pays (SupAdmin)</label>
-                                <select name="id_pays" class="form-select">
-                                    @foreach($paysListe as $unPays)
-                                        <option value="{{ $unPays->id }}" @selected($unPays->id === $pays->id)>{{ $unPays->nom }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        </form>
-                    @else
-                        <p class="text-muted mb-4">Pays de votre école : <strong>{{ $pays->nom }}</strong></p>
-                    @endif
+                    <p class="text-muted mb-4">Pays de votre école : <strong>{{ $pays->nom }}</strong></p>
 
                     <form method="POST" action="{{ route('configuration.pays.update', $pays->id) }}" class="row g-3">
                         @csrf
                         @method('PUT')
 
                         <div class="col-12">
+                            <h6 class="fw-bold text-uppercase small text-muted">Examen de fin de primaire (ex : CEPE, absent au Mali)</h6>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Classe (numéro)</label>
+                            <input type="number" name="niveau_examen_primaire" class="form-control" min="1" max="20"
+                                   value="{{ old('niveau_examen_primaire', $pays->niveau_examen_primaire) }}" placeholder="Ex : 6">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Nom de l'examen</label>
+                            <input type="text" name="nom_examen_primaire" class="form-control" maxlength="30"
+                                   value="{{ old('nom_examen_primaire', $pays->nom_examen_primaire) }}" placeholder="Ex : CEPE">
+                        </div>
+
+                        <div class="col-12 mt-4">
                             <h6 class="fw-bold text-uppercase small text-muted">Examen intermédiaire (ex : DEF au Mali)</h6>
                         </div>
                         <div class="col-md-3">
@@ -79,7 +80,7 @@
                         </div>
 
                         <div class="col-12">
-                            <div class="form-text">Laissez les deux champs d'un examen vides s'il n'y a pas d'examen national à ce niveau — les écoles concernées basculeront alors sur une décision de passage par moyenne.</div>
+                            <div class="form-text">Laissez les deux champs d'un examen vides s'il n'existe pas à ce niveau dans votre pays (ex : le Mali n'a pas d'examen de fin de primaire) — les écoles concernées basculeront alors sur une décision de passage par moyenne.</div>
                         </div>
 
                         <div class="col-12 mt-3">

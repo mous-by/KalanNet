@@ -162,26 +162,19 @@ class ConfigurationController extends Controller
             abort(403);
         }
 
-        if ($user->droit === 'SupAdmin') {
-            $paysListe = Pays::orderBy('nom')->get();
-            $paysId = $request->integer('id_pays') ?: null;
-            if (!$paysId) {
-                $idEcole = session('idEcole') ?: $user->idEcole;
-                $paysId = $idEcole ? Ecole::withoutGlobalScopes()->find($idEcole)?->id_pays : null;
-            }
-            $paysId = $paysId ?: Pays::where('code_iso', 'ML')->value('id');
-        } else {
-            $paysListe = collect();
-            $idEcole = session('idEcole') ?: $user->idEcole;
-            $paysId = $idEcole ? Ecole::withoutGlobalScopes()->find($idEcole)?->id_pays : null;
-            if (!$paysId) {
-                abort(403, "Votre école n'est rattachée à aucun pays pour l'instant.");
-            }
+        // SupAdmin n'a pas de selecteur pour choisir un pays au hasard : il
+        // ne connait pas mieux le systeme scolaire d'un pays etranger qu'un
+        // Admin malien ne connait celui de la Guinee. Meme resolution pour
+        // les deux droits, scopee a l'ecole active en session.
+        $idEcole = session('idEcole') ?: $user->idEcole;
+        $paysId = $idEcole ? Ecole::withoutGlobalScopes()->find($idEcole)?->id_pays : null;
+        if (!$paysId) {
+            abort(403, "Votre école n'est rattachée à aucun pays pour l'instant.");
         }
 
         $pays = Pays::findOrFail($paysId);
 
-        return view('configuration.pays', compact('pays', 'paysListe'));
+        return view('configuration.pays', compact('pays'));
     }
 
     public function updatePaysConfig(Request $request, int $id)
@@ -193,15 +186,15 @@ class ConfigurationController extends Controller
 
         $pays = Pays::findOrFail($id);
 
-        if ($user->droit !== 'SupAdmin') {
-            $idEcole = session('idEcole') ?: $user->idEcole;
-            $ecolePaysId = $idEcole ? Ecole::withoutGlobalScopes()->find($idEcole)?->id_pays : null;
-            if ($ecolePaysId !== $pays->id) {
-                abort(403, 'Vous ne pouvez configurer que le pays de votre propre école.');
-            }
+        $idEcole = session('idEcole') ?: $user->idEcole;
+        $ecolePaysId = $idEcole ? Ecole::withoutGlobalScopes()->find($idEcole)?->id_pays : null;
+        if ($ecolePaysId !== $pays->id) {
+            abort(403, 'Vous ne pouvez configurer que le pays de votre propre école.');
         }
 
         $data = $request->validate([
+            'niveau_examen_primaire' => 'nullable|integer|min:1|max:20|required_with:nom_examen_primaire',
+            'nom_examen_primaire' => 'nullable|string|max:30|required_with:niveau_examen_primaire',
             'niveau_examen_intermediaire' => 'nullable|integer|min:1|max:20|required_with:nom_examen_intermediaire',
             'nom_examen_intermediaire' => 'nullable|string|max:30|required_with:niveau_examen_intermediaire',
             'niveau_examen_final' => 'nullable|integer|min:1|max:20|required_with:nom_examen_final',
@@ -210,7 +203,7 @@ class ConfigurationController extends Controller
 
         $pays->update($data);
 
-        return redirect()->route('configuration.pays', ['id_pays' => $pays->id])
+        return redirect()->route('configuration.pays')
             ->with('success', "Configuration des examens nationaux mise à jour pour {$pays->nom}.");
     }
 

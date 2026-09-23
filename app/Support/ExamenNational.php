@@ -10,7 +10,9 @@ use Illuminate\Support\Str;
 /**
  * Equivalent Devise/Telephone pour les examens nationaux de fin de cycle
  * (DEF/BAC au Mali) : une ecole -> son pays -> le niveau (numero de classe)
- * et le nom de chacun de ses deux examens (intermediaire, final).
+ * et le nom de chacun de ses examens. Le Mali n'en a que deux (intermediaire,
+ * final), mais plusieurs autres pays en ont un 3e en fin de primaire (6e
+ * annee, type CEPE) -- d'ou le tiers "primaire", non configure pour le Mali.
  *
  * Contrairement a Devise/Telephone, PAS de repli sur le Mali quand le pays
  * n'a rien de configure : se tromper de niveau/nom d'examen impacterait
@@ -31,6 +33,16 @@ class ExamenNational
     public static function estMali(Ecole|Pays|int|null $ecole): bool
     {
         return Devise::resolvePays($ecole)->code_iso === 'ML';
+    }
+
+    /** @return array{grade:int,nom:string}|null */
+    public static function primaire(Ecole|Pays|int|null $ecole): ?array
+    {
+        $pays = Devise::resolvePays($ecole);
+
+        return $pays->niveau_examen_primaire && $pays->nom_examen_primaire
+            ? ['grade' => $pays->niveau_examen_primaire, 'nom' => $pays->nom_examen_primaire]
+            : null;
     }
 
     /** @return array{grade:int,nom:string}|null */
@@ -61,6 +73,11 @@ class ExamenNational
             return null;
         }
 
+        $primaire = static::primaire($ecole);
+        if ($primaire && $primaire['grade'] === $niveau) {
+            return $primaire['nom'];
+        }
+
         $intermediaire = static::intermediaire($ecole);
         if ($intermediaire && $intermediaire['grade'] === $niveau) {
             return $intermediaire['nom'];
@@ -80,29 +97,32 @@ class ExamenNational
         return (static::final($ecole)['nom'] ?? null) === $nom;
     }
 
-    /** Les noms d'examens configures pour ce pays (ex: ['DEF', 'BAC']), sans filtre par type d'ecole. */
+    /** Les noms d'examens configures pour ce pays (ex: ['DEF', 'BAC'], ou ['CEPE', 'BEPC', 'BAC']), sans filtre par type d'ecole. */
     public static function niveauxConfigures(Ecole|Pays|int|null $ecole): array
     {
         return array_values(array_filter([
+            static::primaire($ecole)['nom'] ?? null,
             static::intermediaire($ecole)['nom'] ?? null,
             static::final($ecole)['nom'] ?? null,
         ]));
     }
 
-    /** Meme chose, mais filtre par type d'ecole (une ecole purement secondaire ne propose pas l'examen intermediaire, etc). */
+    /** Meme chose, mais filtre par type d'ecole (une ecole purement secondaire ne propose pas les examens plus bas). */
     public static function niveauxDisponibles(Ecole|Pays|int|null $ecole, ?string $typeEcole): array
     {
+        $primaire = static::primaire($ecole)['nom'] ?? null;
         $intermediaire = static::intermediaire($ecole)['nom'] ?? null;
         $final = static::final($ecole)['nom'] ?? null;
         $type = Str::lower(Str::ascii((string) $typeEcole));
 
         if (str_contains($type, 'complexe')) {
-            return array_values(array_filter([$intermediaire, $final]));
+            return array_values(array_filter([$primaire, $intermediaire, $final]));
         }
 
         // Hors Mali, "Secondaire Generale" designe un seul etablissement
         // couvrant tout le secondaire (7e a la Terminale, cf. ecole-modal),
-        // donc les deux examens -- contrairement au Mali ou ce type
+        // donc les deux examens du secondaire (jamais celui du primaire,
+        // hors de son perimetre) -- contrairement au Mali ou ce type
         // n'existe qu'a partir de la 10e (l'examen intermediaire y releve du
         // type distinct "Fondamentale II"/"College", plus bas).
         if (str_contains($type, 'secondaire generale') && !static::estMali($ecole)) {
@@ -114,19 +134,20 @@ class ExamenNational
         }
 
         // "Fondamentale I" (Mali) et "Primaire" (autres pays) couvrent tous
-        // les deux les niveaux 1 a 6 : aucun examen national n'y a jamais
-        // lieu. Comparaison exacte (pas str_contains) : "fondamentale i" est
-        // un prefixe de "fondamentale ii", donc une correspondance partielle
+        // les deux les niveaux 1 a 6 : seul l'examen de primaire peut s'y
+        // trouver (inexistant/non configure pour le Mali, donc [] pour lui,
+        // inchange). Comparaison exacte (pas str_contains) : "fondamentale i"
+        // est un prefixe de "fondamentale ii", une correspondance partielle
         // capturerait aussi a tort le type "Fondamentale II".
         if ($type === 'fondamentale i' || $type === 'primaire') {
-            return [];
+            return array_values(array_filter([$primaire]));
         }
 
         if (str_contains($type, 'secondaire') || str_contains($type, 'lycee') || str_contains($type, 'technique')) {
             return array_values(array_filter([$final]));
         }
 
-        return array_values(array_filter([$intermediaire, $final]));
+        return array_values(array_filter([$primaire, $intermediaire, $final]));
     }
 
     public static function extractClasseLevel(?string $nom): ?int
