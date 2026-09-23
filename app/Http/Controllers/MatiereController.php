@@ -111,13 +111,22 @@ class MatiereController extends Controller
         }
     }
 
+    /**
+     * Cles fixes : ce sont les valeurs reellement stockees dans
+     * matiere_ordre.ordre_enseignement (jamais migrees vers les slugs de
+     * Classe.ordreEnseignement, contrairement a classes_officielles) --
+     * seuls les LIBELLES affiches s'adaptent au pays de l'ecole.
+     */
     protected function allOrdres(): array
     {
+        $idEcole = session('idEcole') ?: Auth::user()->idEcole;
+        $labels = ExamenNational::ordresLabels($idEcole);
+
         return [
-            'Fondamentale I' => 'Fondamentale I',
-            'Fondamentale II' => 'Fondamentale II',
-            'Secondaire Generale' => 'Secondaire Générale',
-            'Secondaire Technique et Professionnel' => 'Secondaire Technique et Professionnel',
+            'Fondamentale I' => $labels['fondamentale1'],
+            'Fondamentale II' => $labels['fondamentale2'],
+            'Secondaire Generale' => $labels['secondairegenerale'],
+            'Secondaire Technique et Professionnel' => $labels['secondairetechniqueetprofessionnel'],
         ];
     }
 

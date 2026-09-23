@@ -7,16 +7,8 @@ import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { hasPermission } from '@/lib/permissions';
-import { usePaginatedApi } from '@/lib/useApi';
+import { useApiGet, usePaginatedApi } from '@/lib/useApi';
 import { Matiere } from '@/types/api';
-
-const ALL_ORDRES = ['Fondamentale I', 'Fondamentale II', 'Secondaire Generale', 'Secondaire Technique et Professionnel'];
-const ORDRE_LABELS: Record<string, string> = {
-  'Fondamentale I': 'Fondamentale I',
-  'Fondamentale II': 'Fondamentale II',
-  'Secondaire Generale': 'Secondaire Générale',
-  'Secondaire Technique et Professionnel': 'Secondaire Technique et Professionnel',
-};
 
 export default function MatieresScreen() {
   const { user } = useAuth();
@@ -24,6 +16,13 @@ export default function MatieresScreen() {
   const canEdit = hasPermission(user, 'matieres_modification');
   const canDelete = hasPermission(user, 'matieres_supprimer');
   const list = usePaginatedApi<Matiere>('/matieres', {}, 'data');
+  // ordres_disponibles vient de l'API, deja adapte au pays de l'ecole
+  // (App\Http\Controllers\MatiereController::allOrdres()) -- les cles
+  // restent fixes (ce sont les valeurs stockees en base), seuls les
+  // libelles affiches changent selon le pays.
+  const { data: ordresData } = useApiGet<{ ordres_disponibles?: Record<string, string> }>('/matieres');
+  const ordreLabels = ordresData?.ordres_disponibles ?? {};
+  const allOrdres = Object.keys(ordreLabels);
   const [editing, setEditing] = useState<Matiere | null>(null);
   const [dialogVisible, setDialogVisible] = useState(false);
   const [nom, setNom] = useState('');
@@ -95,7 +94,7 @@ export default function MatieresScreen() {
           <View style={styles.row}>
             <View style={styles.rowInfo}>
               <Text style={styles.title}>{item.nom_matiere}</Text>
-              <Text style={styles.meta}>{(item.ordres ?? []).map((o) => ORDRE_LABELS[o.ordre_enseignement] ?? o.ordre_enseignement).join(', ')}</Text>
+              <Text style={styles.meta}>{(item.ordres ?? []).map((o) => ordreLabels[o.ordre_enseignement] ?? o.ordre_enseignement).join(', ')}</Text>
             </View>
             {canEdit || canDelete ? (
               <View style={styles.actions}>
@@ -124,10 +123,10 @@ export default function MatieresScreen() {
             <Text style={styles.sectionTitle}>
               Ordres d'enseignement <Text style={styles.required}>*</Text>
             </Text>
-            {ALL_ORDRES.map((ordre) => (
+            {allOrdres.map((ordre) => (
               <View key={ordre} style={styles.checkRow}>
                 <Checkbox status={ordres.has(ordre) ? 'checked' : 'unchecked'} onPress={() => toggleOrdre(ordre)} />
-                <Text>{ORDRE_LABELS[ordre]}</Text>
+                <Text>{ordreLabels[ordre]}</Text>
               </View>
             ))}
             {error ? <Text style={styles.error}>{error}</Text> : null}
