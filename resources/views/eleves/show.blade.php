@@ -3,21 +3,21 @@
 @section('content')
     @php
         $statusLabel = match((int) $eleve->etat_dossier) {
-            1 => 'Transféré',
-            2 => 'Retiré',
-            3 => 'Diplômé',
-            default => 'Actif',
+            1 => __('eleves.status_transfere'),
+            2 => __('eleves.status_retire'),
+            3 => __('eleves.status_diplome'),
+            default => __('eleves.status_actif'),
         };
         $user = Auth::user();
     @endphp
 
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-        <div class="breadcrumb-title pe-3">Dossiers élèves</div>
+        <div class="breadcrumb-title pe-3">{{ __('eleves.dossiers_title') }}</div>
         <div class="ps-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0 p-0">
                     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bi bi-house-door"></i></a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('eleves.dossiers') }}">Dossiers élèves</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('eleves.dossiers') }}">{{ __('eleves.dossiers_title') }}</a></li>
                     <li class="breadcrumb-item active">{{ $eleve->prenom_eleve }} {{ $eleve->nom_eleve }}</li>
                 </ol>
             </nav>
@@ -39,15 +39,15 @@
                     <span class="badge {{ (int) $eleve->etat_dossier === 3 ? 'bg-success' : 'theme-icon-soft' }}">{{ $statusLabel }}</span>
                 </div>
                 <div class="student-subtitle">
-                    Matricule <span class="font-monospace">{{ $eleve->matricule ?: 'Non renseigné' }}</span>
+                    {{ __('eleves.label_matricule') }} <span class="font-monospace">{{ $eleve->matricule ?: __('eleves.not_specified_m') }}</span>
                     <span class="mx-2">•</span>
-                    {{ $eleve->classe?->nom_classe ?? 'Classe non renseignée' }}
+                    {{ $eleve->classe?->nom_classe ?? __('eleves.classe_non_renseignee') }}
                     <span class="mx-2">•</span>
-                    {{ $annee?->annee ?? 'Année non renseignée' }}
+                    {{ $annee?->annee ?? __('eleves.annee_non_renseignee') }}
                 </div>
             </div>
             <div class="student-actions">
-                <a href="{{ route('eleves.dossiers') }}" class="btn btn-light"><i class="bi bi-arrow-left me-1"></i>Retour</a>
+                <a href="{{ route('eleves.dossiers') }}" class="btn btn-light"><i class="bi bi-arrow-left me-1"></i>{{ __('eleves.back') }}</a>
             </div>
         </section>
 
@@ -62,11 +62,11 @@
         @endif
 
         <section class="quick-actions mb-3">
-            <a href="#identite-scolarite" class="quick-action-btn"><i class="bi bi-person-lines-fill"></i><span>Identité</span></a>
-            <a href="#parents-responsables" class="quick-action-btn"><i class="bi bi-telephone"></i><span>Parents</span></a>
-            <a href="#situation-financiere" class="quick-action-btn"><i class="bi bi-cash-coin"></i><span>Finances</span></a>
-            <a href="#resultats-scolaires" class="quick-action-btn"><i class="bi bi-file-earmark-text"></i><span>Bulletins</span></a>
-            <a href="#historique-dossier" class="quick-action-btn"><i class="bi bi-clock-history"></i><span>Historique</span></a>
+            <a href="#identite-scolarite" class="quick-action-btn"><i class="bi bi-person-lines-fill"></i><span>{{ __('eleves.quick_identite') }}</span></a>
+            <a href="#parents-responsables" class="quick-action-btn"><i class="bi bi-telephone"></i><span>{{ __('eleves.quick_parents') }}</span></a>
+            <a href="#situation-financiere" class="quick-action-btn"><i class="bi bi-cash-coin"></i><span>{{ __('eleves.quick_finances') }}</span></a>
+            <a href="#resultats-scolaires" class="quick-action-btn"><i class="bi bi-file-earmark-text"></i><span>{{ __('eleves.quick_bulletins') }}</span></a>
+            <a href="#historique-dossier" class="quick-action-btn"><i class="bi bi-clock-history"></i><span>{{ __('eleves.quick_historique') }}</span></a>
         </section>
 
         <div class="row g-4 mb-4">
@@ -74,9 +74,9 @@
                 <div class="card theme-card shadow-sm h-100">
                     <div class="card-body p-4 d-flex align-items-center justify-content-between">
                         <div>
-                            <p class="text-muted text-uppercase small fw-bold mb-1">Responsables</p>
+                            <p class="text-muted text-uppercase small fw-bold mb-1">{{ __('eleves.stat_responsables') }}</p>
                             <h3 class="fw-bold mb-0">{{ $eleve->parents->count() }}</h3>
-                            <small class="text-muted d-block mt-2">Contacts rattachés</small>
+                            <small class="text-muted d-block mt-2">{{ __('eleves.stat_responsables_desc') }}</small>
                         </div>
                         <div class="widget-icon theme-icon-box rounded-3"><i class="bi bi-people fs-4"></i></div>
                     </div>
@@ -86,9 +86,9 @@
                 <div class="card theme-card shadow-sm h-100">
                     <div class="card-body p-4 d-flex align-items-center justify-content-between">
                         <div>
-                            <p class="text-muted text-uppercase small fw-bold mb-1">Statut paiement</p>
+                            <p class="text-muted text-uppercase small fw-bold mb-1">{{ __('eleves.stat_statut_paiement') }}</p>
                             <h3 class="fw-bold mb-0">{{ $paymentSummary['statut'] }}</h3>
-                            <small class="text-muted d-block mt-2">{{ $paymentSummary['progress'] }}% réglé</small>
+                            <small class="text-muted d-block mt-2">{{ $paymentSummary['progress'] }}{{ __('eleves.stat_progress_suffix') }}</small>
                         </div>
                         <div class="widget-icon theme-icon-box rounded-3"><i class="bi bi-check-circle fs-4"></i></div>
                     </div>
@@ -98,9 +98,9 @@
                 <div class="card theme-card shadow-sm h-100">
                     <div class="card-body p-4 d-flex align-items-center justify-content-between">
                         <div>
-                            <p class="text-muted text-uppercase small fw-bold mb-1">Payé</p>
+                            <p class="text-muted text-uppercase small fw-bold mb-1">{{ __('eleves.stat_paye') }}</p>
                             <h3 class="fw-bold mb-0">{{ number_format($paymentSummary['montant_paye'], 0, ',', ' ') }}</h3>
-                            <small class="text-muted d-block mt-2">FCFA encaissés</small>
+                            <small class="text-muted d-block mt-2">{{ __('eleves.stat_paye_desc') }}</small>
                         </div>
                         <div class="widget-icon theme-icon-box rounded-3"><i class="bi bi-cash-stack fs-4"></i></div>
                     </div>
@@ -110,9 +110,9 @@
                 <div class="card theme-card shadow-sm h-100">
                     <div class="card-body p-4 d-flex align-items-center justify-content-between">
                         <div>
-                            <p class="text-muted text-uppercase small fw-bold mb-1">Reste</p>
+                            <p class="text-muted text-uppercase small fw-bold mb-1">{{ __('eleves.stat_reste') }}</p>
                             <h3 class="fw-bold mb-0">{{ number_format($paymentSummary['reste'], 0, ',', ' ') }}</h3>
-                            <small class="text-muted d-block mt-2">FCFA à régler</small>
+                            <small class="text-muted d-block mt-2">{{ __('eleves.stat_reste_desc') }}</small>
                         </div>
                         <div class="widget-icon theme-icon-box rounded-3"><i class="bi bi-wallet2 fs-4"></i></div>
                     </div>
@@ -123,28 +123,28 @@
         <div class="row g-3">
             <div class="col-xl-4" id="identite-scolarite">
                 <div class="card theme-card shadow-sm h-100">
-                    <div class="card-header theme-header"><h6 class="mb-0 fw-bold">Identité et scolarité</h6></div>
+                    <div class="card-header theme-header"><h6 class="mb-0 fw-bold">{{ __('eleves.section_identite') }}</h6></div>
                     <div class="card-body">
-                        <div class="info-row"><span>Prénom et nom</span><strong>{{ $eleve->prenom_eleve }} {{ $eleve->nom_eleve }}</strong></div>
-                        <div class="info-row"><span>Genre</span><strong>{{ $eleve->genre_eleve ?: 'Non renseigné' }}</strong></div>
-                        <div class="info-row"><span>Naissance</span><strong>{{ $eleve->date_naissance ? \Carbon\Carbon::parse($eleve->date_naissance)->format('d/m/Y') : 'Non renseignée' }} à {{ $eleve->lieu_naiss ?: 'Non renseigné' }}</strong></div>
-                        <div class="info-row"><span>Adresse</span><strong>{{ $eleve->adresse_eleve ?: 'Non renseignée' }}</strong></div>
-                        <div class="info-row"><span>Cas social</span><strong>{{ $eleve->cas_social ?: 'normal' }}</strong></div>
-                        <div class="info-row"><span>École</span><strong>{{ $eleve->ecole?->nomEcole ?? session('nomEcole') ?? 'Non renseignée' }}</strong></div>
-                        <div class="info-row"><span>Date inscription</span><strong>{{ $eleve->date_inscription ? \Carbon\Carbon::parse($eleve->date_inscription)->format('d/m/Y') : 'Non renseignée' }}</strong></div>
+                        <div class="info-row"><span>{{ __('eleves.row_prenom_nom') }}</span><strong>{{ $eleve->prenom_eleve }} {{ $eleve->nom_eleve }}</strong></div>
+                        <div class="info-row"><span>{{ __('eleves.row_genre') }}</span><strong>{{ $eleve->genre_eleve ?: __('eleves.not_specified_m') }}</strong></div>
+                        <div class="info-row"><span>{{ __('eleves.row_naissance') }}</span><strong>{{ __('eleves.row_naissance_value', ['date' => $eleve->date_naissance ? \Carbon\Carbon::parse($eleve->date_naissance)->format('d/m/Y') : __('eleves.not_specified'), 'lieu' => $eleve->lieu_naiss ?: __('eleves.not_specified_m')]) }}</strong></div>
+                        <div class="info-row"><span>{{ __('eleves.label_adresse') }}</span><strong>{{ $eleve->adresse_eleve ?: __('eleves.not_specified') }}</strong></div>
+                        <div class="info-row"><span>{{ __('eleves.label_cas_social') }}</span><strong>{{ $eleve->cas_social ?: __('eleves.social_normal') }}</strong></div>
+                        <div class="info-row"><span>{{ __('eleves.row_ecole') }}</span><strong>{{ $eleve->ecole?->nomEcole ?? session('nomEcole') ?? __('eleves.not_specified') }}</strong></div>
+                        <div class="info-row"><span>{{ __('eleves.th_date_inscription') }}</span><strong>{{ $eleve->date_inscription ? \Carbon\Carbon::parse($eleve->date_inscription)->format('d/m/Y') : __('eleves.not_specified') }}</strong></div>
                     </div>
                 </div>
             </div>
 
             <div class="col-xl-4" id="parents-responsables">
                 <div class="card theme-card shadow-sm h-100">
-                    <div class="card-header theme-header"><h6 class="mb-0 fw-bold">Parents et responsables</h6></div>
+                    <div class="card-header theme-header"><h6 class="mb-0 fw-bold">{{ __('eleves.section_parents') }}</h6></div>
                     <div class="card-body">
                         @forelse($eleve->parents as $parent)
                             <div class="contact-block">
                                 <div>
                                     <strong>{{ $parent->nom_prenom_parent }}</strong>
-                                    <div class="text-muted small">{{ $parent->pivot?->lien_parent ?: 'Responsable' }}</div>
+                                    <div class="text-muted small">{{ $parent->pivot?->lien_parent ?: __('eleves.parent_default_role') }}</div>
                                 </div>
                                 <div class="contact-actions">
                                     @if($parent->telephone_parent)
@@ -155,12 +155,12 @@
                                     @endif
                                 </div>
                                 <div class="small text-muted mt-2">
-                                    {{ $parent->telephone_parent ?: 'Téléphone non renseigné' }}
+                                    {{ $parent->telephone_parent ?: __('eleves.no_phone') }}
                                     @if($parent->email_parent) • {{ $parent->email_parent }} @endif
                                 </div>
                             </div>
                         @empty
-                            <div class="empty-note">Aucun parent rattaché.</div>
+                            <div class="empty-note">{{ __('eleves.no_parent') }}</div>
                         @endforelse
                     </div>
                 </div>
@@ -168,7 +168,7 @@
 
             <div class="col-xl-4" id="situation-financiere">
                 <div class="card theme-card shadow-sm h-100">
-                    <div class="card-header theme-header"><h6 class="mb-0 fw-bold">Situation financière</h6></div>
+                    <div class="card-header theme-header"><h6 class="mb-0 fw-bold">{{ __('eleves.section_finances') }}</h6></div>
                     <div class="card-body">
                         <div class="payment-ring">
                             <div class="payment-percent">{{ $paymentSummary['progress'] }}%</div>
@@ -176,17 +176,17 @@
                                 <div class="progress-bar" style="width: {{ $paymentSummary['progress'] }}%;"></div>
                             </div>
                         </div>
-                        <div class="info-row"><span>Total prévu</span><strong>{{ number_format($paymentSummary['montant_final'], 0, ',', ' ') }} FCFA</strong></div>
-                        <div class="info-row"><span>Réduction</span><strong>{{ number_format($paymentSummary['reduction'], 0, ',', ' ') }} FCFA</strong></div>
-                        <div class="info-row"><span>Mode</span><strong>{{ $paymentSummary['plan']?->mode_paiement ?: $eleve->mode_paiement ?: 'Non renseigné' }}</strong></div>
-                        <div class="info-row"><span>Payeur</span><strong>{{ $paymentSummary['plan']?->payeur_libelle ?: 'Non renseigné' }}</strong></div>
+                        <div class="info-row"><span>{{ __('eleves.row_total_prevu') }}</span><strong>{{ number_format($paymentSummary['montant_final'], 0, ',', ' ') }} FCFA</strong></div>
+                        <div class="info-row"><span>{{ __('eleves.row_reduction') }}</span><strong>{{ number_format($paymentSummary['reduction'], 0, ',', ' ') }} FCFA</strong></div>
+                        <div class="info-row"><span>{{ __('eleves.row_mode') }}</span><strong>{{ $paymentSummary['plan']?->mode_paiement ?: $eleve->mode_paiement ?: __('eleves.not_specified_m') }}</strong></div>
+                        <div class="info-row"><span>{{ __('eleves.row_payeur') }}</span><strong>{{ $paymentSummary['plan']?->payeur_libelle ?: __('eleves.not_specified_m') }}</strong></div>
                     </div>
                 </div>
             </div>
 
             <div class="col-xl-7" id="echeancier-paiements">
                 <div class="card theme-card shadow-sm h-100">
-                    <div class="card-header theme-header"><h6 class="mb-0 fw-bold">Échéancier et paiements</h6></div>
+                    <div class="card-header theme-header"><h6 class="mb-0 fw-bold">{{ __('eleves.section_echeancier') }}</h6></div>
                     <div class="card-body">
                         @forelse($echeancesResume as $echeance)
                             <div class="timeline-row">
@@ -194,41 +194,41 @@
                                 <div class="flex-grow-1">
                                     <div class="d-flex justify-content-between gap-2">
                                         <strong>{{ $echeance['libelle'] }}</strong>
-                                        <span>{{ number_format($echeance['reste'], 0, ',', ' ') }} FCFA restant</span>
+                                        <span>{{ number_format($echeance['reste'], 0, ',', ' ') }} FCFA {{ __('eleves.reste_suffix') }}</span>
                                     </div>
                                     <div class="small text-muted">
-                                        Prévu : {{ number_format($echeance['montant_prevu'], 0, ',', ' ') }} FCFA
-                                        @if($echeance['date_limite']) • Limite : {{ $echeance['date_limite']->format('d/m/Y') }} @endif
+                                        {{ __('eleves.prevu_prefix') }} {{ number_format($echeance['montant_prevu'], 0, ',', ' ') }} FCFA
+                                        @if($echeance['date_limite']) • {{ __('eleves.limite_prefix') }} {{ $echeance['date_limite']->format('d/m/Y') }} @endif
                                     </div>
                                 </div>
                             </div>
                         @empty
-                            <div class="empty-note mb-3">Aucun échéancier enregistré.</div>
+                            <div class="empty-note mb-3">{{ __('eleves.no_echeancier') }}</div>
                         @endforelse
 
                         <div class="table-responsive mt-3">
                             <table class="table table-sm align-middle mb-0">
-                                <thead><tr><th>Date</th><th>Référence</th><th>Motif</th><th class="text-end">Montant</th><th></th></tr></thead>
+                                <thead><tr><th>{{ __('eleves.th_date') }}</th><th>{{ __('eleves.th_reference') }}</th><th>{{ __('eleves.th_motif') }}</th><th class="text-end">{{ __('eleves.th_montant') }}</th><th></th></tr></thead>
                                 <tbody>
                                     @forelse($paiementsRecents as $paiement)
                                         <tr>
                                             <td>{{ $paiement->date_paiement ? \Carbon\Carbon::parse($paiement->date_paiement)->format('d/m/Y') : 'N/A' }}</td>
                                             <td>{{ $paiement->reference ?: $paiement->numero_recu ?: 'N/A' }}</td>
-                                            <td>{{ $paiement->echeance?->libelle ?? $paiement->motif ?? 'Paiement' }}</td>
+                                            <td>{{ $paiement->echeance?->libelle ?? $paiement->motif ?? __('eleves.motif_default') }}</td>
                                             <td class="text-end">{{ number_format((float) ($paiement->montant_paye ?? $paiement->montant), 0, ',', ' ') }}</td>
                                             <td class="text-end">
                                                 <div class="d-inline-flex gap-1">
-                                                    <a href="{{ route('finances.paiements.download', $paiement->id_paiement) }}" class="btn btn-light btn-sm" target="_blank" title="Reçu complet">
+                                                    <a href="{{ route('finances.paiements.download', $paiement->id_paiement) }}" class="btn btn-light btn-sm" target="_blank" title="{{ __('eleves.receipt_full') }}">
                                                         <i class="bi bi-printer"></i>
                                                     </a>
-                                                    <a href="{{ route('finances.paiements.thermique', $paiement->id_paiement) }}" class="btn btn-light btn-sm" target="_blank" title="Reçu thermique">
+                                                    <a href="{{ route('finances.paiements.thermique', $paiement->id_paiement) }}" class="btn btn-light btn-sm" target="_blank" title="{{ __('eleves.receipt_thermal') }}">
                                                         <i class="bi bi-receipt-cutoff"></i>
                                                     </a>
                                                 </div>
                                             </td>
                                         </tr>
                                     @empty
-                                        <tr><td colspan="5" class="text-center text-muted py-4">Aucun paiement enregistré.</td></tr>
+                                        <tr><td colspan="5" class="text-center text-muted py-4">{{ __('eleves.no_paiement') }}</td></tr>
                                     @endforelse
                                 </tbody>
                             </table>
@@ -239,35 +239,35 @@
 
             <div class="col-xl-5" id="resultats-scolaires">
                 <div class="card theme-card shadow-sm h-100">
-                    <div class="card-header theme-header"><h6 class="mb-0 fw-bold">Résultats scolaires</h6></div>
+                    <div class="card-header theme-header"><h6 class="mb-0 fw-bold">{{ __('eleves.section_resultats') }}</h6></div>
                     <div class="card-body">
-                        <div class="mini-section-title">Moyennes et rangs</div>
+                        <div class="mini-section-title">{{ __('eleves.moyennes_title') }}</div>
                         @forelse($moyennes as $moyenne)
                             <div class="result-row">
                                 <div>
-                                    <strong>{{ $moyenne->nom_trimestre ?: ($moyenne->mois ? 'Mois '.$moyenne->mois : 'Période') }}</strong>
-                                    <div class="small text-muted">{{ $moyenne->valide ? 'Validé' : 'En attente de validation' }}</div>
+                                    <strong>{{ $moyenne->nom_trimestre ?: ($moyenne->mois ? __('eleves.mois_prefix').' '.$moyenne->mois : __('eleves.periode_default')) }}</strong>
+                                    <div class="small text-muted">{{ $moyenne->valide ? __('eleves.valide') : __('eleves.en_attente_validation') }}</div>
                                 </div>
                                 <div class="text-end">
                                     <strong>{{ number_format((float) $moyenne->moyenne, 2) }}/20</strong>
-                                    <div class="small text-muted">Rang {{ $moyenne->rang ?: 'N/A' }}</div>
+                                    <div class="small text-muted">{{ __('eleves.rang_prefix') }} {{ $moyenne->rang ?: 'N/A' }}</div>
                                 </div>
                             </div>
                         @empty
-                            <div class="empty-note">Aucune moyenne disponible.</div>
+                            <div class="empty-note">{{ __('eleves.no_moyenne') }}</div>
                         @endforelse
 
-                        <div class="mini-section-title mt-3">Dernières notes</div>
+                        <div class="mini-section-title mt-3">{{ __('eleves.notes_title') }}</div>
                         @forelse($evaluationsRecentes as $evaluation)
                             <div class="result-row">
                                 <div>
-                                    <strong>{{ $evaluation->nom_matiere ?: 'Matière' }}</strong>
-                                    <div class="small text-muted">{{ $evaluation->typeNote ?: 'Évaluation' }} {{ $evaluation->nom_trimestre ? '• '.$evaluation->nom_trimestre : '' }}</div>
+                                    <strong>{{ $evaluation->nom_matiere ?: __('eleves.matiere_default') }}</strong>
+                                    <div class="small text-muted">{{ $evaluation->typeNote ?: __('eleves.evaluation_default') }} {{ $evaluation->nom_trimestre ? '• '.$evaluation->nom_trimestre : '' }}</div>
                                 </div>
                                 <strong>{{ $evaluation->note !== null ? number_format((float) $evaluation->note, 2) : 'N/A' }}</strong>
                             </div>
                         @empty
-                            <div class="empty-note">Aucune note récente.</div>
+                            <div class="empty-note">{{ __('eleves.no_note') }}</div>
                         @endforelse
                     </div>
                 </div>
@@ -275,36 +275,36 @@
 
             <div class="col-12" id="historique-dossier">
                 <div class="card theme-card shadow-sm">
-                    <div class="card-header theme-header"><h6 class="mb-0 fw-bold">Historique du dossier</h6></div>
+                    <div class="card-header theme-header"><h6 class="mb-0 fw-bold">{{ __('eleves.section_historique') }}</h6></div>
                     <div class="card-body">
                         <div class="history-grid">
                             <div class="history-item">
-                                <span>Création / inscription</span>
-                                <strong>{{ $eleve->date_inscription ? \Carbon\Carbon::parse($eleve->date_inscription)->format('d/m/Y') : 'Date non renseignée' }}</strong>
+                                <span>{{ __('eleves.hist_creation') }}</span>
+                                <strong>{{ $eleve->date_inscription ? \Carbon\Carbon::parse($eleve->date_inscription)->format('d/m/Y') : __('eleves.hist_date_non_renseignee') }}</strong>
                             </div>
                             <div class="history-item">
-                                <span>Dernier paiement</span>
-                                <strong>{{ $paiementsRecents->first()?->date_paiement ? \Carbon\Carbon::parse($paiementsRecents->first()->date_paiement)->format('d/m/Y') : 'Aucun' }}</strong>
+                                <span>{{ __('eleves.hist_dernier_paiement') }}</span>
+                                <strong>{{ $paiementsRecents->first()?->date_paiement ? \Carbon\Carbon::parse($paiementsRecents->first()->date_paiement)->format('d/m/Y') : __('eleves.hist_aucun') }}</strong>
                             </div>
                             <div class="history-item">
-                                <span>Dernière moyenne</span>
-                                <strong>{{ $moyennes->first()?->moyenne ? number_format((float) $moyennes->first()->moyenne, 2).'/20' : 'Aucune' }}</strong>
+                                <span>{{ __('eleves.hist_derniere_moyenne') }}</span>
+                                <strong>{{ $moyennes->first()?->moyenne ? number_format((float) $moyennes->first()->moyenne, 2).'/20' : __('eleves.hist_aucun') }}</strong>
                             </div>
                         </div>
                         @forelse($transferts as $transfert)
                             <div class="transfer-box mt-3">
                                 <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
                                     <div>
-                                        <strong>Transfert vers {{ $transfert->destination }}</strong>
-                                        <div class="text-muted small">Motif : {{ $transfert->motif }} • Travail : {{ $transfert->travail ?: 'Non renseigné' }} • Conduite : {{ $transfert->conduite }}</div>
+                                        <strong>{{ __('eleves.transfert_vers', ['dest' => $transfert->destination]) }}</strong>
+                                        <div class="text-muted small">{{ __('eleves.transfert_motif_label') }} : {{ $transfert->motif }} • {{ __('eleves.transfert_travail_label') }} : {{ $transfert->travail ?: __('eleves.not_specified_m') }} • {{ __('eleves.transfert_conduite_label') }} : {{ $transfert->conduite }}</div>
                                     </div>
                                     <a href="{{ route('eleves.transfer.fiche', $transfert->id_transfert) }}" target="_blank" class="btn btn-sm theme-outline-btn">
-                                        <i class="bi bi-file-earmark-pdf me-1"></i>Fiche PDF
+                                        <i class="bi bi-file-earmark-pdf me-1"></i>{{ __('eleves.fiche_pdf') }}
                                     </a>
                                 </div>
                             </div>
                         @empty
-                            <div class="empty-note mt-3">Aucun transfert enregistré pour ce dossier.</div>
+                            <div class="empty-note mt-3">{{ __('eleves.no_transfert') }}</div>
                         @endforelse
                     </div>
                 </div>
