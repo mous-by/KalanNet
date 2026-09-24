@@ -7,6 +7,7 @@ import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
+import { useLocale } from '@/context/LocaleContext';
 import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
@@ -33,6 +34,7 @@ interface Props {
 }
 
 export default function ClasseForm({ classe, onSaved }: Props) {
+  const { t } = useLocale();
   const { isOnline, enqueueAction } = useOffline();
   const { data: options, error: optionsError } = useApiGet<FormOptions>('/classes/form-options', [], { cacheKey: 'classes-form-options' });
 
@@ -42,7 +44,7 @@ export default function ClasseForm({ classe, onSaved }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
-  const [successMessage, setSuccessMessage] = useState(classe ? 'Classe modifiée avec succès.' : 'Classe créée avec succès.');
+  const [successMessage, setSuccessMessage] = useState(classe ? t('classes.updated') : t('classes.created'));
 
   useEffect(() => {
     if (classe?.ligneClasses?.length) {
@@ -72,7 +74,7 @@ export default function ClasseForm({ classe, onSaved }: Props) {
     setError(null);
     const validLignes = lignes.filter((l) => l.id_matiere);
     if (!nomClasse.trim() || !ordre || validLignes.length === 0) {
-      setError('Le nom, l’ordre d’enseignement et au moins une matière sont requis.');
+      setError(t('classes.validation_required'));
       return;
     }
 
@@ -93,7 +95,7 @@ export default function ClasseForm({ classe, onSaved }: Props) {
           method: classe ? 'put' : 'post',
           payload,
         });
-        setSuccessMessage('Classe mise en attente, sera synchronisée au retour du réseau.');
+        setSuccessMessage(t('classes.queued_success'));
         setSuccessVisible(true);
         setTimeout(onSaved, 900);
         return;
@@ -103,11 +105,11 @@ export default function ClasseForm({ classe, onSaved }: Props) {
       } else {
         await api.post('/classes', payload);
       }
-      setSuccessMessage(classe ? 'Classe modifiée avec succès.' : 'Classe créée avec succès.');
+      setSuccessMessage(classe ? t('classes.updated') : t('classes.created'));
       setSuccessVisible(true);
       setTimeout(onSaved, 900);
     } catch (err) {
-      setError(apiErrorMessage(err, 'Impossible d’enregistrer cette classe.'));
+      setError(apiErrorMessage(err, t('classes.save_error')));
     } finally {
       setIsSubmitting(false);
     }
@@ -121,28 +123,28 @@ export default function ClasseForm({ classe, onSaved }: Props) {
     <View>
       <OfflineBanner />
       {optionsError ? <Text style={styles.error}>{optionsError}</Text> : null}
-      <TextInput mode="outlined" label={requiredLabel('Nom de la classe')} value={nomClasse} onChangeText={setNomClasse} style={styles.input} />
-      <SelectField label={requiredLabel("Ordre d'enseignement")} value={ordre} options={ordreOptions} onChange={(v) => setOrdre(v as string)} />
+      <TextInput mode="outlined" label={requiredLabel(t('classes.name'))} value={nomClasse} onChangeText={setNomClasse} style={styles.input} />
+      <SelectField label={requiredLabel(t('classes.ordre_label'))} value={ordre} options={ordreOptions} onChange={(v) => setOrdre(v as string)} />
 
-      <Text style={styles.sectionTitle}>Matières</Text>
+      <Text style={styles.sectionTitle}>{t('classes.subjects_title')}</Text>
       {lignes.map((ligne, index) => (
         <View key={index} style={styles.ligneRow}>
           <View style={styles.ligneFields}>
             <SelectField
-              label={requiredLabel('Matière')}
+              label={requiredLabel(t('classes.subject'))}
               value={ligne.id_matiere}
               options={matiereOptions}
               onChange={(v) => updateLigne(index, { id_matiere: v as number })}
             />
             <SelectField
-              label="Enseignant (optionnel)"
+              label={t('classes.teacher_optional')}
               value={ligne.id_enseignant}
               options={enseignantOptions}
               onChange={(v) => updateLigne(index, { id_enseignant: v as number })}
             />
             <TextInput
               mode="outlined"
-              label="Coefficient"
+              label={t('classes.coefficient')}
               keyboardType="numeric"
               value={ligne.coefficient}
               onChangeText={(v) => updateLigne(index, { coefficient: v })}
@@ -156,7 +158,7 @@ export default function ClasseForm({ classe, onSaved }: Props) {
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <SubmitButton label={classe ? 'Enregistrer' : 'Créer la classe'} onPress={handleSubmit} loading={isSubmitting} />
+      <SubmitButton label={classe ? t('classes.save') : t('classes.create_action')} onPress={handleSubmit} loading={isSubmitting} />
 
       <SuccessSnackbar visible={successVisible} message={successMessage} onDismiss={() => setSuccessVisible(false)} />
     </View>
