@@ -3,19 +3,19 @@
 @section('content')
 <div class="container-fluid py-4">
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-        <div class="breadcrumb-title pe-3">Classes</div>
+        <div class="breadcrumb-title pe-3">{{ __('classes.title') }}</div>
         <div class="ps-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0 p-0">
                     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bi bi-house-door"></i></a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('classes.index') }}">Liste des classes</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('classes.index') }}">{{ __('classes.breadcrumb_list') }}</a></li>
                     <li class="breadcrumb-item active" aria-current="page">{{ $classe->nom_classe }}</li>
                 </ol>
             </nav>
         </div>
         <div class="ms-auto d-flex gap-2">
-            <button class="btn theme-outline-btn"><i class="bi bi-printer me-1"></i>Liste de classe</button>
-            <a href="{{ route('classes.edit', $classe->id_classe) }}" class="btn theme-action-btn"><i class="bi bi-pencil me-1"></i>Modifier</a>
+            <button class="btn theme-outline-btn"><i class="bi bi-printer me-1"></i>{{ __('classes.print_list') }}</button>
+            <a href="{{ route('classes.edit', $classe->id_classe) }}" class="btn theme-action-btn"><i class="bi bi-pencil me-1"></i>{{ __('classes.action_edit') }}</a>
         </div>
     </div>
 
@@ -24,12 +24,12 @@
         <div class="col-md-4">
             <div class="card border-0 rounded-4 shadow-sm h-100 bg-primary text-white overflow-hidden position-relative">
                 <div class="card-body p-4 position-relative z-1">
-                    <h6 class="text-white-50 text-uppercase fw-bold small mb-4">Effectif Total</h6>
+                    <h6 class="text-white-50 text-uppercase fw-bold small mb-4">{{ __('classes.stat_total') }}</h6>
                     <div class="d-flex align-items-center justify-content-between">
                         <h2 class="display-5 fw-bold mb-0">{{ $classe->eleves()->count() }}</h2>
                         <i class="bi bi-people fs-1 opacity-50"></i>
                     </div>
-                    <p class="mt-4 mb-0 text-white-50">Élèves inscrits pour l'année en cours</p>
+                    <p class="mt-4 mb-0 text-white-50">{{ __('classes.stat_total_desc') }}</p>
                 </div>
                 <div class="position-absolute bottom-0 end-0 opacity-10 p-4">
                     <i class="bi bi-building" style="font-size: 8rem;"></i>
@@ -39,28 +39,28 @@
         <div class="col-md-4">
             <div class="card border-0 rounded-4 shadow-sm h-100">
                 <div class="card-body p-4">
-                    <h6 class="text-muted text-uppercase fw-bold small mb-4">Volume Horaire / Semaine</h6>
+                    <h6 class="text-muted text-uppercase fw-bold small mb-4">{{ __('classes.stat_volume') }}</h6>
                     <div class="d-flex align-items-center justify-content-between">
                         <h2 class="display-5 fw-bold mb-0">--</h2>
                         <div class="widget-icon bg-info text-white rounded-3">
                             <i class="bi bi-clock fs-4"></i>
                         </div>
                     </div>
-                    <p class="mt-4 mb-0 text-muted">Heures de cours cumulées</p>
+                    <p class="mt-4 mb-0 text-muted">{{ __('classes.stat_volume_desc') }}</p>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
             <div class="card border-0 rounded-4 shadow-sm h-100">
                 <div class="card-body p-4">
-                    <h6 class="text-muted text-uppercase fw-bold small mb-4">Nombre de Matières</h6>
+                    <h6 class="text-muted text-uppercase fw-bold small mb-4">{{ __('classes.stat_nb_matieres') }}</h6>
                     <div class="d-flex align-items-center justify-content-between">
                         <h2 class="display-5 fw-bold mb-0">{{ $classe->ligneClasses()->count() }}</h2>
                         <div class="widget-icon bg-warning text-white rounded-3">
                             <i class="bi bi-journal-text fs-4"></i>
                         </div>
                     </div>
-                    <p class="mt-4 mb-0 text-muted">Disciplines enseignées</p>
+                    <p class="mt-4 mb-0 text-muted">{{ __('classes.stat_matieres_desc') }}</p>
                 </div>
             </div>
         </div>
@@ -69,16 +69,16 @@
         <div class="col-12">
             <div class="card border-0 rounded-4 shadow-sm overflow-hidden">
                 <div class="card-header bg-white p-4 border-0">
-                    <h5 class="fw-bold mb-0">Répartition Pédagogique</h5>
+                    <h5 class="fw-bold mb-0">{{ __('classes.repartition_title') }}</h5>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
                         <thead class="bg-light">
                             <tr>
-                                <th class="px-4 py-3 border-0 small fw-bold text-muted text-uppercase">Matière</th>
-                                <th class="py-3 border-0 small fw-bold text-muted text-uppercase">Coefficient</th>
-                                <th class="py-3 border-0 small fw-bold text-muted text-uppercase">Enseignant</th>
-                                <th class="px-4 py-3 border-0 text-end small fw-bold text-muted text-uppercase">Actions</th>
+                                <th class="px-4 py-3 border-0 small fw-bold text-muted text-uppercase">{{ __('classes.th_matiere') }}</th>
+                                <th class="py-3 border-0 small fw-bold text-muted text-uppercase">{{ __('classes.th_coefficient') }}</th>
+                                <th class="py-3 border-0 small fw-bold text-muted text-uppercase">{{ __('classes.th_enseignant') }}</th>
+                                <th class="px-4 py-3 border-0 text-end small fw-bold text-muted text-uppercase">{{ __('classes.th_actions') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -100,7 +100,7 @@
                                                 <span>{{ $lc->enseignant->nom_prenom_enseignant }}</span>
                                             </div>
                                         @else
-                                            <span class="text-danger small italic"><i class="bi bi-exclamation-triangle me-1"></i> Non assigné</span>
+                                            <span class="text-danger small italic"><i class="bi bi-exclamation-triangle me-1"></i> {{ __('classes.not_assigned') }}</span>
                                         @endif
                                     </td>
                                     <td class="px-4 text-end">
@@ -110,7 +110,7 @@
                             @empty
                                 <tr>
                                     <td colspan="4" class="text-center py-5">
-                                        <div class="text-muted">Aucune matière assignée à cette classe.</div>
+                                        <div class="text-muted">{{ __('classes.empty_matieres') }}</div>
                                     </td>
                                 </tr>
                             @endforelse

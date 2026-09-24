@@ -2,12 +2,12 @@
 
 @section('content')
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-        <div class="breadcrumb-title pe-3">Classes</div>
+        <div class="breadcrumb-title pe-3">{{ __('classes.title') }}</div>
         <div class="ps-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0 p-0">
                     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bi bi-house-door"></i></a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Liste des classes</li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ __('classes.breadcrumb_list') }}</li>
                 </ol>
             </nav>
         </div>
@@ -16,7 +16,7 @@
     @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('classes_creation'))
         <div class="mb-3 d-flex justify-content-end">
             <a href="{{ route('classes.create') }}" class="btn border-0 border-start border-primary border-4 bg-light-primary text-primary px-4">
-                <i class="bi bi-plus-lg me-2"></i>Classe
+                <i class="bi bi-plus-lg me-2"></i>{{ __('classes.add') }}
             </a>
         </div>
     @endif
@@ -31,27 +31,27 @@
                 <div class="alert alert-danger border-0 border-start border-danger border-4">{{ session('error') }}</div>
             @endif
             <div class="alert alert-info border-0 border-start border-info border-4" role="alert">
-                <strong>Info temporaire :</strong> Cliquez sur les actions dans la colonne Action pour voir l'emploi du temps ou les détails de la classe.
+                <strong>{{ __('classes.info_prefix') }}</strong> {{ __('classes.info_text') }}
             </div>
-            
+
             <div class="table-responsive mt-3">
                 <table class="table table-striped table-bordered align-middle" style="width:100%">
                     <thead class="bg-light">
                         <tr>
-                            <th>Nom de la classe</th>
-                            <th>Classe officielle</th>
-                            <th>Ordre Enseignement</th>
-                            <th>Effectif</th>
-                            <th class="text-center dt-no-sorting">Action</th>
+                            <th>{{ __('classes.th_nom') }}</th>
+                            <th>{{ __('classes.th_classe_officielle') }}</th>
+                            <th>{{ __('classes.th_ordre') }}</th>
+                            <th>{{ __('classes.th_effectif') }}</th>
+                            <th class="text-center dt-no-sorting">{{ __('classes.th_action') }}</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($classes as $classe)
                             <tr>
                                 <td class="fw-bold">{{ $classe->nom_classe }}</td>
-                                <td>{{ $classe->classeOfficielle->nom_classe_officielle ?? 'Non associée' }}</td>
+                                <td>{{ $classe->classeOfficielle->nom_classe_officielle ?? __('classes.non_associee') }}</td>
                                 <td>{{ $classe->ordreEnseignement }}</td>
-                                <td><span class="badge bg-light text-primary border border-primary-subtle rounded-pill">{{ $classe->eleves_count }} élèves</span></td>
+                                <td><span class="badge bg-light text-primary border border-primary-subtle rounded-pill">{{ $classe->eleves_count }} {{ __('classes.students_suffix') }}</span></td>
                                 <td class="text-center">
                                     <div class="dropdown">
                                         <a class="text-muted fs-5" href="#" data-bs-toggle="dropdown">
@@ -60,36 +60,36 @@
                                         <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3">
                                             <li>
                                                 <a class="dropdown-item py-2" href="{{ route('classes.show', $classe->id_classe) }}">
-                                                    <i class="bi bi-eye text-info me-2"></i>Aperçu
+                                                    <i class="bi bi-eye text-info me-2"></i>{{ __('classes.action_preview') }}
                                                 </a>
                                             </li>
                                             @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('classes_modification'))
                                                 <li>
                                                     <a class="dropdown-item py-2" href="{{ route('classes.edit', $classe->id_classe) }}">
-                                                        <i class="bi bi-pencil text-warning me-2"></i>Modifier
+                                                        <i class="bi bi-pencil text-warning me-2"></i>{{ __('classes.action_edit') }}
                                                     </a>
                                                 </li>
                                             @endif
                                             <li>
                                                 <a class="dropdown-item py-2" href="{{ route('pedagogie.timetable', ['id_classe' => $classe->id_classe]) }}">
-                                                    <i class="bi bi-calendar-plus text-primary me-2"></i>Emploi du temps
+                                                    <i class="bi bi-calendar-plus text-primary me-2"></i>{{ __('classes.action_timetable') }}
                                                 </a>
                                             </li>
                                             @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasAnyPermission(['bulletins_apercu', 'bulletins_generation', 'bulletins_génération', 'bulletins_pdf', 'bulletins_impression', 'bulletins_publication', 'generer_bulletins', 'générer_bulletins']))
                                                 <li>
                                                     <a class="dropdown-item py-2" href="{{ route('pedagogie.bulletins.index', $classe->id_classe) }}">
-                                                        <i class="bi bi-card-list text-primary me-2"></i>Bulletins
+                                                        <i class="bi bi-card-list text-primary me-2"></i>{{ __('classes.action_bulletins') }}
                                                     </a>
                                                 </li>
                                             @endif
                                             @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('classes_supprimer'))
                                                 <li><hr class="dropdown-divider"></li>
                                                 <li>
-                                                    <form action="{{ route('classes.destroy', $classe->id_classe) }}" method="POST" data-confirm-delete data-confirm-title="Supprimer cette classe ?" data-confirm-text="La classe « {{ $classe->nom_classe }} » sera définitivement supprimée.">
+                                                    <form action="{{ route('classes.destroy', $classe->id_classe) }}" method="POST" data-confirm-delete data-confirm-title="{{ __('classes.confirm_delete_title') }}" data-confirm-text="{{ __('classes.confirm_delete_text', ['nom' => $classe->nom_classe]) }}">
                                                         @csrf
                                                         @method('DELETE')
                                                         <button type="submit" class="dropdown-item py-2 text-danger">
-                                                            <i class="bi bi-trash me-2"></i>Supprimer
+                                                            <i class="bi bi-trash me-2"></i>{{ __('classes.action_delete') }}
                                                         </button>
                                                     </form>
                                                 </li>
@@ -100,7 +100,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="text-center py-4 text-muted">Aucune classe n'a encore été créée.</td>
+                                <td colspan="5" class="text-center py-4 text-muted">{{ __('classes.empty') }}</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -114,13 +114,22 @@
     </style>
 @endsection
 
+@php
+    $classesIndexI18n = [
+        'confirmDefault' => __('classes.swal_confirm_default'),
+        'yesDelete' => __('classes.swal_yes_delete'),
+        'cancel' => __('classes.cancel'),
+    ];
+@endphp
+
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            const i18n = @json($classesIndexI18n);
             document.querySelectorAll('[data-confirm-delete]').forEach(function (form) {
                 form.addEventListener('submit', function (event) {
                     event.preventDefault();
-                    const title = form.dataset.confirmTitle || 'Confirmer la suppression ?';
+                    const title = form.dataset.confirmTitle || i18n.confirmDefault;
                     const text = form.dataset.confirmText || '';
                     if (!window.Swal) {
                         if (confirm(title)) form.submit();
@@ -131,8 +140,8 @@
                         text,
                         icon: 'warning',
                         showCancelButton: true,
-                        confirmButtonText: 'Oui, supprimer',
-                        cancelButtonText: 'Annuler',
+                        confirmButtonText: i18n.yesDelete,
+                        cancelButtonText: i18n.cancel,
                         confirmButtonColor: '#dc3545',
                         cancelButtonColor: '#6c757d',
                     }).then(function (result) {
