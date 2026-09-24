@@ -78,4 +78,13 @@ return [
     'aca_modal_create_title' => 'New academy',
     'aca_modal_edit_title' => 'Edit an academy',
     'aca_nom_label' => 'Academy name',
+
+    // caps.blade.php + partials/cap-modal.blade.php
+    'cap_gestion' => 'CAP management',
+    'cap_confirm_delete' => 'Delete this CAP?',
+    'cap_empty' => 'No CAP found.',
+    'cap_modal_create_title' => 'New CAP',
+    'cap_modal_edit_title' => 'Edit a CAP',
+    'cap_nom_label' => 'CAP name',
+    'selectionner' => 'Select',
 ];

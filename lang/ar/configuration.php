@@ -78,4 +78,13 @@ return [
     'aca_modal_create_title' => 'أكاديمية جديدة',
     'aca_modal_edit_title' => 'تعديل أكاديمية',
     'aca_nom_label' => 'اسم الأكاديمية',
+
+    // caps.blade.php + partials/cap-modal.blade.php
+    'cap_gestion' => 'إدارة CAP',
+    'cap_confirm_delete' => 'هل تريد حذف CAP هذا؟',
+    'cap_empty' => 'لم يتم العثور على أي CAP.',
+    'cap_modal_create_title' => 'CAP جديد',
+    'cap_modal_edit_title' => 'تعديل CAP',
+    'cap_nom_label' => 'اسم CAP',
+    'selectionner' => 'اختيار',
 ];

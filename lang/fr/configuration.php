@@ -78,4 +78,13 @@ return [
     'aca_modal_create_title' => 'Nouvelle académie',
     'aca_modal_edit_title' => 'Modifier une académie',
     'aca_nom_label' => 'Nom de l\'académie',
+
+    // caps.blade.php + partials/cap-modal.blade.php
+    'cap_gestion' => 'Gestion des CAP',
+    'cap_confirm_delete' => 'Supprimer ce CAP ?',
+    'cap_empty' => 'Aucun CAP trouvé.',
+    'cap_modal_create_title' => 'Nouveau CAP',
+    'cap_modal_edit_title' => 'Modifier un CAP',
+    'cap_nom_label' => 'Nom du CAP',
+    'selectionner' => 'Sélectionner',
 ];

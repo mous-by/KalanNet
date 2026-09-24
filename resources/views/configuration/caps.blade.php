@@ -2,13 +2,13 @@
 
 @section('content')
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-        <div class="breadcrumb-title pe-3">Configuration</div>
+        <div class="breadcrumb-title pe-3">{{ __('configuration.title') }}</div>
         <div class="ps-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0 p-0">
                     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bi bi-house-door"></i></a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('configuration.index') }}">Aperçu</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">CAP</li>
+                    <li class="breadcrumb-item"><a href="{{ route('configuration.index') }}">{{ __('configuration.menu_apercu') }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ __('configuration.menu_caps') }}</li>
                 </ol>
             </nav>
         </div>
@@ -21,20 +21,20 @@
         <div class="col-12 col-lg-9">
             <div class="card theme-card shadow-sm">
                 <div class="card-header theme-header d-flex align-items-center justify-content-between flex-wrap gap-2">
-                    <h5 class="mb-0 fw-bold"><i class="bi bi-diagram-3 me-2"></i>Gestion des CAP</h5>
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-diagram-3 me-2"></i>{{ __('configuration.cap_gestion') }}</h5>
                     @if(auth()->user()->droit === 'SupAdmin')
                         <button type="button" class="btn btn-sm d-flex align-items-center gap-1 shadow-sm text-white"
                                 style="background-color: var(--theme-accent) !important; color: var(--text-on-accent) !important; border: none;"
                                 data-bs-toggle="modal" data-bs-target="#capCreateModal">
                             <i class="bi bi-plus-lg"></i>
-                            <span>Ajouter</span>
+                            <span>{{ __('configuration.ajouter') }}</span>
                         </button>
                     @endif
                 </div>
                 <div class="card-body">
                     <div class="d-flex justify-content-end align-items-center flex-wrap mb-3 gap-3">
                         <form action="{{ route('configuration.caps') }}" method="GET" class="col-md-5" data-auto-filter="true">
-                            <input type="text" name="search" class="form-control" placeholder="Nom, code ou localité..." value="{{ request('search') }}">
+                            <input type="text" name="search" class="form-control" placeholder="{{ __('configuration.aca_search_placeholder') }}" value="{{ request('search') }}">
                         </form>
                     </div>
 
@@ -42,12 +42,12 @@
                         <table class="table table-striped table-bordered align-middle">
                             <thead>
                                 <tr>
-                                    <th>CAP</th>
-                                    <th>Code</th>
-                                    <th>Localité</th>
-                                    <th>Académie</th>
-                                    <th>Écoles</th>
-                                    <th class="text-end">Actions</th>
+                                    <th>{{ __('configuration.menu_caps') }}</th>
+                                    <th>{{ __('configuration.aca_th_code') }}</th>
+                                    <th>{{ __('configuration.aca_th_localite') }}</th>
+                                    <th>{{ __('configuration.menu_academies') }}</th>
+                                    <th>{{ __('configuration.menu_ecoles') }}</th>
+                                    <th class="text-end">{{ __('configuration.th_actions') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -60,13 +60,13 @@
                                         <td>{{ $cap->ecoles_count }}</td>
                                         <td class="text-end">
                                             @if(auth()->user()->droit === 'SupAdmin')
-                                                <button class="btn btn-light btn-sm p-2" data-bs-toggle="modal" data-bs-target="#capEditModal{{ $cap->id_cap }}" title="Modifier">
+                                                <button class="btn btn-light btn-sm p-2" data-bs-toggle="modal" data-bs-target="#capEditModal{{ $cap->id_cap }}" title="{{ __('configuration.modifier') }}">
                                                     <i class="bi bi-pencil text-warning"></i>
                                                 </button>
-                                                <form action="{{ route('configuration.caps.destroy', $cap->id_cap) }}" method="POST" class="d-inline" onsubmit="return confirm('Supprimer ce CAP ?');">
+                                                <form action="{{ route('configuration.caps.destroy', $cap->id_cap) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('configuration.cap_confirm_delete') }}');">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button class="btn btn-light btn-sm p-2" title="Supprimer">
+                                                    <button class="btn btn-light btn-sm p-2" title="{{ __('configuration.supprimer') }}">
                                                         <i class="bi bi-trash text-danger"></i>
                                                     </button>
                                                 </form>
@@ -74,7 +74,7 @@
                                         </td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="6" class="text-center py-4 text-muted">Aucun CAP trouvé.</td></tr>
+                                    <tr><td colspan="6" class="text-center py-4 text-muted">{{ __('configuration.cap_empty') }}</td></tr>
                                 @endforelse
                             </tbody>
                         </table>
@@ -90,7 +90,7 @@
 
     @include('configuration.partials.cap-modal', [
         'modalId' => 'capCreateModal',
-        'title' => 'Nouveau CAP',
+        'title' => __('configuration.cap_modal_create_title'),
         'action' => route('configuration.caps.store'),
         'method' => 'POST',
         'cap' => null,
@@ -99,7 +99,7 @@
     @foreach($caps as $cap)
         @include('configuration.partials.cap-modal', [
             'modalId' => 'capEditModal'.$cap->id_cap,
-            'title' => 'Modifier un CAP',
+            'title' => __('configuration.cap_modal_edit_title'),
             'action' => route('configuration.caps.update', $cap->id_cap),
             'method' => 'PUT',
             'cap' => $cap,
