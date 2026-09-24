@@ -315,6 +315,45 @@ const STRINGS = {
     'finances.valider_paiements': 'Valider les paiements',
     'finances.label_trimestre': 'Trimestre',
     'finances.trimestre_option': 'Trimestre :n',
+
+    // Configuration - commun
+    'configuration.title': 'Configuration',
+    'configuration.annuler': 'Annuler',
+    'configuration.enregistrer': 'Enregistrer',
+    'configuration.modifier': 'Modifier',
+    'configuration.supprimer': 'Supprimer',
+    'configuration.ajouter': 'Ajouter',
+
+    // Configuration - permissions.tsx
+    'configuration.perm_nom_requis': 'Le nom est requis.',
+    'configuration.perm_create_error': 'Impossible de créer cette permission.',
+    'configuration.perm_empty': 'Aucune permission.',
+    'configuration.perm_users_count': ':count utilisateur(s)',
+    'configuration.perm_modal_title': 'Nouvelle permission',
+    'configuration.perm_nom_label': 'Nom',
+    'configuration.perm_creer': 'Créer',
+    'configuration.perm_create_success': 'Permission créée avec succès.',
+
+    // Configuration - annees.tsx
+    'configuration.an_tous_champs_requis': 'Tous les champs sont requis.',
+    'configuration.an_create_error': 'Impossible de créer cette année scolaire.',
+    'configuration.an_empty': 'Aucune année scolaire.',
+    'configuration.an_modal_title': 'Nouvelle année scolaire',
+    'configuration.an_libelle_label': 'Libellé (ex: 2026-2027)',
+    'configuration.annees_date_debut_label': 'Date de début',
+    'configuration.annees_date_fin_label': 'Date de fin',
+    'configuration.an_create_success': 'Année scolaire créée avec succès.',
+
+    // Configuration - filieres.tsx
+    'configuration.fil_nom_requis': 'Le nom de la filière est requis.',
+    'configuration.fil_save_error': 'Impossible d’enregistrer cette filière.',
+    'configuration.fil_empty': 'Aucune filière.',
+    'configuration.fil_modal_edit_title': 'Modifier la filière',
+    'configuration.fil_modal_create_title': 'Nouvelle filière',
+    'configuration.fil_nom_label': 'Nom',
+    'configuration.fil_nom_placeholder': 'Ex : Infirmier, Sage-femme...',
+    'configuration.fil_edit_success': 'Filière modifiée avec succès.',
+    'configuration.fil_create_success': 'Filière créée avec succès.',
   },
   en: {
     'language.label': 'Language',
@@ -618,6 +657,45 @@ const STRINGS = {
     'finances.valider_paiements': 'Confirm the payments',
     'finances.label_trimestre': 'Term',
     'finances.trimestre_option': 'Term :n',
+
+    // Configuration - common
+    'configuration.title': 'Configuration',
+    'configuration.annuler': 'Cancel',
+    'configuration.enregistrer': 'Save',
+    'configuration.modifier': 'Edit',
+    'configuration.supprimer': 'Delete',
+    'configuration.ajouter': 'Add',
+
+    // Configuration - permissions.tsx
+    'configuration.perm_nom_requis': 'Name is required.',
+    'configuration.perm_create_error': 'Could not create this permission.',
+    'configuration.perm_empty': 'No permission.',
+    'configuration.perm_users_count': ':count user(s)',
+    'configuration.perm_modal_title': 'New permission',
+    'configuration.perm_nom_label': 'Name',
+    'configuration.perm_creer': 'Create',
+    'configuration.perm_create_success': 'Permission created successfully.',
+
+    // Configuration - annees.tsx
+    'configuration.an_tous_champs_requis': 'All fields are required.',
+    'configuration.an_create_error': 'Could not create this school year.',
+    'configuration.an_empty': 'No school year.',
+    'configuration.an_modal_title': 'New school year',
+    'configuration.an_libelle_label': 'Label (e.g.: 2026-2027)',
+    'configuration.annees_date_debut_label': 'Start date',
+    'configuration.annees_date_fin_label': 'End date',
+    'configuration.an_create_success': 'School year created successfully.',
+
+    // Configuration - filieres.tsx
+    'configuration.fil_nom_requis': 'Track name is required.',
+    'configuration.fil_save_error': 'Could not save this track.',
+    'configuration.fil_empty': 'No track.',
+    'configuration.fil_modal_edit_title': 'Edit track',
+    'configuration.fil_modal_create_title': 'New track',
+    'configuration.fil_nom_label': 'Name',
+    'configuration.fil_nom_placeholder': 'E.g.: Nurse, Midwife...',
+    'configuration.fil_edit_success': 'Track updated successfully.',
+    'configuration.fil_create_success': 'Track created successfully.',
   },
   ar: {
     'language.label': 'اللغة',
@@ -921,6 +999,45 @@ const STRINGS = {
     'finances.valider_paiements': 'تأكيد المدفوعات',
     'finances.label_trimestre': 'الفصل',
     'finances.trimestre_option': 'الفصل :n',
+
+    // Configuration - مشترك
+    'configuration.title': 'الإعدادات',
+    'configuration.annuler': 'إلغاء',
+    'configuration.enregistrer': 'حفظ',
+    'configuration.modifier': 'تعديل',
+    'configuration.supprimer': 'حذف',
+    'configuration.ajouter': 'إضافة',
+
+    // Configuration - permissions.tsx
+    'configuration.perm_nom_requis': 'الاسم مطلوب.',
+    'configuration.perm_create_error': 'تعذر إنشاء هذه الصلاحية.',
+    'configuration.perm_empty': 'لا توجد صلاحية.',
+    'configuration.perm_users_count': ':count مستخدم',
+    'configuration.perm_modal_title': 'صلاحية جديدة',
+    'configuration.perm_nom_label': 'الاسم',
+    'configuration.perm_creer': 'إنشاء',
+    'configuration.perm_create_success': 'تم إنشاء الصلاحية بنجاح.',
+
+    // Configuration - annees.tsx
+    'configuration.an_tous_champs_requis': 'جميع الحقول مطلوبة.',
+    'configuration.an_create_error': 'تعذر إنشاء هذه السنة الدراسية.',
+    'configuration.an_empty': 'لا توجد سنة دراسية.',
+    'configuration.an_modal_title': 'سنة دراسية جديدة',
+    'configuration.an_libelle_label': 'التسمية (مثال: 2026-2027)',
+    'configuration.annees_date_debut_label': 'تاريخ البداية',
+    'configuration.annees_date_fin_label': 'تاريخ النهاية',
+    'configuration.an_create_success': 'تم إنشاء السنة الدراسية بنجاح.',
+
+    // Configuration - filieres.tsx
+    'configuration.fil_nom_requis': 'اسم الشعبة مطلوب.',
+    'configuration.fil_save_error': 'تعذر حفظ هذه الشعبة.',
+    'configuration.fil_empty': 'لا توجد شعبة.',
+    'configuration.fil_modal_edit_title': 'تعديل الشعبة',
+    'configuration.fil_modal_create_title': 'شعبة جديدة',
+    'configuration.fil_nom_label': 'الاسم',
+    'configuration.fil_nom_placeholder': 'مثال: ممرض، قابلة...',
+    'configuration.fil_edit_success': 'تم تعديل الشعبة بنجاح.',
+    'configuration.fil_create_success': 'تم إنشاء الشعبة بنجاح.',
   },
 } satisfies Record<Locale, Record<string, string>>;
 

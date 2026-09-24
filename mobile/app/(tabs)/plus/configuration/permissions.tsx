@@ -4,6 +4,7 @@ import { Button, Dialog, FAB, Portal, Text, TextInput } from 'react-native-paper
 
 import requiredLabel from '@/components/RequiredLabel';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
+import { useLocale } from '@/context/LocaleContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
 
@@ -14,6 +15,7 @@ interface Permission {
 }
 
 export default function PermissionsScreen() {
+  const { t } = useLocale();
   const { data, isLoading, error, reload } = useApiGet<{ data: Permission[] }>('/configuration/permissions');
   const [dialogVisible, setDialogVisible] = useState(false);
   const [name, setName] = useState('');
@@ -23,7 +25,7 @@ export default function PermissionsScreen() {
 
   async function handleSubmit() {
     if (!name.trim()) {
-      setFormError('Le nom est requis.');
+      setFormError(t('configuration.perm_nom_requis'));
       return;
     }
     setIsSubmitting(true);
@@ -35,7 +37,7 @@ export default function PermissionsScreen() {
       setSuccessVisible(true);
       reload();
     } catch (err) {
-      setFormError(apiErrorMessage(err, 'Impossible de créer cette permission.'));
+      setFormError(apiErrorMessage(err, t('configuration.perm_create_error')));
     } finally {
       setIsSubmitting(false);
     }
@@ -49,11 +51,11 @@ export default function PermissionsScreen() {
         contentContainerStyle={styles.content}
         refreshing={isLoading}
         onRefresh={reload}
-        ListEmptyComponent={<Text style={styles.empty}>{error ?? 'Aucune permission.'}</Text>}
+        ListEmptyComponent={<Text style={styles.empty}>{error ?? t('configuration.perm_empty')}</Text>}
         renderItem={({ item }) => (
           <View style={styles.row}>
             <Text style={styles.title}>{item.name}</Text>
-            <Text style={styles.meta}>{item.users_count} utilisateur(s)</Text>
+            <Text style={styles.meta}>{t('configuration.perm_users_count').replace(':count', String(item.users_count))}</Text>
           </View>
         )}
       />
@@ -61,21 +63,21 @@ export default function PermissionsScreen() {
 
       <Portal>
         <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
-          <Dialog.Title>Nouvelle permission</Dialog.Title>
+          <Dialog.Title>{t('configuration.perm_modal_title')}</Dialog.Title>
           <Dialog.Content>
-            <TextInput mode="outlined" label={requiredLabel('Nom')} value={name} onChangeText={setName} style={styles.input} />
+            <TextInput mode="outlined" label={requiredLabel(t('configuration.perm_nom_label'))} value={name} onChangeText={setName} style={styles.input} />
             {formError ? <Text style={styles.error}>{formError}</Text> : null}
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setDialogVisible(false)}>Annuler</Button>
+            <Button onPress={() => setDialogVisible(false)}>{t('configuration.annuler')}</Button>
             <Button loading={isSubmitting} onPress={handleSubmit}>
-              Créer
+              {t('configuration.perm_creer')}
             </Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
 
-      <SuccessSnackbar visible={successVisible} message="Permission créée avec succès." onDismiss={() => setSuccessVisible(false)} />
+      <SuccessSnackbar visible={successVisible} message={t('configuration.perm_create_success')} onDismiss={() => setSuccessVisible(false)} />
     </View>
   );
 }

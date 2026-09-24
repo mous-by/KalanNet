@@ -5,6 +5,7 @@ import { Button, Dialog, FAB, Portal, Text, TextInput } from 'react-native-paper
 import DateField from '@/components/DateField';
 import requiredLabel from '@/components/RequiredLabel';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
+import { useLocale } from '@/context/LocaleContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { usePaginatedApi } from '@/lib/useApi';
 
@@ -16,6 +17,7 @@ interface Annee {
 }
 
 export default function AnneesScreen() {
+  const { t } = useLocale();
   const list = usePaginatedApi<Annee>('/configuration/annees', {}, 'annees');
   const [dialogVisible, setDialogVisible] = useState(false);
   const [annee, setAnnee] = useState('');
@@ -35,7 +37,7 @@ export default function AnneesScreen() {
 
   async function handleSubmit() {
     if (!annee.trim() || !dateDebut || !dateFin) {
-      setError('Tous les champs sont requis.');
+      setError(t('configuration.an_tous_champs_requis'));
       return;
     }
     setIsSubmitting(true);
@@ -46,7 +48,7 @@ export default function AnneesScreen() {
       setSuccessVisible(true);
       list.refresh();
     } catch (err) {
-      setError(apiErrorMessage(err, 'Impossible de créer cette année scolaire.'));
+      setError(apiErrorMessage(err, t('configuration.an_create_error')));
     } finally {
       setIsSubmitting(false);
     }
@@ -60,7 +62,7 @@ export default function AnneesScreen() {
         contentContainerStyle={styles.content}
         refreshing={list.isRefreshing}
         onRefresh={list.refresh}
-        ListEmptyComponent={<Text style={styles.empty}>{list.error ?? 'Aucune année scolaire.'}</Text>}
+        ListEmptyComponent={<Text style={styles.empty}>{list.error ?? t('configuration.an_empty')}</Text>}
         renderItem={({ item }) => (
           <View style={styles.row}>
             <Text style={styles.title}>{item.annee}</Text>
@@ -74,23 +76,23 @@ export default function AnneesScreen() {
 
       <Portal>
         <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
-          <Dialog.Title>Nouvelle année scolaire</Dialog.Title>
+          <Dialog.Title>{t('configuration.an_modal_title')}</Dialog.Title>
           <Dialog.Content>
-            <TextInput mode="outlined" label={requiredLabel('Libellé (ex: 2026-2027)')} value={annee} onChangeText={setAnnee} style={styles.input} />
-            <DateField label={requiredLabel('Date de début')} value={dateDebut} onChange={setDateDebut} />
-            <DateField label={requiredLabel('Date de fin')} value={dateFin} onChange={setDateFin} />
+            <TextInput mode="outlined" label={requiredLabel(t('configuration.an_libelle_label'))} value={annee} onChangeText={setAnnee} style={styles.input} />
+            <DateField label={requiredLabel(t('configuration.annees_date_debut_label'))} value={dateDebut} onChange={setDateDebut} />
+            <DateField label={requiredLabel(t('configuration.annees_date_fin_label'))} value={dateFin} onChange={setDateFin} />
             {error ? <Text style={styles.error}>{error}</Text> : null}
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setDialogVisible(false)}>Annuler</Button>
+            <Button onPress={() => setDialogVisible(false)}>{t('configuration.annuler')}</Button>
             <Button loading={isSubmitting} onPress={handleSubmit}>
-              Créer
+              {t('configuration.perm_creer')}
             </Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
 
-      <SuccessSnackbar visible={successVisible} message="Année scolaire créée avec succès." onDismiss={() => setSuccessVisible(false)} />
+      <SuccessSnackbar visible={successVisible} message={t('configuration.an_create_success')} onDismiss={() => setSuccessVisible(false)} />
     </View>
   );
 }

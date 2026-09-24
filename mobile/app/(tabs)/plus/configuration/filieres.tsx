@@ -4,11 +4,13 @@ import { Button, Dialog, FAB, Portal, Text, TextInput } from 'react-native-paper
 
 import requiredLabel from '@/components/RequiredLabel';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
+import { useLocale } from '@/context/LocaleContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { usePaginatedApi } from '@/lib/useApi';
 import { Filiere } from '@/types/api';
 
 export default function FilieresScreen() {
+  const { t } = useLocale();
   const list = usePaginatedApi<Filiere>('/configuration/filieres');
   const [editing, setEditing] = useState<Filiere | null>(null);
   const [dialogVisible, setDialogVisible] = useState(false);
@@ -26,7 +28,7 @@ export default function FilieresScreen() {
 
   async function handleSubmit() {
     if (!nom.trim()) {
-      setError('Le nom de la filière est requis.');
+      setError(t('configuration.fil_nom_requis'));
       return;
     }
     setIsSubmitting(true);
@@ -42,7 +44,7 @@ export default function FilieresScreen() {
       setSuccessVisible(true);
       list.refresh();
     } catch (err) {
-      setError(apiErrorMessage(err, 'Impossible d’enregistrer cette filière.'));
+      setError(apiErrorMessage(err, t('configuration.fil_save_error')));
     } finally {
       setIsSubmitting(false);
     }
@@ -66,7 +68,7 @@ export default function FilieresScreen() {
         refreshing={list.isRefreshing}
         onRefresh={list.refresh}
         onEndReached={list.loadMore}
-        ListEmptyComponent={<Text style={styles.empty}>{list.error ?? 'Aucune filière.'}</Text>}
+        ListEmptyComponent={<Text style={styles.empty}>{list.error ?? t('configuration.fil_empty')}</Text>}
         renderItem={({ item }) => (
           <View style={styles.row}>
             <View style={styles.rowInfo}>
@@ -74,10 +76,10 @@ export default function FilieresScreen() {
             </View>
             <View style={styles.actions}>
               <Button compact onPress={() => openDialog(item)}>
-                Modifier
+                {t('configuration.modifier')}
               </Button>
               <Button compact textColor="#d33" onPress={() => handleDelete(item)}>
-                Supprimer
+                {t('configuration.supprimer')}
               </Button>
             </View>
           </View>
@@ -87,22 +89,22 @@ export default function FilieresScreen() {
 
       <Portal>
         <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
-          <Dialog.Title>{editing ? 'Modifier la filière' : 'Nouvelle filière'}</Dialog.Title>
+          <Dialog.Title>{editing ? t('configuration.fil_modal_edit_title') : t('configuration.fil_modal_create_title')}</Dialog.Title>
           <Dialog.Content>
             <TextInput
               mode="outlined"
-              label={requiredLabel('Nom')}
+              label={requiredLabel(t('configuration.fil_nom_label'))}
               value={nom}
               onChangeText={setNom}
-              placeholder="Ex : Infirmier, Sage-femme..."
+              placeholder={t('configuration.fil_nom_placeholder')}
               style={styles.input}
             />
             {error ? <Text style={styles.error}>{error}</Text> : null}
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setDialogVisible(false)}>Annuler</Button>
+            <Button onPress={() => setDialogVisible(false)}>{t('configuration.annuler')}</Button>
             <Button loading={isSubmitting} onPress={handleSubmit}>
-              Enregistrer
+              {t('configuration.enregistrer')}
             </Button>
           </Dialog.Actions>
         </Dialog>
@@ -110,7 +112,7 @@ export default function FilieresScreen() {
 
       <SuccessSnackbar
         visible={successVisible}
-        message={editing ? 'Filière modifiée avec succès.' : 'Filière créée avec succès.'}
+        message={editing ? t('configuration.fil_edit_success') : t('configuration.fil_create_success')}
         onDismiss={() => setSuccessVisible(false)}
       />
     </View>
