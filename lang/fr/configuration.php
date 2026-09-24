@@ -46,4 +46,19 @@ return [
     'th_debut' => 'Début',
     'th_fin' => 'Fin',
     'empty_annees' => 'Aucune année trouvée.',
+
+    // permissions.blade.php
+    'ajouter' => 'Ajouter',
+    'annuler' => 'Annuler',
+    'enregistrer' => 'Enregistrer',
+    'th_numero' => 'N°',
+    'perm_referentiel' => 'Référentiel des permissions',
+    'perm_search_placeholder' => 'Rechercher une permission...',
+    'perm_th_permission' => 'Permission',
+    'perm_th_utilisateurs_lies' => 'Utilisateurs liés',
+    'perm_empty' => 'Aucune permission trouvée.',
+    'perm_modal_title' => 'Nouvelle Permission',
+    'perm_nom_label' => 'Nom de la permission',
+    'perm_nom_placeholder' => 'Ex: types_notes_apercu',
+    'perm_nom_help' => 'Recommandé : minuscules séparées par des tirets bas (_).',
 ];

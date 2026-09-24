@@ -46,4 +46,19 @@ return [
     'th_debut' => 'Start',
     'th_fin' => 'End',
     'empty_annees' => 'No school year found.',
+
+    // permissions.blade.php
+    'ajouter' => 'Add',
+    'annuler' => 'Cancel',
+    'enregistrer' => 'Save',
+    'th_numero' => 'No.',
+    'perm_referentiel' => 'Permissions reference',
+    'perm_search_placeholder' => 'Search a permission...',
+    'perm_th_permission' => 'Permission',
+    'perm_th_utilisateurs_lies' => 'Linked users',
+    'perm_empty' => 'No permission found.',
+    'perm_modal_title' => 'New Permission',
+    'perm_nom_label' => 'Permission name',
+    'perm_nom_placeholder' => 'E.g: types_notes_apercu',
+    'perm_nom_help' => 'Recommended: lowercase separated by underscores (_).',
 ];

@@ -46,4 +46,19 @@ return [
     'th_debut' => 'البداية',
     'th_fin' => 'النهاية',
     'empty_annees' => 'لم يتم العثور على أي سنة.',
+
+    // permissions.blade.php
+    'ajouter' => 'إضافة',
+    'annuler' => 'إلغاء',
+    'enregistrer' => 'حفظ',
+    'th_numero' => 'الرقم',
+    'perm_referentiel' => 'مرجع الصلاحيات',
+    'perm_search_placeholder' => 'ابحث عن صلاحية...',
+    'perm_th_permission' => 'الصلاحية',
+    'perm_th_utilisateurs_lies' => 'المستخدمون المرتبطون',
+    'perm_empty' => 'لم يتم العثور على أي صلاحية.',
+    'perm_modal_title' => 'صلاحية جديدة',
+    'perm_nom_label' => 'اسم الصلاحية',
+    'perm_nom_placeholder' => 'مثال: types_notes_apercu',
+    'perm_nom_help' => 'يُستحسن: أحرف صغيرة مفصولة بشرطات سفلية (_).',
 ];
