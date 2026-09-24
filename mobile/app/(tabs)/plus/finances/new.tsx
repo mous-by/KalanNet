@@ -10,6 +10,7 @@ import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
+import { useLocale } from '@/context/LocaleContext';
 import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { formatMontant } from '@/lib/currency';
@@ -34,17 +35,18 @@ interface StudentContext {
   parents: ParentPayeur[];
 }
 
-const MODE_REGLEMENT_OPTIONS = [
-  { value: 'especes', label: 'Espèces' },
-  { value: 'cheque', label: 'Chèque' },
-  { value: 'virement', label: 'Virement' },
-  { value: 'mobile_money', label: 'Mobile money manuel' },
-];
-
 export default function NewPaiementScreen() {
   const { id_eleve } = useLocalSearchParams<{ id_eleve: string }>();
   const { user } = useAuth();
+  const { t } = useLocale();
   const { isOnline, enqueueAction } = useOffline();
+
+  const MODE_REGLEMENT_OPTIONS = [
+    { value: 'especes', label: t('finances.mode_especes') },
+    { value: 'cheque', label: t('finances.mode_cheque') },
+    { value: 'virement', label: t('finances.mode_virement') },
+    { value: 'mobile_money', label: t('finances.mode_mobile_money') },
+  ];
   const { data: context, isLoading, error: contextError } = useApiGet<StudentContext>(id_eleve ? `/finances/eleves/${id_eleve}/contexte` : null, [id_eleve], {
     cacheKey: id_eleve ? `finances-eleve-${id_eleve}` : undefined,
   });
@@ -60,13 +62,13 @@ export default function NewPaiementScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('Paiement enregistré avec succès.');
+  const [successMessage, setSuccessMessage] = useState(t('finances.paiement_enregistre'));
 
   const isValid = echeanceId && montant && modeReglement && date;
 
   async function handleSubmit() {
     if (!isValid) {
-      setError('Veuillez remplir tous les champs obligatoires.');
+      setError(t('finances.validation_required'));
       return;
     }
     setError(null);
@@ -90,31 +92,31 @@ export default function NewPaiementScreen() {
           method: 'post',
           payload,
         });
-        setSuccessMessage('Paiement mis en attente, sera synchronisé au retour du réseau.');
+        setSuccessMessage(t('finances.paiement_queued'));
         setSuccessVisible(true);
         setTimeout(() => router.back(), 900);
         return;
       }
       await api.post('/finances/paiements', payload);
-      setSuccessMessage('Paiement enregistré avec succès.');
+      setSuccessMessage(t('finances.paiement_enregistre'));
       setSuccessVisible(true);
       setTimeout(() => router.back(), 900);
     } catch (err) {
-      setError(apiErrorMessage(err, 'Impossible d’enregistrer ce paiement.'));
+      setError(apiErrorMessage(err, t('finances.save_error')));
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  if (!id_eleve) return <Text style={styles.error}>Élève non spécifié.</Text>;
+  if (!id_eleve) return <Text style={styles.error}>{t('finances.eleve_non_specifie')}</Text>;
   if (isLoading) return <ActivityIndicator style={styles.spinner} size="large" />;
-  if (!context) return <Text style={styles.error}>{contextError ?? 'Impossible de charger ce paiement.'}</Text>;
+  if (!context) return <Text style={styles.error}>{contextError ?? t('finances.load_error')}</Text>;
 
   const echeanceOptions = (context.plan?.echeances ?? [])
     .filter((e) => e.reste > 0)
-    .map((e) => ({ value: e.id, label: `${e.libelle} — reste ${formatMontant(e.reste, user)}` }));
+    .map((e) => ({ value: e.id, label: `${e.libelle} — ${t('finances.reste_prefix').replace(':montant', formatMontant(e.reste, user))}` }));
   const parentOptions = [
-    { value: 0, label: 'Autre personne' },
+    { value: 0, label: t('finances.autre_personne') },
     ...(context.parents ?? []).map((p) => ({ value: p.id_parent, label: p.nom_prenom_parent })),
   ];
 
@@ -123,18 +125,18 @@ export default function NewPaiementScreen() {
       <OfflineBanner />
       <Text style={styles.studentName}>{context.eleve.nom}</Text>
 
-      <SelectField label={requiredLabel('Échéance')} value={echeanceId} options={echeanceOptions} onChange={(v) => setEcheanceId(v as number)} />
-      <TextInput mode="outlined" label={requiredLabel('Montant payé')} keyboardType="numeric" value={montant} onChangeText={setMontant} style={styles.input} />
-      <SelectField label={requiredLabel('Mode de règlement')} value={modeReglement} options={MODE_REGLEMENT_OPTIONS} onChange={(v) => setModeReglement(v as string)} />
-      <DateField label={requiredLabel('Date de paiement')} value={date} onChange={setDate} />
-      <TextInput mode="outlined" label="Motif (optionnel)" value={motif} onChangeText={setMotif} style={styles.input} />
-      <SelectField label="Parent payeur" value={parentId ?? 0} options={parentOptions} onChange={(v) => setParentId((v as number) || null)} />
-      <TextInput mode="outlined" label="Nom du payeur (optionnel)" value={nomPayeur} onChangeText={setNomPayeur} style={styles.input} />
-      <TextInput mode="outlined" label="Téléphone (optionnel)" value={telephone} onChangeText={setTelephone} keyboardType="phone-pad" style={styles.input} />
+      <SelectField label={requiredLabel(t('finances.label_echeance'))} value={echeanceId} options={echeanceOptions} onChange={(v) => setEcheanceId(v as number)} />
+      <TextInput mode="outlined" label={requiredLabel(t('finances.label_montant_paye'))} keyboardType="numeric" value={montant} onChangeText={setMontant} style={styles.input} />
+      <SelectField label={requiredLabel(t('finances.label_mode_reglement'))} value={modeReglement} options={MODE_REGLEMENT_OPTIONS} onChange={(v) => setModeReglement(v as string)} />
+      <DateField label={requiredLabel(t('finances.label_date_paiement'))} value={date} onChange={setDate} />
+      <TextInput mode="outlined" label={t('finances.label_motif_optional')} value={motif} onChangeText={setMotif} style={styles.input} />
+      <SelectField label={t('finances.label_parent_payeur')} value={parentId ?? 0} options={parentOptions} onChange={(v) => setParentId((v as number) || null)} />
+      <TextInput mode="outlined" label={t('finances.label_nom_payeur_optional')} value={nomPayeur} onChangeText={setNomPayeur} style={styles.input} />
+      <TextInput mode="outlined" label={t('finances.label_telephone_optional')} value={telephone} onChangeText={setTelephone} keyboardType="phone-pad" style={styles.input} />
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <SubmitButton label="Enregistrer le paiement" onPress={handleSubmit} loading={isSubmitting} />
+      <SubmitButton label={t('finances.enregistrer_paiement')} onPress={handleSubmit} loading={isSubmitting} />
 
       <SuccessSnackbar visible={successVisible} message={successMessage} onDismiss={() => setSuccessVisible(false)} />
     </ScrollView>

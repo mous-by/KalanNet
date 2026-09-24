@@ -8,6 +8,7 @@ import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
+import { useLocale } from '@/context/LocaleContext';
 import { useOffline } from '@/context/OfflineContext';
 import { formatMontant } from '@/lib/currency';
 import { api, apiErrorMessage } from '@/lib/api';
@@ -38,6 +39,7 @@ type DialogKind = 'encaissement' | 'decaissement' | null;
 
 export default function CaisseScreen() {
   const { user } = useAuth();
+  const { t } = useLocale();
   const { isOnline, enqueueAction, queue } = useOffline();
   const { data, isLoading, error, reload } = useApiGet<CaisseData>('/finances/caisse', [], { cacheKey: 'finances-caisse' });
   const queuedMouvements = queue.filter((item) => item.kind === 'caisse');
@@ -68,7 +70,7 @@ export default function CaisseScreen() {
 
   async function handleSubmit() {
     if (!data?.caisse || !motif.trim() || !montant || !date || !idAnnee) {
-      setFormError('Tous les champs sont requis.');
+      setFormError(t('finances.all_fields_required'));
       return;
     }
     setIsSubmitting(true);
@@ -94,18 +96,18 @@ export default function CaisseScreen() {
           method: 'post',
           payload,
         });
-        setSuccessMessage('Mouvement mis en attente, sera synchronisé au retour du réseau.');
+        setSuccessMessage(t('finances.mouvement_queued'));
         setDialogKind(null);
         setSuccessVisible(true);
         return;
       }
       await api.post(endpoint, payload);
-      setSuccessMessage(dialogKind === 'decaissement' ? 'Décaissement enregistré avec succès.' : 'Encaissement enregistré avec succès.');
+      setSuccessMessage(dialogKind === 'decaissement' ? t('finances.decaissement_success') : t('finances.encaissement_success'));
       setDialogKind(null);
       setSuccessVisible(true);
       reload();
     } catch (err) {
-      setFormError(apiErrorMessage(err, 'Action impossible.'));
+      setFormError(apiErrorMessage(err, t('finances.action_impossible')));
     } finally {
       setIsSubmitting(false);
     }
@@ -118,7 +120,7 @@ export default function CaisseScreen() {
     <View style={styles.container}>
       <OfflineBanner />
       <View style={styles.balanceCard}>
-        <Text style={styles.balanceLabel}>Solde</Text>
+        <Text style={styles.balanceLabel}>{t('finances.solde_label')}</Text>
         <Text style={styles.balanceValue}>{formatMontant(data?.caisse?.montant_net ?? 0, user)}</Text>
       </View>
 
@@ -129,12 +131,12 @@ export default function CaisseScreen() {
               <View style={styles.movementInfo}>
                 <Text style={styles.movementMotif}>{item.label}</Text>
                 <Text style={item.status === 'conflict' ? styles.conflictText : styles.queuedText}>
-                  {item.status === 'conflict' ? (item.message ?? 'Conflit à vérifier') : 'En attente de synchronisation'}
+                  {item.status === 'conflict' ? (item.message ?? t('classes.conflict_default')) : t('classes.queued_message')}
                 </Text>
               </View>
               {item.status === 'conflict' ? (
                 <Button compact textColor="#d33" onPress={() => removeQueueItem(item.id)}>
-                  Abandonner
+                  {t('classes.abandon')}
                 </Button>
               ) : null}
             </View>
@@ -146,7 +148,7 @@ export default function CaisseScreen() {
         data={data?.mouvements ?? []}
         keyExtractor={(item, index) => `${item.type}-${index}`}
         contentContainerStyle={styles.list}
-        ListEmptyComponent={<Text style={styles.empty}>Aucun mouvement.</Text>}
+        ListEmptyComponent={<Text style={styles.empty}>{t('finances.empty_mouvements')}</Text>}
         renderItem={({ item }) => (
           <View style={styles.movementRow}>
             <View style={styles.movementInfo}>
@@ -168,31 +170,31 @@ export default function CaisseScreen() {
           icon={fabOpen ? 'close' : 'plus'}
           onStateChange={({ open }) => setFabOpen(open)}
           actions={[
-            ...(canEncaisser ? [{ icon: 'cash-plus', label: 'Encaissement', onPress: () => openDialog('encaissement') }] : []),
-            ...(canDecaisser ? [{ icon: 'cash-minus', label: 'Décaissement', onPress: () => openDialog('decaissement') }] : []),
+            ...(canEncaisser ? [{ icon: 'cash-plus', label: t('finances.encaissement_label'), onPress: () => openDialog('encaissement') }] : []),
+            ...(canDecaisser ? [{ icon: 'cash-minus', label: t('finances.decaissement_label'), onPress: () => openDialog('decaissement') }] : []),
           ]}
         />
       ) : null}
 
       <Portal>
         <Dialog visible={dialogKind !== null} onDismiss={() => setDialogKind(null)}>
-          <Dialog.Title>{dialogKind === 'encaissement' ? 'Nouvel encaissement' : 'Nouveau décaissement'}</Dialog.Title>
+          <Dialog.Title>{dialogKind === 'encaissement' ? t('finances.nouvel_encaissement') : t('finances.nouveau_decaissement')}</Dialog.Title>
           <Dialog.Content>
             <SelectField
-              label={requiredLabel('Année scolaire')}
+              label={requiredLabel(t('finances.label_annee'))}
               value={idAnnee}
               options={(data?.annees ?? []).map((a) => ({ value: a.id_anneeScolaire, label: a.annee }))}
               onChange={(v) => setIdAnnee(v as number)}
             />
-            <TextInput mode="outlined" label={requiredLabel('Motif')} value={motif} onChangeText={setMotif} style={styles.input} />
-            <TextInput mode="outlined" label={requiredLabel('Montant')} keyboardType="numeric" value={montant} onChangeText={setMontant} style={styles.input} />
-            <DateField label={requiredLabel('Date')} value={date} onChange={setDate} />
+            <TextInput mode="outlined" label={requiredLabel(t('finances.label_motif'))} value={motif} onChangeText={setMotif} style={styles.input} />
+            <TextInput mode="outlined" label={requiredLabel(t('finances.label_montant'))} keyboardType="numeric" value={montant} onChangeText={setMontant} style={styles.input} />
+            <DateField label={requiredLabel(t('finances.label_date'))} value={date} onChange={setDate} />
             {formError ? <Text style={styles.error}>{formError}</Text> : null}
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setDialogKind(null)}>Annuler</Button>
+            <Button onPress={() => setDialogKind(null)}>{t('finances.cancel_button')}</Button>
             <Button loading={isSubmitting} onPress={handleSubmit}>
-              Enregistrer
+              {t('classes.save')}
             </Button>
           </Dialog.Actions>
         </Dialog>

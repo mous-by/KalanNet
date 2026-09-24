@@ -39,10 +39,10 @@ export default function PlusLayout() {
       <Stack.Screen name="bulletins/index" options={{ title: t('bulletins.title') }} />
       <Stack.Screen name="bulletins/[idClasse]" options={{ title: t('eleves.title') }} />
 
-      <Stack.Screen name="finances/index" options={{ title: 'Paiements' }} />
-      <Stack.Screen name="finances/new" options={{ title: 'Nouveau paiement' }} />
-      <Stack.Screen name="finances/classe" options={{ title: 'Paiement par classe' }} />
-      <Stack.Screen name="finances/caisse" options={{ title: 'Caisse' }} />
+      <Stack.Screen name="finances/index" options={{ title: t('finances.title') }} />
+      <Stack.Screen name="finances/new" options={{ title: t('finances.nouveau_paiement') }} />
+      <Stack.Screen name="finances/classe" options={{ title: t('finances.paiement_par_classe') }} />
+      <Stack.Screen name="finances/caisse" options={{ title: t('finances.caisse_title') }} />
 
       <Stack.Screen name="salaires/index" options={{ title: 'Salaires' }} />
 

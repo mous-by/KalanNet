@@ -4,6 +4,7 @@ import { Button, Text } from 'react-native-paper';
 
 import PaginatedList from '@/components/PaginatedList';
 import { useAuth } from '@/context/AuthContext';
+import { useLocale } from '@/context/LocaleContext';
 import { formatMontant } from '@/lib/currency';
 import { usePaginatedApi } from '@/lib/useApi';
 import { Classe, Eleve } from '@/types/api';
@@ -20,16 +21,17 @@ interface Paiement {
 
 export default function FinancesScreen() {
   const { user } = useAuth();
+  const { t } = useLocale();
   const list = usePaginatedApi<Paiement>('/finances/paiements', {}, 'paiements');
 
   return (
     <View style={styles.container}>
       <View style={styles.toolbar}>
         <Button mode="contained" onPress={() => router.push('/plus/finances/classe')}>
-          Paiement par classe
+          {t('finances.paiement_par_classe')}
         </Button>
         <Button mode="outlined" onPress={() => router.push('/plus/finances/caisse')}>
-          Voir la caisse
+          {t('finances.voir_caisse')}
         </Button>
       </View>
       <PaginatedList
@@ -41,7 +43,7 @@ export default function FinancesScreen() {
         error={list.error}
         onRefresh={list.refresh}
         onLoadMore={list.loadMore}
-        emptyLabel="Aucun paiement."
+        emptyLabel={t('finances.empty_paiements')}
         renderItem={(item) => (
           <View style={styles.row}>
             <Text style={styles.title}>

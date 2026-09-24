@@ -8,6 +8,7 @@ import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
 import { useAuth } from '@/context/AuthContext';
+import { useLocale } from '@/context/LocaleContext';
 import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { formatMontant } from '@/lib/currency';
@@ -55,22 +56,23 @@ interface RowEntry {
   autreTelephone: string;
 }
 
-const TYPE_TABS_PRIVATE = [
-  { value: '', label: 'Tous' },
-  { value: 'trimestriel', label: 'Trimestriel' },
-  { value: 'mensuel', label: 'Mensuel' },
-  { value: 'annuel', label: 'Annuel' },
-  { value: 'tranche', label: 'Par tranche' },
-];
-
-const TYPE_TABS_PUBLIC = [
-  { value: '', label: 'Tous' },
-  { value: 'cooperative', label: 'Coopérative' },
-];
-
 export default function PaiementClasseScreen() {
   const { user } = useAuth();
+  const { t } = useLocale();
   const { isOnline, enqueueAction } = useOffline();
+
+  const TYPE_TABS_PRIVATE = [
+    { value: '', label: t('finances.tab_tous') },
+    { value: 'trimestriel', label: t('finances.tab_trimestriel') },
+    { value: 'mensuel', label: t('finances.tab_mensuel') },
+    { value: 'annuel', label: t('finances.tab_annuel') },
+    { value: 'tranche', label: t('finances.tab_tranche') },
+  ];
+
+  const TYPE_TABS_PUBLIC = [
+    { value: '', label: t('finances.tab_tous') },
+    { value: 'cooperative', label: t('finances.tab_cooperative') },
+  ];
   const [idClasse, setIdClasse] = useState<number | null>(null);
   const [idAnnee, setIdAnnee] = useState<number | null>(null);
   const [idTrimestre, setIdTrimestre] = useState<number | null>(null);
@@ -94,7 +96,7 @@ export default function PaiementClasseScreen() {
 
   const classeOptions = (data?.classes ?? []).map((c) => ({ value: c.id_classe, label: c.nom_classe }));
   const anneeOptions = (data?.annees ?? []).map((a) => ({ value: a.id_anneeScolaire, label: a.annee }));
-  const trimestreOptions = (data?.trimestres ?? []).map((t) => ({ value: t.id_trimestre, label: t.nom_trimestre ?? `Trimestre ${t.id_trimestre}` }));
+  const trimestreOptions = (data?.trimestres ?? []).map((tr) => ({ value: tr.id_trimestre, label: tr.nom_trimestre ?? t('finances.trimestre_option').replace(':n', String(tr.id_trimestre)) }));
   const typeTabs = data?.is_public_school ? TYPE_TABS_PUBLIC : TYPE_TABS_PRIVATE;
 
   function entryFor(row: PaymentRow): RowEntry {
@@ -115,7 +117,7 @@ export default function PaiementClasseScreen() {
 
   async function handleSubmit() {
     if (!idClasse || !idAnnee || !idTrimestre || !date || !data?.rows) {
-      setError('Choisissez une classe, une année, un trimestre et une date.');
+      setError(t('finances.select_all_required'));
       return;
     }
     const rows = data.rows
@@ -134,7 +136,7 @@ export default function PaiementClasseScreen() {
       });
 
     if (rows.length === 0) {
-      setError('Sélectionnez au moins un élève à payer.');
+      setError(t('finances.select_one_student'));
       return;
     }
 
@@ -160,15 +162,18 @@ export default function PaiementClasseScreen() {
           method: 'post',
           payload,
         });
-        setSuccess(`${rows.length} paiement(s) enregistré(s) hors ligne. Ils seront envoyés au retour du réseau.`);
+        setSuccess(t('finances.offline_success').replace(':count', String(rows.length)));
         setEntries({});
         return;
       }
       const { data: response } = await api.post('/finances/paiements/groupes', payload);
-      setSuccess(`${response.created} paiement(s) enregistré(s).${response.errors?.length ? ` ${response.errors.length} ligne(s) ignorée(s).` : ''}`);
+      setSuccess(
+        t('finances.online_success').replace(':count', String(response.created)) +
+          (response.errors?.length ? t('finances.ignored_lines_suffix').replace(':count', String(response.errors.length)) : '')
+      );
       setEntries({});
     } catch (err) {
-      setError(apiErrorMessage(err, 'Impossible d’enregistrer les paiements.'));
+      setError(apiErrorMessage(err, t('finances.save_error_plural')));
     } finally {
       setIsSubmitting(false);
     }
@@ -177,10 +182,10 @@ export default function PaiementClasseScreen() {
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <OfflineBanner />
-      <SelectField label={requiredLabel('Classe')} value={idClasse} options={classeOptions} onChange={(v) => setIdClasse(v as number)} />
-      <SelectField label={requiredLabel('Année scolaire')} value={idAnnee} options={anneeOptions} onChange={(v) => setIdAnnee(v as number)} />
-      <SelectField label={requiredLabel('Trimestre')} value={idTrimestre} options={trimestreOptions} onChange={(v) => setIdTrimestre(v as number)} />
-      <DateField label={requiredLabel('Date de paiement')} value={date} onChange={setDate} />
+      <SelectField label={requiredLabel(t('eleves.label_classe'))} value={idClasse} options={classeOptions} onChange={(v) => setIdClasse(v as number)} />
+      <SelectField label={requiredLabel(t('finances.label_annee'))} value={idAnnee} options={anneeOptions} onChange={(v) => setIdAnnee(v as number)} />
+      <SelectField label={requiredLabel(t('finances.label_trimestre'))} value={idTrimestre} options={trimestreOptions} onChange={(v) => setIdTrimestre(v as number)} />
+      <DateField label={requiredLabel(t('finances.label_date_paiement'))} value={date} onChange={setDate} />
 
       <View style={styles.tabsRow}>
         {typeTabs.map((tab) => (
@@ -190,22 +195,22 @@ export default function PaiementClasseScreen() {
         ))}
       </View>
 
-      {!data?.caisse ? <Text style={styles.warning}>Vous devez activer une caisse avant tout encaissement.</Text> : null}
+      {!data?.caisse ? <Text style={styles.warning}>{t('finances.need_caisse')}</Text> : null}
 
       {isLoading ? (
         <ActivityIndicator style={styles.spinner} size="large" />
       ) : loadError ? (
         <Text style={styles.error}>{loadError}</Text>
       ) : !idClasse || !idAnnee ? (
-        <Text style={styles.empty}>Choisissez une classe et une année pour afficher les élèves.</Text>
+        <Text style={styles.empty}>{t('finances.choose_classe_annee')}</Text>
       ) : (data?.rows ?? []).length === 0 ? (
-        <Text style={styles.empty}>Aucun élève à afficher pour cette sélection.</Text>
+        <Text style={styles.empty}>{t('finances.empty_students_selection')}</Text>
       ) : (
         <>
           {data!.rows!.map((row) => {
             const entry = entryFor(row);
             const parentOptions = [
-              { value: 0, label: 'Autre personne' },
+              { value: 0, label: t('finances.autre_personne') },
               ...row.parents.map((p) => ({ value: p.id_parent, label: p.nom_prenom_parent })),
             ];
             return (
@@ -220,13 +225,21 @@ export default function PaiementClasseScreen() {
                       {row.eleve.prenom_eleve} {row.eleve.nom_eleve}
                     </Text>
                     <Text style={styles.studentMeta}>
-                      Total {formatMontant(row.montant_total, user)} · Reste {formatMontant(row.reste_a_payer, user)}
+                      {t('finances.total_reste')
+                        .replace(':total', formatMontant(row.montant_total, user))
+                        .replace(':reste', formatMontant(row.reste_a_payer, user))}
                     </Text>
                     {row.tranche ? (
                       <Text style={[styles.studentMeta, row.tranche.en_retard ? styles.trancheLate : null]}>
-                        {row.tranche.soldees}/{row.tranche.total} tranche(s) soldée(s)
+                        {t('finances.tranches_soldees_mobile')
+                          .replace(':soldees', String(row.tranche.soldees))
+                          .replace(':total', String(row.tranche.total))}
                         {row.tranche.courante
-                          ? ` · ${row.tranche.courante.libelle} : ${formatMontant(row.tranche.courante.reste, user)} avant le ${row.tranche.courante.date_limite.split('-').reverse().join('/')}${row.tranche.courante.en_retard ? ' (en retard)' : ''}`
+                          ? t('finances.tranche_avant_le_mobile')
+                              .replace(':libelle', row.tranche.courante.libelle)
+                              .replace(':montant', formatMontant(row.tranche.courante.reste, user))
+                              .replace(':date', row.tranche.courante.date_limite.split('-').reverse().join('/')) +
+                            (row.tranche.courante.en_retard ? t('finances.en_retard_suffix') : '')
                           : ''}
                       </Text>
                     ) : null}
@@ -235,17 +248,17 @@ export default function PaiementClasseScreen() {
 
                 {entry.selected ? (
                   <View style={styles.studentBody}>
-                    <TextInput mode="outlined" label="Motif" value={entry.motif} onChangeText={(v) => updateEntry(row.eleve.id_eleve, row, { motif: v })} style={styles.input} />
+                    <TextInput mode="outlined" label={t('finances.label_motif')} value={entry.motif} onChangeText={(v) => updateEntry(row.eleve.id_eleve, row, { motif: v })} style={styles.input} />
                     <TextInput
                       mode="outlined"
-                      label="Montant à payer"
+                      label={t('finances.label_montant_a_payer')}
                       keyboardType="numeric"
                       value={entry.montant}
                       onChangeText={(v) => updateEntry(row.eleve.id_eleve, row, { montant: v })}
                       style={styles.input}
                     />
                     <SelectField
-                      label="Parent payeur"
+                      label={t('finances.label_parent_payeur')}
                       value={entry.parentId ?? 0}
                       options={parentOptions}
                       onChange={(v) => updateEntry(row.eleve.id_eleve, row, { parentId: (v as number) || null })}
@@ -254,14 +267,14 @@ export default function PaiementClasseScreen() {
                       <>
                         <TextInput
                           mode="outlined"
-                          label="Nom du payeur"
+                          label={t('finances.label_nom_payeur')}
                           value={entry.autreNom}
                           onChangeText={(v) => updateEntry(row.eleve.id_eleve, row, { autreNom: v })}
                           style={styles.input}
                         />
                         <TextInput
                           mode="outlined"
-                          label="Téléphone du payeur"
+                          label={t('finances.label_telephone_payeur')}
                           keyboardType="phone-pad"
                           value={entry.autreTelephone}
                           onChangeText={(v) => updateEntry(row.eleve.id_eleve, row, { autreTelephone: v })}
@@ -278,7 +291,7 @@ export default function PaiementClasseScreen() {
           {error ? <Text style={styles.error}>{error}</Text> : null}
           {success ? <Text style={styles.success}>{success}</Text> : null}
 
-          <SubmitButton label="Valider les paiements" onPress={handleSubmit} loading={isSubmitting} disabled={!data?.caisse} />
+          <SubmitButton label={t('finances.valider_paiements')} onPress={handleSubmit} loading={isSubmitting} disabled={!data?.caisse} />
         </>
       )}
     </ScrollView>
