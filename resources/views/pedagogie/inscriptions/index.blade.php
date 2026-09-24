@@ -238,29 +238,29 @@
                 <div class="tab-pane fade {{ $activeTab === 'group' ? 'show active' : '' }}" id="tab-group" role="tabpanel">
                     <div class="card theme-card border-0 shadow-sm">
                         <div class="card-header theme-header border-0">
-                            <h5 class="mb-0 fw-bold">Inscription par groupe</h5>
+                            <h5 class="mb-0 fw-bold">{{ __('inscriptions.tab_group') }}</h5>
                         </div>
                         <div class="card-body p-4 p-lg-5">
                             <form action="{{ route('inscriptions.group.import') }}" method="POST" enctype="multipart/form-data" data-planification-form>
                                 @csrf
                                 <div class="row g-4">
                                     <div class="col-md-4">
-                                        <label class="form-label small fw-bold text-uppercase">Fichier Excel <span class="text-danger">*</span></label>
+                                        <label class="form-label small fw-bold text-uppercase">{{ __('inscriptions.excel_file_label') }} <span class="text-danger">*</span></label>
                                         <input type="file" name="fichier_excel" class="form-control rounded-3" accept=".xls,.xlsx" required>
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label small fw-bold text-uppercase">Classe <span class="text-danger">*</span></label>
+                                        <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_classe') }} <span class="text-danger">*</span></label>
                                         <select name="id_classe" class="form-select rounded-3" required data-planification-classe>
-                                            <option value="">Sélectionner une classe...</option>
+                                            <option value="">{{ __('inscriptions.select_classe') }}</option>
                                             @foreach($classes as $classe)
                                                 <option value="{{ $classe->id_classe }}">{{ $classe->nom_classe }}</option>
                                             @endforeach
                                         </select>
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label small fw-bold text-uppercase">Année scolaire <span class="text-danger">*</span></label>
+                                        <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_annee') }} <span class="text-danger">*</span></label>
                                         <select name="id_annee" class="form-select rounded-3" required data-planification-annee>
-                                            <option value="">Choisir une année...</option>
+                                            <option value="">{{ __('eleves.choose_annee') }}</option>
                                             @foreach($annees as $annee)
                                                 <option value="{{ $annee->id_anneeScolaire }}">{{ $annee->annee }}</option>
                                             @endforeach
@@ -274,18 +274,18 @@
                                             @endif
                                         </label>
                                         <select name="id_planification" class="form-select rounded-3" @required($planificationRequired) data-planification-select>
-                                            <option value="">{{ $planificationRequired ? 'Veuillez choisir' : 'Sans coopérative / sans frais' }}</option>
+                                            <option value="">{{ $planificationRequired ? __('inscriptions.select_planification') : __('inscriptions.no_cooperative_no_fee') }}</option>
                                             @foreach($planifications as $planification)
-                                                <option value="{{ $planification->id_planification }}" data-classe="{{ $planification->id_classe }}" data-annee="{{ $planification->id_annee }}">{{ $planificationRequired ? $planification->motif : 'Coopérative' }} - {{ number_format((float) $planification->montant_planification, 0, ',', ' ') }} F</option>
+                                                <option value="{{ $planification->id_planification }}" data-classe="{{ $planification->id_classe }}" data-annee="{{ $planification->id_annee }}">{{ $planificationRequired ? $planification->motif : __('inscriptions.cooperative_label') }} - {{ number_format((float) $planification->montant_planification, 0, ',', ' ') }} F</option>
                                             @endforeach
                                         </select>
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label small fw-bold text-uppercase">Date d'inscription</label>
+                                        <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_date_inscription') }}</label>
                                         <input type="date" name="date_inscription" class="form-control rounded-3" value="{{ now()->toDateString() }}">
                                     </div>
                                     <div class="col-12 text-end mt-3">
-                                        <button type="submit" class="btn theme-pill-active px-5 py-2 fw-bold">Importer et inscrire</button>
+                                        <button type="submit" class="btn theme-pill-active px-5 py-2 fw-bold">{{ __('inscriptions.import_and_register_button') }}</button>
                                     </div>
                                 </div>
                             </form>
@@ -294,9 +294,9 @@
                                 <div class="card-body p-4">
                                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
                                         <div>
-                                            <h6 class="mb-2">Modèle Excel d'inscription par groupe</h6>
-                                            <p class="mb-2">Téléchargez le modèle officiel et remplissez-le avec les colonnes attendues. Les lignes vides seront ignorées.</p>
-                                            <a href="{{ route('inscriptions.group.template') }}" class="btn btn-outline-primary">Télécharger le modèle Excel</a>
+                                            <h6 class="mb-2">{{ __('inscriptions.template_title') }}</h6>
+                                            <p class="mb-2">{{ __('inscriptions.template_desc') }}</p>
+                                            <a href="{{ route('inscriptions.group.template') }}" class="btn btn-outline-primary">{{ __('inscriptions.template_download_button') }}</a>
                                         </div>
                                     </div>
                                     <div class="table-responsive mt-4">
@@ -336,35 +336,35 @@
                 <div class="tab-pane fade {{ $activeTab === 'reinscription' ? 'show active' : '' }}" id="tab-reinscription" role="tabpanel">
                     <div class="card theme-card border-0 shadow-sm">
                         <div class="card-header theme-header border-0">
-                            <h5 class="mb-0 fw-bold">Réinscription intelligente</h5>
+                            <h5 class="mb-0 fw-bold">{{ __('inscriptions.reinscription_smart_title') }}</h5>
                         </div>
                         <div class="card-body p-4 p-lg-5">
                             @php
                                 $reinscriptionPreview = $reinscriptionPreview ?? null;
                                 $reinscriptionFilters = $reinscriptionFilters ?? [];
                                 $decisionLabels = [
-                                    'passant' => 'Passant',
-                                    'redoublant' => 'Redoublant',
-                                    'admis_sortant' => 'Admis sortant',
-                                    'diplome_sortant' => 'Diplômé sortant',
-                                    'en_attente_resultat' => 'En attente résultat',
-                                    'ajourne' => 'Ajourné / année blanche',
-                                    'abandon' => 'Abandon',
-                                    'exclu' => 'Exclu',
+                                    'passant' => __('inscriptions.decision_passant'),
+                                    'redoublant' => __('inscriptions.decision_redoublant'),
+                                    'admis_sortant' => __('inscriptions.decision_admis_sortant'),
+                                    'diplome_sortant' => __('inscriptions.decision_diplome_sortant'),
+                                    'en_attente_resultat' => __('inscriptions.decision_en_attente_resultat'),
+                                    'ajourne' => __('inscriptions.decision_ajourne'),
+                                    'abandon' => __('inscriptions.decision_abandon'),
+                                    'exclu' => __('inscriptions.decision_exclu'),
                                 ];
                                 $proposalLabels = [
-                                    'passant' => 'Passant',
-                                    'redoublant' => 'Redoublant',
-                                    'non_defini' => 'Moyenne non disponible',
-                                    'admis_sortant' => 'Admis sortant',
-                                    'diplome_sortant' => 'Diplômé sortant',
-                                    'en_attente_resultat' => 'Résultat national absent',
+                                    'passant' => __('inscriptions.decision_passant'),
+                                    'redoublant' => __('inscriptions.decision_redoublant'),
+                                    'non_defini' => __('inscriptions.proposal_non_defini'),
+                                    'admis_sortant' => __('inscriptions.decision_admis_sortant'),
+                                    'diplome_sortant' => __('inscriptions.decision_diplome_sortant'),
+                                    'en_attente_resultat' => __('inscriptions.proposal_en_attente_resultat'),
                                 ];
                             @endphp
 
                             <div class="alert alert-info border-0 border-start border-info border-4">
-                                <h6 class="mb-2">Assistant de réinscription par classe</h6>
-                                <p class="mb-0">Choisissez la classe de départ et l'année cible. Le système propose automatiquement passant ou redoublant selon la moyenne annuelle, avec possibilité de corriger la décision.</p>
+                                <h6 class="mb-2">{{ __('inscriptions.reinscription_assistant_title') }}</h6>
+                                <p class="mb-0">{{ __('inscriptions.reinscription_assistant_desc') }}</p>
                             </div>
 
                             <form action="{{ route('inscriptions.reinscription.store') }}" method="POST" class="mb-4">
@@ -372,9 +372,9 @@
                                 <input type="hidden" name="preview_reinscription" value="1">
                                 <div class="row g-4">
                                     <div class="col-md-4">
-                                        <label class="form-label small fw-bold text-uppercase">Classe actuelle <span class="text-danger">*</span></label>
+                                        <label class="form-label small fw-bold text-uppercase">{{ __('inscriptions.label_classe_actuelle') }} <span class="text-danger">*</span></label>
                                         <select name="source_classe_id" class="form-select rounded-3" required data-reinscription-source-class>
-                                            <option value="">Choisir la classe...</option>
+                                            <option value="">{{ __('inscriptions.choose_classe_generic') }}</option>
                                             @foreach($classes as $classe)
                                                 @php
                                                     preg_match('/\d+/', \Illuminate\Support\Str::ascii((string) $classe->nom_classe), $classeLevelMatch);
@@ -385,9 +385,9 @@
                                         </select>
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label small fw-bold text-uppercase">Année actuelle <span class="text-danger">*</span></label>
+                                        <label class="form-label small fw-bold text-uppercase">{{ __('inscriptions.label_annee_actuelle') }} <span class="text-danger">*</span></label>
                                         <select name="source_annee_id" class="form-select rounded-3" required data-reinscription-source-year>
-                                            <option value="">Choisir l'année...</option>
+                                            <option value="">{{ __('inscriptions.choose_annee_actuelle') }}</option>
                                             @foreach($annees as $annee)
                                                 @php
                                                     preg_match('/(20\d{2}|19\d{2})/', (string) $annee->annee, $yearMatch);
@@ -398,9 +398,9 @@
                                         </select>
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label small fw-bold text-uppercase">Année cible <span class="text-danger">*</span></label>
+                                        <label class="form-label small fw-bold text-uppercase">{{ __('inscriptions.label_annee_cible') }} <span class="text-danger">*</span></label>
                                         <select name="target_annee_id" class="form-select rounded-3" required data-reinscription-target-year>
-                                            <option value="">Choisir l'année cible...</option>
+                                            <option value="">{{ __('inscriptions.choose_annee_cible') }}</option>
                                             @foreach($annees as $annee)
                                                 @php
                                                     preg_match('/(20\d{2}|19\d{2})/', (string) $annee->annee, $targetYearMatch);
@@ -412,9 +412,9 @@
                                         <div class="small text-muted mt-1" data-reinscription-target-help></div>
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label small fw-bold text-uppercase">Classe cible des passants</label>
+                                        <label class="form-label small fw-bold text-uppercase">{{ __('inscriptions.label_classe_cible_passants') }}</label>
                                         <select name="target_classe_id" class="form-select rounded-3" data-reinscription-target-class>
-                                            <option value="">Automatique si possible</option>
+                                            <option value="">{{ __('inscriptions.auto_if_possible') }}</option>
                                             @foreach($classes as $classe)
                                                 @php
                                                     preg_match('/\d+/', \Illuminate\Support\Str::ascii((string) $classe->nom_classe), $targetClasseLevelMatch);
@@ -426,16 +426,16 @@
                                         <div class="alert alert-warning py-2 px-3 mt-2 mb-0 d-none" data-reinscription-class-help></div>
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label small fw-bold text-uppercase">Date de réinscription</label>
+                                        <label class="form-label small fw-bold text-uppercase">{{ __('inscriptions.label_date_reinscription') }}</label>
                                         <input type="date" name="date_reinscription" class="form-control rounded-3" value="{{ $reinscriptionFilters['date_reinscription'] ?? old('date_reinscription', now()->toDateString()) }}">
                                     </div>
                                     <div class="col-12">
                                         <div class="alert alert-secondary border-0 py-2 px-3 mb-0" data-reinscription-guidance>
-                                            Choisissez d’abord la classe actuelle et l’année actuelle. Le système proposera automatiquement l’année cible et la classe suivante si elles existent.
+                                            {{ __('inscriptions.guidance_default') }}
                                         </div>
                                     </div>
                                     <div class="col-md-4 d-flex align-items-end">
-                                        <button type="submit" class="btn theme-pill-active w-100 py-2 fw-bold d-none" data-reinscription-prepare>Préparer la liste</button>
+                                        <button type="submit" class="btn theme-pill-active w-100 py-2 fw-bold d-none" data-reinscription-prepare>{{ __('inscriptions.prepare_list_button') }}</button>
                                     </div>
                                 </div>
                             </form>
@@ -444,46 +444,46 @@
                                 <div class="row g-3 mb-4">
                                     <div class="col-md-3">
                                         <div class="border rounded-3 p-3 h-100">
-                                            <div class="small text-muted">Classe source</div>
+                                            <div class="small text-muted">{{ __('inscriptions.preview_classe_source') }}</div>
                                             <div class="fw-bold">{{ $reinscriptionPreview['sourceClasse']->nom_classe }}</div>
                                             @if($reinscriptionPreview['niveauExamen'])
-                                                <div class="small">Examen : {{ $reinscriptionPreview['niveauExamen'] }}</div>
+                                                <div class="small">{{ __('inscriptions.preview_examen', ['value' => $reinscriptionPreview['niveauExamen']]) }}</div>
                                             @else
-                                                <div class="small">Seuil : {{ number_format($reinscriptionPreview['seuil'], 2, ',', ' ') }}</div>
+                                                <div class="small">{{ __('inscriptions.preview_seuil', ['value' => number_format($reinscriptionPreview['seuil'], 2, ',', ' ')]) }}</div>
                                             @endif
                                         </div>
                                     </div>
                                     <div class="col-md-3">
                                         <div class="border rounded-3 p-3 h-100">
-                                            <div class="small text-muted">Classe proposée</div>
-                                            <div class="fw-bold">{{ $reinscriptionPreview['targetClasse']?->nom_classe ?? 'Sortie / transfert' }}</div>
+                                            <div class="small text-muted">{{ __('inscriptions.preview_classe_proposee') }}</div>
+                                            <div class="fw-bold">{{ $reinscriptionPreview['targetClasse']?->nom_classe ?? __('inscriptions.preview_sortie_transfert') }}</div>
                                             <div class="small">{{ $reinscriptionPreview['targetAnnee']?->annee }}</div>
                                         </div>
                                     </div>
                                     <div class="col-md-3">
                                         <div class="border rounded-3 p-3 h-100">
-                                            <div class="small text-muted">Propositions</div>
-                                            <div class="fw-bold">{{ $reinscriptionPreview['stats']['passants'] }} passant(s)</div>
-                                            <div class="small">{{ $reinscriptionPreview['stats']['redoublants'] }} redoublant(s)</div>
+                                            <div class="small text-muted">{{ __('inscriptions.preview_propositions') }}</div>
+                                            <div class="fw-bold">{{ __('inscriptions.preview_passant_count', ['count' => $reinscriptionPreview['stats']['passants']]) }}</div>
+                                            <div class="small">{{ __('inscriptions.preview_redoublant_count', ['count' => $reinscriptionPreview['stats']['redoublants']]) }}</div>
                                             @if($reinscriptionPreview['niveauExamen'])
-                                                <div class="small">{{ $reinscriptionPreview['stats']['sortants'] }} sortant(s)</div>
+                                                <div class="small">{{ __('inscriptions.preview_sortant_count', ['count' => $reinscriptionPreview['stats']['sortants']]) }}</div>
                                             @endif
                                         </div>
                                     </div>
                                     <div class="col-md-3">
                                         <div class="border rounded-3 p-3 h-100">
-                                            <div class="small text-muted">À surveiller</div>
+                                            <div class="small text-muted">{{ __('inscriptions.preview_a_surveiller') }}</div>
                                             <div class="fw-bold">
-                                                {{ $reinscriptionPreview['niveauExamen'] ? $reinscriptionPreview['stats']['en_attente_resultat'].' en attente résultat' : $reinscriptionPreview['stats']['sans_moyenne'].' sans moyenne' }}
+                                                {{ $reinscriptionPreview['niveauExamen'] ? __('inscriptions.preview_en_attente_resultat_count', ['count' => $reinscriptionPreview['stats']['en_attente_resultat']]) : __('inscriptions.preview_sans_moyenne_count', ['count' => $reinscriptionPreview['stats']['sans_moyenne']]) }}
                                             </div>
-                                            <div class="small">{{ $reinscriptionPreview['stats']['deja_reinscrits'] }} déjà réinscrit(s)</div>
+                                            <div class="small">{{ __('inscriptions.preview_deja_reinscrits_count', ['count' => $reinscriptionPreview['stats']['deja_reinscrits']]) }}</div>
                                         </div>
                                     </div>
                                 </div>
 
                                 @if($reinscriptionPreview['rows']->isEmpty())
                                     <div class="alert alert-warning border-0 border-start border-warning border-4">
-                                        Aucun élève actif trouvé pour cette classe et cette année scolaire.
+                                        {{ __('inscriptions.empty_reinscription') }}
                                     </div>
                                 @else
                                     <form action="{{ route('inscriptions.reinscription.store') }}" method="POST" data-reinscription-form>
@@ -495,10 +495,10 @@
 
                                         <div class="d-flex justify-content-between align-items-center mb-3">
                                             <div>
-                                                <h6 class="mb-1 fw-bold">Décisions à valider</h6>
-                                                <div class="small text-muted">Les décisions proposées peuvent être changées avant validation.</div>
+                                                <h6 class="mb-1 fw-bold">{{ __('inscriptions.decisions_a_valider_title') }}</h6>
+                                                <div class="small text-muted">{{ __('inscriptions.decisions_a_valider_desc') }}</div>
                                             </div>
-                                            <button type="submit" class="btn btn-primary px-4 fw-bold">Valider les élèves cochés</button>
+                                            <button type="submit" class="btn btn-primary px-4 fw-bold">{{ __('inscriptions.validate_checked_button') }}</button>
                                         </div>
 
                                         <div class="table-responsive">
@@ -506,19 +506,19 @@
                                                 <thead class="table-light">
                                                 <tr>
                                                     <th class="text-center" style="width: 48px;"><input type="checkbox" class="form-check-input" data-reinscription-check-all checked></th>
-                                                    <th>Élève</th>
-                                                    <th>Matricule</th>
+                                                    <th>{{ __('parents.th_eleve') }}</th>
+                                                    <th>{{ __('eleves.label_matricule') }}</th>
                                                     @if($reinscriptionPreview['niveauExamen'])
-                                                        <th>Examen</th>
-                                                        <th>Résultat national</th>
-                                                        <th>Moyenne examen</th>
+                                                        <th>{{ __('inscriptions.th_examen') }}</th>
+                                                        <th>{{ __('inscriptions.th_resultat_national') }}</th>
+                                                        <th>{{ __('inscriptions.th_moyenne_examen') }}</th>
                                                     @else
-                                                        <th>Moyenne annuelle</th>
+                                                        <th>{{ __('inscriptions.th_moyenne_annuelle') }}</th>
                                                     @endif
-                                                    <th>Proposition</th>
-                                                    <th>Décision finale</th>
-                                                    <th>Classe finale</th>
-                                                    <th>Observation</th>
+                                                    <th>{{ __('inscriptions.th_proposition') }}</th>
+                                                    <th>{{ __('inscriptions.th_decision_finale') }}</th>
+                                                    <th>{{ __('inscriptions.th_classe_finale') }}</th>
+                                                    <th>{{ __('inscriptions.th_observation') }}</th>
                                                 </tr>
                                                 </thead>
                                                 <tbody>
@@ -537,16 +537,16 @@
                                                         <td>
                                                             <div class="fw-bold">{{ $eleve->nom_eleve }} {{ $eleve->prenom_eleve }}</div>
                                                             @if($row['deja_reinscrit'])
-                                                                <span class="badge bg-warning text-dark">Déjà réinscrit</span>
+                                                                <span class="badge bg-warning text-dark">{{ __('inscriptions.badge_deja_reinscrit') }}</span>
                                                             @endif
                                                         </td>
-                                                        <td>{{ $eleve->matricule ?: 'Non renseigné' }}</td>
+                                                        <td>{{ $eleve->matricule ?: __('inscriptions.not_provided') }}</td>
                                                         @if($reinscriptionPreview['niveauExamen'])
                                                             <td>{{ $row['niveau_examen'] }}</td>
-                                                            <td>{{ $row['resultat_national'] ?: 'Non disponible' }}</td>
+                                                            <td>{{ $row['resultat_national'] ?: __('inscriptions.not_available') }}</td>
                                                             <td>
                                                                 @if($row['moyenne_examen'] === null)
-                                                                    <span class="text-muted">Non disponible</span>
+                                                                    <span class="text-muted">{{ __('inscriptions.not_available') }}</span>
                                                                 @else
                                                                     <span class="fw-bold">{{ number_format($row['moyenne_examen'], 2, ',', ' ') }}</span>
                                                                 @endif
@@ -554,7 +554,7 @@
                                                         @else
                                                             <td>
                                                                 @if($row['moyenne'] === null)
-                                                                    <span class="text-muted">Non disponible</span>
+                                                                    <span class="text-muted">{{ __('inscriptions.not_available') }}</span>
                                                                 @else
                                                                     <span class="fw-bold">{{ number_format($row['moyenne'], 2, ',', ' ') }}</span>
                                                                 @endif
@@ -570,14 +570,14 @@
                                                         </td>
                                                         <td>
                                                             <select name="eleves[{{ $key }}][id_classe]" class="form-select form-select-sm" data-reinscription-classe @disabled($row['deja_reinscrit'] || $blockedDecision)>
-                                                                <option value="" @selected($row['classe_cible_id'] === null)>Aucune classe</option>
+                                                                <option value="" @selected($row['classe_cible_id'] === null)>{{ __('inscriptions.aucune_classe') }}</option>
                                                                 @foreach($classes as $classe)
                                                                     <option value="{{ $classe->id_classe }}" @selected((int) $row['classe_cible_id'] === (int) $classe->id_classe)>{{ $classe->nom_classe }}</option>
                                                                 @endforeach
                                                             </select>
                                                         </td>
                                                         <td>
-                                                            <input type="text" name="eleves[{{ $key }}][motif_decision]" class="form-control form-control-sm" data-reinscription-observation placeholder="Motif si nécessaire" @disabled($row['deja_reinscrit'] || $blockedDecision)>
+                                                            <input type="text" name="eleves[{{ $key }}][motif_decision]" class="form-control form-control-sm" data-reinscription-observation placeholder="{{ __('inscriptions.motif_placeholder') }}" @disabled($row['deja_reinscrit'] || $blockedDecision)>
                                                         </td>
                                                     </tr>
                                                 @endforeach
@@ -593,6 +593,23 @@
             </div>
         </div>
     </div>
+    @php
+        $reinscriptionI18n = [
+            'missingClasseActuelle' => __('inscriptions.js_missing_classe_actuelle'),
+            'missingAnneeActuelle' => __('inscriptions.js_missing_annee_actuelle'),
+            'missingAnneeCible' => __('inscriptions.js_missing_annee_cible'),
+            'guidanceAllReady' => __('inscriptions.js_guidance_all_ready'),
+            'guidanceMissingPrefix' => __('inscriptions.js_guidance_missing_prefix'),
+            'chooseSourceClassHelp' => __('inscriptions.js_choose_source_class_help'),
+            'classTargetAutoHelp' => __('inscriptions.js_class_target_auto_help'),
+            'terminalClassHelp' => __('inscriptions.js_terminal_class_help'),
+            'noNextClassHelp' => __('inscriptions.js_no_next_class_help'),
+            'targetYearAutoHelp' => __('inscriptions.js_target_year_auto_help'),
+            'nextYearMissingHelp' => __('inscriptions.js_next_year_missing_help'),
+            'motifPlaceholder' => __('inscriptions.motif_placeholder'),
+            'motifRequiredPlaceholder' => __('inscriptions.motif_required_placeholder'),
+        ];
+    @endphp
     <script>
         document.querySelectorAll('[data-planification-form]').forEach((form) => {
             const classeSelect = form.querySelector('[data-planification-classe]');
@@ -639,6 +656,7 @@
         // configure, auquel cas une classe sans classe suivante est toujours
         // traitee comme une configuration manquante (branche "warning" ci-dessous).
         const examenFinalGrade = @json($examenFinalGrade);
+        const reinscriptionI18n = @json($reinscriptionI18n);
 
         const reinscriptionForm = document.querySelector('[data-reinscription-form]');
         const sourceClassSelect = document.querySelector('[data-reinscription-source-class]');
@@ -654,9 +672,9 @@
             if (!prepareButton || !guidance) return;
 
             const missing = [];
-            if (!sourceClassSelect?.value) missing.push('la classe actuelle');
-            if (!sourceYearSelect?.value) missing.push('l’année actuelle');
-            if (!targetYearSelect?.value) missing.push('l’année cible');
+            if (!sourceClassSelect?.value) missing.push(reinscriptionI18n.missingClasseActuelle);
+            if (!sourceYearSelect?.value) missing.push(reinscriptionI18n.missingAnneeActuelle);
+            if (!targetYearSelect?.value) missing.push(reinscriptionI18n.missingAnneeCible);
             // La classe cible des passants reste optionnelle : une classe
             // terminale (BAC, ou DEF sans 10e dans l'ecole) n'en a jamais et
             // le serveur sait deja s'en passer (suggestNextClasse()), donc on
@@ -665,13 +683,13 @@
             if (missing.length === 0) {
                 prepareButton.classList.remove('d-none');
                 guidance.className = 'alert alert-success border-0 py-2 px-3 mb-0';
-                guidance.textContent = 'Toutes les conditions sont prêtes. Vous pouvez préparer la liste de réinscription.';
+                guidance.textContent = reinscriptionI18n.guidanceAllReady;
                 return;
             }
 
             prepareButton.classList.add('d-none');
             guidance.className = 'alert alert-secondary border-0 py-2 px-3 mb-0';
-            guidance.textContent = 'À compléter avant de préparer la liste : ' + missing.join(', ') + '.';
+            guidance.textContent = reinscriptionI18n.guidanceMissingPrefix + missing.join(', ') + '.';
         };
 
         const syncTargetClass = () => {
@@ -683,7 +701,7 @@
                 targetClassSelect.value = '';
                 if (classHelp) {
                     classHelp.classList.remove('d-none');
-                    classHelp.textContent = 'Choisissez une classe actuelle pour que le système cherche la classe suivante.';
+                    classHelp.textContent = reinscriptionI18n.chooseSourceClassHelp;
                 }
                 updatePrepareState();
                 return;
@@ -695,7 +713,7 @@
                 targetClassSelect.value = target.value;
                 if (classHelp) {
                     classHelp.className = 'alert alert-success py-2 px-3 mt-2 mb-0';
-                    classHelp.textContent = 'Classe cible proposée automatiquement.';
+                    classHelp.textContent = reinscriptionI18n.classTargetAutoHelp;
                 }
             } else if (classHelp) {
                 targetClassSelect.value = '';
@@ -703,10 +721,10 @@
                     // Le niveau terminal (BAC au Mali) n'a jamais de classe
                     // suivante a creer, ce n'est pas une configuration manquante.
                     classHelp.className = 'alert alert-info py-2 px-3 mt-2 mb-0';
-                    classHelp.textContent = 'Classe terminale : pas de classe suivante. Les élèves admis seront proposés en « Diplômé sortant ».';
+                    classHelp.textContent = reinscriptionI18n.terminalClassHelp;
                 } else {
                     classHelp.className = 'alert alert-warning py-2 px-3 mt-2 mb-0';
-                    classHelp.textContent = 'Aucune classe suivante trouvée. Si cette classe est terminale (fin de cycle sans orientation interne), les élèves admis pourront être proposés en « Admis sortant ». Sinon, créez la classe suivante dans Classes.';
+                    classHelp.textContent = reinscriptionI18n.noNextClassHelp;
                 }
             }
 
@@ -745,12 +763,12 @@
                 if (target) {
                     targetYearSelect.value = target.value;
                     if (targetYearHelp) {
-                        targetYearHelp.textContent = 'Année cible proposée automatiquement.';
+                        targetYearHelp.textContent = reinscriptionI18n.targetYearAutoHelp;
                         targetYearHelp.className = 'alert alert-success py-2 px-3 mt-2 mb-0';
                     }
                 } else if (targetYearHelp) {
                     targetYearSelect.value = '';
-                    targetYearHelp.textContent = 'L’année suivante n’est pas encore créée. Créez-la dans Configuration > Années scolaires avant de valider une réinscription.';
+                    targetYearHelp.textContent = reinscriptionI18n.nextYearMissingHelp;
                     targetYearHelp.className = 'alert alert-warning py-2 px-3 mt-2 mb-0';
                 }
                 updatePrepareState();
@@ -814,7 +832,7 @@
                     }
                     if (observation) {
                         observation.required = ['ajourne', 'abandon', 'exclu'].includes(decision);
-                        observation.placeholder = observation.required ? 'Motif obligatoire' : 'Motif si nécessaire';
+                        observation.placeholder = observation.required ? reinscriptionI18n.motifRequiredPlaceholder : reinscriptionI18n.motifPlaceholder;
                     }
                 };
                 select.addEventListener('change', syncClass);

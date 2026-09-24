@@ -107,8 +107,8 @@ return [
     'js_guidance_missing_prefix' => 'À compléter avant de préparer la liste : ',
     'js_choose_source_class_help' => 'Choisissez une classe actuelle pour que le système cherche la classe suivante.',
     'js_class_target_auto_help' => 'Classe cible proposée automatiquement.',
-    'js_terminal_class_help' => 'Classe terminale (BAC) : pas de classe suivante. Les élèves admis seront proposés en « Diplômé sortant ».',
-    'js_no_next_class_help' => "Aucune classe suivante trouvée. Si cette classe est terminale (ex : fin de DEF sans orientation interne), les élèves admis pourront être proposés en « Admis sortant ». Sinon, créez la classe suivante dans Classes.",
+    'js_terminal_class_help' => 'Classe terminale : pas de classe suivante. Les élèves admis seront proposés en « Diplômé sortant ».',
+    'js_no_next_class_help' => "Aucune classe suivante trouvée. Si cette classe est terminale (fin de cycle sans orientation interne), les élèves admis pourront être proposés en « Admis sortant ». Sinon, créez la classe suivante dans Classes.",
     'js_target_year_auto_help' => 'Année cible proposée automatiquement.',
     'js_next_year_missing_help' => "L'année suivante n'est pas encore créée. Créez-la dans Configuration > Années scolaires avant de valider une réinscription.",
 ];

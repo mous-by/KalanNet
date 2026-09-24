@@ -107,8 +107,8 @@ return [
     'js_guidance_missing_prefix' => 'Still needed before preparing the list: ',
     'js_choose_source_class_help' => 'Choose a current class so the system can look for the next class.',
     'js_class_target_auto_help' => 'Target class suggested automatically.',
-    'js_terminal_class_help' => 'Terminal class (BAC): no next class. Passing students will be proposed as "Graduating and leaving".',
-    'js_no_next_class_help' => 'No next class found. If this class is a terminal one (e.g. end of DEF with no internal track), passing students can be proposed as "Passed and leaving". Otherwise, create the next class in Classes.',
+    'js_terminal_class_help' => 'Terminal class: no next class. Passing students will be proposed as "Graduating and leaving".',
+    'js_no_next_class_help' => 'No next class found. If this class is a terminal one (end of cycle with no internal track), passing students can be proposed as "Passed and leaving". Otherwise, create the next class in Classes.',
     'js_target_year_auto_help' => 'Target school year suggested automatically.',
     'js_next_year_missing_help' => 'The next school year has not been created yet. Create it in Configuration > School years before confirming a re-enrollment.',
 ];
