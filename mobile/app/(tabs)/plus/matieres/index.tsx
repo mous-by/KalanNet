@@ -5,6 +5,7 @@ import { Button, Checkbox, Dialog, FAB, Portal, Text, TextInput } from 'react-na
 import requiredLabel from '@/components/RequiredLabel';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
+import { useLocale } from '@/context/LocaleContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { hasPermission } from '@/lib/permissions';
 import { usePaginatedApi } from '@/lib/useApi';
@@ -20,6 +21,7 @@ const ORDRE_LABELS: Record<string, string> = {
 
 export default function MatieresScreen() {
   const { user } = useAuth();
+  const { t } = useLocale();
   const canCreate = hasPermission(user, 'matieres_creation');
   const canEdit = hasPermission(user, 'matieres_modification');
   const canDelete = hasPermission(user, 'matieres_supprimer');
@@ -51,7 +53,7 @@ export default function MatieresScreen() {
 
   async function handleSubmit() {
     if (!nom.trim() || ordres.size === 0) {
-      setError('Le nom et au moins un ordre d’enseignement sont requis.');
+      setError(t('matieres.name_required'));
       return;
     }
     setIsSubmitting(true);
@@ -67,7 +69,7 @@ export default function MatieresScreen() {
       setSuccessVisible(true);
       list.refresh();
     } catch (err) {
-      setError(apiErrorMessage(err, 'Impossible d’enregistrer cette matière.'));
+      setError(apiErrorMessage(err, t('matieres.save_error')));
     } finally {
       setIsSubmitting(false);
     }
@@ -90,7 +92,7 @@ export default function MatieresScreen() {
         contentContainerStyle={styles.content}
         refreshing={list.isRefreshing}
         onRefresh={list.refresh}
-        ListEmptyComponent={<Text style={styles.empty}>{list.error ?? 'Aucune matière.'}</Text>}
+        ListEmptyComponent={<Text style={styles.empty}>{list.error ?? t('matieres.empty')}</Text>}
         renderItem={({ item }) => (
           <View style={styles.row}>
             <View style={styles.rowInfo}>
@@ -101,12 +103,12 @@ export default function MatieresScreen() {
               <View style={styles.actions}>
                 {canEdit ? (
                   <Button compact onPress={() => openDialog(item)}>
-                    Modifier
+                    {t('matieres.action_edit')}
                   </Button>
                 ) : null}
                 {canDelete ? (
                   <Button compact textColor="#d33" onPress={() => handleDelete(item)}>
-                    Supprimer
+                    {t('matieres.action_delete')}
                   </Button>
                 ) : null}
               </View>
@@ -118,11 +120,11 @@ export default function MatieresScreen() {
 
       <Portal>
         <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
-          <Dialog.Title>{editing ? 'Modifier la matière' : 'Nouvelle matière'}</Dialog.Title>
+          <Dialog.Title>{editing ? t('matieres.edit') : t('matieres.new')}</Dialog.Title>
           <Dialog.Content>
-            <TextInput mode="outlined" label={requiredLabel('Nom')} value={nom} onChangeText={setNom} style={styles.input} />
+            <TextInput mode="outlined" label={requiredLabel(t('matieres.name'))} value={nom} onChangeText={setNom} style={styles.input} />
             <Text style={styles.sectionTitle}>
-              Ordres d'enseignement <Text style={styles.required}>*</Text>
+              {t('matieres.ordres_label')} <Text style={styles.required}>*</Text>
             </Text>
             {ALL_ORDRES.map((ordre) => (
               <View key={ordre} style={styles.checkRow}>
@@ -133,9 +135,9 @@ export default function MatieresScreen() {
             {error ? <Text style={styles.error}>{error}</Text> : null}
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setDialogVisible(false)}>Annuler</Button>
+            <Button onPress={() => setDialogVisible(false)}>{t('matieres.cancel')}</Button>
             <Button loading={isSubmitting} onPress={handleSubmit}>
-              Enregistrer
+              {t('matieres.save')}
             </Button>
           </Dialog.Actions>
         </Dialog>
@@ -143,7 +145,7 @@ export default function MatieresScreen() {
 
       <SuccessSnackbar
         visible={successVisible}
-        message={editing ? 'Matière modifiée avec succès.' : 'Matière créée avec succès.'}
+        message={editing ? t('matieres.saved') : t('matieres.created')}
         onDismiss={() => setSuccessVisible(false)}
       />
     </View>

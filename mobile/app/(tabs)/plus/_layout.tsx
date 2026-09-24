@@ -1,9 +1,11 @@
 import { Stack } from 'expo-router';
 
 import { useAppTheme } from '@/context/ThemeContext';
+import { useLocale } from '@/context/LocaleContext';
 
 export default function PlusLayout() {
   const { theme } = useAppTheme();
+  const { t } = useLocale();
 
   return (
     <Stack screenOptions={{ headerStyle: { backgroundColor: theme.chrome }, headerTintColor: theme.onChrome }}>
@@ -21,7 +23,7 @@ export default function PlusLayout() {
       <Stack.Screen name="parents/new" options={{ title: 'Nouveau parent' }} />
       <Stack.Screen name="parents/[id]/edit" options={{ title: 'Modifier' }} />
 
-      <Stack.Screen name="matieres/index" options={{ title: 'Matières' }} />
+      <Stack.Screen name="matieres/index" options={{ title: t('matieres.title') }} />
 
       <Stack.Screen name="evaluations/index" options={{ title: 'Évaluations' }} />
       <Stack.Screen name="evaluations/new" options={{ title: 'Nouvelle évaluation' }} />
