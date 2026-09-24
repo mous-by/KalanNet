@@ -8,18 +8,19 @@
                 @endif
                 <div class="modal-header theme-header">
                     <h5 class="modal-title fw-bold">{{ $title }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('configuration.fermer') }}"></button>
                 </div>
                 <div class="modal-body">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label">Nom de l'école</label>
+                            <label class="form-label">{{ __('configuration.eco_modal_nom_label') }}</label>
                             <input type="text" name="nomEcole" class="form-control" value="{{ old('nomEcole', $ecole->nomEcole ?? '') }}" required>
+                            <div class="form-text js-type-field js-complexe">{{ __('configuration.eco_modal_nom_help_complexe') }}</div>
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Type</label>
+                            <label class="form-label">{{ __('configuration.eco_th_type') }}</label>
                             <select name="typeEcole" class="form-select js-ecole-type" required>
-                                <option value="">Sélectionnez le type d'établissement</option>
+                                <option value="">{{ __('configuration.eco_modal_type_placeholder') }}</option>
                                 <option value="Complexe Scolaire" @selected(old('typeEcole', $ecole->typeEcole ?? '') === 'Complexe Scolaire')>Complexe Scolaire</option>
                                 {{-- Mali : cycles decoupes finement (voir ExamenNational/ClasseController::ordresDisponibles) --}}
                                 @foreach(['Fondamentale I', 'Fondamentale II', 'Collège'] as $type)
@@ -34,7 +35,7 @@
                             </select>
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Statut</label>
+                            <label class="form-label">{{ __('configuration.th_statut') }}</label>
                             <select name="statut" class="form-select js-statut-select" required>
                                 <option value="public" @selected(old('statut', $ecole->statut ?? 'public') === 'public')>Public</option>
                                 <option value="prive" @selected(old('statut', $ecole->statut ?? 'public') === 'prive')>Privé</option>
@@ -42,35 +43,35 @@
                         </div>
                         <div class="col-md-6 js-academie-field">
                             <div class="js-academie-input-group">
-                                <label class="form-label">Académie</label>
+                                <label class="form-label">{{ __('configuration.menu_academies') }}</label>
                                 <select name="id_academie" class="form-select js-academie-select" required>
-                                    <option value="">Sélectionner</option>
+                                    <option value="">{{ __('configuration.selectionner') }}</option>
                                     @foreach($academies as $academie)
                                         <option value="{{ $academie->id_academie }}" data-pays="{{ $academie->id_pays }}" @selected(old('id_academie', $ecole->id_academie ?? null) == $academie->id_academie)>
                                             {{ $academie->nom_academie }}
                                         </option>
                                     @endforeach
                                 </select>
-                                <button type="button" class="btn btn-link btn-sm px-0 mt-1 js-academie-new-toggle">+ Créer une nouvelle académie</button>
-                                <input type="text" name="nouvelle_academie_nom" class="form-control mt-1 d-none js-academie-new-input" placeholder="Nom de la nouvelle académie" value="{{ old('nouvelle_academie_nom') }}">
+                                <button type="button" class="btn btn-link btn-sm px-0 mt-1 js-academie-new-toggle">{{ __('configuration.eco_modal_academie_new_toggle') }}</button>
+                                <input type="text" name="nouvelle_academie_nom" class="form-control mt-1 d-none js-academie-new-input" placeholder="{{ __('configuration.eco_modal_academie_new_placeholder') }}" value="{{ old('nouvelle_academie_nom') }}">
                             </div>
-                            <div class="form-text js-academie-pays-help d-none">Optionnel hors Mali — sélectionnez une académie déjà créée par une autre école de ce pays, ou créez la vôtre.</div>
+                            <div class="form-text js-academie-pays-help d-none">{{ __('configuration.eco_modal_academie_pays_help') }}</div>
                         </div>
                         <div class="col-md-6 js-cap-field">
-                            <label class="form-label">CAP</label>
+                            <label class="form-label">{{ __('configuration.menu_caps') }}</label>
                             <select name="id_cap" class="form-select js-cap-select">
-                                <option value="">Sélectionner</option>
+                                <option value="">{{ __('configuration.selectionner') }}</option>
                                 @foreach($caps as $cap)
                                     <option value="{{ $cap->id_cap }}" data-academie="{{ $cap->id_academie }}" data-pays="{{ $cap->id_pays }}" @selected(old('id_cap', $ecole->id_cap ?? null) == $cap->id_cap)>
                                         {{ $cap->nom_cap }} - {{ $cap->academie->nom_academie ?? 'N/A' }}
                                     </option>
                                 @endforeach
                             </select>
-                            <button type="button" class="btn btn-link btn-sm px-0 mt-1 js-cap-new-toggle">+ Créer un nouveau CAP</button>
-                            <input type="text" name="nouveau_cap_nom" class="form-control mt-1 d-none js-cap-new-input" placeholder="Nom du nouveau CAP" value="{{ old('nouveau_cap_nom') }}">
+                            <button type="button" class="btn btn-link btn-sm px-0 mt-1 js-cap-new-toggle">{{ __('configuration.eco_modal_cap_new_toggle') }}</button>
+                            <input type="text" name="nouveau_cap_nom" class="form-control mt-1 d-none js-cap-new-input" placeholder="{{ __('configuration.eco_modal_cap_new_placeholder') }}" value="{{ old('nouveau_cap_nom') }}">
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Pays</label>
+                            <label class="form-label">{{ __('configuration.menu_pays') }}</label>
                             <select name="id_pays" class="form-select js-pays-select">
                                 @foreach($pays as $unPays)
                                     <option value="{{ $unPays->id }}" data-code-iso="{{ $unPays->code_iso }}" @selected(old('id_pays', $ecole->id_pays ?? null) == $unPays->id)>
@@ -80,91 +81,95 @@
                             </select>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Téléphone</label>
+                            <label class="form-label">{{ __('configuration.eco_modal_telephone_label') }}</label>
                             <input type="text" name="telephone" class="form-control" value="{{ old('telephone', $ecole->telephone ?? '') }}">
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Email</label>
+                            <label class="form-label">{{ __('configuration.eco_modal_email_label') }}</label>
                             <input type="email" name="email" class="form-control" value="{{ old('email', $ecole->email ?? '') }}">
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Notification SMS</label>
+                            <label class="form-label">{{ __('configuration.eco_modal_notif_sms_label') }}</label>
                             <select name="notification_sms" class="form-select">
-                                <option value="0" @selected(old('notification_sms', $ecole->notification_sms ?? 0) == 0)>Non</option>
-                                <option value="1" @selected(old('notification_sms', $ecole->notification_sms ?? 0) == 1)>Oui</option>
+                                <option value="0" @selected(old('notification_sms', $ecole->notification_sms ?? 0) == 0)>{{ __('configuration.non') }}</option>
+                                <option value="1" @selected(old('notification_sms', $ecole->notification_sms ?? 0) == 1)>{{ __('configuration.oui') }}</option>
                             </select>
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Notification email parents</label>
+                            <label class="form-label">{{ __('configuration.eco_modal_notif_email_label') }}</label>
                             <select name="notification_email" class="form-select">
-                                <option value="1" @selected(old('notification_email', $ecole->notification_email ?? 1) == 1)>Oui</option>
-                                <option value="0" @selected(old('notification_email', $ecole->notification_email ?? 1) == 0)>Non</option>
+                                <option value="1" @selected(old('notification_email', $ecole->notification_email ?? 1) == 1)>{{ __('configuration.oui') }}</option>
+                                <option value="0" @selected(old('notification_email', $ecole->notification_email ?? 1) == 0)>{{ __('configuration.non') }}</option>
                             </select>
                         </div>
                         @if(Auth::user()->droit === 'SupAdmin')
                             <div class="col-md-4">
-                                <label class="form-label">{{ $ecole ? "Changer/activer l'abonnement" : "Plan d'abonnement initial" }}</label>
+                                <label class="form-label">{{ $ecole ? __('configuration.eco_modal_abonnement_label_edit') : __('configuration.eco_modal_abonnement_label_create') }}</label>
                                 <select name="abonnement_offre_id" class="form-select js-offre-select">
-                                    <option value="{{ $ecole ? '__KEEP__' : '' }}" selected>{{ $ecole ? "Ne pas modifier l'abonnement" : 'Aucun plan au démarrage' }}</option>
+                                    <option value="{{ $ecole ? '__KEEP__' : '' }}" selected>{{ $ecole ? __('configuration.eco_modal_abonnement_keep') : __('configuration.eco_modal_abonnement_none') }}</option>
                                     @foreach($abonnementOffres ?? [] as $offre)
                                         <option value="{{ $offre->id }}" data-type-ecole="{{ $offre->type_ecole_cible }}" @selected(old('abonnement_offre_id') == $offre->id)>
-                                            {{ $offre->nom }} - {{ number_format($offre->montant, 0, ',', ' ') }} {{ $offre->devise }} / {{ $offre->duree_jours }} jours
+                                            {{ $offre->nom }} - {{ number_format($offre->montant, 0, ',', ' ') }} {{ $offre->devise }} / {{ $offre->duree_jours }} {{ __('configuration.eco_modal_jours') }}
                                         </option>
                                     @endforeach
                                 </select>
-                                <small class="text-muted d-block mt-1">{{ $ecole ? 'Choisir un plan ajoute une nouvelle période.' : 'Optionnel.' }} Seules les formules compatibles avec le statut choisi (public/privé) sont proposées.</small>
+                                <small class="text-muted d-block mt-1">{{ $ecole ? __('configuration.eco_modal_abonnement_help_edit') : __('configuration.eco_modal_abonnement_help_create') }} {{ __('configuration.eco_modal_abonnement_help_suffix') }}</small>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">Apportée par un revendeur</label>
+                                <label class="form-label">{{ __('configuration.eco_modal_revendeur_label') }}</label>
                                 <select name="id_revendeur" class="form-select">
-                                    <option value="">Aucun</option>
+                                    <option value="">{{ __('configuration.eco_modal_revendeur_aucun') }}</option>
                                     @foreach($revendeurs ?? [] as $revendeur)
                                         <option value="{{ $revendeur->id }}" @selected(old('id_revendeur', $ecole->id_revendeur ?? null) == $revendeur->id)>
                                             {{ $revendeur->nom }}
                                         </option>
                                     @endforeach
                                 </select>
-                                <small class="text-muted d-block mt-1">Optionnel — l'école paiera alors le tarif fixé par ce revendeur.</small>
+                                <small class="text-muted d-block mt-1">{{ __('configuration.eco_modal_revendeur_help') }}</small>
                             </div>
                         @endif
                         <div class="col-md-4">
-                            <label class="form-label">Logo de l'école</label>
+                            <label class="form-label">{{ __('configuration.eco_modal_logo_label') }}</label>
                             <input type="file" name="logoEcole" class="form-control js-logo-input" accept="image/png,image/jpeg,image/webp">
-                            <small class="text-muted d-block mt-1">Formats acceptés : JPG, PNG, WebP. Taille max : 2 Mo.</small>
+                            <small class="text-muted d-block mt-1">{{ __('configuration.eco_modal_logo_help') }}</small>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Aperçu du logo</label>
+                            <label class="form-label">{{ __('configuration.eco_modal_logo_preview_label') }}</label>
                             @php($logoPreview = !empty($ecole?->logoEcole) ? asset($ecole->logoEcole) : '')
                             <div class="ecole-logo-preview d-flex align-items-center justify-content-center">
-                                <img src="{{ $logoPreview }}" alt="Aperçu du logo" class="js-logo-preview {{ $logoPreview ? '' : 'd-none' }}">
-                                <span class="js-logo-placeholder text-muted small {{ $logoPreview ? 'd-none' : '' }}">Aucun logo sélectionné</span>
+                                <img src="{{ $logoPreview }}" alt="{{ __('configuration.eco_modal_logo_preview_label') }}" class="js-logo-preview {{ $logoPreview ? '' : 'd-none' }}">
+                                <span class="js-logo-placeholder text-muted small {{ $logoPreview ? 'd-none' : '' }}">{{ __('configuration.eco_modal_logo_none') }}</span>
                             </div>
                         </div>
                         <div class="col-12">
-                            <label class="form-label">Adresse</label>
+                            <label class="form-label">{{ __('configuration.eco_modal_adresse_label') }}</label>
                             <textarea name="adresse" class="form-control" rows="2">{{ old('adresse', $ecole->adresse ?? '') }}</textarea>
                         </div>
                         <div class="col-md-6 js-type-field js-complexe">
-                            <label class="form-label">Nom du Complexe Scolaire</label>
-                            <input type="text" name="nomComplexe" class="form-control js-dynamic-input" value="{{ old('nomComplexe', $ecole->nomComplexe ?? '') }}" placeholder="Entrez le nom du complexe">
+                            <label class="form-label">{{ __('configuration.eco_modal_nomComplexe_label') }}</label>
+                            <input type="text" name="nomComplexe" class="form-control js-dynamic-input" value="{{ old('nomComplexe', $ecole->nomComplexe ?? '') }}" placeholder="{{ __('configuration.eco_modal_nomComplexe_placeholder') }}">
+                            <div class="form-text">{{ __('configuration.eco_modal_nomComplexe_help') }}</div>
                         </div>
                         <div class="col-md-6 js-type-field js-complexe">
-                            <label class="form-label">Nom école fondamentale du complexe</label>
-                            <input type="text" name="nomFondamental" class="form-control js-dynamic-input js-nom-fondamental" value="{{ old('nomFondamental', $ecole->nomFondamental ?? '') }}" placeholder="Renseigner seulement si le complexe contient une fondamentale">
+                            <label class="form-label">{{ __('configuration.eco_modal_nomFondamental_label') }}</label>
+                            <input type="text" name="nomFondamental" class="form-control js-dynamic-input js-nom-fondamental" value="{{ old('nomFondamental', $ecole->nomFondamental ?? '') }}" placeholder="{{ __('configuration.eco_modal_nomFondamental_placeholder') }}">
+                            <div class="form-text">{{ __('configuration.eco_modal_nomFondamental_help') }}</div>
                         </div>
                         <div class="col-md-6 js-type-field js-secondaire-generale js-complexe">
-                            <label class="form-label">Nom Lycée</label>
-                            <input type="text" name="nomLycee" class="form-control js-dynamic-input" value="{{ old('nomLycee', $ecole->nomLycee ?? '') }}" placeholder="Entrez le nom du lycée">
+                            <label class="form-label">{{ __('configuration.eco_modal_nomLycee_label') }}</label>
+                            <input type="text" name="nomLycee" class="form-control js-dynamic-input" value="{{ old('nomLycee', $ecole->nomLycee ?? '') }}" placeholder="{{ __('configuration.eco_modal_nomLycee_placeholder') }}">
+                            <div class="form-text">{{ __('configuration.eco_modal_nomLycee_help') }}</div>
                         </div>
                         <div class="col-md-6 js-type-field js-secondaire-technique js-complexe">
-                            <label class="form-label">Nom Technique et Professionnelle</label>
-                            <input type="text" name="nomProfessionnel" class="form-control js-dynamic-input" value="{{ old('nomProfessionnel', $ecole->nomProfessionnel ?? '') }}" placeholder="Entrez le nom de l'établissement professionnel">
+                            <label class="form-label">{{ __('configuration.eco_modal_nomProfessionnel_label') }}</label>
+                            <input type="text" name="nomProfessionnel" class="form-control js-dynamic-input" value="{{ old('nomProfessionnel', $ecole->nomProfessionnel ?? '') }}" placeholder="{{ __('configuration.eco_modal_nomProfessionnel_placeholder') }}">
+                            <div class="form-text">{{ __('configuration.eco_modal_nomProfessionnel_help') }}</div>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-primary px-4">Enregistrer</button>
+                    <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">{{ __('configuration.annuler') }}</button>
+                    <button type="submit" class="btn btn-primary px-4">{{ __('configuration.enregistrer') }}</button>
                 </div>
             </form>
         </div>
@@ -189,6 +194,10 @@
     </style>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            const i18nSelectionner = @json(__('configuration.selectionner'));
+            const i18nSelectAcademie = @json(__('configuration.eco_modal_select_academie_placeholder'));
+            const i18nSelectCap = @json(__('configuration.eco_modal_select_cap_placeholder'));
+
             document.querySelectorAll('.ecole-dynamic-form').forEach((form) => {
                 const typeSelect = form.querySelector('.js-ecole-type');
                 const statutSelect = form.querySelector('.js-statut-select');
@@ -237,7 +246,7 @@
                         theme: 'bootstrap4',
                         width: '100%',
                         dropdownParent: $modal,
-                        placeholder: 'Sélectionner une académie',
+                        placeholder: i18nSelectAcademie,
                         allowClear: true,
                     });
                 }
@@ -246,7 +255,7 @@
                         theme: 'bootstrap4',
                         width: '100%',
                         dropdownParent: $modal,
-                        placeholder: 'Sélectionner un CAP',
+                        placeholder: i18nSelectCap,
                         allowClear: true,
                     });
                 }
@@ -303,7 +312,7 @@
                     const currentValue = academieSelect.value;
 
                     academieSelect.innerHTML = '';
-                    academieSelect.appendChild(new Option('Sélectionner', '', false, false));
+                    academieSelect.appendChild(new Option(i18nSelectionner, '', false, false));
 
                     allAcademieOptions
                         .filter((opt) => paysId === '' || opt.paysId === paysId)
@@ -334,7 +343,7 @@
                     const currentValue = capSelect.value;
 
                     capSelect.innerHTML = '';
-                    capSelect.appendChild(new Option('Sélectionner', '', false, false));
+                    capSelect.appendChild(new Option(i18nSelectionner, '', false, false));
 
                     allCapOptions
                         .filter((opt) => academieId ? opt.academieId === academieId : (paysId === '' || opt.paysId === paysId))
