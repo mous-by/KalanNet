@@ -255,4 +255,23 @@ return [
     'montant_total_placeholder' => 'E.g.: 150000',
     'repartition_proposee_label' => 'Suggested breakdown:',
     'repartition_proposee_suffix' => 'You can then edit each amount and due date.',
+
+    // recu_paiement_scolaire.blade.php / recu_paiement_thermique.blade.php
+    'ecole_fallback' => 'School',
+    'recu_paiement_num' => 'Payment receipt No. :num',
+    'reference_date_line' => 'Reference: :reference | Date: :date',
+    'th_echeance' => 'Installment',
+    'th_montant_paye' => 'Amount paid',
+    'th_payeur' => 'Payer',
+    'th_mode_reglement' => 'Payment method',
+    'fait_par' => 'Issued by: :nom',
+    'signature_label' => 'Signature',
+
+    // recu_paiement_thermique.blade.php
+    'recu_paiement_title' => 'PAYMENT RECEIPT',
+    'num_hash' => 'No. :num',
+    'ref_prefix' => 'Ref: :reference',
+    'total_paye' => 'Total paid',
+    'scan_verify' => 'Scan to verify the receipt',
+    'thank_you_payment' => 'Thank you for your payment',
 ];

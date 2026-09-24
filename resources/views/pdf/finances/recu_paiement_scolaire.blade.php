@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="utf-8">
     <style>
@@ -26,22 +26,22 @@
             @endif
         </div>
     </div>
-    <p class="title">{{ $ecole?->nomEcole ?? 'École' }}</p>
-    <p class="title">Reçu de paiement N° {{ $paiement->numero_recu }}</p>
-    <p class="muted">Référence : {{ $paiement->reference }} | Date : {{ optional($paiement->date_paiement)->format('d/m/Y') }}</p>
+    <p class="title">{{ $ecole?->nomEcole ?? __('finances.ecole_fallback') }}</p>
+    <p class="title">{{ __('finances.recu_paiement_num', ['num' => $paiement->numero_recu]) }}</p>
+    <p class="muted">{{ __('finances.reference_date_line', ['reference' => $paiement->reference, 'date' => optional($paiement->date_paiement)->format('d/m/Y')]) }}</p>
 
     <table>
-        <tr><th>Élève</th><td>{{ $paiement->eleve?->nom_eleve }} {{ $paiement->eleve?->prenom_eleve }}</td></tr>
-        <tr><th>Classe</th><td>{{ $paiement->classe?->nom_classe }}</td></tr>
-        <tr><th>Échéance</th><td>{{ $paiement->echeance?->libelle ?? $paiement->motif }}</td></tr>
-        <tr><th>Montant payé</th><td><strong>{{ \App\Support\Devise::format($paiement->montant_paye ?? $paiement->montant, $paiement->ecole ?? null) }}</strong></td></tr>
-        <tr><th>Payeur</th><td>{{ $paiement->nom_payeur }} {{ $paiement->telephone ? ' - '.$paiement->telephone : '' }}</td></tr>
-        <tr><th>Mode de règlement</th><td>{{ $paiement->mode_reglement }}</td></tr>
+        <tr><th>{{ __('finances.th_eleve') }}</th><td>{{ $paiement->eleve?->nom_eleve }} {{ $paiement->eleve?->prenom_eleve }}</td></tr>
+        <tr><th>{{ __('finances.label_classe') }}</th><td>{{ $paiement->classe?->nom_classe }}</td></tr>
+        <tr><th>{{ __('finances.th_echeance') }}</th><td>{{ $paiement->echeance?->libelle ?? $paiement->motif }}</td></tr>
+        <tr><th>{{ __('finances.th_montant_paye') }}</th><td><strong>{{ \App\Support\Devise::format($paiement->montant_paye ?? $paiement->montant, $paiement->ecole ?? null) }}</strong></td></tr>
+        <tr><th>{{ __('finances.th_payeur') }}</th><td>{{ $paiement->nom_payeur }} {{ $paiement->telephone ? ' - '.$paiement->telephone : '' }}</td></tr>
+        <tr><th>{{ __('finances.th_mode_reglement') }}</th><td>{{ $paiement->mode_reglement }}</td></tr>
     </table>
 
     <div style="margin-top:40px; text-align:right;">
-        Fait par : {{ auth()->user()->nomPrenom ?? '' }}<br><br><br>
-        Signature
+        {{ __('finances.fait_par', ['nom' => auth()->user()->nomPrenom ?? '']) }}<br><br><br>
+        {{ __('finances.signature_label') }}
     </div>
 </body>
 </html>

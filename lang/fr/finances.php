@@ -255,4 +255,23 @@ return [
     'montant_total_placeholder' => 'Ex : 150000',
     'repartition_proposee_label' => 'Répartition proposée :',
     'repartition_proposee_suffix' => 'Vous pouvez ensuite modifier chaque montant et chaque date limite.',
+
+    // recu_paiement_scolaire.blade.php / recu_paiement_thermique.blade.php
+    'ecole_fallback' => 'École',
+    'recu_paiement_num' => 'Reçu de paiement N° :num',
+    'reference_date_line' => 'Référence : :reference | Date : :date',
+    'th_echeance' => 'Échéance',
+    'th_montant_paye' => 'Montant payé',
+    'th_payeur' => 'Payeur',
+    'th_mode_reglement' => 'Mode de règlement',
+    'fait_par' => 'Fait par : :nom',
+    'signature_label' => 'Signature',
+
+    // recu_paiement_thermique.blade.php
+    'recu_paiement_title' => 'REÇU DE PAIEMENT',
+    'num_hash' => 'N° :num',
+    'ref_prefix' => 'Ref : :reference',
+    'total_paye' => 'Total payé',
+    'scan_verify' => 'Scannez pour vérifier le reçu',
+    'thank_you_payment' => 'Merci pour votre paiement',
 ];

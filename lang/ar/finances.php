@@ -255,4 +255,23 @@ return [
     'montant_total_placeholder' => 'مثال: 150000',
     'repartition_proposee_label' => 'التوزيع المقترح:',
     'repartition_proposee_suffix' => 'يمكنك بعد ذلك تعديل كل مبلغ وكل موعد نهائي.',
+
+    // recu_paiement_scolaire.blade.php / recu_paiement_thermique.blade.php
+    'ecole_fallback' => 'المدرسة',
+    'recu_paiement_num' => 'إيصال الدفع رقم :num',
+    'reference_date_line' => 'المرجع: :reference | التاريخ: :date',
+    'th_echeance' => 'الأجل',
+    'th_montant_paye' => 'المبلغ المدفوع',
+    'th_payeur' => 'الدافع',
+    'th_mode_reglement' => 'طريقة الدفع',
+    'fait_par' => 'حرر من طرف: :nom',
+    'signature_label' => 'التوقيع',
+
+    // recu_paiement_thermique.blade.php
+    'recu_paiement_title' => 'إيصال الدفع',
+    'num_hash' => 'رقم :num',
+    'ref_prefix' => 'المرجع: :reference',
+    'total_paye' => 'المجموع المدفوع',
+    'scan_verify' => 'امسح للتحقق من الإيصال',
+    'thank_you_payment' => 'شكرًا على دفعتكم',
 ];
