@@ -133,4 +133,20 @@ return [
     'eco_empty' => 'No school found.',
     'eco_modal_create_title' => 'New school',
     'eco_modal_edit_title' => 'Edit a school',
+
+    // partials/classe-officielle-fields.blade.php
+    'classe_off_nom_label' => 'Official class name',
+    'classe_off_ordre_label' => 'Teaching cycle',
+    'choisir' => 'Choose...',
+
+    // classes-officielles.blade.php
+    'menu_classes_officielles_singulier' => 'Official class',
+    'classe_off_associer' => 'Link classes',
+    'classe_off_search_placeholder' => 'Name or teaching cycle...',
+    'classe_off_classes_associees' => 'Linked classes',
+    'classe_off_count' => ':count class(es)',
+    'classe_off_confirm_delete' => 'Delete this official class?',
+    'classe_off_empty' => 'No official class found.',
+    'classe_off_modal_create_title' => 'New official class',
+    'classe_off_modal_edit_title' => 'Edit the official class',
 ];

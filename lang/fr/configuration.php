@@ -133,4 +133,20 @@ return [
     'eco_empty' => 'Aucune école trouvée.',
     'eco_modal_create_title' => 'Nouvelle école',
     'eco_modal_edit_title' => 'Modifier une école',
+
+    // partials/classe-officielle-fields.blade.php
+    'classe_off_nom_label' => 'Nom de la classe officielle',
+    'classe_off_ordre_label' => "Ordre d'enseignement",
+    'choisir' => 'Choisir...',
+
+    // classes-officielles.blade.php
+    'menu_classes_officielles_singulier' => 'Classe officielle',
+    'classe_off_associer' => 'Associer classes',
+    'classe_off_search_placeholder' => "Nom ou ordre d'enseignement...",
+    'classe_off_classes_associees' => 'Classes associées',
+    'classe_off_count' => ':count classe(s)',
+    'classe_off_confirm_delete' => 'Supprimer cette classe officielle ?',
+    'classe_off_empty' => 'Aucune classe officielle trouvée.',
+    'classe_off_modal_create_title' => 'Nouvelle classe officielle',
+    'classe_off_modal_edit_title' => 'Modifier la classe officielle',
 ];

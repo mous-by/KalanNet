@@ -2,15 +2,15 @@
 
 @section('content')
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-        <div class="breadcrumb-title pe-3">Configuration</div>
+        <div class="breadcrumb-title pe-3">{{ __('configuration.title') }}</div>
         <div class="ps-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0 p-0">
                     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bi bi-house-door"></i></a></li>
                     @if(auth()->user()->droit === 'SupAdmin')
-                        <li class="breadcrumb-item"><a href="{{ route('configuration.index') }}">Aperçu</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('configuration.index') }}">{{ __('configuration.menu_apercu') }}</a></li>
                     @endif
-                    <li class="breadcrumb-item active" aria-current="page">Classes officielles</li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ __('configuration.menu_classes_officielles') }}</li>
                 </ol>
             </nav>
         </div>
@@ -25,11 +25,11 @@
         <div class="col-12 col-lg-9">
             <div class="card theme-card shadow-sm mb-5 pb-4">
                 <div class="card-header theme-header d-flex align-items-center justify-content-between flex-wrap gap-2">
-                    <h5 class="mb-0 fw-bold"><i class="bi bi-building-check me-2"></i>Classes officielles</h5>
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-building-check me-2"></i>{{ __('configuration.menu_classes_officielles') }}</h5>
                     <div class="d-flex gap-2">
                         @if(auth()->user()->droit === 'SupAdmin')
                             <a href="{{ route('classes.associations') }}" class="btn btn-sm btn-outline-light shadow-sm">
-                                <i class="bi bi-link-45deg me-1"></i>Associer classes
+                                <i class="bi bi-link-45deg me-1"></i>{{ __('configuration.classe_off_associer') }}
                             </a>
                         @endif
                         @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('classes_officielles_apercu'))
@@ -37,7 +37,7 @@
                                     style="background-color: var(--theme-accent) !important; color: var(--text-on-accent) !important; border: none;"
                                     data-bs-toggle="modal" data-bs-target="#addClasseOfficielleModal">
                                 <i class="bi bi-plus-lg"></i>
-                                <span>Classe officielle</span>
+                                <span>{{ __('configuration.menu_classes_officielles_singulier') }}</span>
                             </button>
                         @endif
                     </div>
@@ -48,7 +48,7 @@
                             <div class="input-group">
                                 <span class="input-group-text bg-transparent"><i class="bi bi-search"></i></span>
                                 <input type="text" name="search" class="form-control border-start-0"
-                                       placeholder="Nom ou ordre d'enseignement..." value="{{ request('search') }}">
+                                       placeholder="{{ __('configuration.classe_off_search_placeholder') }}" value="{{ request('search') }}">
                             </div>
                         </form>
                     </div>
@@ -57,12 +57,12 @@
                         <table class="table table-striped table-bordered align-middle">
                             <thead class="table-light">
                                 <tr>
-                                    <th>N°</th>
-                                    <th>Classe officielle</th>
-                                    <th>Ordre d'enseignement</th>
-                                    <th>Classes associées</th>
+                                    <th>{{ __('configuration.th_numero') }}</th>
+                                    <th>{{ __('configuration.menu_classes_officielles_singulier') }}</th>
+                                    <th>{{ __('configuration.classe_off_ordre_label') }}</th>
+                                    <th>{{ __('configuration.classe_off_classes_associees') }}</th>
                                     @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('classes_officielles_apercu'))
-                                        <th class="text-center" style="width:120px;">Actions</th>
+                                        <th class="text-center" style="width:120px;">{{ __('configuration.th_actions') }}</th>
                                     @endif
                                 </tr>
                             </thead>
@@ -74,7 +74,7 @@
                                         <td>{{ $ordres[$classeOfficielle->ordre_enseignement] ?? $classeOfficielle->ordre_enseignement }}</td>
                                         <td>
                                             <span class="badge bg-light text-primary border border-primary-subtle rounded-pill">
-                                                {{ $classeOfficielle->classes_count }} classe(s)
+                                                {{ __('configuration.classe_off_count', ['count' => $classeOfficielle->classes_count]) }}
                                             </span>
                                         </td>
                                         @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('classes_officielles_apercu'))
@@ -85,15 +85,15 @@
                                                             data-id="{{ $classeOfficielle->id_classe_officielle }}"
                                                             data-nom="{{ $classeOfficielle->nom_classe_officielle }}"
                                                             data-ordre="{{ $classeOfficielle->ordre_enseignement }}"
-                                                            title="Modifier">
+                                                            title="{{ __('configuration.modifier') }}">
                                                         <i class="bi bi-pencil"></i>
                                                     </button>
                                                     @if($classeOfficielle->classes_count === 0)
                                                         <form action="{{ route('configuration.classes-officielles.destroy', $classeOfficielle->id_classe_officielle) }}" method="POST"
-                                                              onsubmit="return confirm('Supprimer cette classe officielle ?')">
+                                                              onsubmit="return confirm('{{ __('configuration.classe_off_confirm_delete') }}')">
                                                             @csrf
                                                             @method('DELETE')
-                                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer">
+                                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ __('configuration.supprimer') }}">
                                                                 <i class="bi bi-trash"></i>
                                                             </button>
                                                         </form>
@@ -106,7 +106,7 @@
                                     <tr>
                                         <td colspan="5" class="text-center py-4 text-muted">
                                             <i class="bi bi-inbox fs-2 d-block mb-2"></i>
-                                            Aucune classe officielle trouvée.
+                                            {{ __('configuration.classe_off_empty') }}
                                         </td>
                                     </tr>
                                 @endforelse
@@ -127,7 +127,7 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-top border-4" style="border-top-color: var(--theme-accent) !important;">
                 <div class="modal-header">
-                    <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle me-2"></i>Nouvelle classe officielle</h5>
+                    <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle me-2"></i>{{ __('configuration.classe_off_modal_create_title') }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <form action="{{ route('configuration.classes-officielles.store') }}" method="POST">
@@ -136,9 +136,9 @@
                         @include('configuration.partials.classe-officielle-fields', ['prefix' => 'add_'])
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('configuration.annuler') }}</button>
                         <button type="submit" class="btn text-white fw-bold"
-                                style="background-color: var(--theme-accent) !important; border: none;">Enregistrer</button>
+                                style="background-color: var(--theme-accent) !important; border: none;">{{ __('configuration.enregistrer') }}</button>
                     </div>
                 </form>
             </div>
@@ -150,7 +150,7 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-top border-4" style="border-top-color: var(--theme-accent) !important;">
                 <div class="modal-header">
-                    <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square me-2"></i>Modifier la classe officielle</h5>
+                    <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square me-2"></i>{{ __('configuration.classe_off_modal_edit_title') }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <form id="editClasseOfficielleForm" method="POST">
@@ -160,9 +160,9 @@
                         @include('configuration.partials.classe-officielle-fields', ['prefix' => 'edit_'])
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('configuration.annuler') }}</button>
                         <button type="submit" class="btn text-white fw-bold"
-                                style="background-color: var(--theme-accent) !important; border: none;">Modifier</button>
+                                style="background-color: var(--theme-accent) !important; border: none;">{{ __('configuration.modifier') }}</button>
                     </div>
                 </form>
             </div>

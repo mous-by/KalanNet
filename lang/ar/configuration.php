@@ -133,4 +133,20 @@ return [
     'eco_empty' => 'لم يتم العثور على أي مدرسة.',
     'eco_modal_create_title' => 'مدرسة جديدة',
     'eco_modal_edit_title' => 'تعديل مدرسة',
+
+    // partials/classe-officielle-fields.blade.php
+    'classe_off_nom_label' => 'اسم الصف الرسمي',
+    'classe_off_ordre_label' => 'الطور التعليمي',
+    'choisir' => 'اختر...',
+
+    // classes-officielles.blade.php
+    'menu_classes_officielles_singulier' => 'صف رسمي',
+    'classe_off_associer' => 'ربط الصفوف',
+    'classe_off_search_placeholder' => 'الاسم أو الطور التعليمي...',
+    'classe_off_classes_associees' => 'الصفوف المرتبطة',
+    'classe_off_count' => ':count صف',
+    'classe_off_confirm_delete' => 'هل تريد حذف هذا الصف الرسمي؟',
+    'classe_off_empty' => 'لم يتم العثور على أي صف رسمي.',
+    'classe_off_modal_create_title' => 'صف رسمي جديد',
+    'classe_off_modal_edit_title' => 'تعديل الصف الرسمي',
 ];
