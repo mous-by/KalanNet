@@ -247,6 +247,26 @@ return [
     'sc_alerte_oui' => 'Yes (Triggers a notification)',
     'sc_modal_edit_title' => 'Edit Control Status',
 
+    // types-notes.blade.php
+    'tn_liste_title' => 'Grade types list',
+    'tn_ajouter_type' => 'Add a type',
+    'tn_search_placeholder' => 'Search a type or code...',
+    'tn_th_type' => 'Grade Type',
+    'tn_th_code' => 'Code',
+    'tn_th_note_sur' => 'Graded out of...',
+    'tn_confirm_delete' => 'Are you sure you want to delete this grade type?',
+    'tn_empty' => 'No grade type found.',
+    'tn_modal_create_title' => 'New Grade Type',
+    'tn_choisir_type' => 'Choose a type',
+    'tn_type_devoir' => 'Assignment',
+    'tn_type_composition' => 'Exam',
+    'tn_code_abrev_composition' => 'Exam',
+    'tn_type_nt10' => 'Graded out of 10',
+    'tn_code_placeholder' => 'E.g.: Assignment 1, Exam 1...',
+    'tn_code_help' => 'Automatically filled based on the chosen type — editable if needed.',
+    'tn_valeur_label' => 'Graded out of... (E.g.: 10, 20)',
+    'tn_modal_edit_title' => 'Edit Grade Type',
+
     // partials/classe-officielle-fields.blade.php
     'classe_off_nom_label' => 'Official class name',
     'classe_off_ordre_label' => 'Teaching cycle',

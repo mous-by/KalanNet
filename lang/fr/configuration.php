@@ -247,6 +247,26 @@ return [
     'sc_alerte_oui' => 'Oui (Déclenche une notification)',
     'sc_modal_edit_title' => 'Modifier le Statut de Contrôle',
 
+    // types-notes.blade.php
+    'tn_liste_title' => 'Liste des types de notes',
+    'tn_ajouter_type' => 'Ajouter un type',
+    'tn_search_placeholder' => 'Rechercher un type ou code...',
+    'tn_th_type' => 'Type Notes',
+    'tn_th_code' => 'Code',
+    'tn_th_note_sur' => 'Note sur...',
+    'tn_confirm_delete' => 'Êtes-vous sûr de vouloir supprimer ce type de note ?',
+    'tn_empty' => 'Aucun type de note trouvé.',
+    'tn_modal_create_title' => 'Nouveau Type de Note',
+    'tn_choisir_type' => 'Choisir un type',
+    'tn_type_devoir' => 'Devoir',
+    'tn_type_composition' => 'Composition',
+    'tn_code_abrev_composition' => 'Comp',
+    'tn_type_nt10' => 'Notes sur 10',
+    'tn_code_placeholder' => 'Ex: Devoir 1, Comp 1...',
+    'tn_code_help' => 'Rempli automatiquement selon le type choisi — modifiable si besoin.',
+    'tn_valeur_label' => 'Note sur... (Ex: 10, 20)',
+    'tn_modal_edit_title' => 'Modifier le Type de Note',
+
     // partials/classe-officielle-fields.blade.php
     'classe_off_nom_label' => 'Nom de la classe officielle',
     'classe_off_ordre_label' => "Ordre d'enseignement",

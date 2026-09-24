@@ -2,13 +2,13 @@
 
 @section('content')
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-        <div class="breadcrumb-title pe-3">Configuration</div>
+        <div class="breadcrumb-title pe-3">{{ __('configuration.title') }}</div>
         <div class="ps-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0 p-0">
                     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bi bi-house-door"></i></a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('configuration.index') }}">Aperçu</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Types de notes</li>
+                    <li class="breadcrumb-item"><a href="{{ route('configuration.index') }}">{{ __('configuration.menu_apercu') }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ __('configuration.menu_types_notes') }}</li>
                 </ol>
             </nav>
         </div>
@@ -33,12 +33,12 @@
         <div class="col-12 col-lg-9">
             <div class="card theme-card shadow-sm mb-5 pb-4">
                 <div class="card-header theme-header d-flex align-items-center justify-content-between flex-wrap gap-2">
-                    <h5 class="mb-0 fw-bold"><i class="bi bi-clipboard-check me-2"></i>Liste des types de notes</h5>
-                    <button type="button" class="btn btn-sm d-flex align-items-center gap-1 shadow-sm" 
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-clipboard-check me-2"></i>{{ __('configuration.tn_liste_title') }}</h5>
+                    <button type="button" class="btn btn-sm d-flex align-items-center gap-1 shadow-sm"
                             style="background-color: var(--theme-accent) !important; color: var(--text-on-accent) !important; border: none;"
                             data-bs-toggle="modal" data-bs-target="#addNewNoteModal">
                         <i class="bi bi-plus-lg"></i>
-                        <span>Ajouter un type</span>
+                        <span>{{ __('configuration.tn_ajouter_type') }}</span>
                     </button>
                 </div>
                 <div class="card-body">
@@ -46,7 +46,7 @@
                         <form action="{{ route('configuration.types-notes') }}" method="GET" class="col-md-5" data-auto-filter="true">
                             <div class="input-group">
                                 <span class="input-group-text bg-transparent"><i class="bi bi-search"></i></span>
-                                <input type="text" name="search" class="form-control border-start-0" placeholder="Rechercher un type ou code..." value="{{ request('search') }}">
+                                <input type="text" name="search" class="form-control border-start-0" placeholder="{{ __('configuration.tn_search_placeholder') }}" value="{{ request('search') }}">
                             </div>
                         </form>
                     </div>
@@ -55,10 +55,10 @@
                         <table class="table table-striped table-bordered align-middle">
                             <thead class="table-light">
                                 <tr>
-                                    <th>Type Notes</th>
-                                    <th>Code</th>
-                                    <th>Note sur...</th>
-                                    <th class="text-center" style="width: 150px;">Actions</th>
+                                    <th>{{ __('configuration.tn_th_type') }}</th>
+                                    <th>{{ __('configuration.tn_th_code') }}</th>
+                                    <th>{{ __('configuration.tn_th_note_sur') }}</th>
+                                    <th class="text-center" style="width: 150px;">{{ __('configuration.th_actions') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -75,13 +75,13 @@
                                                         data-type="{{ $note->typeNote }}"
                                                         data-code="{{ $note->codeNote }}"
                                                         data-valeur="{{ $note->valeur }}"
-                                                        title="Modifier">
+                                                        title="{{ __('configuration.modifier') }}">
                                                     <i class="bi bi-pencil"></i>
                                                 </button>
-                                                <form action="{{ route('configuration.types-notes.destroy', $note->id_note) }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce type de note ?')">
+                                                <form action="{{ route('configuration.types-notes.destroy', $note->id_note) }}" method="POST" onsubmit="return confirm('{{ __('configuration.tn_confirm_delete') }}')">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ __('configuration.supprimer') }}">
                                                         <i class="bi bi-trash"></i>
                                                     </button>
                                                 </form>
@@ -92,7 +92,7 @@
                                     <tr>
                                         <td colspan="4" class="text-center py-4 text-muted">
                                             <i class="bi bi-inbox fs-2 d-block mb-2"></i>
-                                            Aucun type de note trouvé.
+                                            {{ __('configuration.tn_empty') }}
                                         </td>
                                     </tr>
                                 @endforelse
@@ -113,34 +113,34 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-top border-4" style="border-top-color: var(--theme-accent) !important;">
                 <div class="modal-header">
-                    <h5 class="modal-title fw-bold" id="addNewNoteModalLabel"><i class="bi bi-plus-circle me-2"></i>Nouveau Type de Note</h5>
+                    <h5 class="modal-title fw-bold" id="addNewNoteModalLabel"><i class="bi bi-plus-circle me-2"></i>{{ __('configuration.tn_modal_create_title') }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form action="{{ route('configuration.types-notes.store') }}" method="POST">
                     @csrf
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label for="typeNote" class="form-label fw-bold">Type Notes <span class="text-danger">*</span></label>
+                            <label for="typeNote" class="form-label fw-bold">{{ __('configuration.tn_th_type') }} <span class="text-danger">*</span></label>
                             <select name="typeNote" id="typeNote" class="form-select" required>
-                                <option value="" selected disabled>Choisir un type</option>
-                                <option value="devoir">Devoir</option>
-                                <option value="composition">Composition</option>
-                                <option value="NT10">Notes sur 10</option>
+                                <option value="" selected disabled>{{ __('configuration.tn_choisir_type') }}</option>
+                                <option value="devoir">{{ __('configuration.tn_type_devoir') }}</option>
+                                <option value="composition">{{ __('configuration.tn_type_composition') }}</option>
+                                <option value="NT10">{{ __('configuration.tn_type_nt10') }}</option>
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label for="codeNote" class="form-label fw-bold">Code <span class="text-danger">*</span></label>
-                            <input type="text" id="codeNote" name="codeNote" class="form-control" placeholder="Ex: Devoir 1, Comp 1..." required>
-                            <div class="form-text">Rempli automatiquement selon le type choisi — modifiable si besoin.</div>
+                            <label for="codeNote" class="form-label fw-bold">{{ __('configuration.tn_th_code') }} <span class="text-danger">*</span></label>
+                            <input type="text" id="codeNote" name="codeNote" class="form-control" placeholder="{{ __('configuration.tn_code_placeholder') }}" required>
+                            <div class="form-text">{{ __('configuration.tn_code_help') }}</div>
                         </div>
                         <div class="mb-3">
-                            <label for="valeur" class="form-label fw-bold">Note sur... (Ex: 10, 20) <span class="text-danger">*</span></label>
+                            <label for="valeur" class="form-label fw-bold">{{ __('configuration.tn_valeur_label') }} <span class="text-danger">*</span></label>
                             <input type="number" step="any" id="valeur" name="valeur" class="form-control" placeholder="Ex: 20" required>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn text-white fw-bold" style="background-color: var(--theme-accent) !important; border: none;">Enregistrer</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('configuration.annuler') }}</button>
+                        <button type="submit" class="btn text-white fw-bold" style="background-color: var(--theme-accent) !important; border: none;">{{ __('configuration.enregistrer') }}</button>
                     </div>
                 </form>
             </div>
@@ -152,7 +152,7 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-top border-4" style="border-top-color: var(--theme-accent) !important;">
                 <div class="modal-header">
-                    <h5 class="modal-title fw-bold" id="editNoteModalLabel"><i class="bi bi-pencil-square me-2"></i>Modifier le Type de Note</h5>
+                    <h5 class="modal-title fw-bold" id="editNoteModalLabel"><i class="bi bi-pencil-square me-2"></i>{{ __('configuration.tn_modal_edit_title') }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form id="editNoteForm" method="POST">
@@ -160,25 +160,25 @@
                     @method('PUT')
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label for="edit_typeNote" class="form-label fw-bold">Type Notes <span class="text-danger">*</span></label>
+                            <label for="edit_typeNote" class="form-label fw-bold">{{ __('configuration.tn_th_type') }} <span class="text-danger">*</span></label>
                             <select name="typeNote" id="edit_typeNote" class="form-select" required>
-                                <option value="devoir">Devoir</option>
-                                <option value="composition">Composition</option>
-                                <option value="NT10">Notes sur 10</option>
+                                <option value="devoir">{{ __('configuration.tn_type_devoir') }}</option>
+                                <option value="composition">{{ __('configuration.tn_type_composition') }}</option>
+                                <option value="NT10">{{ __('configuration.tn_type_nt10') }}</option>
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label for="edit_codeNote" class="form-label fw-bold">Code <span class="text-danger">*</span></label>
-                            <input type="text" id="edit_codeNote" name="codeNote" class="form-control" placeholder="Ex: Devoir 1, Comp 1..." required>
+                            <label for="edit_codeNote" class="form-label fw-bold">{{ __('configuration.tn_th_code') }} <span class="text-danger">*</span></label>
+                            <input type="text" id="edit_codeNote" name="codeNote" class="form-control" placeholder="{{ __('configuration.tn_code_placeholder') }}" required>
                         </div>
                         <div class="mb-3">
-                            <label for="edit_valeur" class="form-label fw-bold">Note sur... (Ex: 10, 20) <span class="text-danger">*</span></label>
+                            <label for="edit_valeur" class="form-label fw-bold">{{ __('configuration.tn_valeur_label') }} <span class="text-danger">*</span></label>
                             <input type="number" step="any" id="edit_valeur" name="valeur" class="form-control" placeholder="Ex: 20" required>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn text-white fw-bold" style="background-color: var(--theme-accent) !important; border: none;">Modifier</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('configuration.annuler') }}</button>
+                        <button type="submit" class="btn text-white fw-bold" style="background-color: var(--theme-accent) !important; border: none;">{{ __('configuration.modifier') }}</button>
                     </div>
                 </form>
             </div>
@@ -188,7 +188,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             var typeNoteCounts = @json($typeNoteCounts);
-            var typeNoteLabels = { devoir: 'Devoir', composition: 'Comp', NT10: 'NT10' };
+            var typeNoteLabels = @json(['devoir' => __('configuration.tn_type_devoir'), 'composition' => __('configuration.tn_code_abrev_composition'), 'NT10' => 'NT10']);
 
             function suggestedCode(typeNote) {
                 if (typeNote === 'NT10') return 'NT10';

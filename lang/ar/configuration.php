@@ -247,6 +247,26 @@ return [
     'sc_alerte_oui' => 'نعم (يُفعّل إشعارًا)',
     'sc_modal_edit_title' => 'تعديل حالة المراقبة',
 
+    // types-notes.blade.php
+    'tn_liste_title' => 'قائمة أنواع النقاط',
+    'tn_ajouter_type' => 'إضافة نوع',
+    'tn_search_placeholder' => 'ابحث عن نوع أو رمز...',
+    'tn_th_type' => 'نوع النقطة',
+    'tn_th_code' => 'الرمز',
+    'tn_th_note_sur' => 'النقطة من...',
+    'tn_confirm_delete' => 'هل أنت متأكد من رغبتك في حذف نوع النقطة هذا؟',
+    'tn_empty' => 'لم يتم العثور على أي نوع نقطة.',
+    'tn_modal_create_title' => 'نوع نقطة جديد',
+    'tn_choisir_type' => 'اختر نوعًا',
+    'tn_type_devoir' => 'واجب',
+    'tn_type_composition' => 'تأليف',
+    'tn_code_abrev_composition' => 'تأليف',
+    'tn_type_nt10' => 'نقطة من 10',
+    'tn_code_placeholder' => 'مثال: واجب 1، تأليف 1...',
+    'tn_code_help' => 'يُملأ تلقائيًا حسب النوع المختار — قابل للتعديل عند الحاجة.',
+    'tn_valeur_label' => 'النقطة من... (مثال: 10، 20)',
+    'tn_modal_edit_title' => 'تعديل نوع النقطة',
+
     // partials/classe-officielle-fields.blade.php
     'classe_off_nom_label' => 'اسم الصف الرسمي',
     'classe_off_ordre_label' => 'الطور التعليمي',
