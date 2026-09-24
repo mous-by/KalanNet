@@ -36,13 +36,13 @@
 
 @section('content')
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-        <div class="breadcrumb-title pe-3">Configuration</div>
+        <div class="breadcrumb-title pe-3">{{ __('configuration.title') }}</div>
         <div class="ps-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0 p-0">
                     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bx bx-home"></i></a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('configuration.utilisateurs') }}">Utilisateurs</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Permissions</li>
+                    <li class="breadcrumb-item"><a href="{{ route('configuration.utilisateurs') }}">{{ __('configuration.menu_utilisateurs') }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ __('configuration.menu_permissions') }}</li>
                 </ol>
             </nav>
         </div>
@@ -58,10 +58,10 @@
                 <div class="card theme-card shadow-sm mb-4">
                     <div class="card-header theme-header d-flex align-items-center justify-content-between flex-wrap gap-2">
                         <h5 class="mb-0 fw-bold">
-                            <i class="bx bx-user-check me-2"></i>Assignation de permissions
+                            <i class="bx bx-user-check me-2"></i>{{ __('configuration.up_assignation_title') }}
                         </h5>
                         <a href="{{ route('configuration.utilisateurs') }}" class="btn btn-light px-4">
-                            <i class="bx bx-arrow-back me-2"></i>Retour
+                            <i class="bx bx-arrow-back me-2"></i>{{ __('configuration.uf_retour') }}
                         </a>
                     </div>
                     <div class="card-body">
@@ -69,9 +69,9 @@
                             <div class="row g-3 align-items-end">
                                 @if($connectedUser->droit === 'SupAdmin')
                                     <div class="col-md-4">
-                                        <label class="form-label fw-bold">École</label>
+                                        <label class="form-label fw-bold">{{ __('configuration.th_ecole') }}</label>
                                         <select name="idEcole" id="permission_school_id" class="form-select">
-                                            <option value="">Toutes les écoles</option>
+                                            <option value="">{{ __('configuration.ut_toutes_ecoles') }}</option>
                                             @foreach($availableSchools as $school)
                                                 <option value="{{ $school->idEcole }}" @selected((int) $schoolFilter === (int) $school->idEcole)>{{ $school->nomEcole }}</option>
                                             @endforeach
@@ -79,20 +79,20 @@
                                     </div>
                                 @endif
                                 <div class="{{ $connectedUser->droit === 'SupAdmin' ? 'col-md-4' : 'col-md-8' }}">
-                                    <label class="form-label fw-bold">Utilisateur</label>
-                                    <input type="text" id="userFilter" class="form-control mb-2" placeholder="Filtrer les utilisateurs...">
+                                    <label class="form-label fw-bold">{{ __('configuration.menu_utilisateurs') }}</label>
+                                    <input type="text" id="userFilter" class="form-control mb-2" placeholder="{{ __('configuration.up_filtrer_utilisateurs') }}">
                                     <select name="user_id" id="permission_user_id" class="form-select" required>
-                                        <option value="">Choisir un utilisateur</option>
+                                        <option value="">{{ __('configuration.up_choisir_utilisateur') }}</option>
                                         @foreach($availableUsers as $userItem)
                                             <option value="{{ $userItem->idUtilisateur }}" @selected(optional($utilisateur)->idUtilisateur === $userItem->idUtilisateur)>
-                                                {{ $userItem->nomPrenom }} - {{ $userItem->droit ?? 'N/A' }} - {{ $userItem->ecole->nomEcole ?? $userItem->academie->nom_academie ?? $userItem->cap->nom_cap ?? 'Toutes les écoles' }}
+                                                {{ $userItem->nomPrenom }} - {{ $userItem->droit ?? 'N/A' }} - {{ $userItem->ecole->nomEcole ?? $userItem->academie->nom_academie ?? $userItem->cap->nom_cap ?? __('configuration.ut_toutes_ecoles') }}
                                             </option>
                                         @endforeach
                                     </select>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label fw-bold">Filtrer les permissions</label>
-                                    <input type="text" id="permissionFilter" class="form-control" placeholder="Ex: création, eleves...">
+                                    <label class="form-label fw-bold">{{ __('configuration.up_filtrer_permissions') }}</label>
+                                    <input type="text" id="permissionFilter" class="form-control" placeholder="{{ __('configuration.up_filtrer_permissions_placeholder') }}">
                                 </div>
                             </div>
                         </form>
@@ -102,20 +102,20 @@
                                 <div>
                                     <h4 class="fw-bold mb-1">{{ $utilisateur->nomPrenom }}</h4>
                                     <div class="text-muted">
-                                        {{ $utilisateur->email ?? 'Email non renseigné' }} - {{ $utilisateur->droit ?? 'Droit non renseigné' }} - {{ $utilisateur->ecole->nomEcole ?? 'Toutes les écoles' }}
+                                        {{ $utilisateur->email ?? __('configuration.up_email_non_renseigne') }} - {{ $utilisateur->droit ?? __('configuration.up_droit_non_renseigne') }} - {{ $utilisateur->ecole->nomEcole ?? __('configuration.ut_toutes_ecoles') }}
                                     </div>
                                     @if($utilisateur->droit === 'SupAdmin')
                                         <div class="alert alert-info py-2 px-3 mt-3 mb-0">
-                                            Le SuperAdmin possède automatiquement toutes les permissions, même sans affectation enregistrée dans la table utilisateur-permission.
+                                            {{ __('configuration.up_supadmin_notice') }}
                                         </div>
                                     @elseif($permissionsReadOnly)
                                         <div class="alert alert-info py-2 px-3 mt-3 mb-0">
-                                            Ce profil est consultable ici, mais ses permissions ne sont pas modifiables depuis cet écran.
+                                            {{ __('configuration.up_readonly_notice') }}
                                         </div>
                                     @endif
                                 </div>
                                 <div class="text-end">
-                                    <span class="badge theme-icon-soft fs-6 px-3 py-2">{{ count($userPermissionIds) }} / {{ $totalPermissions }} cochées</span>
+                                    <span class="badge theme-icon-soft fs-6 px-3 py-2">{{ __('configuration.up_cochees_count', ['count' => count($userPermissionIds), 'total' => $totalPermissions]) }}</span>
                                 </div>
                             </div>
                         @endif
@@ -131,7 +131,7 @@
                     <div class="card-body">
                         @if($utilisateur->droit === 'Gestionnaire' && ($utilisateur->ecole?->typeEcole === 'Complexe Scolaire'))
                             <div class="mb-4 pb-3 border-bottom">
-                                <h6 class="fw-bold mb-2">Ordres d'enseignement gérés</h6>
+                                <h6 class="fw-bold mb-2">{{ __('configuration.up_ordres_geres_title') }}</h6>
                                 <div class="row g-2">
                                     @foreach($complexeOrders as $orderKey => $orderLabel)
                                         <div class="col-md-6">
@@ -142,7 +142,7 @@
                                         </div>
                                     @endforeach
                                 </div>
-                                <small class="text-muted d-block mt-2">L'Admin du complexe voit tous les ordres. Le gestionnaire ne voit que les ordres cochés ici.</small>
+                                <small class="text-muted d-block mt-2">{{ __('configuration.up_ordres_geres_help') }}</small>
                                 @error('managed_orders')
                                     <div class="text-danger small mt-2">{{ $message }}</div>
                                 @enderror
@@ -150,17 +150,17 @@
                         @endif
                         <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between">
                             <div>
-                                <strong>Organisation:</strong>
-                                permissions triées par module puis par action.
+                                <strong>{{ __('configuration.up_organisation_label') }}</strong>
+                                {{ __('configuration.up_organisation_desc') }}
                             </div>
                             <div class="d-flex align-items-center gap-3">
                                 <div class="form-check m-0">
                                     <input class="form-check-input" type="checkbox" id="select_all_permissions" @disabled($permissionsReadOnly)>
-                                    <label class="form-check-label fw-bold" for="select_all_permissions">Tout cocher/décocher</label>
+                                    <label class="form-check-label fw-bold" for="select_all_permissions">{{ __('configuration.up_tout_cocher') }}</label>
                                 </div>
                                 @unless($permissionsReadOnly)
                                     <button type="submit" class="btn btn-primary shadow-sm" style="background-color: var(--theme-accent) !important; border-color: var(--theme-accent) !important;">
-                                        <i class="bx bx-save me-2"></i>Enregistrer
+                                        <i class="bx bx-save me-2"></i>{{ __('configuration.enregistrer') }}
                                     </button>
                                 @endunless
                             </div>
@@ -180,7 +180,7 @@
                                     </div>
                                     <div class="form-check m-0">
                                         <input class="form-check-input module-checkbox" type="checkbox" id="module_{{ $module }}" data-module="{{ $module }}" @disabled($permissionsReadOnly)>
-                                        <label class="form-check-label" for="module_{{ $module }}">Tout le module</label>
+                                        <label class="form-check-label" for="module_{{ $module }}">{{ __('configuration.up_tout_le_module') }}</label>
                                     </div>
                                 </div>
                                 <div class="card-body">
@@ -210,7 +210,7 @@
                 <div class="text-end mt-4 mb-5 pb-5">
                     @unless($permissionsReadOnly)
                         <button type="submit" class="btn btn-primary px-5 shadow-sm" style="background-color: var(--theme-accent) !important; border-color: var(--theme-accent) !important;">
-                            <i class="bx bx-save me-2"></i>Enregistrer
+                            <i class="bx bx-save me-2"></i>{{ __('configuration.enregistrer') }}
                         </button>
                     @endunless
                 </div>
@@ -219,7 +219,7 @@
                     <div class="card theme-card shadow-sm">
                         <div class="card-body text-center py-5 text-muted">
                             <i class="bx bx-user-check d-block mb-3" style="font-size: 3rem;"></i>
-                            Sélectionnez un utilisateur pour charger ses permissions cochées.
+                            {{ __('configuration.up_selectionnez_utilisateur') }}
                         </div>
                     </div>
                 @endif

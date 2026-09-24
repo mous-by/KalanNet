@@ -330,6 +330,25 @@ return [
     'rv_laisser_vide_ne_pas_changer' => 'اتركه فارغًا لعدم التغيير',
     'rv_empty_revendeurs' => 'لم يتم إنشاء أي موزع بعد.',
 
+    // user-permissions.blade.php
+    'up_assignation_title' => 'تعيين الصلاحيات',
+    'up_filtrer_utilisateurs' => 'تصفية المستخدمين...',
+    'up_choisir_utilisateur' => 'اختر مستخدمًا',
+    'up_filtrer_permissions' => 'تصفية الصلاحيات',
+    'up_filtrer_permissions_placeholder' => 'مثال: إنشاء، تلاميذ...',
+    'up_email_non_renseigne' => 'البريد الإلكتروني غير محدد',
+    'up_droit_non_renseigne' => 'الصلاحية غير محددة',
+    'up_supadmin_notice' => 'يمتلك المسؤول العام تلقائيًا جميع الصلاحيات، حتى دون تخصيص مسجل في جدول المستخدم-الصلاحية.',
+    'up_readonly_notice' => 'يمكن الاطلاع على هذا الملف هنا، لكن صلاحياته غير قابلة للتعديل من هذه الشاشة.',
+    'up_cochees_count' => ':count / :total محددة',
+    'up_ordres_geres_title' => 'الأطوار التعليمية المُدارة',
+    'up_ordres_geres_help' => 'يرى مسؤول المجمع جميع الأطوار. لا يرى المسؤول التنفيذي إلا الأطوار المحددة هنا.',
+    'up_organisation_label' => 'التنظيم:',
+    'up_organisation_desc' => 'الصلاحيات مرتبة حسب الوحدة ثم حسب الإجراء.',
+    'up_tout_cocher' => 'تحديد/إلغاء تحديد الكل',
+    'up_tout_le_module' => 'الوحدة بأكملها',
+    'up_selectionnez_utilisateur' => 'اختر مستخدمًا لتحميل صلاحياته المحددة.',
+
     // partials/classe-officielle-fields.blade.php
     'classe_off_nom_label' => 'اسم الصف الرسمي',
     'classe_off_ordre_label' => 'الطور التعليمي',

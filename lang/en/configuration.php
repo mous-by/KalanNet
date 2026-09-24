@@ -330,6 +330,25 @@ return [
     'rv_laisser_vide_ne_pas_changer' => 'Leave empty to keep unchanged',
     'rv_empty_revendeurs' => 'No reseller created yet.',
 
+    // user-permissions.blade.php
+    'up_assignation_title' => 'Assign permissions',
+    'up_filtrer_utilisateurs' => 'Filter users...',
+    'up_choisir_utilisateur' => 'Choose a user',
+    'up_filtrer_permissions' => 'Filter permissions',
+    'up_filtrer_permissions_placeholder' => 'E.g.: creation, students...',
+    'up_email_non_renseigne' => 'No email provided',
+    'up_droit_non_renseigne' => 'No role provided',
+    'up_supadmin_notice' => 'The SuperAdmin automatically has all permissions, even without an assignment recorded in the user-permission table.',
+    'up_readonly_notice' => 'This profile can be viewed here, but its permissions cannot be changed from this screen.',
+    'up_cochees_count' => ':count / :total checked',
+    'up_ordres_geres_title' => 'Managed teaching cycles',
+    'up_ordres_geres_help' => 'The complex Admin sees all cycles. The manager only sees the cycles checked here.',
+    'up_organisation_label' => 'Organization:',
+    'up_organisation_desc' => 'permissions sorted by module then by action.',
+    'up_tout_cocher' => 'Check/uncheck all',
+    'up_tout_le_module' => 'Entire module',
+    'up_selectionnez_utilisateur' => 'Select a user to load their checked permissions.',
+
     // partials/classe-officielle-fields.blade.php
     'classe_off_nom_label' => 'Official class name',
     'classe_off_ordre_label' => 'Teaching cycle',

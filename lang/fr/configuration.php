@@ -330,6 +330,25 @@ return [
     'rv_laisser_vide_ne_pas_changer' => 'Laisser vide pour ne pas changer',
     'rv_empty_revendeurs' => 'Aucun revendeur créé pour le moment.',
 
+    // user-permissions.blade.php
+    'up_assignation_title' => 'Assignation de permissions',
+    'up_filtrer_utilisateurs' => 'Filtrer les utilisateurs...',
+    'up_choisir_utilisateur' => 'Choisir un utilisateur',
+    'up_filtrer_permissions' => 'Filtrer les permissions',
+    'up_filtrer_permissions_placeholder' => 'Ex: création, eleves...',
+    'up_email_non_renseigne' => 'Email non renseigné',
+    'up_droit_non_renseigne' => 'Droit non renseigné',
+    'up_supadmin_notice' => 'Le SuperAdmin possède automatiquement toutes les permissions, même sans affectation enregistrée dans la table utilisateur-permission.',
+    'up_readonly_notice' => 'Ce profil est consultable ici, mais ses permissions ne sont pas modifiables depuis cet écran.',
+    'up_cochees_count' => ':count / :total cochées',
+    'up_ordres_geres_title' => "Ordres d'enseignement gérés",
+    'up_ordres_geres_help' => "L'Admin du complexe voit tous les ordres. Le gestionnaire ne voit que les ordres cochés ici.",
+    'up_organisation_label' => 'Organisation:',
+    'up_organisation_desc' => 'permissions triées par module puis par action.',
+    'up_tout_cocher' => 'Tout cocher/décocher',
+    'up_tout_le_module' => 'Tout le module',
+    'up_selectionnez_utilisateur' => 'Sélectionnez un utilisateur pour charger ses permissions cochées.',
+
     // partials/classe-officielle-fields.blade.php
     'classe_off_nom_label' => 'Nom de la classe officielle',
     'classe_off_ordre_label' => "Ordre d'enseignement",
