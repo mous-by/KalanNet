@@ -4,25 +4,42 @@
     @php
         $isEdit = $mode === 'edit';
         $action = $isEdit ? route('pedagogie.parents.update', $parent->id_parent) : route('pedagogie.parents.store');
-        $liens  = ['Père', 'Mère', 'Frère', 'Sœur', 'Tuteur', 'Tutrice', 'Autre'];
+        $liensMap = [
+            'Père' => __('parents.lien_pere'),
+            'Mère' => __('parents.lien_mere'),
+            'Frère' => __('parents.lien_frere'),
+            'Sœur' => __('parents.lien_soeur'),
+            'Tuteur' => __('parents.lien_tuteur'),
+            'Tutrice' => __('parents.lien_tutrice'),
+            'Autre' => __('parents.lien_autre'),
+        ];
         $elevesForPicker = $eleves->map(fn ($e) => [
             'id'       => $e->id_eleve,
             'matricule'=> $e->matricule,
             'nom'      => trim($e->prenom_eleve . ' ' . $e->nom_eleve),
-            'classe'   => $e->classe->nom_classe ?? 'Classe non définie',
+            'classe'   => $e->classe->nom_classe ?? __('parents.th_classe'),
             'id_classe'=> $e->id_classe,
         ])->values();
         $classesForPicker = $classes->map(fn ($c) => ['id' => $c->id_classe, 'nom' => $c->nom_classe])->values();
+        $parentsFormI18n = [
+            'countStudents' => __('parents.count_students'),
+            'lienOui' => __('parents.informer_oui'),
+            'lienNon' => __('parents.informer_non'),
+            'remove' => __('parents.remove'),
+            'phoneErrorDigits' => __('parents.phone_error_digits'),
+            'phoneErrorPrefix' => __('parents.phone_error_prefix'),
+            'alertNoStudent' => __('parents.alert_no_student'),
+        ];
     @endphp
 
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-        <div class="breadcrumb-title pe-3">Élèves & Parents</div>
+        <div class="breadcrumb-title pe-3">{{ __('eleves.title_parents') }}</div>
         <div class="ps-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0 p-0">
                     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bi bi-house-door"></i></a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('pedagogie.parents') }}">Parents d'élèves</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">{{ $isEdit ? 'Modifier' : 'Ajouter' }}</li>
+                    <li class="breadcrumb-item"><a href="{{ route('pedagogie.parents') }}">{{ __('parents.parents_link') }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ $isEdit ? __('parents.breadcrumb_edit') : __('parents.breadcrumb_add') }}</li>
                 </ol>
             </nav>
         </div>
@@ -42,22 +59,22 @@
         {{-- ── Informations du parent ─────────────────────────────────────── --}}
         <div class="card theme-card shadow-sm mb-3">
             <div class="card-header">
-                <h5 class="mb-0 fw-bold">{{ $isEdit ? 'Modifier le parent' : 'Ajouter un parent' }}</h5>
+                <h5 class="mb-0 fw-bold">{{ $isEdit ? __('parents.edit_title') : __('parents.add_title') }}</h5>
             </div>
             <div class="card-body p-4">
                 <div class="row g-4">
                     <div class="col-md-4">
-                        <label class="form-label small fw-bold text-uppercase">Nom complet <span class="text-danger">*</span></label>
+                        <label class="form-label small fw-bold text-uppercase">{{ __('parents.full_name') }} <span class="text-danger">*</span></label>
                         <input type="text" name="nom_prenom_parent" class="form-control rounded-3"
                                value="{{ old('nom_prenom_parent', $parent->nom_prenom_parent) }}"
-                               placeholder="Prénom et nom du parent" required>
+                               placeholder="{{ __('parents.full_name_placeholder') }}" required>
                     </div>
 
                     {{-- Téléphone Mali ──────────────────────────────────────── --}}
                     <div class="col-md-4">
                         <label class="form-label small fw-bold text-uppercase">
-                            Téléphone <span class="text-danger">*</span>
-                            <span class="text-muted fw-normal ms-1" style="font-size:.75rem;">Format Mali</span>
+                            {{ __('parents.phone') }} <span class="text-danger">*</span>
+                            <span class="text-muted fw-normal ms-1" style="font-size:.75rem;">{{ __('parents.phone_format_mali') }}</span>
                         </label>
                         <div class="input-group">
                             <span class="input-group-text fw-bold" style="background:#f8f9fa;font-size:.9rem;">
@@ -66,29 +83,29 @@
                             <input type="tel" name="telephone_parent" id="telephone_parent"
                                    class="form-control rounded-end"
                                    value="{{ old('telephone_parent', $parent->telephone_parent) }}"
-                                   placeholder="76 12 34 56"
+                                   placeholder="{{ __('parents.phone_placeholder') }}"
                                    maxlength="20"
                                    autocomplete="tel"
                                    required>
                         </div>
                         <div id="tel-feedback" class="invalid-feedback" style="display:none;"></div>
                         <small id="tel-hint" class="text-muted" style="font-size:.75rem;">
-                            8 chiffres — ex : 76 12 34 56 ou +223 76 12 34 56
+                            {{ __('parents.phone_hint') }}
                         </small>
                     </div>
 
                     <div class="col-md-4">
-                        <label class="form-label small fw-bold text-uppercase">Email</label>
+                        <label class="form-label small fw-bold text-uppercase">{{ __('parents.email') }}</label>
                         <input type="email" name="email_parent" class="form-control rounded-3"
                                value="{{ old('email_parent', $parent->email_parent) }}"
-                               placeholder="Adresse email si disponible">
+                               placeholder="{{ __('parents.email_placeholder') }}">
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label small fw-bold text-uppercase">Genre</label>
+                        <label class="form-label small fw-bold text-uppercase">{{ __('parents.genre') }}</label>
                         <select name="genre" class="form-select rounded-3">
-                            <option value="">Non renseigné</option>
-                            <option value="Féminin"  @selected(in_array(old('genre', $parent->genre), ['Féminin','Feminin']))>Féminin</option>
-                            <option value="Masculin" @selected(old('genre', $parent->genre) === 'Masculin')>Masculin</option>
+                            <option value="">{{ __('parents.genre_non_renseigne') }}</option>
+                            <option value="Féminin"  @selected(in_array(old('genre', $parent->genre), ['Féminin','Feminin']))>{{ __('eleves.genre_feminin') }}</option>
+                            <option value="Masculin" @selected(old('genre', $parent->genre) === 'Masculin')>{{ __('eleves.genre_masculin') }}</option>
                         </select>
                     </div>
                 </div>
@@ -98,8 +115,8 @@
         {{-- ── Élèves concernés ───────────────────────────────────────────── --}}
         <div class="card theme-card shadow-sm">
             <div class="card-header d-flex align-items-center flex-wrap gap-2">
-                <h5 class="mb-0 fw-bold">Élèves concernés</h5>
-                <span class="badge bg-light text-primary ms-auto" id="selected-count">{{ $selectedRows->count() }} élève(s)</span>
+                <h5 class="mb-0 fw-bold">{{ __('parents.concerned_students') }}</h5>
+                <span class="badge bg-light text-primary ms-auto" id="selected-count">{{ __('parents.count_students', ['count' => $selectedRows->count()]) }}</span>
             </div>
             <div class="card-body p-4">
 
@@ -108,10 +125,10 @@
                     {{-- Filtre par classe --}}
                     <div class="col-md-3">
                         <label class="form-label" for="classe_filter">
-                            <i class="bi bi-filter me-1"></i>Filtrer par classe
+                            <i class="bi bi-filter me-1"></i>{{ __('parents.filter_by_classe') }}
                         </label>
                         <select id="classe_filter" class="form-select">
-                            <option value="">Toutes les classes</option>
+                            <option value="">{{ __('parents.all_classes') }}</option>
                             @foreach($classes as $classe)
                                 <option value="{{ $classe->id_classe }}">{{ $classe->nom_classe }}</option>
                             @endforeach
@@ -121,19 +138,19 @@
                     {{-- Recherche texte --}}
                     <div class="col-md-3">
                         <label class="form-label" for="eleve_filter">
-                            <i class="bi bi-search me-1"></i>Chercher un élève
+                            <i class="bi bi-search me-1"></i>{{ __('parents.search_student') }}
                         </label>
-                        <input type="text" id="eleve_filter" class="form-control" placeholder="Nom, matricule...">
+                        <input type="text" id="eleve_filter" class="form-control" placeholder="{{ __('parents.search_student_placeholder') }}">
                     </div>
 
                     {{-- Picker --}}
                     <div class="col-md-6">
                         <label class="form-label" for="eleve_picker">
-                            Choisir l'élève à rattacher
-                            <span class="text-muted fw-normal ms-1" style="font-size:.75rem;">(seuls les élèves sans parent sont disponibles)</span>
+                            {{ __('parents.choose_student_label') }}
+                            <span class="text-muted fw-normal ms-1" style="font-size:.75rem;">{{ __('parents.choose_student_hint') }}</span>
                         </label>
                         <select id="eleve_picker" class="form-select">
-                            <option value="">— Sélectionner un élève —</option>
+                            <option value="">{{ __('parents.choose_student_default') }}</option>
                             @foreach($eleves as $eleve)
                                 <option value="{{ $eleve->id_eleve }}"
                                     data-classe="{{ $eleve->id_classe }}"
@@ -148,20 +165,19 @@
 
                 <div class="alert alert-info border-0 border-start border-info border-4 py-2" style="font-size:.85rem;">
                     <i class="bi bi-info-circle me-1"></i>
-                    Chaque élève ne peut être rattaché qu'à <strong>un seul parent/tuteur</strong>.
-                    Les élèves déjà rattachés à un autre parent n'apparaissent pas dans la liste.
+                    {!! __('parents.info_one_parent') !!}
                 </div>
 
                 <div class="table-responsive">
                     <table class="table table-striped table-bordered align-middle mb-0">
                         <thead>
                             <tr>
-                                <th>Matricule</th>
-                                <th>Élève</th>
-                                <th>Classe</th>
-                                <th style="min-width:160px;">Lien avec l'élève</th>
-                                <th style="min-width:140px;">Informer</th>
-                                <th class="text-center" style="width:80px;">Action</th>
+                                <th>{{ __('parents.th_matricule') }}</th>
+                                <th>{{ __('parents.th_eleve') }}</th>
+                                <th>{{ __('parents.th_classe') }}</th>
+                                <th style="min-width:160px;">{{ __('parents.th_lien') }}</th>
+                                <th style="min-width:140px;">{{ __('parents.th_informer') }}</th>
+                                <th class="text-center" style="width:80px;">{{ __('parents.th_action') }}</th>
                             </tr>
                         </thead>
                         <tbody id="selected-eleves">
@@ -175,19 +191,19 @@
                                     <td>{{ $row['classe'] }}</td>
                                     <td>
                                         <select name="lien_parent[]" class="form-select" required>
-                                            @foreach($liens as $lien)
-                                                <option value="{{ $lien }}" @selected($row['lien_parent'] === $lien)>{{ $lien }}</option>
+                                            @foreach($liensMap as $value => $label)
+                                                <option value="{{ $value }}" @selected($row['lien_parent'] === $value)>{{ $label }}</option>
                                             @endforeach
                                         </select>
                                     </td>
                                     <td>
                                         <select name="informer[]" class="form-select" required>
-                                            <option value="Oui" @selected($row['informer'] === 'Oui')>Oui</option>
-                                            <option value="Non" @selected($row['informer'] === 'Non')>Non</option>
+                                            <option value="Oui" @selected($row['informer'] === 'Oui')>{{ __('parents.informer_oui') }}</option>
+                                            <option value="Non" @selected($row['informer'] === 'Non')>{{ __('parents.informer_non') }}</option>
                                         </select>
                                     </td>
                                     <td class="text-center">
-                                        <button type="button" class="btn btn-light btn-sm p-2 remove-row" title="Retirer">
+                                        <button type="button" class="btn btn-light btn-sm p-2 remove-row" title="{{ __('parents.remove') }}">
                                             <i class="bi bi-trash text-danger"></i>
                                         </button>
                                     </td>
@@ -197,7 +213,7 @@
                         <tbody id="empty-selected" @if($selectedRows->isNotEmpty()) style="display:none;" @endif>
                             <tr>
                                 <td colspan="6" class="text-center py-4 text-muted">
-                                    Aucun élève rattaché. Choisissez un élève dans la liste ci-dessus.
+                                    {{ __('parents.no_student_attached') }}
                                 </td>
                             </tr>
                         </tbody>
@@ -206,10 +222,10 @@
 
                 <div class="d-flex justify-content-between flex-wrap gap-2 mt-4">
                     <a href="{{ route('pedagogie.parents') }}" class="btn btn-light px-4">
-                        <i class="bi bi-arrow-left me-2"></i>Retour
+                        <i class="bi bi-arrow-left me-2"></i>{{ __('parents.back') }}
                     </a>
                     <button type="submit" class="btn btn-primary px-5">
-                        <i class="bi bi-check2-circle me-2"></i>{{ $isEdit ? 'Enregistrer' : 'Valider' }}
+                        <i class="bi bi-check2-circle me-2"></i>{{ $isEdit ? __('parents.save') : __('parents.validate') }}
                     </button>
                 </div>
             </div>
@@ -221,7 +237,8 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const eleves       = @json($elevesForPicker);
-    const liens        = @json($liens);
+    const liensMap      = @json($liensMap);
+    const i18n          = @json($parentsFormI18n);
     const picker       = document.getElementById('eleve_picker');
     const classeFilter = document.getElementById('classe_filter');
     const textFilter   = document.getElementById('eleve_filter');
@@ -236,8 +253,8 @@ document.addEventListener('DOMContentLoaded', function () {
         let v = raw.replace(/[\s\-\.]/g, '');
         if (v.startsWith('+223'))  v = v.slice(4);
         if (v.startsWith('00223')) v = v.slice(5);
-        if (!/^[0-9]{8}$/.test(v)) return 'Le numéro doit contenir 8 chiffres (ex : 76 12 34 56).';
-        if (parseInt(v[0]) < 2)    return 'Préfixe invalide pour le Mali.';
+        if (!/^[0-9]{8}$/.test(v)) return i18n.phoneErrorDigits;
+        if (parseInt(v[0]) < 2)    return i18n.phoneErrorPrefix;
         return null;
     }
 
@@ -278,12 +295,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function refreshState() {
         const count = tbody.querySelectorAll('tr[data-eleve-id]').length;
-        countBadge.textContent = count + ' élève(s)';
+        countBadge.textContent = i18n.countStudents.replace(':count', count);
         emptyRow.style.display = count > 0 ? 'none' : '';
     }
 
     function lienOptions() {
-        return liens.map(l => `<option value="${escapeHtml(l)}">${escapeHtml(l)}</option>`).join('');
+        return Object.entries(liensMap).map(([value, label]) => `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`).join('');
     }
 
     function applyPickerFilters() {
@@ -316,10 +333,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 <td>${escapeHtml(eleve.classe)}</td>
                 <td><select name="lien_parent[]" class="form-select" required>${lienOptions()}</select></td>
                 <td><select name="informer[]" class="form-select" required>
-                    <option value="Oui">Oui</option><option value="Non">Non</option>
+                    <option value="Oui">${escapeHtml(i18n.lienOui)}</option><option value="Non">${escapeHtml(i18n.lienNon)}</option>
                 </select></td>
                 <td class="text-center">
-                    <button type="button" class="btn btn-light btn-sm p-2 remove-row" title="Retirer">
+                    <button type="button" class="btn btn-light btn-sm p-2 remove-row" title="${escapeHtml(i18n.remove)}">
                         <i class="bi bi-trash text-danger"></i>
                     </button>
                 </td>
@@ -345,7 +362,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Block if no student
         if (!tbody.querySelector('tr[data-eleve-id]')) {
             e.preventDefault();
-            alert('Veuillez rattacher au moins un élève à ce parent.');
+            alert(i18n.alertNoStudent);
         }
     });
 });
