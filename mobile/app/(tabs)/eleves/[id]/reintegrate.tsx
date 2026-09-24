@@ -7,12 +7,14 @@ import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
+import { useLocale } from '@/context/LocaleContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
 import { AnneeScolaire, Classe } from '@/types/api';
 
 export default function ReintegrateEleveScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { t } = useLocale();
   const { data: options } = useApiGet<{ classes: Classe[]; annees: AnneeScolaire[] }>('/eleves/cartes-scolaires');
 
   const [idClasse, setIdClasse] = useState<number | null>(null);
@@ -30,7 +32,7 @@ export default function ReintegrateEleveScreen() {
       setSuccessVisible(true);
       setTimeout(() => router.back(), 900);
     } catch (err) {
-      setError(apiErrorMessage(err, 'Impossible de réintégrer cet élève.'));
+      setError(apiErrorMessage(err, t('eleves.reintegrate_error')));
     } finally {
       setIsSubmitting(false);
     }
@@ -41,15 +43,15 @@ export default function ReintegrateEleveScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <SelectField label={requiredLabel('Classe')} value={idClasse} options={classeOptions} onChange={(v) => setIdClasse(v as number)} />
-      <SelectField label={requiredLabel('Année scolaire')} value={idAnnee} options={anneeOptions} onChange={(v) => setIdAnnee(v as number)} />
-      <TextInput mode="outlined" label="Motif du retour (optionnel)" value={motif} onChangeText={setMotif} style={styles.input} />
+      <SelectField label={requiredLabel(t('eleves.label_classe'))} value={idClasse} options={classeOptions} onChange={(v) => setIdClasse(v as number)} />
+      <SelectField label={requiredLabel(t('eleves.label_annee'))} value={idAnnee} options={anneeOptions} onChange={(v) => setIdAnnee(v as number)} />
+      <TextInput mode="outlined" label={t('eleves.motif_retour_label')} value={motif} onChangeText={setMotif} style={styles.input} />
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <SubmitButton label="Réintégrer" onPress={handleSubmit} loading={isSubmitting} disabled={!idClasse || !idAnnee} />
+      <SubmitButton label={t('eleves.reintegrate_title')} onPress={handleSubmit} loading={isSubmitting} disabled={!idClasse || !idAnnee} />
 
-      <SuccessSnackbar visible={successVisible} message="Élève réintégré avec succès." onDismiss={() => setSuccessVisible(false)} />
+      <SuccessSnackbar visible={successVisible} message={t('eleves.reintegrate_success')} onDismiss={() => setSuccessVisible(false)} />
     </ScrollView>
   );
 }

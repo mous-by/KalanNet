@@ -6,6 +6,7 @@ import { ActivityIndicator, Button, Chip, FAB, Text } from 'react-native-paper';
 import OfflineBanner from '@/components/OfflineBanner';
 import PaginatedList from '@/components/PaginatedList';
 import { useAuth } from '@/context/AuthContext';
+import { useLocale } from '@/context/LocaleContext';
 import { useOffline } from '@/context/OfflineContext';
 import { removeQueueItem } from '@/lib/offlineQueue';
 import { hasPermission } from '@/lib/permissions';
@@ -13,25 +14,27 @@ import { useApiGet, usePaginatedApi } from '@/lib/useApi';
 import { Classe, Eleve } from '@/types/api';
 
 function EleveRow({ eleve }: { eleve: Eleve }) {
+  const { t } = useLocale();
   return (
     <Pressable style={styles.row} onPress={() => router.push(`/eleves/${eleve.id_eleve}`)}>
       <Text style={styles.name}>
         {eleve.prenom_eleve} {eleve.nom_eleve}
       </Text>
       <Text style={styles.meta}>
-        {eleve.classe?.nom_classe ?? '—'} · {eleve.matricule ?? 'sans matricule'}
+        {eleve.classe?.nom_classe ?? '—'} · {eleve.matricule ?? t('eleves.no_matricule')}
       </Text>
     </Pressable>
   );
 }
 
 function ParentChildrenList() {
+  const { t } = useLocale();
   const { data, isLoading, error } = useApiGet<{ children?: Eleve[] }>('/dashboard');
   const children = data?.children ?? [];
 
   if (isLoading) return <ActivityIndicator style={styles.spinner} size="large" />;
   if (error) return <Text style={styles.error}>{error}</Text>;
-  if (children.length === 0) return <Text style={styles.empty}>Aucun enfant rattaché à ce compte.</Text>;
+  if (children.length === 0) return <Text style={styles.empty}>{t('eleves.no_children')}</Text>;
 
   return (
     <View style={styles.content}>
@@ -44,6 +47,7 @@ function ParentChildrenList() {
 
 function StaffEleveList() {
   const { user } = useAuth();
+  const { t } = useLocale();
   const { queue } = useOffline();
   const { data: filterOptions } = useApiGet<{ classes: Classe[] }>('/eleves/cartes-scolaires', [], {
     cacheKey: 'eleves-cartes-scolaires',
@@ -74,8 +78,8 @@ function StaffEleveList() {
         onLoadMore={list.loadMore}
         search={list.search}
         onSearchChange={list.setSearch}
-        searchPlaceholder="Nom, prénom ou matricule…"
-        emptyLabel="Aucun élève trouvé."
+        searchPlaceholder={t('eleves.search_placeholder')}
+        emptyLabel={t('eleves.empty_list')}
         header={
           queuedEleves.length > 0 || (filterOptions?.classes?.length ?? 0) > 0 ? (
             <View>
@@ -85,11 +89,11 @@ function StaffEleveList() {
                     <View key={item.id} style={[styles.queuedRowBase, item.status === 'conflict' ? styles.conflictRow : styles.queuedRow]}>
                       <Text style={styles.name}>{item.label}</Text>
                       <Text style={item.status === 'conflict' ? styles.conflictText : styles.queuedText}>
-                        {item.status === 'conflict' ? (item.message ?? 'Conflit à vérifier') : 'En attente de synchronisation'}
+                        {item.status === 'conflict' ? (item.message ?? t('classes.conflict_default')) : t('classes.queued_message')}
                       </Text>
                       {item.status === 'conflict' ? (
                         <Button compact textColor="#d33" onPress={() => removeQueueItem(item.id)}>
-                          Abandonner
+                          {t('classes.abandon')}
                         </Button>
                       ) : null}
                     </View>
@@ -99,7 +103,7 @@ function StaffEleveList() {
               {(filterOptions?.classes?.length ?? 0) > 0 ? (
                 <View style={styles.chipsRow}>
                   <Chip selected={selectedClasse === null} onPress={() => setSelectedClasse(null)} style={styles.chip}>
-                    Toutes les classes
+                    {t('eleves.all_classes')}
                   </Chip>
                   {filterOptions!.classes.map((classe) => (
                     <Chip

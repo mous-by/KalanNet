@@ -11,36 +11,12 @@ import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
+import { useLocale } from '@/context/LocaleContext';
 import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { formatMontant } from '@/lib/currency';
 import { useApiGet } from '@/lib/useApi';
 import { AnneeScolaire, Classe, Matiere, ParentEleve, Planification } from '@/types/api';
-
-const GENRE_OPTIONS = [
-  { value: 'Masculin', label: 'Masculin' },
-  { value: 'Féminin', label: 'Féminin' },
-];
-
-const CAS_SOCIAL_OPTIONS = [
-  { value: 'normal', label: 'Normal' },
-  { value: 'Dipenser', label: 'Dispensé' },
-  { value: 'Malade', label: 'Malade' },
-];
-
-const MODE_PAIEMENT_OPTIONS = [
-  { value: '', label: 'Non défini' },
-  { value: 'Mensuel', label: 'Mensuel' },
-  { value: 'Trimestriel', label: 'Trimestriel' },
-  { value: 'Annuel', label: 'Annuel' },
-];
-
-const LIEN_PARENT_OPTIONS = ['Parent', 'Père', 'Mère', 'Frère', 'Sœur', 'Tuteur', 'Tutrice', 'Autre'].map((v) => ({ value: v, label: v }));
-
-const INFORMER_OPTIONS = [
-  { value: 'Oui', label: 'Oui' },
-  { value: 'Non', label: 'Non' },
-];
 
 interface InscriptionOptions {
   classes: Classe[];
@@ -54,10 +30,45 @@ interface InscriptionOptions {
 
 export default function NewEleveScreen() {
   const { user } = useAuth();
+  const { t } = useLocale();
   const { isOnline, enqueueAction } = useOffline();
   const { data: options, error: optionsError } = useApiGet<InscriptionOptions>('/eleves/inscription-options', [], {
     cacheKey: 'eleves-inscription-options',
   });
+
+  const GENRE_OPTIONS = [
+    { value: 'Masculin', label: t('eleves.genre_masculin') },
+    { value: 'Féminin', label: t('eleves.genre_feminin') },
+  ];
+
+  const CAS_SOCIAL_OPTIONS = [
+    { value: 'normal', label: t('eleves.cas_social_normal') },
+    { value: 'Dipenser', label: t('eleves.cas_social_dispense') },
+    { value: 'Malade', label: t('eleves.cas_social_malade') },
+  ];
+
+  const MODE_PAIEMENT_OPTIONS = [
+    { value: '', label: t('eleves.mode_paiement_non_defini') },
+    { value: 'Mensuel', label: t('eleves.mode_paiement_mensuel') },
+    { value: 'Trimestriel', label: t('eleves.mode_paiement_trimestriel') },
+    { value: 'Annuel', label: t('eleves.mode_paiement_annuel') },
+  ];
+
+  const LIEN_PARENT_OPTIONS = [
+    { value: 'Parent', label: t('eleves.lien_parent_generic') },
+    { value: 'Père', label: t('eleves.lien_pere') },
+    { value: 'Mère', label: t('eleves.lien_mere') },
+    { value: 'Frère', label: t('eleves.lien_frere') },
+    { value: 'Sœur', label: t('eleves.lien_soeur') },
+    { value: 'Tuteur', label: t('eleves.lien_tuteur') },
+    { value: 'Tutrice', label: t('eleves.lien_tutrice') },
+    { value: 'Autre', label: t('eleves.lien_autre') },
+  ];
+
+  const INFORMER_OPTIONS = [
+    { value: 'Oui', label: t('eleves.informer_oui') },
+    { value: 'Non', label: t('eleves.informer_non') },
+  ];
 
   const [prenom, setPrenom] = useState('');
   const [nom, setNom] = useState('');
@@ -82,16 +93,16 @@ export default function NewEleveScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('Élève inscrit avec succès.');
+  const [successMessage, setSuccessMessage] = useState(t('eleves.created_success'));
 
   const planificationRequired = options?.planification_required ?? false;
-  const planificationLabel = options?.planification_label ?? 'Formule de paiement';
+  const planificationLabel = options?.planification_label ?? t('eleves.formule_paiement_default');
 
   const classeOptions = (options?.classes ?? []).map((c) => ({ value: c.id_classe, label: `${c.nom_classe} - ${c.ordreEnseignement}` }));
   const anneeOptions = (options?.annees ?? []).map((a) => ({ value: a.id_anneeScolaire, label: a.annee }));
-  const parentOptions = [{ value: 0, label: 'Aucun rattachement maintenant' }, ...(options?.parents ?? []).map((p) => ({ value: p.id_parent, label: p.nom_prenom_parent }))];
+  const parentOptions = [{ value: 0, label: t('eleves.no_attach_now') }, ...(options?.parents ?? []).map((p) => ({ value: p.id_parent, label: p.nom_prenom_parent }))];
   const matiereLv2Options = [
-    { value: 0, label: 'Non applicable / pas encore choisie' },
+    { value: 0, label: t('eleves.lv2_none') },
     ...(options?.matieres_lv2 ?? []).map((m) => ({ value: m.id_matiere, label: m.nom_matiere })),
   ];
 
@@ -99,10 +110,10 @@ export default function NewEleveScreen() {
     const filtered = (options?.planifications ?? []).filter((p) => p.id_classe === idClasse && p.id_annee === idAnnee);
     const items = filtered.map((p) => ({
       value: p.id_planification,
-      label: `${planificationRequired ? p.motif : 'Coopérative'} - ${formatMontant(Number(p.montant_planification), user)}`,
+      label: `${planificationRequired ? p.motif : t('eleves.cooperative_label')} - ${formatMontant(Number(p.montant_planification), user)}`,
     }));
-    return [{ value: 0, label: planificationRequired ? 'Veuillez choisir' : 'Sans coopérative / sans frais' }, ...items];
-  }, [options?.planifications, idClasse, idAnnee, planificationRequired, user]);
+    return [{ value: 0, label: planificationRequired ? t('eleves.select_generic') : t('eleves.no_cooperative_no_fee') }, ...items];
+  }, [options?.planifications, idClasse, idAnnee, planificationRequired, user, t]);
 
   const isValid = prenom.trim() && nom.trim() && genre && idClasse && idAnnee && (!planificationRequired || idPlanification);
 
@@ -118,11 +129,11 @@ export default function NewEleveScreen() {
   async function handleSubmit() {
     setError(null);
     if (!isValid) {
-      setError('Veuillez renseigner tous les champs obligatoires.');
+      setError(t('eleves.validation_required'));
       return;
     }
     if (!isOnline && avatarUri) {
-      setError('Une photo ne peut pas être envoyée hors ligne. Retirez-la ou connectez-vous pour l’ajouter.');
+      setError(t('eleves.photo_offline_error'));
       return;
     }
     setIsSubmitting(true);
@@ -154,7 +165,7 @@ export default function NewEleveScreen() {
           method: 'post',
           payload: jsonPayload,
         });
-        setSuccessMessage('Élève mis en attente, sera synchronisé au retour du réseau.');
+        setSuccessMessage(t('eleves.queued_success'));
         setSuccessVisible(true);
         setTimeout(() => router.back(), 900);
         return;
@@ -183,11 +194,11 @@ export default function NewEleveScreen() {
       }
 
       await api.post('/eleves', form, { headers: { 'Content-Type': 'multipart/form-data' } });
-      setSuccessMessage('Élève inscrit avec succès.');
+      setSuccessMessage(t('eleves.created_success'));
       setSuccessVisible(true);
       setTimeout(() => router.back(), 900);
     } catch (err) {
-      setError(apiErrorMessage(err, 'Impossible d’inscrire cet élève.'));
+      setError(apiErrorMessage(err, t('eleves.create_error')));
     } finally {
       setIsSubmitting(false);
     }
@@ -203,24 +214,24 @@ export default function NewEleveScreen() {
             <Image source={{ uri: avatarUri }} style={styles.avatar} />
           ) : (
             <View style={[styles.avatar, styles.avatarPlaceholder]}>
-              <Text style={styles.avatarPlaceholderText}>Photo</Text>
+              <Text style={styles.avatarPlaceholderText}>{t('eleves.photo_label')}</Text>
             </View>
           )}
         </Pressable>
-        <Text style={styles.avatarHint}>Touchez pour choisir une photo</Text>
+        <Text style={styles.avatarHint}>{t('eleves.pick_photo_hint')}</Text>
       </View>
 
-      <TextInput mode="outlined" label={requiredLabel('Prénom')} value={prenom} onChangeText={setPrenom} style={styles.input} />
-      <TextInput mode="outlined" label={requiredLabel('Nom')} value={nom} onChangeText={setNom} style={styles.input} />
-      <DateField label="Date de naissance" value={dateNaissance} onChange={setDateNaissance} />
-      <TextInput mode="outlined" label="Lieu de naissance" value={lieuNaissance} onChangeText={setLieuNaissance} placeholder="Ex: Kayes" style={styles.input} />
-      <TextInput mode="outlined" label="Adresse / Quartier" value={adresse} onChangeText={setAdresse} style={styles.input} />
-      <SelectField label={requiredLabel('Genre')} value={genre} options={GENRE_OPTIONS} onChange={(v) => setGenre(v as string)} />
-      <TextInput mode="outlined" label="Matricule (auto si vide)" value={matricule} onChangeText={setMatricule} style={styles.input} />
-      <DateField label="Date d'inscription" value={dateInscription} onChange={setDateInscription} />
-      <SelectField label="Cas social" value={casSocial} options={CAS_SOCIAL_OPTIONS} onChange={(v) => setCasSocial(v as string)} />
+      <TextInput mode="outlined" label={requiredLabel(t('eleves.label_prenom'))} value={prenom} onChangeText={setPrenom} style={styles.input} />
+      <TextInput mode="outlined" label={requiredLabel(t('eleves.label_nom'))} value={nom} onChangeText={setNom} style={styles.input} />
+      <DateField label={t('eleves.label_date_naissance')} value={dateNaissance} onChange={setDateNaissance} />
+      <TextInput mode="outlined" label={t('eleves.label_lieu_naissance')} value={lieuNaissance} onChangeText={setLieuNaissance} placeholder={t('eleves.lieu_naissance_placeholder')} style={styles.input} />
+      <TextInput mode="outlined" label={t('eleves.label_adresse')} value={adresse} onChangeText={setAdresse} style={styles.input} />
+      <SelectField label={requiredLabel(t('eleves.label_genre'))} value={genre} options={GENRE_OPTIONS} onChange={(v) => setGenre(v as string)} />
+      <TextInput mode="outlined" label={t('eleves.label_matricule')} value={matricule} onChangeText={setMatricule} style={styles.input} />
+      <DateField label={t('eleves.label_date_inscription')} value={dateInscription} onChange={setDateInscription} />
+      <SelectField label={t('eleves.label_cas_social')} value={casSocial} options={CAS_SOCIAL_OPTIONS} onChange={(v) => setCasSocial(v as string)} />
       <SelectField
-        label={requiredLabel('Classe')}
+        label={requiredLabel(t('eleves.label_classe'))}
         value={idClasse}
         options={classeOptions}
         onChange={(v) => {
@@ -228,15 +239,15 @@ export default function NewEleveScreen() {
           setIdPlanification(null);
         }}
       />
-      <SelectField label="Mode de paiement" value={modePaiement} options={MODE_PAIEMENT_OPTIONS} onChange={(v) => setModePaiement(v as string)} />
+      <SelectField label={t('eleves.label_mode_paiement')} value={modePaiement} options={MODE_PAIEMENT_OPTIONS} onChange={(v) => setModePaiement(v as string)} />
       <SelectField
-        label="Langue LV2"
+        label={t('eleves.lv2_label')}
         value={idMatiereLv2 ?? 0}
         options={matiereLv2Options}
         onChange={(v) => setIdMatiereLv2((v as number) || null)}
       />
       <SelectField
-        label={requiredLabel('Année scolaire')}
+        label={requiredLabel(t('eleves.label_annee'))}
         value={idAnnee}
         options={anneeOptions}
         onChange={(v) => {
@@ -252,18 +263,18 @@ export default function NewEleveScreen() {
         disabled={!idClasse || !idAnnee}
       />
 
-      <Text style={styles.sectionTitle}>Parent déjà inscrit</Text>
-      <SelectField label="Parent" value={parentId ?? 0} options={parentOptions} onChange={(v) => setParentId((v as number) || null)} />
+      <Text style={styles.sectionTitle}>{t('eleves.parent_already_title')}</Text>
+      <SelectField label={t('eleves.parent_label')} value={parentId ?? 0} options={parentOptions} onChange={(v) => setParentId((v as number) || null)} />
       {parentId ? (
         <>
-          <SelectField label="Lien de parenté" value={lienParent} options={LIEN_PARENT_OPTIONS} onChange={(v) => setLienParent(v as string)} />
-          <SelectField label="Informer" value={informer} options={INFORMER_OPTIONS} onChange={(v) => setInformer(v as string)} />
+          <SelectField label={t('eleves.lien_parente_label')} value={lienParent} options={LIEN_PARENT_OPTIONS} onChange={(v) => setLienParent(v as string)} />
+          <SelectField label={t('eleves.informer_label')} value={informer} options={INFORMER_OPTIONS} onChange={(v) => setInformer(v as string)} />
         </>
       ) : null}
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <SubmitButton label="Valider l'inscription" onPress={handleSubmit} loading={isSubmitting} />
+      <SubmitButton label={t('eleves.validate_inscription')} onPress={handleSubmit} loading={isSubmitting} />
 
       <SuccessSnackbar visible={successVisible} message={successMessage} onDismiss={() => setSuccessVisible(false)} />
     </ScrollView>

@@ -3,6 +3,7 @@ import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Button, Card, Chip, Divider, Text } from 'react-native-paper';
 
 import { useAuth } from '@/context/AuthContext';
+import { useLocale } from '@/context/LocaleContext';
 import { formatMontant } from '@/lib/currency';
 import { hasPermission } from '@/lib/permissions';
 import { useApiGet } from '@/lib/useApi';
@@ -20,13 +21,14 @@ interface EleveDetail {
 export default function EleveDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
+  const { t } = useLocale();
   const { data, isLoading, error, reload } = useApiGet<EleveDetail>(`/eleves/${id}`, [id]);
 
   const canManage = hasPermission(user, 'eleves_modification');
   const canPay = hasPermission(user, 'paiements_faire');
 
   if (isLoading) return <ActivityIndicator style={styles.spinner} size="large" />;
-  if (error || !data) return <Text style={styles.error}>{error ?? 'Élève introuvable.'}</Text>;
+  if (error || !data) return <Text style={styles.error}>{error ?? t('eleves.not_found')}</Text>;
 
   const { eleve, payment_summary, paiements_recents, evaluations_recentes } = data;
 
@@ -38,29 +40,29 @@ export default function EleveDetailScreen() {
         {eleve.prenom_eleve} {eleve.nom_eleve}
       </Text>
       <Text style={styles.meta}>
-        {eleve.classe?.nom_classe ?? '—'} · Matricule {eleve.matricule ?? '—'}
+        {eleve.classe?.nom_classe ?? '—'} · {t('eleves.label_matricule_short')} {eleve.matricule ?? '—'}
       </Text>
       {eleve.etat_dossier !== 0 ? (
         <Chip
           style={styles.statusChip}
           mode="flat"
           selectedColor={eleve.etat_dossier === 3 ? '#2e7d32' : undefined}>
-          {eleve.etat_dossier === 1 ? 'Transféré' : eleve.etat_dossier === 3 ? 'Diplômé' : 'Retiré'}
+          {eleve.etat_dossier === 1 ? t('eleves.status_transfere') : eleve.etat_dossier === 3 ? t('eleves.status_diplome') : t('eleves.status_retire')}
         </Chip>
       ) : null}
 
       {canManage ? (
         <View style={styles.actions}>
           <Button mode="outlined" onPress={() => router.push(`/eleves/${eleve.id_eleve}/edit`)} style={styles.actionButton}>
-            Modifier
+            {t('eleves.edit_title')}
           </Button>
           {eleve.etat_dossier === 0 ? (
             <Button mode="outlined" onPress={() => router.push(`/eleves/${eleve.id_eleve}/transfer`)} style={styles.actionButton}>
-              Transférer
+              {t('eleves.action_transfer')}
             </Button>
           ) : eleve.etat_dossier === 1 ? (
             <Button mode="outlined" onPress={() => router.push(`/eleves/${eleve.id_eleve}/reintegrate`)} style={styles.actionButton}>
-              Réintégrer
+              {t('eleves.action_reintegrate')}
             </Button>
           ) : null}
         </View>
@@ -71,35 +73,35 @@ export default function EleveDetailScreen() {
           mode="contained-tonal"
           onPress={() => router.push(`/plus/finances/new?id_eleve=${eleve.id_eleve}`)}
           style={styles.paymentButton}>
-          Enregistrer un paiement
+          {t('eleves.record_payment')}
         </Button>
       ) : null}
 
       <Card style={styles.card}>
-        <Card.Title title="Informations" />
+        <Card.Title title={t('eleves.info_title')} />
         <Card.Content>
-          <InfoRow label="Genre" value={eleve.genre_eleve} />
-          <InfoRow label="Date de naissance" value={eleve.date_naissance} />
-          <InfoRow label="Lieu de naissance" value={eleve.lieu_naiss} />
-          <InfoRow label="Adresse" value={eleve.adresse_eleve} />
-          <InfoRow label="Statut de paiement" value={eleve.statut_paiement} />
+          <InfoRow label={t('eleves.label_genre')} value={eleve.genre_eleve} />
+          <InfoRow label={t('eleves.label_date_naissance')} value={eleve.date_naissance} />
+          <InfoRow label={t('eleves.label_lieu_naissance')} value={eleve.lieu_naiss} />
+          <InfoRow label={t('eleves.label_adresse_short')} value={eleve.adresse_eleve} />
+          <InfoRow label={t('eleves.info_statut_paiement')} value={eleve.statut_paiement} />
         </Card.Content>
       </Card>
 
       {payment_summary ? (
         <Card style={styles.card}>
-          <Card.Title title="Paiements" />
+          <Card.Title title={t('eleves.payments_title')} />
           <Card.Content>
-            <InfoRow label="Attendu" value={formatAmount(payment_summary.attendu, user)} />
-            <InfoRow label="Payé" value={formatAmount(payment_summary.paye, user)} />
-            <InfoRow label="Reste" value={formatAmount(payment_summary.reste, user)} />
+            <InfoRow label={t('eleves.attendu_label')} value={formatAmount(payment_summary.attendu, user)} />
+            <InfoRow label={t('eleves.paye_label')} value={formatAmount(payment_summary.paye, user)} />
+            <InfoRow label={t('eleves.reste_label')} value={formatAmount(payment_summary.reste, user)} />
           </Card.Content>
         </Card>
       ) : null}
 
       {paiements_recents?.length > 0 ? (
         <Card style={styles.card}>
-          <Card.Title title="Derniers paiements" />
+          <Card.Title title={t('eleves.recent_payments_title')} />
           <Card.Content>
             {paiements_recents.map((paiement, index) => (
               <View key={paiement.id_paiement ?? index}>
@@ -113,7 +115,7 @@ export default function EleveDetailScreen() {
 
       {evaluations_recentes?.length > 0 ? (
         <Card style={styles.card}>
-          <Card.Title title="Évaluations récentes" />
+          <Card.Title title={t('eleves.recent_evaluations_title')} />
           <Card.Content>
             {evaluations_recentes.map((evaluation, index) => (
               <View key={index}>

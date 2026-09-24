@@ -6,10 +6,12 @@ import { Text, TextInput } from 'react-native-paper';
 import requiredLabel from '@/components/RequiredLabel';
 import SubmitButton from '@/components/SubmitButton';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
+import { useLocale } from '@/context/LocaleContext';
 import { api, apiErrorMessage } from '@/lib/api';
 
 export default function TransferEleveScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { t } = useLocale();
   const [motif, setMotif] = useState('');
   const [destination, setDestination] = useState('');
   const [travail, setTravail] = useState('');
@@ -26,7 +28,7 @@ export default function TransferEleveScreen() {
       setSuccessVisible(true);
       setTimeout(() => router.back(), 900);
     } catch (err) {
-      setError(apiErrorMessage(err, 'Impossible de transférer cet élève.'));
+      setError(apiErrorMessage(err, t('eleves.transfer_error')));
     } finally {
       setIsSubmitting(false);
     }
@@ -36,16 +38,16 @@ export default function TransferEleveScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <TextInput mode="outlined" label={requiredLabel('Motif')} value={motif} onChangeText={setMotif} style={styles.input} />
-      <TextInput mode="outlined" label={requiredLabel('Établissement de destination')} value={destination} onChangeText={setDestination} style={styles.input} />
-      <TextInput mode="outlined" label="Travail effectué (optionnel)" value={travail} onChangeText={setTravail} style={styles.input} />
-      <TextInput mode="outlined" label={requiredLabel('Conduite')} value={conduite} onChangeText={setConduite} style={styles.input} />
+      <TextInput mode="outlined" label={requiredLabel(t('eleves.motif_label'))} value={motif} onChangeText={setMotif} style={styles.input} />
+      <TextInput mode="outlined" label={requiredLabel(t('eleves.destination_label'))} value={destination} onChangeText={setDestination} style={styles.input} />
+      <TextInput mode="outlined" label={t('eleves.travail_label')} value={travail} onChangeText={setTravail} style={styles.input} />
+      <TextInput mode="outlined" label={requiredLabel(t('eleves.conduite_label'))} value={conduite} onChangeText={setConduite} style={styles.input} />
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <SubmitButton label="Confirmer le transfert" onPress={handleSubmit} loading={isSubmitting} disabled={!isValid} />
+      <SubmitButton label={t('eleves.confirm_transfer_button')} onPress={handleSubmit} loading={isSubmitting} disabled={!isValid} />
 
-      <SuccessSnackbar visible={successVisible} message="Élève transféré avec succès." onDismiss={() => setSuccessVisible(false)} />
+      <SuccessSnackbar visible={successVisible} message={t('eleves.transfer_success')} onDismiss={() => setSuccessVisible(false)} />
     </ScrollView>
   );
 }
