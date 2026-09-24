@@ -51,18 +51,6 @@
                         </form>
                     </div>
 
-                    <div class="alert alert-info border-0 d-flex align-items-start gap-3 mb-3">
-                        <i class="bi bi-envelope-check fs-4"></i>
-                        <div>
-                            <div class="fw-bold">{{ __('configuration.sc_sendemail_title') }}</div>
-                            <div class="small">
-                                {{ __('configuration.sc_sendemail_desc') }}
-                                {{ __('configuration.sc_canal_actuel') }} <strong>{{ config('mail.default') ?: __('configuration.sc_non_configure') }}</strong>,
-                                {{ __('configuration.sc_expediteur') }} <strong>{{ config('mail.from.address') ?: __('configuration.sc_non_configure') }}</strong>.
-                            </div>
-                        </div>
-                    </div>
-
                     <div class="table-responsive">
                         <table class="table table-striped table-bordered align-middle">
                             <thead class="table-light">
