@@ -5,11 +5,27 @@
     $showAssign = in_array($connectedUser->droit, ['SupAdmin', 'Admin'], true)
                   || $connectedUser->userHasAnyPermission(['permissions_assigner', 'permission_assigner', 'dae_permission', 'dcap_permission']);
     $showEcoles    = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('ecoles_apercu');
+    // Reserve a l'Admin : c'est lui qui connait le systeme scolaire de son
+    // propre pays, pas le SupAdmin (base au Mali) pour chaque pays ou
+    // KalanNet s'etend -- meme principe que le libre-service academie/CAP.
+    // Sans objet pour une Ecole de Sante (filiere/annee, pas d'examen
+    // national de type DEF/BAC).
+    $adminEcoleType = $connectedUser->droit === 'Admin' ? ($connectedUser->ecole->typeEcole ?? null) : null;
+    $showPays      = $connectedUser->droit === 'Admin' && $adminEcoleType !== 'École de Santé';
+    // Symétrique de Pays : les filières (Infirmier, Sage-femme...) ne
+    // concernent QUE les Écoles de Santé.
+    $showFilieres  = $connectedUser->droit === 'Admin' && $adminEcoleType === 'École de Santé';
     $showAcademies = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('academies_apercu');
     $showCaps      = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('dcap_apercu');
     $showAnnees    = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('annees_scolaires_apercu');
     $showNotes     = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('types_notes_apercu');
-    $showClasses   = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('classes_officielles_apercu');
+    // Le referentiel "classes officielles" est le curriculum publie par le
+    // ministere malien : sans objet pour une Ecole de Sante et pour les
+    // ecoles des autres pays (meme raisonnement que Pays/Filieres ci-dessus).
+    $showClasses   = $connectedUser->droit === 'SupAdmin'
+                     || ($connectedUser->userHasPermission('classes_officielles_apercu')
+                         && ($connectedUser->ecole->typeEcole ?? null) !== 'École de Santé'
+                         && \App\Support\ExamenNational::estMali($connectedUser->ecole));
     $showStatus    = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('status_controles_apercu');
     $showPerms     = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasAnyPermission(['permissions_apercu', 'permission_voir']);
 @endphp
@@ -50,7 +66,7 @@
         @endif
 
         {{-- Structure scolaire --}}
-        @if($showEcoles || $showAcademies || $showCaps)
+        @if($showEcoles || $showAcademies || $showCaps || $showPays || $showFilieres)
             <p class="text-uppercase fw-bold px-2 mb-1" class="config-menu-section-label">Structure</p>
             <ul class="nav flex-column mb-1">
                 @if($showEcoles)
@@ -66,6 +82,16 @@
                 @if($showCaps)
                     <li class="nav-item">
                         @include('configuration._menu_link', ['route' => 'configuration.caps', 'icon' => 'bi-diagram-3-fill', 'label' => 'CAP'])
+                    </li>
+                @endif
+                @if($showPays)
+                    <li class="nav-item">
+                        @include('configuration._menu_link', ['route' => 'configuration.pays', 'icon' => 'bi-globe-americas', 'label' => 'Pays'])
+                    </li>
+                @endif
+                @if($showFilieres)
+                    <li class="nav-item">
+                        @include('configuration._menu_link', ['route' => 'configuration.filieres', 'icon' => 'bi-diagram-3-fill', 'label' => 'Filières'])
                     </li>
                 @endif
             </ul>

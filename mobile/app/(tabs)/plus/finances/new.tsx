@@ -9,8 +9,10 @@ import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
+import { useAuth } from '@/context/AuthContext';
 import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
+import { formatMontant } from '@/lib/currency';
 import { useApiGet } from '@/lib/useApi';
 
 interface Echeance {
@@ -41,6 +43,7 @@ const MODE_REGLEMENT_OPTIONS = [
 
 export default function NewPaiementScreen() {
   const { id_eleve } = useLocalSearchParams<{ id_eleve: string }>();
+  const { user } = useAuth();
   const { isOnline, enqueueAction } = useOffline();
   const { data: context, isLoading, error: contextError } = useApiGet<StudentContext>(id_eleve ? `/finances/eleves/${id_eleve}/contexte` : null, [id_eleve], {
     cacheKey: id_eleve ? `finances-eleve-${id_eleve}` : undefined,
@@ -82,7 +85,7 @@ export default function NewPaiementScreen() {
       if (!isOnline) {
         await enqueueAction({
           kind: 'paiement_eleve',
-          label: `${context?.eleve.nom ?? ''} · ${Number(montant).toLocaleString('fr-FR')} FCFA`,
+          label: `${context?.eleve.nom ?? ''} · ${formatMontant(Number(montant), user)}`,
           endpoint: '/finances/paiements',
           method: 'post',
           payload,
@@ -109,7 +112,7 @@ export default function NewPaiementScreen() {
 
   const echeanceOptions = (context.plan?.echeances ?? [])
     .filter((e) => e.reste > 0)
-    .map((e) => ({ value: e.id, label: `${e.libelle} — reste ${e.reste.toLocaleString('fr-FR')} FCFA` }));
+    .map((e) => ({ value: e.id, label: `${e.libelle} — reste ${formatMontant(e.reste, user)}` }));
   const parentOptions = [
     { value: 0, label: 'Autre personne' },
     ...(context.parents ?? []).map((p) => ({ value: p.id_parent, label: p.nom_prenom_parent })),

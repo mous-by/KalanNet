@@ -6,6 +6,7 @@ use App\Http\Controllers\BulletinController;
 use App\Http\Controllers\TimetableController;
 use App\Http\Controllers\ParentController;
 use App\Http\Controllers\MatiereController;
+use App\Http\Controllers\FiliereController;
 use App\Http\Controllers\InscriptionController;
 use App\Http\Controllers\PresenceController;
 use App\Http\Controllers\ThemeController;
@@ -225,6 +226,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/pedagogie/matieres', [MatiereController::class, 'store'])->name('pedagogie.matieres.store');
     Route::put('/pedagogie/matieres/{id}', [MatiereController::class, 'update'])->name('pedagogie.matieres.update');
     Route::delete('/pedagogie/matieres/{id}', [MatiereController::class, 'destroy'])->name('pedagogie.matieres.destroy');
+
     Route::get('/pedagogie/inscriptions', [InscriptionController::class, 'index'])->name('inscriptions.index');
     Route::get('/pedagogie/inscriptions/create', [InscriptionController::class, 'create'])->name('inscriptions.create');
     Route::post('/pedagogie/inscriptions', [InscriptionController::class, 'store'])->name('inscriptions.store');
@@ -242,6 +244,16 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/configuration/ecoles', [ConfigurationController::class, 'storeEcole'])->name('configuration.ecoles.store');
     Route::put('/configuration/ecoles/{id}', [ConfigurationController::class, 'updateEcole'])->name('configuration.ecoles.update');
     Route::delete('/configuration/ecoles/{id}', [ConfigurationController::class, 'destroyEcole'])->name('configuration.ecoles.destroy');
+
+    // Config pays (examens nationaux) — Admin limité à son propre pays, SupAdmin à tous
+    Route::get('/configuration/pays', [ConfigurationController::class, 'paysConfig'])->name('configuration.pays');
+    Route::put('/configuration/pays/{id}', [ConfigurationController::class, 'updatePaysConfig'])->name('configuration.pays.update');
+
+    // Filières — propre aux Écoles de Santé, même principe que Pays pour les autres pays
+    Route::get('/configuration/filieres', [FiliereController::class, 'index'])->name('configuration.filieres');
+    Route::post('/configuration/filieres', [FiliereController::class, 'store'])->name('configuration.filieres.store');
+    Route::put('/configuration/filieres/{id}', [FiliereController::class, 'update'])->name('configuration.filieres.update');
+    Route::delete('/configuration/filieres/{id}', [FiliereController::class, 'destroy'])->name('configuration.filieres.destroy');
 
     // Revendeurs — gestion par le SupAdmin
     Route::get('/configuration/revendeurs', [RevendeurController::class, 'index'])->name('configuration.revendeurs');

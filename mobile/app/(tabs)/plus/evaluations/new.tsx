@@ -136,7 +136,7 @@ export default function NewEvaluationScreen() {
       <SelectField label="Trimestre (ou mois ci-dessous)" value={idTrimestre} options={trimestreOptions} onChange={(v) => setIdTrimestre(v as number)} />
       <TextInput
         mode="outlined"
-        label="Mois (1-12, pour le fondamental I)"
+        label="Mois (1-12)"
         keyboardType="numeric"
         value={mois != null ? String(mois) : ''}
         onChangeText={(v) => setMois(v ? Number(v) : null)}

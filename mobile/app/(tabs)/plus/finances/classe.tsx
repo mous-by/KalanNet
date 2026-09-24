@@ -7,8 +7,10 @@ import OfflineBanner from '@/components/OfflineBanner';
 import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
+import { useAuth } from '@/context/AuthContext';
 import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
+import { formatMontant } from '@/lib/currency';
 import { useApiGet } from '@/lib/useApi';
 import { AnneeScolaire, Classe, Trimestre } from '@/types/api';
 
@@ -67,6 +69,7 @@ const TYPE_TABS_PUBLIC = [
 ];
 
 export default function PaiementClasseScreen() {
+  const { user } = useAuth();
   const { isOnline, enqueueAction } = useOffline();
   const [idClasse, setIdClasse] = useState<number | null>(null);
   const [idAnnee, setIdAnnee] = useState<number | null>(null);
@@ -217,13 +220,13 @@ export default function PaiementClasseScreen() {
                       {row.eleve.prenom_eleve} {row.eleve.nom_eleve}
                     </Text>
                     <Text style={styles.studentMeta}>
-                      Total {row.montant_total.toLocaleString('fr-FR')} · Reste {row.reste_a_payer.toLocaleString('fr-FR')} FCFA
+                      Total {formatMontant(row.montant_total, user)} · Reste {formatMontant(row.reste_a_payer, user)}
                     </Text>
                     {row.tranche ? (
                       <Text style={[styles.studentMeta, row.tranche.en_retard ? styles.trancheLate : null]}>
                         {row.tranche.soldees}/{row.tranche.total} tranche(s) soldée(s)
                         {row.tranche.courante
-                          ? ` · ${row.tranche.courante.libelle} : ${row.tranche.courante.reste.toLocaleString('fr-FR')} F avant le ${row.tranche.courante.date_limite.split('-').reverse().join('/')}${row.tranche.courante.en_retard ? ' (en retard)' : ''}`
+                          ? ` · ${row.tranche.courante.libelle} : ${formatMontant(row.tranche.courante.reste, user)} avant le ${row.tranche.courante.date_limite.split('-').reverse().join('/')}${row.tranche.courante.en_retard ? ' (en retard)' : ''}`
                           : ''}
                       </Text>
                     ) : null}

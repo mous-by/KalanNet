@@ -1,6 +1,8 @@
 import { StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 
+import { useAuth } from '@/context/AuthContext';
+import { formatMontant } from '@/lib/currency';
 import { SURFACE } from '@/lib/themes';
 
 interface Classe {
@@ -57,9 +59,7 @@ export interface ParentDashboardData {
   totalRemaining: number;
 }
 
-function amount(value: number): string {
-  return `${Math.round(value).toLocaleString('fr-FR')} FCFA`;
-}
+
 
 const STATUS_STYLES: Record<string, { bg: string; fg: string }> = {
   'À jour': { bg: '#dcfce7', fg: '#166534' },
@@ -68,6 +68,9 @@ const STATUS_STYLES: Record<string, { bg: string; fg: string }> = {
 };
 
 export default function ParentDashboardView({ data }: { data: ParentDashboardData }) {
+  const { user } = useAuth();
+  const amount = (value: number) => formatMontant(value, user);
+
   return (
     <View>
       <View style={styles.summaryRow}>

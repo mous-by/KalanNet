@@ -116,11 +116,11 @@
             <tr>
                 <td>{{ $paiement->motif }}</td>
                 <td>{{ $paiement->mois ?? 'Scolarité' }}</td>
-                <td style="text-align: right;">{{ number_format($paiement->montant, 0, ',', ' ') }} FCFA</td>
+                <td style="text-align: right;">{{ \App\Support\Devise::format($paiement->montant, $paiement->ecole ?? null) }}</td>
             </tr>
             <tr class="total-row">
                 <td colspan="2" style="text-align: right;">TOTAL PAYÉ</td>
-                <td style="text-align: right;">{{ number_format($paiement->montant, 0, ',', ' ') }} FCFA</td>
+                <td style="text-align: right;">{{ \App\Support\Devise::format($paiement->montant, $paiement->ecole ?? null) }}</td>
             </tr>
         </tbody>
     </table>

@@ -34,9 +34,11 @@ class ProgrammeController extends WebProgrammeController
     public function create()
     {
         $this->authorizeProgrammesCreation();
+        $idEcole = session('idEcole') ?: request()->user()->idEcole;
 
         return response()->json([
-            'classes_officielles' => ClasseOfficielle::orderBy('ordre_enseignement')->orderBy('nom_classe_officielle')->get(),
+            'classes_officielles' => ClasseOfficielle::where('id_pays', \App\Support\Devise::resolvePays($idEcole)->id)
+                ->orderBy('ordre_enseignement')->orderBy('nom_classe_officielle')->get(),
             'matieres' => Matiere::with('ordres')->orderBy('nom_matiere')->get(),
         ]);
     }
@@ -65,10 +67,12 @@ class ProgrammeController extends WebProgrammeController
     {
         $this->authorizeProgrammesUpdate();
         $programme = ProgrammeOfficiel::with(['classes.matiere', 'classes.lecons', 'classes.classeOfficielle'])->findOrFail($id);
+        $idEcole = session('idEcole') ?: request()->user()->idEcole;
 
         return response()->json([
             'programme' => $programme,
-            'classes_officielles' => ClasseOfficielle::orderBy('ordre_enseignement')->orderBy('nom_classe_officielle')->get(),
+            'classes_officielles' => ClasseOfficielle::where('id_pays', \App\Support\Devise::resolvePays($idEcole)->id)
+                ->orderBy('ordre_enseignement')->orderBy('nom_classe_officielle')->get(),
             'matieres' => Matiere::with('ordres')->orderBy('nom_matiere')->get(),
         ]);
     }

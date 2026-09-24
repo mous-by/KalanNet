@@ -10,7 +10,8 @@ use App\Models\Permission;
 use App\Models\Revendeur;
 use App\Models\RevendeurOffre;
 use App\Models\User;
-use App\Rules\MaliPhone;
+use App\Rules\PaysPhone;
+use App\Support\Telephone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -84,7 +85,7 @@ class RevendeurController extends Controller
             'nom' => 'required|string|max:150',
             'nomPrenom' => 'required|string|max:150',
             'email' => ['required', 'email', 'max:150', Rule::unique('utilisateurs', 'email')],
-            'telephone' => ['required', 'string', 'max:20', new MaliPhone()],
+            'telephone' => ['required', 'string', 'max:20', new PaysPhone()],
             'pwd' => 'required|string|min:4',
             'numero_orange_wave' => 'nullable|string|max:30',
             'numero_mobicash' => 'nullable|string|max:30',
@@ -100,7 +101,7 @@ class RevendeurController extends Controller
         $user = User::create([
             'nomPrenom' => $data['nomPrenom'],
             'email' => $data['email'],
-            'telephone' => MaliPhone::normalize($data['telephone']),
+            'telephone' => Telephone::normalize($data['telephone']),
             'pwd' => Hash::make($data['pwd']),
             'droit' => 'revendeur',
             'id_revendeur' => $revendeur->id,
@@ -124,7 +125,7 @@ class RevendeurController extends Controller
             'numero_mobicash' => 'nullable|string|max:30',
             'nomPrenom' => 'required|string|max:150',
             'email' => ['required', 'email', 'max:150', Rule::unique('utilisateurs', 'email')->ignore($revendeur->utilisateur?->idUtilisateur, 'idUtilisateur')],
-            'telephone' => ['required', 'string', 'max:20', new MaliPhone()],
+            'telephone' => ['required', 'string', 'max:20', new PaysPhone()],
             'pwd' => 'nullable|string|min:4',
         ]);
 
@@ -138,7 +139,7 @@ class RevendeurController extends Controller
             $userPayload = [
                 'nomPrenom' => $data['nomPrenom'],
                 'email' => $data['email'],
-                'telephone' => MaliPhone::normalize($data['telephone']),
+                'telephone' => Telephone::normalize($data['telephone']),
             ];
             if (!empty($data['pwd'])) {
                 $userPayload['pwd'] = Hash::make($data['pwd']);

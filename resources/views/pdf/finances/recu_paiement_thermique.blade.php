@@ -39,7 +39,7 @@
     <table>
         <tr>
             <td>Total payé</td>
-            <td class="right amount">{{ number_format((float) ($paiement->montant_paye ?? $paiement->montant), 0, ',', ' ') }} FCFA</td>
+            <td class="right amount">{{ \App\Support\Devise::format((float) ($paiement->montant_paye ?? $paiement->montant), $paiement->ecole ?? null) }}</td>
         </tr>
     </table>
     <div class="line"></div>

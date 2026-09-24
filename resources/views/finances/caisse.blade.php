@@ -42,7 +42,7 @@
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
                             <h6 class="text-muted text-uppercase fw-bold small mb-3">Solde Initial</h6>
-                            <h4 class="fw-bold mb-0 text-dark">{{ number_format($caisse->montant_initial, 0, ',', ' ') }} <small class="fs-6">FCFA</small></h4>
+                            <h4 class="fw-bold mb-0 text-dark">{{ number_format($caisse->montant_initial, \App\Support\Devise::decimales(), ',', ' ') }} <small class="fs-6">{{ \App\Support\Devise::symbole() }}</small></h4>
                         </div>
                         <div class="widget-icon theme-icon-box rounded-3">
                             <i class="bi bi-cash-stack fs-4"></i>
@@ -57,7 +57,7 @@
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
                             <h6 class="text-white-50 text-uppercase fw-bold small mb-3">Solde Actuel</h6>
-                            <h2 class="fw-bold mb-0">{{ number_format($caisse->montant_net, 0, ',', ' ') }} <small class="fs-6">FCFA</small></h2>
+                            <h2 class="fw-bold mb-0">{{ number_format($caisse->montant_net, \App\Support\Devise::decimales(), ',', ' ') }} <small class="fs-6">{{ \App\Support\Devise::symbole() }}</small></h2>
                         </div>
                         <div class="widget-icon theme-icon-soft rounded-3">
                             <i class="bi bi-wallet2 fs-4"></i>
@@ -111,9 +111,9 @@
                             </td>
                             <td class="text-end fw-bold {{ $m->type == 'DEPENSE' ? ($m->valide ? 'text-danger' : 'text-warning') : 'text-success' }}">
                                 @if($m->type == 'DEPENSE')
-                                    {{ $m->valide ? '-' : '' }} {{ number_format($m->montant, 0, ',', ' ') }} FCFA
+                                    {{ $m->valide ? '-' : '' }} @devise($m->montant)
                                 @else
-                                    + {{ number_format($m->montant, 0, ',', ' ') }} FCFA
+                                    + @devise($m->montant)
                                 @endif
                             </td>
                             <td>
@@ -207,7 +207,7 @@
                             <div class="row g-3">
                                 <div class="col-md-4">
                                     <label class="form-label">Caisse référence</label>
-                                    <input type="text" class="form-control" value="{{ $caisse->reference }} ({{ number_format($caisse->montant_net, 0, ',', ' ') }} FCFA)" disabled>
+                                    <input type="text" class="form-control" value="{{ $caisse->reference }} ({{ \App\Support\Devise::format($caisse->montant_net) }})" disabled>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">Année scolaire <span class="text-danger">*</span></label>
@@ -261,7 +261,7 @@
                             <div class="row g-3">
                                 <div class="col-md-4">
                                     <label class="form-label">Caisse référence</label>
-                                    <input type="text" class="form-control" value="{{ $caisse->reference }} ({{ number_format($caisse->montant_net, 0, ',', ' ') }} FCFA)" disabled>
+                                    <input type="text" class="form-control" value="{{ $caisse->reference }} ({{ \App\Support\Devise::format($caisse->montant_net) }})" disabled>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">Année scolaire <span class="text-danger">*</span></label>

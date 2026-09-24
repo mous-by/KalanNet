@@ -16,6 +16,12 @@ export interface MenuItem {
   // eleves_dossier/parents_apercu permissions, so the permission check alone
   // isn't enough — this link must stay hidden from a parent regardless.
   hideForParent?: boolean;
+  // Mirrors configuration/_menu.blade.php's $showClasses/$showFilieres:
+  // some items are tied to one specific école type (or its opposite).
+  // Checked against user.ecole?.type; ignored for SupAdmin (bypasses like
+  // hasPermission()).
+  hideForEcoleType?: string;
+  onlyForEcoleType?: string;
 }
 
 export interface MenuSection {
@@ -25,6 +31,10 @@ export interface MenuSection {
 
 export function isMenuItemVisible(user: User | null | undefined, item: MenuItem): boolean {
   if (item.hideForParent && user?.droit === 'parent') return false;
+  if (user?.droit !== 'SupAdmin') {
+    if (item.hideForEcoleType && user?.ecole?.type === item.hideForEcoleType) return false;
+    if (item.onlyForEcoleType && user?.ecole?.type !== item.onlyForEcoleType) return false;
+  }
   return !item.permissions || hasAnyPermission(user, item.permissions);
 }
 
@@ -114,7 +124,20 @@ export const MENU_SECTIONS: MenuSection[] = [
       { labelKey: 'plus.academies', icon: 'city-variant-outline', href: '/plus/configuration/academies', permissions: ['academies_apercu'] },
       { labelKey: 'plus.caps', icon: 'office-building-outline', href: '/plus/configuration/caps', permissions: ['dcap_apercu'] },
       { labelKey: 'plus.grade_types', icon: 'numeric', href: '/plus/configuration/types-notes', permissions: ['types_notes_apercu'] },
-      { labelKey: 'plus.official_classes', icon: 'google-classroom', href: '/plus/configuration/classes-officielles', permissions: ['classes_officielles_apercu'] },
+      {
+        labelKey: 'plus.official_classes',
+        icon: 'google-classroom',
+        href: '/plus/configuration/classes-officielles',
+        permissions: ['classes_officielles_apercu'],
+        hideForEcoleType: 'École de Santé',
+      },
+      {
+        labelKey: 'plus.filieres',
+        icon: 'sitemap',
+        href: '/plus/configuration/filieres',
+        permissions: ['filieres_apercu'],
+        onlyForEcoleType: 'École de Santé',
+      },
       { labelKey: 'plus.control_statuses', icon: 'flag-outline', href: '/plus/configuration/status-controles', permissions: ['status_controles_apercu'] },
       {
         labelKey: 'plus.subscription',

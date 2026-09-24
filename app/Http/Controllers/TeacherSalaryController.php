@@ -282,7 +282,7 @@ class TeacherSalaryController extends Controller
                 'annee' => $data['redirect_annee'] ?? now()->format('Y'),
                 'source' => $mainSource ?? array_key_first($sources),
             ])
-            ->with('success', count($payments) . ' salaire(s) payé(s) pour un total de ' . number_format($total, 0, ',', ' ') . ' FCFA.');
+            ->with('success', count($payments) . ' salaire(s) payé(s) pour un total de ' . \App\Support\Devise::format($total) . '.');
     }
 
     protected function recordSalaryPayment(Enseignant $enseignant, array $filters, array $row, float $amount, string $paymentDate): void

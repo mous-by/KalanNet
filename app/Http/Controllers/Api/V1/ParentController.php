@@ -8,7 +8,7 @@ use App\Models\ParentModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use App\Rules\MaliPhone;
+use App\Support\Telephone;
 
 class ParentController extends WebParentController
 {
@@ -87,7 +87,7 @@ class ParentController extends WebParentController
         $parent = DB::transaction(function () use ($data) {
             $parent = ParentModel::create([
                 'nom_prenom_parent' => $data['nom_prenom_parent'],
-                'telephone_parent' => MaliPhone::normalize($data['telephone_parent']),
+                'telephone_parent' => Telephone::normalize($data['telephone_parent'], session('idEcole')),
                 'email_parent' => $data['email_parent'] ?? null,
                 'genre' => $data['genre'] ?? null,
                 'idEcole' => session('idEcole'),
@@ -112,7 +112,7 @@ class ParentController extends WebParentController
         DB::transaction(function () use ($parent, $data) {
             $parent->update([
                 'nom_prenom_parent' => $data['nom_prenom_parent'],
-                'telephone_parent' => MaliPhone::normalize($data['telephone_parent']),
+                'telephone_parent' => Telephone::normalize($data['telephone_parent'], session('idEcole')),
                 'email_parent' => $data['email_parent'] ?? null,
                 'genre' => $data['genre'] ?? null,
             ]);

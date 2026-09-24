@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\ParentModel;
 use App\Models\Eleve;
 use App\Models\Classe;
-use App\Rules\MaliPhone;
+use App\Rules\PaysPhone;
+use App\Support\Devise;
+use App\Support\Telephone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -74,6 +76,7 @@ class ParentController extends Controller
             'classes'      => $classes,
             'selectedRows' => $this->selectedRowsFromOldInput(),
             'mode'         => 'create',
+            'pays'         => Devise::resolvePays(session('idEcole')),
         ]);
     }
 
@@ -87,7 +90,7 @@ class ParentController extends Controller
         DB::transaction(function () use ($data) {
             $parent = ParentModel::create([
                 'nom_prenom_parent' => $data['nom_prenom_parent'],
-                'telephone_parent'  => MaliPhone::normalize($data['telephone_parent']),
+                'telephone_parent'  => Telephone::normalize($data['telephone_parent'], session('idEcole')),
                 'email_parent'      => $data['email_parent'] ?? null,
                 'genre'             => $data['genre'] ?? null,
                 'idEcole'           => session('idEcole'),
@@ -124,6 +127,7 @@ class ParentController extends Controller
             'classes'      => $classes,
             'selectedRows' => $selectedRows,
             'mode'         => 'edit',
+            'pays'         => Devise::resolvePays(session('idEcole')),
         ]);
     }
 
@@ -138,7 +142,7 @@ class ParentController extends Controller
         DB::transaction(function () use ($parent, $data) {
             $parent->update([
                 'nom_prenom_parent' => $data['nom_prenom_parent'],
-                'telephone_parent'  => MaliPhone::normalize($data['telephone_parent']),
+                'telephone_parent'  => Telephone::normalize($data['telephone_parent'], session('idEcole')),
                 'email_parent'      => $data['email_parent'] ?? null,
                 'genre'             => $data['genre'] ?? null,
             ]);
@@ -171,7 +175,7 @@ class ParentController extends Controller
     {
         return $request->validate([
             'nom_prenom_parent' => 'required|string|max:255',
-            'telephone_parent'  => ['required', 'string', 'max:20', new MaliPhone()],
+            'telephone_parent'  => ['required', 'string', 'max:20', new PaysPhone(session('idEcole'))],
             'email_parent'      => 'nullable|email|max:255',
             'genre'             => 'nullable|string|max:50',
             'id_eleve'          => 'required|array|min:1',

@@ -27,6 +27,14 @@ class UserResource extends JsonResource
                 'nom' => $this->ecole->nomEcole,
                 'type' => $this->ecole->typeEcole,
                 'logo' => $this->ecole->logoEcole,
+                // Symbole/decimales de la devise du pays de l'ecole (FCFA par
+                // defaut si le pays n'est pas resolu) — evite de coder "FCFA"
+                // en dur cote mobile, comme pour le web (voir App\Support\Devise).
+                'devise' => [
+                    'code' => \App\Support\Devise::code($this->ecole),
+                    'symbole' => \App\Support\Devise::symbole($this->ecole),
+                    'decimales' => \App\Support\Devise::decimales($this->ecole),
+                ],
             ] : null),
         ];
     }

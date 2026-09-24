@@ -6,11 +6,13 @@ use App\Models\AnneeScolaire;
 use App\Models\Classe;
 use App\Models\Ecole;
 use App\Models\Eleve;
+use App\Support\ExamenNational;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use Smalot\PdfParser\Parser as PdfParser;
@@ -25,6 +27,8 @@ class ResultatNationalController extends Controller
         $schoolId = session('idEcole') ?: $user->idEcole;
         $classes = $this->examClasses($schoolId, $user);
         $examensDisponibles = $this->allowedExamLevels($schoolId);
+        $examensLabel = implode(' / ', ExamenNational::niveauxConfigures($schoolId)) ?: 'Résultats nationaux';
+        $examensAide = $this->examensAideText($schoolId);
         $annees = AnneeScolaire::orderByDesc('id_anneeScolaire')->get();
         $filters = $request->only(['id_classe', 'id_annee', 'niveau_examen']);
         $selectedClasse = $classes->firstWhere('id_classe', (int) ($filters['id_classe'] ?? 0));
@@ -48,6 +52,8 @@ class ResultatNationalController extends Controller
                 ->keyBy('id_eleve');
         }
 
+        $classeExamens = $classes->mapWithKeys(fn ($classe) => [$classe->id_classe => $this->examLevel($classe)]);
+
         return view('pedagogie.resultats-nationaux', compact(
             'classes',
             'annees',
@@ -55,6 +61,9 @@ class ResultatNationalController extends Controller
             'selectedClasse',
             'niveauExamen',
             'examensDisponibles',
+            'examensLabel',
+            'examensAide',
+            'classeExamens',
             'eleves',
             'resultats'
         ));
@@ -65,10 +74,11 @@ class ResultatNationalController extends Controller
         $user = Auth::user();
         $this->authorizeAccess();
 
+        $schoolId = session('idEcole') ?: $user->idEcole;
         $data = $request->validate([
             'id_classe' => 'required|integer|exists:classe,id_classe',
             'id_annee' => 'required|integer|exists:anneescolaire,id_anneeScolaire',
-            'niveau_examen' => 'required|string|in:DEF,BAC',
+            'niveau_examen' => ['required', 'string', Rule::in($this->allowedExamLevels($schoolId))],
             'date_resultat' => 'nullable|date',
             'resultats' => 'required|array',
             'resultats.*.decision' => 'nullable|string|in:admis,échec,echec',
@@ -76,7 +86,6 @@ class ResultatNationalController extends Controller
             'resultats.*.observation' => 'nullable|string|max:255',
         ]);
 
-        $schoolId = session('idEcole') ?: $user->idEcole;
         $classe = Classe::where('idEcole', $schoolId)->findOrFail((int) $data['id_classe']);
         $this->ensureExamAllowed($schoolId, $data['niveau_examen'], $classe);
 
@@ -129,15 +138,15 @@ class ResultatNationalController extends Controller
         $user = Auth::user();
         $this->authorizeAccess();
 
+        $schoolId = session('idEcole') ?: $user->idEcole;
         $data = $request->validate([
             'id_classe' => 'required|integer|exists:classe,id_classe',
             'id_annee' => 'required|integer|exists:anneescolaire,id_anneeScolaire',
-            'niveau_examen' => 'required|string|in:DEF,BAC',
+            'niveau_examen' => ['required', 'string', Rule::in($this->allowedExamLevels($schoolId))],
             'date_resultat' => 'nullable|date',
             'fichier_resultats' => 'required|file|mimes:xls,xlsx,csv,txt,pdf|max:10240',
         ]);
 
-        $schoolId = session('idEcole') ?: $user->idEcole;
         $classe = Classe::where('idEcole', $schoolId)->findOrFail((int) $data['id_classe']);
         $this->ensureExamAllowed($schoolId, $data['niveau_examen'], $classe);
 
@@ -213,16 +222,24 @@ class ResultatNationalController extends Controller
 
     protected function examLevel(Classe $classe): ?string
     {
-        return match ($this->extractClasseLevel($classe->nom_classe)) {
-            9 => 'DEF',
-            12 => 'BAC',
-            default => null,
-        };
+        return ExamenNational::pourClasse($classe, session('idEcole'));
     }
 
-    private function extractClasseLevel(?string $name): ?int
+    protected function examensAideText(?int $schoolId): string
     {
-        return $name && preg_match('/\d+/', Str::ascii($name), $matches) ? (int) $matches[0] : null;
+        $intermediaire = ExamenNational::intermediaire($schoolId);
+        $final = ExamenNational::final($schoolId);
+
+        if (!$intermediaire && !$final) {
+            return "Aucun examen national n'est configuré pour le pays de cette école.";
+        }
+
+        $phrases = array_filter([
+            $intermediaire ? "Les classes {$intermediaire['grade']}ème alimentent le {$intermediaire['nom']}" : null,
+            $final ? "les classes {$final['grade']}ème alimentent le {$final['nom']}" : null,
+        ]);
+
+        return ucfirst(implode(', ', $phrases)) . '.';
     }
 
     protected function normalizeDecision(string $decision): ?string
@@ -251,21 +268,8 @@ class ResultatNationalController extends Controller
     protected function allowedExamLevels(?int $schoolId): array
     {
         $ecole = $schoolId ? Ecole::withoutGlobalScopes()->find($schoolId) : null;
-        $type = Str::lower(Str::ascii((string) ($ecole->typeEcole ?? '')));
 
-        if (str_contains($type, 'complexe')) {
-            return ['DEF', 'BAC'];
-        }
-
-        if (str_contains($type, 'fondamentale ii') || str_contains($type, 'college')) {
-            return ['DEF'];
-        }
-
-        if (str_contains($type, 'secondaire') || str_contains($type, 'lycee') || str_contains($type, 'technique')) {
-            return ['BAC'];
-        }
-
-        return ['DEF', 'BAC'];
+        return ExamenNational::niveauxDisponibles($ecole ?? $schoolId, $ecole->typeEcole ?? null);
     }
 
     protected function rowsFromSpreadsheet(string $path, string $extension): array

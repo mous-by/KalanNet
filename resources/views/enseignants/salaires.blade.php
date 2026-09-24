@@ -43,8 +43,8 @@
             <div class="card theme-card shadow-sm h-100">
                 <div class="card-body p-3">
                     <small class="text-muted text-uppercase fw-bold">À payer</small>
-                    <h4 class="fw-bold mb-0">{{ number_format($pageSummary['due'], 0, ',', ' ') }}</h4>
-                    <span class="small text-muted">FCFA</span>
+                    <h4 class="fw-bold mb-0">{{ number_format($pageSummary['due'], \App\Support\Devise::decimales(), ',', ' ') }}</h4>
+                    <span class="small text-muted">{{ \App\Support\Devise::symbole() }}</span>
                 </div>
             </div>
         </div>
@@ -52,8 +52,8 @@
             <div class="card theme-card shadow-sm h-100">
                 <div class="card-body p-3">
                     <small class="text-muted text-uppercase fw-bold">Déjà versé</small>
-                    <h4 class="fw-bold mb-0 text-success">{{ number_format($pageSummary['paid'], 0, ',', ' ') }}</h4>
-                    <span class="small text-muted">FCFA</span>
+                    <h4 class="fw-bold mb-0 text-success">{{ number_format($pageSummary['paid'], \App\Support\Devise::decimales(), ',', ' ') }}</h4>
+                    <span class="small text-muted">{{ \App\Support\Devise::symbole() }}</span>
                 </div>
             </div>
         </div>
@@ -61,8 +61,8 @@
             <div class="card theme-card shadow-sm h-100">
                 <div class="card-body p-3">
                     <small class="text-muted text-uppercase fw-bold">Reste</small>
-                    <h4 class="fw-bold mb-0 {{ $pageSummary['remaining'] > 0 ? 'text-warning' : 'text-success' }}">{{ number_format($pageSummary['remaining'], 0, ',', ' ') }}</h4>
-                    <span class="small text-muted">FCFA</span>
+                    <h4 class="fw-bold mb-0 {{ $pageSummary['remaining'] > 0 ? 'text-warning' : 'text-success' }}">{{ number_format($pageSummary['remaining'], \App\Support\Devise::decimales(), ',', ' ') }}</h4>
+                    <span class="small text-muted">{{ \App\Support\Devise::symbole() }}</span>
                 </div>
             </div>
         </div>

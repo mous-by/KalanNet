@@ -13,7 +13,7 @@
                     <td class="px-4"><span class="badge bg-light text-dark">{{ $p->reference }}</span><div class="small">#{{ $p->numero_recu }}</div></td>
                     <td>{{ $p->eleve?->nom_eleve }} {{ $p->eleve?->prenom_eleve }}</td>
                     <td>{{ $p->echeance?->libelle ?? $p->motif }}</td>
-                    <td class="fw-bold">{{ number_format($p->montant_paye ?? $p->montant, 0, ',', ' ') }} FCFA</td>
+                    <td class="fw-bold">@devise($p->montant_paye ?? $p->montant)</td>
                     <td>{{ optional($p->date_paiement)->format('d/m/Y') ?? date('d/m/Y', strtotime($p->date_paiement)) }}</td>
                     <td><span class="badge bg-{{ $p->statut === 'annule' ? 'danger' : 'success' }}">{{ $p->statut ?? 'valide' }}</span></td>
                     <td class="text-end px-4">

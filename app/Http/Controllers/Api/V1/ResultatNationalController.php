@@ -9,6 +9,7 @@ use App\Models\Eleve;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class ResultatNationalController extends WebResultatNationalController
 {
@@ -61,10 +62,11 @@ class ResultatNationalController extends WebResultatNationalController
         $user = $request->user();
         $this->authorizeAccess();
 
+        $schoolId = session('idEcole') ?: $user->idEcole;
         $data = $request->validate([
             'id_classe' => 'required|integer|exists:classe,id_classe',
             'id_annee' => 'required|integer|exists:anneescolaire,id_anneeScolaire',
-            'niveau_examen' => 'required|string|in:DEF,BAC',
+            'niveau_examen' => ['required', 'string', Rule::in($this->allowedExamLevels($schoolId))],
             'date_resultat' => 'nullable|date',
             'resultats' => 'required|array',
             'resultats.*.decision' => 'nullable|string|in:admis,échec,echec',
@@ -72,7 +74,6 @@ class ResultatNationalController extends WebResultatNationalController
             'resultats.*.observation' => 'nullable|string|max:255',
         ]);
 
-        $schoolId = session('idEcole') ?: $user->idEcole;
         $classe = Classe::where('idEcole', $schoolId)->findOrFail((int) $data['id_classe']);
         $this->ensureExamAllowed($schoolId, $data['niveau_examen'], $classe);
 
@@ -118,15 +119,15 @@ class ResultatNationalController extends WebResultatNationalController
         $user = $request->user();
         $this->authorizeAccess();
 
+        $schoolId = session('idEcole') ?: $user->idEcole;
         $data = $request->validate([
             'id_classe' => 'required|integer|exists:classe,id_classe',
             'id_annee' => 'required|integer|exists:anneescolaire,id_anneeScolaire',
-            'niveau_examen' => 'required|string|in:DEF,BAC',
+            'niveau_examen' => ['required', 'string', Rule::in($this->allowedExamLevels($schoolId))],
             'date_resultat' => 'nullable|date',
             'fichier_resultats' => 'required|file|mimes:xls,xlsx,csv,txt,pdf|max:10240',
         ]);
 
-        $schoolId = session('idEcole') ?: $user->idEcole;
         $classe = Classe::where('idEcole', $schoolId)->findOrFail((int) $data['id_classe']);
         $this->ensureExamAllowed($schoolId, $data['niveau_examen'], $classe);
 

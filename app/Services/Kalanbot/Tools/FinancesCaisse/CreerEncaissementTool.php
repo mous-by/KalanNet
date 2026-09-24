@@ -75,8 +75,8 @@ class CreerEncaissementTool extends AbstractKalanbotTool
     public function confirmationMessage(array $args, User $user): string
     {
         return sprintf(
-            "💰 Je vais enregistrer un encaissement de %s FCFA (%s), qui créditera immédiatement la caisse. Confirmez-vous ?",
-            number_format((float) ($args['montant_encaissement'] ?? 0), 0, ',', ' '),
+            "💰 Je vais enregistrer un encaissement de %s (%s), qui créditera immédiatement la caisse. Confirmez-vous ?",
+            \App\Support\Devise::format((float) ($args['montant_encaissement'] ?? 0), session('idEcole')),
             $args['motif_encaissement'] ?? ''
         );
     }

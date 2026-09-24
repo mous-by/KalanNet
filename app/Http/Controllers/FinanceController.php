@@ -29,7 +29,8 @@ use App\Services\Paiements\PaiementEleveReportService;
 use App\Services\Paiements\PaiementEleveService;
 use App\Services\Paiements\PlanificationTrancheService;
 use App\Services\Paiements\ReferencePaiementService;
-use App\Rules\MaliPhone;
+use App\Rules\PaysPhone;
+use App\Support\Telephone;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -139,7 +140,7 @@ class FinanceController extends Controller
     {
         $this->ensurePermission('paiements_faire');
         if ($request->filled('telephone')) {
-            $request->merge(['telephone' => MaliPhone::normalize($request->input('telephone'))]);
+            $request->merge(['telephone' => Telephone::normalize($request->input('telephone'), session('idEcole'))]);
         }
 
         $data = $request->validate([
@@ -150,7 +151,7 @@ class FinanceController extends Controller
             'mode_reglement' => 'required|string|max:40',
             'parent_id' => 'nullable|exists:parents,id_parent',
             'nom_payeur' => 'nullable|string|max:100',
-            'telephone' => ['nullable', 'string', 'max:20', new MaliPhone()],
+            'telephone' => ['nullable', 'string', 'max:20', new PaysPhone(session('idEcole'))],
         ]);
 
         try {
@@ -1075,15 +1076,15 @@ class FinanceController extends Controller
         }
 
         $message = 'Subvention État enregistrée : '
-            . number_format($result['allocated'], 0, ',', ' ')
-            . ' FCFA répartis sur '
+            . \App\Support\Devise::format($result['allocated'])
+            . ' répartis sur '
             . $result['count']
             . ' échéance(s). Référence : '
             . $result['reference']
             . '.';
 
         if ($result['remaining'] > 0) {
-            $message .= ' Reliquat non affecté : ' . number_format($result['remaining'], 0, ',', ' ') . ' FCFA.';
+            $message .= ' Reliquat non affecté : ' . \App\Support\Devise::format($result['remaining']) . '.';
         }
 
         return redirect()->route('finances.subventions-etat', $request->only(['annee_scolaire_id', 'classe_id']))
@@ -1667,12 +1668,12 @@ class FinanceController extends Controller
         }
 
         $otherName = trim((string) $otherName);
-        $otherPhone = MaliPhone::normalize(trim((string) $otherPhone));
+        $otherPhone = Telephone::normalize(trim((string) $otherPhone), session('idEcole'));
         if ($otherName === '' || $otherPhone === '') {
             throw ValidationException::withMessages(['nom_payeur' => 'Le nom et le téléphone du payeur sont obligatoires.']);
         }
         $phoneRuleFailed = false;
-        (new MaliPhone())->validate('telephone', $otherPhone, function () use (&$phoneRuleFailed) {
+        (new PaysPhone(session('idEcole')))->validate('telephone', $otherPhone, function () use (&$phoneRuleFailed) {
             $phoneRuleFailed = true;
         });
         if ($phoneRuleFailed) {
@@ -1734,8 +1735,8 @@ class FinanceController extends Controller
                 'type' => 'decaissement_validation',
                 'title' => 'Dépense à valider',
                 'message' => 'Une sortie de caisse de '
-                    . number_format((float) $decaissement->montant_decaissement, 0, ',', ' ')
-                    . ' FCFA attend votre validation.',
+                    . \App\Support\Devise::format((float) $decaissement->montant_decaissement)
+                    . ' attend votre validation.',
                 'link' => route('finances.depenses', [], false) . '#decaissement-' . $decaissement->id_decaissement,
                 'data' => [
                     'id_decaissement' => $decaissement->id_decaissement,

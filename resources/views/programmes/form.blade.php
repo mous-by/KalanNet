@@ -54,7 +54,7 @@
                     <option value="">Choisir le programme officiel</option>
                     @foreach($classesOfficielles as $classeOfficielle)
                         <option value="{{ $classeOfficielle->id_classe_officielle }}" @selected($selectedClasse == $classeOfficielle->id_classe_officielle)>
-                            Programme officiel {{ $classeOfficielle->nom_classe_officielle }} - {{ $classeOfficielle->ordre_enseignement }}
+                            Programme officiel {{ $classeOfficielle->nom_classe_officielle }} - {{ $ordresLabels[$classeOfficielle->ordre_enseignement] ?? $classeOfficielle->ordre_enseignement }}
                         </option>
                     @endforeach
                 </select>

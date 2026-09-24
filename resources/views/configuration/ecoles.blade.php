@@ -45,6 +45,7 @@
                             <thead>
                                 <tr>
                                     <th>École</th>
+                                    <th>Pays</th>
                                     <th>Type</th>
                                     <th>Académie</th>
                                     <th>CAP</th>
@@ -71,6 +72,7 @@
                                                 </div>
                                             </div>
                                         </td>
+                                        <td>{{ $ecole->pays->nom ?? 'N/A' }}</td>
                                         <td>{{ $ecole->typeEcole }}</td>
                                         <td>{{ $ecole->academieRef->nom_academie ?? $ecole->academie ?? 'N/A' }}</td>
                                         <td>{{ $ecole->capRef->nom_cap ?? $ecole->cap ?? 'N/A' }}</td>
@@ -97,7 +99,7 @@
                                         </td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="7" class="text-center py-4 text-muted">Aucune école trouvée.</td></tr>
+                                    <tr><td colspan="8" class="text-center py-4 text-muted">Aucune école trouvée.</td></tr>
                                 @endforelse
                             </tbody>
                         </table>

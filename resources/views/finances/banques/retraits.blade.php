@@ -32,7 +32,7 @@
                     <td class="px-4">{{ $retrait->date_retrait?->format('d/m/Y') }}</td>
                     <td>{{ $retrait->banque?->nom_banque }}</td>
                     <td>{{ $retrait->motif_retrait }}</td>
-                    <td class="text-end fw-bold">{{ number_format($retrait->montant_retrait, 0, ',', ' ') }} FCFA</td>
+                    <td class="text-end fw-bold">@devise($retrait->montant_retrait)</td>
                     <td><span class="badge bg-{{ $retrait->valide ? 'success' : 'warning' }}">{{ $retrait->valide ? 'Validé' : 'En attente' }}</span></td>
                     <td class="text-end px-4">
                         @if(!$retrait->valide && (auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('retraits_modification')))

@@ -11,7 +11,8 @@ use App\Models\Ecole;
 use App\Models\Encaissement;
 use App\Models\Paiement;
 use App\Models\Trimestre;
-use App\Rules\MaliPhone;
+use App\Rules\PaysPhone;
+use App\Support\Telephone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -212,7 +213,7 @@ class FinanceController extends WebFinanceController
     {
         $this->ensurePermission('paiements_faire');
         if ($request->filled('telephone')) {
-            $request->merge(['telephone' => MaliPhone::normalize($request->input('telephone'))]);
+            $request->merge(['telephone' => Telephone::normalize($request->input('telephone'), session('idEcole'))]);
         }
 
         $data = $request->validate([
@@ -223,7 +224,7 @@ class FinanceController extends WebFinanceController
             'mode_reglement' => 'required|string|max:40',
             'parent_id' => 'nullable|exists:parents,id_parent',
             'nom_payeur' => 'nullable|string|max:100',
-            'telephone' => ['nullable', 'string', 'max:20', new MaliPhone()],
+            'telephone' => ['nullable', 'string', 'max:20', new PaysPhone(session('idEcole'))],
         ]);
 
         $paiement = $this->paiementService->encaisser($data);

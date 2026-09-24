@@ -21,6 +21,7 @@ class Ecole extends Model
         'id_academie',
         'id_cap',
         'id_revendeur',
+        'id_pays',
         'nomComplexe',
         'cap',
         'statut',
@@ -50,5 +51,15 @@ class Ecole extends Model
     public function revendeur()
     {
         return $this->belongsTo(Revendeur::class, 'id_revendeur');
+    }
+
+    public function pays()
+    {
+        return $this->belongsTo(Pays::class, 'id_pays');
+    }
+
+    public function formatMontant(float $montant): string
+    {
+        return \App\Support\Devise::format($montant, $this);
     }
 }

@@ -6,6 +6,8 @@ use App\Http\Controllers\ResultatNationalController;
 use App\Models\Classe;
 use App\Models\User;
 use App\Services\Kalanbot\Tools\AbstractKalanbotTool;
+use App\Support\ExamenNational;
+use Illuminate\Validation\Rule;
 
 class EnregistrerResultatsNationauxTool extends AbstractKalanbotTool
 {
@@ -21,18 +23,22 @@ class EnregistrerResultatsNationauxTool extends AbstractKalanbotTool
 
     public function description(): string
     {
-        return "Enregistrer les résultats aux examens nationaux (DEF ou BAC) pour une ou plusieurs élèves d'une "
+        $niveaux = implode(' ou ', ExamenNational::niveauxConfigures(session('idEcole'))) ?: 'DEF ou BAC';
+
+        return "Enregistrer les résultats aux examens nationaux ({$niveaux}) pour une ou plusieurs élèves d'une "
             . "classe : décision (admis/échec), moyenne, observation.";
     }
 
     public function parametersSchema(): array
     {
+        $niveaux = implode(' ou ', ExamenNational::niveauxConfigures(session('idEcole'))) ?: 'DEF ou BAC';
+
         return [
             'type' => 'OBJECT',
             'properties' => [
                 'id_classe' => ['type' => 'INTEGER'],
                 'id_annee' => ['type' => 'INTEGER'],
-                'niveau_examen' => ['type' => 'STRING', 'description' => 'DEF ou BAC.'],
+                'niveau_examen' => ['type' => 'STRING', 'description' => $niveaux . '.'],
                 'date_resultat' => ['type' => 'STRING', 'description' => 'Format AAAA-MM-JJ (optionnel, défaut aujourd\'hui).'],
                 'resultats' => [
                     'type' => 'ARRAY',
@@ -58,7 +64,7 @@ class EnregistrerResultatsNationauxTool extends AbstractKalanbotTool
         return [
             'id_classe' => 'required|integer|exists:classe,id_classe',
             'id_annee' => 'required|integer|exists:anneescolaire,id_anneeScolaire',
-            'niveau_examen' => 'required|string|in:DEF,BAC',
+            'niveau_examen' => ['required', 'string', Rule::in(ExamenNational::niveauxConfigures(session('idEcole')))],
             'date_resultat' => 'nullable|date',
             'resultats' => 'required|array|min:1',
             'resultats.*.id_eleve' => 'required|integer',

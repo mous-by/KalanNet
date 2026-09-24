@@ -28,6 +28,8 @@ class PayerSalaireTool extends AbstractKalanbotTool
 
     public function parametersSchema(): array
     {
+        $devise = \App\Support\Devise::symbole(session('idEcole'));
+
         return [
             'type' => 'OBJECT',
             'properties' => [
@@ -35,7 +37,7 @@ class PayerSalaireTool extends AbstractKalanbotTool
                 'mois' => ['type' => 'STRING', 'description' => "Mois sur 2 chiffres (ex: '07')."],
                 'annee' => ['type' => 'INTEGER'],
                 'source' => ['type' => 'STRING', 'description' => 'emargement ou presence.'],
-                'montant_verse' => ['type' => 'NUMBER', 'description' => 'Montant en FCFA, ne doit pas dépasser le reste à payer.'],
+                'montant_verse' => ['type' => 'NUMBER', 'description' => "Montant en {$devise}, ne doit pas dépasser le reste à payer."],
                 'date_paiement' => ['type' => 'STRING', 'description' => 'Format AAAA-MM-JJ.'],
             ],
             'required' => ['id_enseignant', 'mois', 'annee', 'source', 'montant_verse', 'date_paiement'],
@@ -74,9 +76,9 @@ class PayerSalaireTool extends AbstractKalanbotTool
         $sourceLabel = ($args['source'] ?? '') === 'presence' ? 'cahier de présence' : 'émargements';
 
         return sprintf(
-            "💰 Je vais enregistrer un versement de %s FCFA pour %s, salaire de %s/%s (source : %s), débité de la "
+            "💰 Je vais enregistrer un versement de %s pour %s, salaire de %s/%s (source : %s), débité de la "
             . "caisse active de l'école. Confirmez-vous ?",
-            number_format((float) ($args['montant_verse'] ?? 0), 0, ',', ' '),
+            \App\Support\Devise::format((float) ($args['montant_verse'] ?? 0), session('idEcole')),
             $enseignant?->nom_prenom_enseignant ?? 'enseignant inconnu',
             $args['mois'] ?? '?',
             $args['annee'] ?? '?',

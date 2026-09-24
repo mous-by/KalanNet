@@ -17,11 +17,17 @@ class Classe extends Model
         'ordreEnseignement',
         'idEcole',
         'id_classe_officielle',
+        'id_filiere',
     ];
 
     public function ecole()
     {
         return $this->belongsTo(Ecole::class, 'idEcole', 'idEcole');
+    }
+
+    public function filiere()
+    {
+        return $this->belongsTo(Filiere::class, 'id_filiere', 'id_filiere');
     }
 
     public function eleves()

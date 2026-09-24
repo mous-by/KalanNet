@@ -69,8 +69,8 @@ class CreerRetraitTool extends AbstractKalanbotTool
         $banque = Banque::find($args['id_banque'] ?? null);
 
         return sprintf(
-            "💸 Je vais effectuer un retrait de %s FCFA sur le compte %s (motif : %s). Confirmez-vous ?",
-            number_format((float) ($args['montant_retrait'] ?? 0), 0, ',', ' '),
+            "💸 Je vais effectuer un retrait de %s sur le compte %s (motif : %s). Confirmez-vous ?",
+            \App\Support\Devise::format((float) ($args['montant_retrait'] ?? 0), session('idEcole')),
             $banque?->nom_banque ?? 'inconnu',
             $args['motif_retrait'] ?? ''
         );

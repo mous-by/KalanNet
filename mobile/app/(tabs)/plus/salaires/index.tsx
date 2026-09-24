@@ -7,8 +7,10 @@ import OfflineBanner from '@/components/OfflineBanner';
 import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
+import { useAuth } from '@/context/AuthContext';
 import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
+import { formatMontant } from '@/lib/currency';
 import { removeQueueItem } from '@/lib/offlineQueue';
 import { useApiGet } from '@/lib/useApi';
 import { Enseignant } from '@/types/api';
@@ -32,6 +34,7 @@ interface SalaryData {
 }
 
 export default function SalairesScreen() {
+  const { user } = useAuth();
   const { isOnline, enqueueAction, queue } = useOffline();
   const queuedSalaires = queue.filter((item) => item.kind === 'salaire');
   const [mois, setMois] = useState<string | null>(null);
@@ -82,7 +85,7 @@ export default function SalairesScreen() {
       if (!isOnline) {
         await enqueueAction({
           kind: 'salaire',
-          label: `${payingFor.enseignant.nom_prenom_enseignant} · ${Number(montant).toLocaleString('fr-FR')} FCFA`,
+          label: `${payingFor.enseignant.nom_prenom_enseignant} · ${formatMontant(Number(montant), user)}`,
           endpoint: '/salaires/payer',
           method: 'post',
           payload,
@@ -144,9 +147,9 @@ export default function SalairesScreen() {
 
       {data?.summary ? (
         <View style={styles.summaryRow}>
-          <Text style={styles.summaryItem}>Dû: {Number(data.summary.due).toLocaleString('fr-FR')}</Text>
-          <Text style={styles.summaryItem}>Payé: {Number(data.summary.paid).toLocaleString('fr-FR')}</Text>
-          <Text style={styles.summaryItem}>Reste: {Number(data.summary.remaining).toLocaleString('fr-FR')}</Text>
+          <Text style={styles.summaryItem}>Dû: {formatMontant(Number(data.summary.due), user)}</Text>
+          <Text style={styles.summaryItem}>Payé: {formatMontant(Number(data.summary.paid), user)}</Text>
+          <Text style={styles.summaryItem}>Reste: {formatMontant(Number(data.summary.remaining), user)}</Text>
         </View>
       ) : null}
 
@@ -167,7 +170,7 @@ export default function SalairesScreen() {
               <View style={styles.rowInfo}>
                 <Text style={styles.name}>{item.enseignant.nom_prenom_enseignant}</Text>
                 <Text style={styles.meta}>
-                  {item.contract} · dû {Number(item.amount_due).toLocaleString('fr-FR')} · reste {Number(item.remaining).toLocaleString('fr-FR')}
+                  {item.contract} · dû {formatMontant(Number(item.amount_due), user)} · reste {formatMontant(Number(item.remaining), user)}
                 </Text>
                 <Text style={styles.status}>{item.status}</Text>
               </View>

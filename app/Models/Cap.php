@@ -14,6 +14,7 @@ class Cap extends Model
         'code_cap',
         'localite_cap',
         'id_academie',
+        'id_pays',
     ];
 
     public function academie()
@@ -24,5 +25,10 @@ class Cap extends Model
     public function ecoles()
     {
         return $this->hasMany(Ecole::class, 'id_cap', 'id_cap');
+    }
+
+    public function pays()
+    {
+        return $this->belongsTo(Pays::class, 'id_pays');
     }
 }

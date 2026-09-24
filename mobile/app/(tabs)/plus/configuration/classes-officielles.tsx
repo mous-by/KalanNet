@@ -6,7 +6,7 @@ import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { api, apiErrorMessage } from '@/lib/api';
-import { usePaginatedApi } from '@/lib/useApi';
+import { useApiGet, usePaginatedApi } from '@/lib/useApi';
 
 interface ClasseOfficielle {
   id_classe_officielle: number;
@@ -14,15 +14,14 @@ interface ClasseOfficielle {
   ordre_enseignement: string;
 }
 
-const ORDRE_OPTIONS = [
-  { value: 'Fondamentale I', label: 'Fondamentale I' },
-  { value: 'Fondamentale II', label: 'Fondamentale II' },
-  { value: 'Secondaire Generale', label: 'Secondaire Général' },
-  { value: 'Secondaire Technique et Professionnel', label: 'Secondaire Technique et Professionnel' },
-];
-
 export default function ClassesOfficiellesScreen() {
   const list = usePaginatedApi<ClasseOfficielle>('/configuration/classes-officielles', {}, 'data');
+  // "ordres" vient de l'API, deja scope au pays de l'ecole active (les cles
+  // sont les memes 4 slugs partout, seuls les libelles s'adaptent -- voir
+  // ConfigurationController::ordresClassesOfficielles() cote backend).
+  const { data: ordresData } = useApiGet<{ ordres?: Record<string, string> }>('/configuration/classes-officielles');
+  const ordreLabels = ordresData?.ordres ?? {};
+  const ordreOptions = Object.entries(ordreLabels).map(([value, label]) => ({ value, label }));
   const [editing, setEditing] = useState<ClasseOfficielle | null>(null);
   const [dialogVisible, setDialogVisible] = useState(false);
   const [nom, setNom] = useState('');
@@ -85,7 +84,7 @@ export default function ClassesOfficiellesScreen() {
           <View style={styles.row}>
             <View style={styles.rowInfo}>
               <Text style={styles.title}>{item.nom_classe_officielle}</Text>
-              <Text style={styles.meta}>{item.ordre_enseignement}</Text>
+              <Text style={styles.meta}>{ordreLabels[item.ordre_enseignement] ?? item.ordre_enseignement}</Text>
             </View>
             <View style={styles.actions}>
               <Button compact onPress={() => openDialog(item)}>
@@ -105,7 +104,7 @@ export default function ClassesOfficiellesScreen() {
           <Dialog.Title>{editing ? 'Modifier la classe officielle' : 'Nouvelle classe officielle'}</Dialog.Title>
           <Dialog.Content>
             <TextInput mode="outlined" label={requiredLabel('Nom')} value={nom} onChangeText={setNom} style={styles.input} />
-            <SelectField label={requiredLabel("Ordre d'enseignement")} value={ordre} options={ORDRE_OPTIONS} onChange={(v) => setOrdre(v as string)} />
+            <SelectField label={requiredLabel("Ordre d'enseignement")} value={ordre} options={ordreOptions} onChange={(v) => setOrdre(v as string)} />
             {error ? <Text style={styles.error}>{error}</Text> : null}
           </Dialog.Content>
           <Dialog.Actions>

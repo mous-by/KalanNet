@@ -3,7 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Enseignant;
-use App\Rules\MaliPhone;
+use App\Rules\PaysPhone;
+use App\Support\Telephone;
 use App\Models\LigneClasse;
 use App\Models\Salaire;
 use App\Models\AnneeScolaire;
@@ -205,14 +206,14 @@ class EnseignantController extends Controller
 
     protected function validateEnseignant(Request $request, ?int $ignoreId = null): array
     {
-        if ($request->filled('telephone')) {
-            $request->merge(['telephone' => MaliPhone::normalize($request->input('telephone'))]);
-        }
-
         $contratsAutorises = implode(',', array_keys($this->contratsAutorises(Auth::user()->ecole)));
         $schoolId = $ignoreId
             ? Enseignant::withoutGlobalScopes()->where('id_enseignant', $ignoreId)->value('id_ecole')
             : (session('idEcole') ?: Auth::user()->idEcole);
+
+        if ($request->filled('telephone')) {
+            $request->merge(['telephone' => Telephone::normalize($request->input('telephone'), $schoolId)]);
+        }
 
         return $request->validate([
             'nom_prenom' => 'required|string|max:200',
@@ -227,7 +228,7 @@ class EnseignantController extends Controller
             ],
             'telephone' => [
                 'required',
-                new MaliPhone(),
+                new PaysPhone($schoolId),
                 Rule::unique('enseignants', 'telephone_enseignant')
                     ->where(fn ($query) => $query->where('id_ecole', $schoolId))
                     ->ignore($ignoreId, 'id_enseignant'),

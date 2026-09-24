@@ -9,6 +9,7 @@ import SelectField from '@/components/SelectField';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
 import { useOffline } from '@/context/OfflineContext';
+import { formatMontant } from '@/lib/currency';
 import { api, apiErrorMessage } from '@/lib/api';
 import { removeQueueItem } from '@/lib/offlineQueue';
 import { hasPermission } from '@/lib/permissions';
@@ -118,7 +119,7 @@ export default function CaisseScreen() {
       <OfflineBanner />
       <View style={styles.balanceCard}>
         <Text style={styles.balanceLabel}>Solde</Text>
-        <Text style={styles.balanceValue}>{Number(data?.caisse?.montant_net ?? 0).toLocaleString('fr-FR')} FCFA</Text>
+        <Text style={styles.balanceValue}>{formatMontant(data?.caisse?.montant_net ?? 0, user)}</Text>
       </View>
 
       {queuedMouvements.length > 0 ? (
@@ -154,7 +155,7 @@ export default function CaisseScreen() {
             </View>
             <Text style={item.type === 'RECETTE' ? styles.amountPositive : styles.amountNegative}>
               {item.type === 'RECETTE' ? '+' : '-'}
-              {Number(item.montant).toLocaleString('fr-FR')}
+              {formatMontant(Number(item.montant), user)}
             </Text>
           </View>
         )}

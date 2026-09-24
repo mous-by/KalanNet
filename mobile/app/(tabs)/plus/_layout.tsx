@@ -64,6 +64,7 @@ export default function PlusLayout() {
       <Stack.Screen name="configuration/caps" options={{ title: 'CAP' }} />
       <Stack.Screen name="configuration/types-notes" options={{ title: 'Types de notes' }} />
       <Stack.Screen name="configuration/classes-officielles" options={{ title: 'Classes officielles' }} />
+      <Stack.Screen name="configuration/filieres" options={{ title: 'Filières' }} />
       <Stack.Screen name="configuration/status-controles" options={{ title: 'Statuts de contrôle' }} />
     </Stack>
   );

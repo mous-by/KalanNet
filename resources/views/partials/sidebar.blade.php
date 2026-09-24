@@ -1,6 +1,12 @@
 @php
     $user = Auth::user();
     if (!$user) return;
+    // Le referentiel "classes officielles"/"programme officiel" est le
+    // curriculum publie par le ministere malien : sans objet pour une
+    // Ecole de Sante (filiere/annee) et pour les ecoles des autres pays
+    // (aucun referentiel gouvernemental modelise dans l'appli pour eux).
+    $showOfficialPrograms = $user->droit === 'SupAdmin'
+        || (($user->ecole->typeEcole ?? null) !== 'École de Santé' && \App\Support\ExamenNational::estMali($user->ecole));
     $canOpenConfiguration = $user->droit === 'SupAdmin' || $user->userHasAnyPermission([
         'ecoles_apercu',
         'academies_apercu',
@@ -203,7 +209,7 @@
                 @if ($user->userHasPermission('matieres_apercu'))
                 <li><a href="{{ route('pedagogie.matieres') }}"><i class="bi bi-circle"></i>{{ __('messages.menu.subjects') }}</a></li>
                 @endif
-                @if ($user->userHasAnyPermission(['programmes_apercu', 'programme_apercu', 'appercu_programm', 'programmes_pdf', 'voir_pdf_programme', 'programmes_creation', 'programme_création', 'programmes_modification', 'programme_modification', 'programmes_supprimer', 'programme_supprimer']) || $user->droit === 'SupAdmin')
+                @if ($showOfficialPrograms && ($user->userHasAnyPermission(['programmes_apercu', 'programme_apercu', 'appercu_programm', 'programmes_pdf', 'voir_pdf_programme', 'programmes_creation', 'programme_création', 'programmes_modification', 'programme_modification', 'programmes_supprimer', 'programme_supprimer']) || $user->droit === 'SupAdmin'))
                 <li><a href="{{ route('programmes.index') }}"><i class="bi bi-circle"></i>{{ __('messages.menu.official_programs') }}</a></li>
                 @endif
                 @if ($user->droit === 'enseignant' || $user->userHasPermission('classes_apercu') || $user->userHasPermission('enseignants_emploi') || $user->userHasPermission('planning_apercu'))

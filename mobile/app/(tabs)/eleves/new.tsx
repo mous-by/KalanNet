@@ -10,8 +10,10 @@ import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
+import { useAuth } from '@/context/AuthContext';
 import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
+import { formatMontant } from '@/lib/currency';
 import { useApiGet } from '@/lib/useApi';
 import { AnneeScolaire, Classe, Matiere, ParentEleve, Planification } from '@/types/api';
 
@@ -51,6 +53,7 @@ interface InscriptionOptions {
 }
 
 export default function NewEleveScreen() {
+  const { user } = useAuth();
   const { isOnline, enqueueAction } = useOffline();
   const { data: options, error: optionsError } = useApiGet<InscriptionOptions>('/eleves/inscription-options', [], {
     cacheKey: 'eleves-inscription-options',
@@ -96,10 +99,10 @@ export default function NewEleveScreen() {
     const filtered = (options?.planifications ?? []).filter((p) => p.id_classe === idClasse && p.id_annee === idAnnee);
     const items = filtered.map((p) => ({
       value: p.id_planification,
-      label: `${planificationRequired ? p.motif : 'Coopérative'} - ${Number(p.montant_planification).toLocaleString('fr-FR')} F`,
+      label: `${planificationRequired ? p.motif : 'Coopérative'} - ${formatMontant(Number(p.montant_planification), user)}`,
     }));
     return [{ value: 0, label: planificationRequired ? 'Veuillez choisir' : 'Sans coopérative / sans frais' }, ...items];
-  }, [options?.planifications, idClasse, idAnnee, planificationRequired]);
+  }, [options?.planifications, idClasse, idAnnee, planificationRequired, user]);
 
   const isValid = prenom.trim() && nom.trim() && genre && idClasse && idAnnee && (!planificationRequired || idPlanification);
 

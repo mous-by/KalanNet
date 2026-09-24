@@ -6,6 +6,7 @@ use App\Models\Matiere;
 use App\Models\LigneClasse;
 use App\Models\LigneEvaluation;
 use App\Models\MatiereOrdre;
+use App\Support\ExamenNational;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -47,7 +48,7 @@ class MatiereController extends Controller
                 'id_ecole' => Auth::user()->droit === 'SupAdmin' ? null : session('idEcole'),
             ]);
 
-            $this->syncOrdres($matiere, $data['ordre_enseignement']);
+            $this->syncOrdres($matiere, $data['ordre_enseignement'] ?? []);
         });
 
         return redirect()->route('pedagogie.matieres')->with('success', 'Insertion faite avec succès.');
@@ -62,7 +63,7 @@ class MatiereController extends Controller
         DB::transaction(function () use ($matiere, $data) {
             $matiere->update(['nom_matiere' => $data['nom_matiere']]);
             $matiere->ordres()->delete();
-            $this->syncOrdres($matiere, $data['ordre_enseignement']);
+            $this->syncOrdres($matiere, $data['ordre_enseignement'] ?? []);
         });
 
         return redirect()->route('pedagogie.matieres')->with('success', 'La matière a été modifiée avec succès.');
@@ -100,6 +101,19 @@ class MatiereController extends Controller
         ]);
     }
 
+    /**
+     * L'ecole actuellement geree : celle selectionnee en session, jamais
+     * seulement Auth::user()->ecole -- sinon un SupAdmin (qui n'a pas de
+     * propre ecole) navigue toujours "hors Ecole de Sante", meme quand il
+     * gere une ecole de sante via la selection d'ecole.
+     */
+    protected function currentEcole(): ?\App\Models\Ecole
+    {
+        $idEcole = session('idEcole') ?: Auth::user()->idEcole;
+
+        return $idEcole ? \App\Models\Ecole::withoutGlobalScopes()->find($idEcole) : null;
+    }
+
     protected function syncOrdres(Matiere $matiere, array $ordres): void
     {
         foreach (array_unique($ordres) as $ordre) {
@@ -110,13 +124,28 @@ class MatiereController extends Controller
         }
     }
 
+    /**
+     * Cles fixes : ce sont les valeurs reellement stockees dans
+     * matiere_ordre.ordre_enseignement (jamais migrees vers les slugs de
+     * Classe.ordreEnseignement, contrairement a classes_officielles) --
+     * seuls les LIBELLES affiches s'adaptent au pays de l'ecole.
+     */
     protected function allOrdres(): array
     {
+        $idEcole = session('idEcole') ?: Auth::user()->idEcole;
+        $labels = ExamenNational::ordresLabels($idEcole);
+
         return [
-            'Fondamentale I' => 'Fondamentale I',
-            'Fondamentale II' => 'Fondamentale II',
-            'Secondaire Generale' => 'Secondaire Générale',
-            'Secondaire Technique et Professionnel' => 'Secondaire Technique et Professionnel',
+            'Fondamentale I' => $labels['fondamentale1'],
+            'Fondamentale II' => $labels['fondamentale2'],
+            'Secondaire Generale' => $labels['secondairegenerale'],
+            'Secondaire Technique et Professionnel' => $labels['secondairetechniqueetprofessionnel'],
+            // Pas un ordre d'enseignement au sens Fondamentale/Secondaire :
+            // sert uniquement a marquer une matiere (Anatomie, Pharmacologie...)
+            // comme partagee par toutes les Ecoles de Sante, sur le meme
+            // principe que les matieres globales du Mali (id_ecole=null) --
+            // voir ClasseController::matieresDisponibles().
+            'École de Santé' => 'École de Santé',
         ];
     }
 
@@ -131,10 +160,29 @@ class MatiereController extends Controller
     protected function ordresAutorises(): array
     {
         $user = Auth::user();
-        $typeEcole = $user->ecole->typeEcole ?? null;
+        $typeEcole = $this->currentEcole()->typeEcole ?? null;
 
-        if ($user->droit === 'SupAdmin' || $typeEcole === 'Complexe Scolaire') {
+        if ($user->droit === 'SupAdmin') {
             return array_keys($this->allOrdres());
+        }
+
+        if ($typeEcole === 'École de Santé') {
+            return ['École de Santé'];
+        }
+
+        if ($typeEcole === 'Complexe Scolaire') {
+            return ['Fondamentale I', 'Fondamentale II', 'Secondaire Generale', 'Secondaire Technique et Professionnel'];
+        }
+
+        // Meme logique país-aware que ClasseController::ordresDisponibles() --
+        // "Primaire"/"Secondaire Generale" hors Mali reutilisent les memes
+        // libelles Fondamentale I/II que le Mali (c'est ce que produit
+        // ordreMatiereMap() pour ces classes), pour que les matieres
+        // assignees a un ordre restent compatibles quel que soit le pays.
+        if (in_array($typeEcole, ['Primaire', 'Secondaire Generale'], true) && !ExamenNational::estMali($user->ecole)) {
+            return $typeEcole === 'Primaire'
+                ? ['Fondamentale I']
+                : ['Fondamentale II', 'Secondaire Generale'];
         }
 
         if ($typeEcole === 'Fondamentale' || $typeEcole === 'Collège') {
