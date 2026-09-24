@@ -36,8 +36,8 @@ export default function PlusLayout() {
       <Stack.Screen name="presences/index" options={{ title: 'Présences' }} />
       <Stack.Screen name="presences/new" options={{ title: 'Nouvelle présence' }} />
 
-      <Stack.Screen name="bulletins/index" options={{ title: 'Bulletins' }} />
-      <Stack.Screen name="bulletins/[idClasse]" options={{ title: 'Élèves' }} />
+      <Stack.Screen name="bulletins/index" options={{ title: t('bulletins.title') }} />
+      <Stack.Screen name="bulletins/[idClasse]" options={{ title: t('eleves.title') }} />
 
       <Stack.Screen name="finances/index" options={{ title: 'Paiements' }} />
       <Stack.Screen name="finances/new" options={{ title: 'Nouveau paiement' }} />

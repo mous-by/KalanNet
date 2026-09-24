@@ -2,10 +2,12 @@ import { router } from 'expo-router';
 import { FlatList, Pressable, StyleSheet } from 'react-native';
 import { ActivityIndicator, Text } from 'react-native-paper';
 
+import { useLocale } from '@/context/LocaleContext';
 import { useApiGet } from '@/lib/useApi';
 import { Classe } from '@/types/api';
 
 export default function BulletinsClassesScreen() {
+  const { t } = useLocale();
   const { data, isLoading, error } = useApiGet<{ data: Classe[] }>('/bulletins/classes');
 
   if (isLoading) return <ActivityIndicator style={styles.spinner} size="large" />;
@@ -16,11 +18,11 @@ export default function BulletinsClassesScreen() {
       data={data?.data ?? []}
       keyExtractor={(item) => String(item.id_classe)}
       contentContainerStyle={styles.content}
-      ListEmptyComponent={<Text style={styles.empty}>Aucune classe.</Text>}
+      ListEmptyComponent={<Text style={styles.empty}>{t('bulletins.empty_classes')}</Text>}
       renderItem={({ item }) => (
         <Pressable style={styles.row} onPress={() => router.push(`/plus/bulletins/${item.id_classe}`)}>
           <Text style={styles.title}>{item.nom_classe}</Text>
-          <Text style={styles.meta}>{item.eleves_count ?? 0} élève(s)</Text>
+          <Text style={styles.meta}>{item.eleves_count ?? 0} {t('classes.students_suffix')}</Text>
         </Pressable>
       )}
     />

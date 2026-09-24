@@ -5,6 +5,7 @@ import { ActivityIndicator, Button, Text } from 'react-native-paper';
 
 import SelectField from '@/components/SelectField';
 import { useAuth } from '@/context/AuthContext';
+import { useLocale } from '@/context/LocaleContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { downloadAndShare } from '@/lib/downloadFile';
 import { hasPermission } from '@/lib/permissions';
@@ -28,6 +29,7 @@ interface Student {
 export default function BulletinsClasseScreen() {
   const { idClasse } = useLocalSearchParams<{ idClasse: string }>();
   const { user } = useAuth();
+  const { t } = useLocale();
   const { data: options } = useApiGet<BulletinOptions>(`/bulletins/classes/${idClasse}`, [idClasse]);
 
   const [idAnnee, setIdAnnee] = useState<number | null>(null);
@@ -55,7 +57,7 @@ export default function BulletinsClasseScreen() {
     try {
       await downloadAndShare(student.url, `Bulletin_${student.nom}_${student.prenom}.pdf`);
     } catch (err) {
-      setActionMessage(apiErrorMessage(err, 'Le téléchargement a échoué.'));
+      setActionMessage(apiErrorMessage(err, t('bulletins.download_error')));
     } finally {
       setDownloadingId(null);
     }
@@ -73,41 +75,41 @@ export default function BulletinsClasseScreen() {
       } else {
         await api.delete(`/bulletins/classes/${idClasse}/publish`, { data: body });
       }
-      setActionMessage(publish ? 'Bulletins publiés.' : 'Publication annulée.');
+      setActionMessage(publish ? t('bulletins.published_message') : t('bulletins.unpublished_message'));
     } catch (err) {
-      setActionMessage(apiErrorMessage(err, 'Action impossible.'));
+      setActionMessage(apiErrorMessage(err, t('bulletins.action_error')));
     }
   }
 
   const anneeOptions = (options?.annees ?? []).map((a) => ({ value: a.id_anneeScolaire, label: a.annee }));
-  const trimestreOptions = (options?.trimestres ?? []).map((t) => ({ value: t.id_trimestre, label: `Trimestre ${t.id_trimestre}` }));
+  const trimestreOptions = (options?.trimestres ?? []).map((tr) => ({ value: tr.id_trimestre, label: t('bulletins.trimestre_option_label').replace(':n', String(tr.id_trimestre)) }));
   const moisOptions = Object.entries(options?.mois_options ?? {}).map(([value, label]) => ({ value: Number(value), label }));
 
   return (
     <View style={styles.container}>
       <View style={styles.filters}>
-        <SelectField label="Année scolaire" value={idAnnee} options={anneeOptions} onChange={(v) => setIdAnnee(v as number)} />
+        <SelectField label={t('eleves.label_annee')} value={idAnnee} options={anneeOptions} onChange={(v) => setIdAnnee(v as number)} />
         <View style={styles.periodToggle}>
           <Button mode={periodMode === 'trimestre' ? 'contained' : 'outlined'} onPress={() => setPeriodMode('trimestre')} style={styles.toggleButton} compact>
-            Trimestre
+            {t('bulletins.trimestre_toggle')}
           </Button>
           <Button mode={periodMode === 'mois' ? 'contained' : 'outlined'} onPress={() => setPeriodMode('mois')} style={styles.toggleButton} compact>
-            Mois
+            {t('bulletins.mois_toggle')}
           </Button>
         </View>
         {periodMode === 'trimestre' ? (
-          <SelectField label="Trimestre" value={idTrimestre} options={trimestreOptions} onChange={(v) => setIdTrimestre(v as number)} />
+          <SelectField label={t('bulletins.trimestre_toggle')} value={idTrimestre} options={trimestreOptions} onChange={(v) => setIdTrimestre(v as number)} />
         ) : (
-          <SelectField label="Mois" value={mois} options={moisOptions} onChange={(v) => setMois(v as number)} />
+          <SelectField label={t('bulletins.mois_toggle')} value={mois} options={moisOptions} onChange={(v) => setMois(v as number)} />
         )}
 
         {canManage && idAnnee && period ? (
           <View style={styles.publishRow}>
             <Button mode="outlined" onPress={() => handlePublishToggle(true)} style={styles.actionButton}>
-              Publier
+              {t('bulletins.publish_button')}
             </Button>
             <Button mode="outlined" textColor="#d33" onPress={() => handlePublishToggle(false)} style={styles.actionButton}>
-              Dépublier
+              {t('bulletins.unpublish_button')}
             </Button>
           </View>
         ) : null}
@@ -115,7 +117,7 @@ export default function BulletinsClasseScreen() {
       </View>
 
       {!idAnnee || !period ? (
-        <Text style={styles.empty}>Choisissez une année et une période.</Text>
+        <Text style={styles.empty}>{t('bulletins.choose_year_period')}</Text>
       ) : isLoading ? (
         <ActivityIndicator style={styles.spinner} size="large" />
       ) : error ? (
@@ -127,7 +129,7 @@ export default function BulletinsClasseScreen() {
           contentContainerStyle={styles.list}
           refreshing={false}
           onRefresh={reload}
-          ListEmptyComponent={<Text style={styles.empty}>Aucun élève.</Text>}
+          ListEmptyComponent={<Text style={styles.empty}>{t('bulletins.empty_students')}</Text>}
           renderItem={({ item }) => (
             <View style={styles.studentRow}>
               <View style={styles.studentInfo}>
@@ -137,7 +139,7 @@ export default function BulletinsClasseScreen() {
                 <Text style={styles.meta}>{item.matricule ?? '—'}</Text>
               </View>
               <Button mode="outlined" loading={downloadingId === item.id} onPress={() => handleDownload(item)}>
-                Télécharger
+                {t('bulletins.download_button')}
               </Button>
             </View>
           )}
