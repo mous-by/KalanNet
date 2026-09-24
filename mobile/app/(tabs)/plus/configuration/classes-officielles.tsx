@@ -5,6 +5,7 @@ import { Button, Dialog, FAB, Portal, Text, TextInput } from 'react-native-paper
 import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
+import { useLocale } from '@/context/LocaleContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet, usePaginatedApi } from '@/lib/useApi';
 
@@ -15,6 +16,7 @@ interface ClasseOfficielle {
 }
 
 export default function ClassesOfficiellesScreen() {
+  const { t } = useLocale();
   const list = usePaginatedApi<ClasseOfficielle>('/configuration/classes-officielles', {}, 'data');
   // "ordres" vient de l'API, deja scope au pays de l'ecole active (les cles
   // sont les memes 4 slugs partout, seuls les libelles s'adaptent -- voir
@@ -40,7 +42,7 @@ export default function ClassesOfficiellesScreen() {
 
   async function handleSubmit() {
     if (!nom.trim() || !ordre) {
-      setError('Tous les champs sont requis.');
+      setError(t('configuration.an_tous_champs_requis'));
       return;
     }
     setIsSubmitting(true);
@@ -56,7 +58,7 @@ export default function ClassesOfficiellesScreen() {
       setSuccessVisible(true);
       list.refresh();
     } catch (err) {
-      setError(apiErrorMessage(err, 'Impossible d’enregistrer cette classe officielle.'));
+      setError(apiErrorMessage(err, t('configuration.classe_off_save_error')));
     } finally {
       setIsSubmitting(false);
     }
@@ -79,7 +81,7 @@ export default function ClassesOfficiellesScreen() {
         contentContainerStyle={styles.content}
         refreshing={list.isRefreshing}
         onRefresh={list.refresh}
-        ListEmptyComponent={<Text style={styles.empty}>{list.error ?? 'Aucune classe officielle.'}</Text>}
+        ListEmptyComponent={<Text style={styles.empty}>{list.error ?? t('configuration.classe_off_empty')}</Text>}
         renderItem={({ item }) => (
           <View style={styles.row}>
             <View style={styles.rowInfo}>
@@ -88,10 +90,10 @@ export default function ClassesOfficiellesScreen() {
             </View>
             <View style={styles.actions}>
               <Button compact onPress={() => openDialog(item)}>
-                Modifier
+                {t('configuration.modifier')}
               </Button>
               <Button compact textColor="#d33" onPress={() => handleDelete(item)}>
-                Supprimer
+                {t('configuration.supprimer')}
               </Button>
             </View>
           </View>
@@ -101,16 +103,16 @@ export default function ClassesOfficiellesScreen() {
 
       <Portal>
         <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
-          <Dialog.Title>{editing ? 'Modifier la classe officielle' : 'Nouvelle classe officielle'}</Dialog.Title>
+          <Dialog.Title>{editing ? t('configuration.classe_off_modal_edit_title') : t('configuration.classe_off_modal_create_title')}</Dialog.Title>
           <Dialog.Content>
-            <TextInput mode="outlined" label={requiredLabel('Nom')} value={nom} onChangeText={setNom} style={styles.input} />
-            <SelectField label={requiredLabel("Ordre d'enseignement")} value={ordre} options={ordreOptions} onChange={(v) => setOrdre(v as string)} />
+            <TextInput mode="outlined" label={requiredLabel(t('configuration.perm_nom_label'))} value={nom} onChangeText={setNom} style={styles.input} />
+            <SelectField label={requiredLabel(t('configuration.classe_off_ordre_label'))} value={ordre} options={ordreOptions} onChange={(v) => setOrdre(v as string)} />
             {error ? <Text style={styles.error}>{error}</Text> : null}
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setDialogVisible(false)}>Annuler</Button>
+            <Button onPress={() => setDialogVisible(false)}>{t('configuration.annuler')}</Button>
             <Button loading={isSubmitting} onPress={handleSubmit}>
-              Enregistrer
+              {t('configuration.enregistrer')}
             </Button>
           </Dialog.Actions>
         </Dialog>
@@ -118,7 +120,7 @@ export default function ClassesOfficiellesScreen() {
 
       <SuccessSnackbar
         visible={successVisible}
-        message={editing ? 'Classe officielle modifiée avec succès.' : 'Classe officielle créée avec succès.'}
+        message={editing ? t('configuration.classe_off_edit_success') : t('configuration.classe_off_create_success')}
         onDismiss={() => setSuccessVisible(false)}
       />
     </View>

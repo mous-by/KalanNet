@@ -371,6 +371,30 @@ const STRINGS = {
     'configuration.cap_modal_create_title': 'Nouveau CAP',
     'configuration.cap_edit_success': 'CAP modifié avec succès.',
     'configuration.cap_create_success': 'CAP créé avec succès.',
+    'configuration.oui': 'Oui',
+    'configuration.non': 'Non',
+
+    // Configuration - classes-officielles.tsx
+    'configuration.classe_off_save_error': 'Impossible d’enregistrer cette classe officielle.',
+    'configuration.classe_off_empty': 'Aucune classe officielle.',
+    'configuration.classe_off_modal_edit_title': 'Modifier la classe officielle',
+    'configuration.classe_off_modal_create_title': 'Nouvelle classe officielle',
+    'configuration.classe_off_ordre_label': "Ordre d'enseignement",
+    'configuration.classe_off_edit_success': 'Classe officielle modifiée avec succès.',
+    'configuration.classe_off_create_success': 'Classe officielle créée avec succès.',
+
+    // Configuration - status-controles.tsx
+    'configuration.sc_save_error': 'Impossible d’enregistrer ce statut.',
+    'configuration.sc_empty_mobile': 'Aucun statut.',
+    'configuration.sc_alerte_mobile_prefix': 'Alerte :',
+    'configuration.sc_penalite_mobile_prefix': 'Pénalité conduite :',
+    'configuration.sc_modal_edit_title_mobile': 'Modifier le statut',
+    'configuration.sc_modal_create_title': 'Nouveau statut de contrôle',
+    'configuration.an_libelle_mobile': 'Libellé',
+    'configuration.sc_alerte_label': 'Alerte',
+    'configuration.sc_penalite_label_mobile': 'Pénalité sur la note de conduite (0-18)',
+    'configuration.sc_edit_success': 'Statut modifié avec succès.',
+    'configuration.sc_create_success': 'Statut créé avec succès.',
   },
   en: {
     'language.label': 'Language',
@@ -730,6 +754,30 @@ const STRINGS = {
     'configuration.cap_modal_create_title': 'New CAP',
     'configuration.cap_edit_success': 'CAP updated successfully.',
     'configuration.cap_create_success': 'CAP created successfully.',
+    'configuration.oui': 'Yes',
+    'configuration.non': 'No',
+
+    // Configuration - classes-officielles.tsx
+    'configuration.classe_off_save_error': 'Could not save this official class.',
+    'configuration.classe_off_empty': 'No official class.',
+    'configuration.classe_off_modal_edit_title': 'Edit the official class',
+    'configuration.classe_off_modal_create_title': 'New official class',
+    'configuration.classe_off_ordre_label': 'Teaching cycle',
+    'configuration.classe_off_edit_success': 'Official class updated successfully.',
+    'configuration.classe_off_create_success': 'Official class created successfully.',
+
+    // Configuration - status-controles.tsx
+    'configuration.sc_save_error': 'Could not save this status.',
+    'configuration.sc_empty_mobile': 'No status.',
+    'configuration.sc_alerte_mobile_prefix': 'Alert:',
+    'configuration.sc_penalite_mobile_prefix': 'Conduct penalty:',
+    'configuration.sc_modal_edit_title_mobile': 'Edit status',
+    'configuration.sc_modal_create_title': 'New control status',
+    'configuration.an_libelle_mobile': 'Label',
+    'configuration.sc_alerte_label': 'Alert',
+    'configuration.sc_penalite_label_mobile': 'Conduct grade penalty (0-18)',
+    'configuration.sc_edit_success': 'Status updated successfully.',
+    'configuration.sc_create_success': 'Status created successfully.',
   },
   ar: {
     'language.label': 'اللغة',
@@ -1089,6 +1137,30 @@ const STRINGS = {
     'configuration.cap_modal_create_title': 'CAP جديد',
     'configuration.cap_edit_success': 'تم تعديل CAP بنجاح.',
     'configuration.cap_create_success': 'تم إنشاء CAP بنجاح.',
+    'configuration.oui': 'نعم',
+    'configuration.non': 'لا',
+
+    // Configuration - classes-officielles.tsx
+    'configuration.classe_off_save_error': 'تعذر حفظ هذا الصف الرسمي.',
+    'configuration.classe_off_empty': 'لا يوجد صف رسمي.',
+    'configuration.classe_off_modal_edit_title': 'تعديل الصف الرسمي',
+    'configuration.classe_off_modal_create_title': 'صف رسمي جديد',
+    'configuration.classe_off_ordre_label': 'الطور التعليمي',
+    'configuration.classe_off_edit_success': 'تم تعديل الصف الرسمي بنجاح.',
+    'configuration.classe_off_create_success': 'تم إنشاء الصف الرسمي بنجاح.',
+
+    // Configuration - status-controles.tsx
+    'configuration.sc_save_error': 'تعذر حفظ هذه الحالة.',
+    'configuration.sc_empty_mobile': 'لا توجد حالة.',
+    'configuration.sc_alerte_mobile_prefix': 'تنبيه:',
+    'configuration.sc_penalite_mobile_prefix': 'عقوبة السلوك:',
+    'configuration.sc_modal_edit_title_mobile': 'تعديل الحالة',
+    'configuration.sc_modal_create_title': 'حالة مراقبة جديدة',
+    'configuration.an_libelle_mobile': 'التسمية',
+    'configuration.sc_alerte_label': 'تنبيه',
+    'configuration.sc_penalite_label_mobile': 'عقوبة على نقطة السلوك (0-18)',
+    'configuration.sc_edit_success': 'تم تعديل الحالة بنجاح.',
+    'configuration.sc_create_success': 'تم إنشاء الحالة بنجاح.',
   },
 } satisfies Record<Locale, Record<string, string>>;
 

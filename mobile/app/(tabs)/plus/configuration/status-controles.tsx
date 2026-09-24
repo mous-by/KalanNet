@@ -5,6 +5,7 @@ import { Button, Dialog, FAB, Portal, Text, TextInput } from 'react-native-paper
 import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
+import { useLocale } from '@/context/LocaleContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { usePaginatedApi } from '@/lib/useApi';
 
@@ -15,12 +16,12 @@ interface StatusControle {
   penalite_conduite: number;
 }
 
-const ALERT_OPTIONS = [
-  { value: 'oui', label: 'Oui' },
-  { value: 'non', label: 'Non' },
-];
-
 export default function StatusControlesScreen() {
+  const { t } = useLocale();
+  const ALERT_OPTIONS = [
+    { value: 'oui', label: t('configuration.oui') },
+    { value: 'non', label: t('configuration.non') },
+  ];
   const list = usePaginatedApi<StatusControle>('/configuration/status-controles');
   const [editing, setEditing] = useState<StatusControle | null>(null);
   const [dialogVisible, setDialogVisible] = useState(false);
@@ -42,7 +43,7 @@ export default function StatusControlesScreen() {
 
   async function handleSubmit() {
     if (!controle.trim() || !alert || !penalite) {
-      setError('Tous les champs sont requis.');
+      setError(t('configuration.an_tous_champs_requis'));
       return;
     }
     setIsSubmitting(true);
@@ -58,7 +59,7 @@ export default function StatusControlesScreen() {
       setSuccessVisible(true);
       list.refresh();
     } catch (err) {
-      setError(apiErrorMessage(err, 'Impossible d’enregistrer ce statut.'));
+      setError(apiErrorMessage(err, t('configuration.sc_save_error')));
     } finally {
       setIsSubmitting(false);
     }
@@ -81,21 +82,21 @@ export default function StatusControlesScreen() {
         contentContainerStyle={styles.content}
         refreshing={list.isRefreshing}
         onRefresh={list.refresh}
-        ListEmptyComponent={<Text style={styles.empty}>{list.error ?? 'Aucun statut.'}</Text>}
+        ListEmptyComponent={<Text style={styles.empty}>{list.error ?? t('configuration.sc_empty_mobile')}</Text>}
         renderItem={({ item }) => (
           <View style={styles.row}>
             <View style={styles.rowInfo}>
               <Text style={styles.title}>{item.type_controle}</Text>
               <Text style={styles.meta}>
-                Alerte : {item.alertControle} · Pénalité conduite : {item.penalite_conduite}
+                {t('configuration.sc_alerte_mobile_prefix')} {item.alertControle} · {t('configuration.sc_penalite_mobile_prefix')} {item.penalite_conduite}
               </Text>
             </View>
             <View style={styles.actions}>
               <Button compact onPress={() => openDialog(item)}>
-                Modifier
+                {t('configuration.modifier')}
               </Button>
               <Button compact textColor="#d33" onPress={() => handleDelete(item)}>
-                Supprimer
+                {t('configuration.supprimer')}
               </Button>
             </View>
           </View>
@@ -105,13 +106,13 @@ export default function StatusControlesScreen() {
 
       <Portal>
         <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
-          <Dialog.Title>{editing ? 'Modifier le statut' : 'Nouveau statut de contrôle'}</Dialog.Title>
+          <Dialog.Title>{editing ? t('configuration.sc_modal_edit_title_mobile') : t('configuration.sc_modal_create_title')}</Dialog.Title>
           <Dialog.Content>
-            <TextInput mode="outlined" label={requiredLabel('Libellé')} value={controle} onChangeText={setControle} style={styles.input} />
-            <SelectField label={requiredLabel('Alerte')} value={alert} options={ALERT_OPTIONS} onChange={(v) => setAlert(v as string)} />
+            <TextInput mode="outlined" label={requiredLabel(t('configuration.an_libelle_mobile'))} value={controle} onChangeText={setControle} style={styles.input} />
+            <SelectField label={requiredLabel(t('configuration.sc_alerte_label'))} value={alert} options={ALERT_OPTIONS} onChange={(v) => setAlert(v as string)} />
             <TextInput
               mode="outlined"
-              label={requiredLabel('Pénalité sur la note de conduite (0-18)')}
+              label={requiredLabel(t('configuration.sc_penalite_label_mobile'))}
               keyboardType="numeric"
               value={penalite}
               onChangeText={setPenalite}
@@ -120,9 +121,9 @@ export default function StatusControlesScreen() {
             {error ? <Text style={styles.error}>{error}</Text> : null}
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setDialogVisible(false)}>Annuler</Button>
+            <Button onPress={() => setDialogVisible(false)}>{t('configuration.annuler')}</Button>
             <Button loading={isSubmitting} onPress={handleSubmit}>
-              Enregistrer
+              {t('configuration.enregistrer')}
             </Button>
           </Dialog.Actions>
         </Dialog>
@@ -130,7 +131,7 @@ export default function StatusControlesScreen() {
 
       <SuccessSnackbar
         visible={successVisible}
-        message={editing ? 'Statut modifié avec succès.' : 'Statut créé avec succès.'}
+        message={editing ? t('configuration.sc_edit_success') : t('configuration.sc_create_success')}
         onDismiss={() => setSuccessVisible(false)}
       />
     </View>
