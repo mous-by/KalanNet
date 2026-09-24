@@ -2,15 +2,15 @@
 
 @section('content')
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-        <div class="breadcrumb-title pe-3">Configuration</div>
+        <div class="breadcrumb-title pe-3">{{ __('configuration.title') }}</div>
         <div class="ps-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0 p-0">
                     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bi bi-house-door"></i></a></li>
                     @if(auth()->user()->droit === 'SupAdmin')
-                        <li class="breadcrumb-item"><a href="{{ route('configuration.index') }}">Aperçu</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('configuration.index') }}">{{ __('configuration.menu_apercu') }}</a></li>
                     @endif
-                    <li class="breadcrumb-item active" aria-current="page">Années scolaires</li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ __('configuration.menu_annees') }}</li>
                 </ol>
             </nav>
         </div>
@@ -25,20 +25,20 @@
         <div class="col-12 col-lg-9">
             <div class="card theme-card shadow-sm">
                 <div class="card-header theme-header d-flex align-items-center justify-content-between flex-wrap gap-2">
-                    <h5 class="mb-0 fw-bold"><i class="bi bi-calendar3 me-2"></i>Liste des années scolaires</h5>
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-calendar3 me-2"></i>{{ __('configuration.annees_liste_title') }}</h5>
                     @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('annees_scolaires_apercu'))
-                        <button type="button" class="btn btn-sm d-flex align-items-center gap-1 shadow-sm text-white" 
+                        <button type="button" class="btn btn-sm d-flex align-items-center gap-1 shadow-sm text-white"
                                 style="background-color: var(--theme-accent) !important; color: var(--text-on-accent) !important; border: none;"
                                 data-bs-toggle="modal" data-bs-target="#addNewAnneeModal">
                             <i class="bi bi-plus-lg"></i>
-                            <span>Ajouter</span>
+                            <span>{{ __('configuration.ajouter') }}</span>
                         </button>
                     @endif
                 </div>
                 <div class="card-body">
                     <div class="d-flex justify-content-end align-items-center flex-wrap mb-3 gap-3">
                         <form action="{{ route('configuration.annees') }}" method="GET" class="col-md-5" data-auto-filter="true">
-                            <input type="text" name="search" class="form-control" placeholder="Rechercher une année..." value="{{ request('search') }}">
+                            <input type="text" name="search" class="form-control" placeholder="{{ __('configuration.annees_search_placeholder') }}" value="{{ request('search') }}">
                         </form>
                     </div>
 
@@ -46,9 +46,9 @@
                         <table class="table table-striped table-bordered align-middle">
                             <thead>
                                 <tr>
-                                    <th>Année</th>
-                                    <th>Date début</th>
-                                    <th>Date fin</th>
+                                    <th>{{ __('configuration.th_annee') }}</th>
+                                    <th>{{ __('configuration.annees_th_date_debut') }}</th>
+                                    <th>{{ __('configuration.annees_th_date_fin') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -58,14 +58,14 @@
                                         <td class="fw-bold">
                                             {{ $annee->annee }}
                                             @if($isCurrent)
-                                                <span class="badge bg-success ms-2">En cours</span>
+                                                <span class="badge bg-success ms-2">{{ __('configuration.annees_en_cours') }}</span>
                                             @endif
                                         </td>
                                         <td>{{ $annee->date_debut ?? 'N/A' }}</td>
                                         <td>{{ $annee->date_fin ?? 'N/A' }}</td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="3" class="text-center py-4 text-muted">Aucune année scolaire en cours trouvée.</td></tr>
+                                    <tr><td colspan="3" class="text-center py-4 text-muted">{{ __('configuration.annees_empty_list') }}</td></tr>
                                 @endforelse
                             </tbody>
                         </table>
@@ -85,7 +85,7 @@
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header text-white" style="background-color: var(--theme-accent) !important;">
                     <h5 class="modal-title fw-bold" id="addNewAnneeModalLabel">
-                        <i class="bi bi-calendar-plus me-2"></i>Nouvelle Année Scolaire
+                        <i class="bi bi-calendar-plus me-2"></i>{{ __('configuration.annees_modal_title') }}
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -93,22 +93,22 @@
                     @csrf
                     <div class="modal-body p-4">
                         <div class="mb-3">
-                            <label for="annee" class="form-label fw-semibold">Année Scolaire</label>
+                            <label for="annee" class="form-label fw-semibold">{{ __('configuration.menu_annees') }}</label>
                             <input type="text" class="form-control" id="annee" name="annee" required placeholder="Ex: 2025-2026">
-                            <small class="text-muted">Format recommandé : AAAA-AAAA</small>
+                            <small class="text-muted">{{ __('configuration.annees_format_help') }}</small>
                         </div>
                         <div class="mb-3">
-                            <label for="date_debut" class="form-label fw-semibold">Date de début</label>
+                            <label for="date_debut" class="form-label fw-semibold">{{ __('configuration.annees_date_debut_label') }}</label>
                             <input type="date" class="form-control" id="date_debut" name="date_debut" required>
                         </div>
                         <div class="mb-3">
-                            <label for="date_fin" class="form-label fw-semibold">Date de fin</label>
+                            <label for="date_fin" class="form-label fw-semibold">{{ __('configuration.annees_date_fin_label') }}</label>
                             <input type="date" class="form-control" id="date_fin" name="date_fin" required>
                         </div>
                     </div>
                     <div class="modal-footer bg-light px-4 py-3">
-                        <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn text-white px-4 fw-semibold" style="background-color: var(--theme-accent) !important;">Enregistrer</button>
+                        <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">{{ __('configuration.annuler') }}</button>
+                        <button type="submit" class="btn text-white px-4 fw-semibold" style="background-color: var(--theme-accent) !important;">{{ __('configuration.enregistrer') }}</button>
                     </div>
                 </form>
             </div>

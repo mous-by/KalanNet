@@ -108,4 +108,16 @@ return [
     'pays_entete_help' => 'يظهر هذا النص أعلى كشوف النقاط والإيصالات لجميع مدارس بلدك (الوزارة، الجمهورية، الشعار الوطني...). اتركه فارغًا حتى تقوم بتعبئته — لن يظهر أي شيء بدلاً منه.',
     'pays_entete_gauche_label' => 'الكتلة اليسرى (مثال: الوزارة)',
     'pays_entete_droite_label' => 'الكتلة اليمنى (مثال: الجمهورية، الشعار الوطني)',
+
+    // annees.blade.php
+    'annees_liste_title' => 'قائمة السنوات الدراسية',
+    'annees_search_placeholder' => 'ابحث عن سنة دراسية...',
+    'annees_th_date_debut' => 'تاريخ البداية',
+    'annees_th_date_fin' => 'تاريخ النهاية',
+    'annees_en_cours' => 'جارية',
+    'annees_empty_list' => 'لم يتم العثور على أي سنة دراسية جارية.',
+    'annees_modal_title' => 'سنة دراسية جديدة',
+    'annees_format_help' => 'الصيغة الموصى بها: AAAA-AAAA',
+    'annees_date_debut_label' => 'تاريخ البداية',
+    'annees_date_fin_label' => 'تاريخ النهاية',
 ];

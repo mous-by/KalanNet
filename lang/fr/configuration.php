@@ -108,4 +108,16 @@ return [
     'pays_entete_help' => "Ce texte apparaît en haut des bulletins et reçus de toutes les écoles de votre pays (ministère, république, devise nationale...). Laissez vide tant que vous ne l'avez pas renseigné — rien ne sera affiché à la place.",
     'pays_entete_gauche_label' => 'Bloc gauche (ex : ministère)',
     'pays_entete_droite_label' => 'Bloc droit (ex : république, devise nationale)',
+
+    // annees.blade.php
+    'annees_liste_title' => 'Liste des années scolaires',
+    'annees_search_placeholder' => 'Rechercher une année...',
+    'annees_th_date_debut' => 'Date début',
+    'annees_th_date_fin' => 'Date fin',
+    'annees_en_cours' => 'En cours',
+    'annees_empty_list' => 'Aucune année scolaire en cours trouvée.',
+    'annees_modal_title' => 'Nouvelle Année Scolaire',
+    'annees_format_help' => 'Format recommandé : AAAA-AAAA',
+    'annees_date_debut_label' => 'Date de début',
+    'annees_date_fin_label' => 'Date de fin',
 ];

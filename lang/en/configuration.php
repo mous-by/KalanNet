@@ -108,4 +108,16 @@ return [
     'pays_entete_help' => "This text appears at the top of report cards and receipts of every school in your country (ministry, republic, national motto...). Leave it empty until you fill it in — nothing will be shown instead.",
     'pays_entete_gauche_label' => 'Left block (e.g.: ministry)',
     'pays_entete_droite_label' => 'Right block (e.g.: republic, national motto)',
+
+    // annees.blade.php
+    'annees_liste_title' => 'School years list',
+    'annees_search_placeholder' => 'Search a school year...',
+    'annees_th_date_debut' => 'Start date',
+    'annees_th_date_fin' => 'End date',
+    'annees_en_cours' => 'Current',
+    'annees_empty_list' => 'No current school year found.',
+    'annees_modal_title' => 'New School Year',
+    'annees_format_help' => 'Recommended format: YYYY-YYYY',
+    'annees_date_debut_label' => 'Start date',
+    'annees_date_fin_label' => 'End date',
 ];
