@@ -2,23 +2,23 @@
 
 @section('content')
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-        <div class="breadcrumb-title pe-3">Finances</div>
+        <div class="breadcrumb-title pe-3">{{ __('finances.title') }}</div>
         <div class="ps-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0 p-0">
                     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bi bi-house-door"></i></a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('finances.index') }}">Gestion financière</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Journal de caisse</li>
+                    <li class="breadcrumb-item"><a href="{{ route('finances.index') }}">{{ __('finances.breadcrumb_gestion') }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ __('finances.breadcrumb_journal_caisse') }}</li>
                 </ol>
             </nav>
         </div>
         @if($caisse)
             <div class="ms-auto d-flex gap-2">
                 @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('decaissements_creation'))
-                    <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#decaissementModal"><i class="bi bi-dash-lg me-1"></i>Sortie Caisse</button>
+                    <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#decaissementModal"><i class="bi bi-dash-lg me-1"></i>{{ __('finances.sortie_caisse') }}</button>
                 @endif
                 @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('encaissement_creation'))
-                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#encaissementModal"><i class="bi bi-plus-lg me-1"></i>Entrée Caisse</button>
+                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#encaissementModal"><i class="bi bi-plus-lg me-1"></i>{{ __('finances.entree_caisse') }}</button>
                 @endif
             </div>
         @endif
@@ -41,7 +41,7 @@
                 <div class="card-body p-4">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
-                            <h6 class="text-muted text-uppercase fw-bold small mb-3">Solde Initial</h6>
+                            <h6 class="text-muted text-uppercase fw-bold small mb-3">{{ __('finances.solde_initial') }}</h6>
                             <h4 class="fw-bold mb-0 text-dark">{{ number_format($caisse->montant_initial, \App\Support\Devise::decimales(), ',', ' ') }} <small class="fs-6">{{ \App\Support\Devise::symbole() }}</small></h4>
                         </div>
                         <div class="widget-icon theme-icon-box rounded-3">
@@ -56,7 +56,7 @@
                 <div class="card-body p-4">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
-                            <h6 class="text-white-50 text-uppercase fw-bold small mb-3">Solde Actuel</h6>
+                            <h6 class="text-white-50 text-uppercase fw-bold small mb-3">{{ __('finances.solde_actuel_caisse') }}</h6>
                             <h2 class="fw-bold mb-0">{{ number_format($caisse->montant_net, \App\Support\Devise::decimales(), ',', ' ') }} <small class="fs-6">{{ \App\Support\Devise::symbole() }}</small></h2>
                         </div>
                         <div class="widget-icon theme-icon-soft rounded-3">
@@ -68,7 +68,7 @@
         </div>
         <div class="col-md-6 text-end">
             <div class="d-inline-block caisse-reference-box p-3 rounded-4 shadow-sm">
-                <small class="d-block text-uppercase fw-bold">Référence Caisse</small>
+                <small class="d-block text-uppercase fw-bold">{{ __('finances.reference_caisse') }}</small>
                 <span class="fs-4 fw-bold font-monospace">{{ $caisse->reference }}</span>
             </div>
         </div>
@@ -76,18 +76,18 @@
 
     <div class="card theme-card shadow-sm overflow-hidden">
         <div class="card-header theme-header p-4 border-0">
-            <h5 class="fw-bold mb-0">Journal des Mouvements</h5>
+            <h5 class="fw-bold mb-0">{{ __('finances.journal_mouvements_title') }}</h5>
         </div>
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead>
                     <tr>
-                        <th class="px-4 py-3 border-0 small fw-bold text-muted text-uppercase">Date</th>
-                        <th class="py-3 border-0 small fw-bold text-muted text-uppercase">Type</th>
-                        <th class="py-3 border-0 small fw-bold text-muted text-uppercase">Motif / Libellé</th>
-                        <th class="py-3 border-0 small fw-bold text-muted text-uppercase text-end">Montant</th>
-                        <th class="py-3 border-0 small fw-bold text-muted text-uppercase">Statut</th>
-                        <th class="px-4 py-3 border-0 small fw-bold text-muted text-uppercase text-end">Action</th>
+                        <th class="px-4 py-3 border-0 small fw-bold text-muted text-uppercase">{{ __('finances.th_date') }}</th>
+                        <th class="py-3 border-0 small fw-bold text-muted text-uppercase">{{ __('finances.th_type') }}</th>
+                        <th class="py-3 border-0 small fw-bold text-muted text-uppercase">{{ __('finances.th_motif_libelle') }}</th>
+                        <th class="py-3 border-0 small fw-bold text-muted text-uppercase text-end">{{ __('finances.th_montant') }}</th>
+                        <th class="py-3 border-0 small fw-bold text-muted text-uppercase">{{ __('finances.th_statut') }}</th>
+                        <th class="px-4 py-3 border-0 small fw-bold text-muted text-uppercase text-end">{{ __('classes.th_action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -96,9 +96,9 @@
                             <td class="px-4 py-3 small">{{ date('d/m/Y H:i', strtotime($m->date)) }}</td>
                             <td>
                                 @if($m->type == 'RECETTE')
-                                    <span class="badge bg-success-soft text-success rounded-pill px-3"><i class="bi bi-arrow-down-left me-1"></i> Entrée</span>
+                                    <span class="badge bg-success-soft text-success rounded-pill px-3"><i class="bi bi-arrow-down-left me-1"></i> {{ __('finances.entree_label') }}</span>
                                 @else
-                                    <span class="badge bg-danger-soft text-danger rounded-pill px-3"><i class="bi bi-arrow-up-right me-1"></i> Sortie</span>
+                                    <span class="badge bg-danger-soft text-danger rounded-pill px-3"><i class="bi bi-arrow-up-right me-1"></i> {{ __('finances.sortie_label') }}</span>
                                 @endif
                             </td>
                             <td>
@@ -106,7 +106,7 @@
                                 @if($m->type == 'RECETTE')
                                     <small class="text-muted">{{ $m->type_operation }}</small>
                                 @else
-                                    <small class="text-muted">Demandé par {{ $m->utilisateur?->nomPrenom ?? 'Utilisateur' }}</small>
+                                    <small class="text-muted">{{ __('finances.demande_par', ['nom' => $m->utilisateur?->nomPrenom ?? __('finances.utilisateur_generic')]) }}</small>
                                 @endif
                             </td>
                             <td class="text-end fw-bold {{ $m->type == 'DEPENSE' ? ($m->valide ? 'text-danger' : 'text-warning') : 'text-success' }}">
@@ -119,10 +119,10 @@
                             <td>
                                 @if($m->type == 'DEPENSE')
                                     <span class="badge bg-{{ $m->valide ? 'success' : 'warning' }} rounded-pill px-3">
-                                        {{ $m->valide ? 'Validée' : 'En attente' }}
+                                        {{ $m->valide ? __('finances.statut_validee') : __('finances.statut_en_attente') }}
                                     </span>
                                 @else
-                                    <span class="badge bg-success rounded-pill px-3">Validée</span>
+                                    <span class="badge bg-success rounded-pill px-3">{{ __('finances.statut_validee') }}</span>
                                 @endif
                             </td>
                             <td class="px-4 text-end">
@@ -131,7 +131,7 @@
                                         @csrf
                                         @method('PATCH')
                                         <button type="submit" class="btn btn-sm btn-success">
-                                            <i class="bi bi-check2-circle me-1"></i>Valider
+                                            <i class="bi bi-check2-circle me-1"></i>{{ __('finances.validate_button') }}
                                         </button>
                                     </form>
                                 @else
@@ -140,7 +140,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="text-center py-5 text-muted">Aucun mouvement enregistré.</td></tr>
+                        <tr><td colspan="6" class="text-center py-5 text-muted">{{ __('finances.empty_mouvements') }}</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -149,10 +149,10 @@
     @else
     <div class="alert alert-warning rounded-4 border-0 shadow-sm p-4 text-center">
         <i class="bi bi-exclamation-triangle fs-1 mb-3 d-block"></i>
-        <h4 class="fw-bold">Aucune caisse active</h4>
-        <p class="mb-0">Veuillez configurer une caisse pour votre établissement dans les paramètres.</p>
+        <h4 class="fw-bold">{{ __('finances.no_active_caisse_title2') }}</h4>
+        <p class="mb-0">{{ __('finances.no_active_caisse_config_desc') }}</p>
         <button class="btn btn-primary mt-3 px-4" data-bs-toggle="modal" data-bs-target="#caisseModal" style="background-color: var(--theme-accent) !important; border-color: var(--theme-accent) !important; color: white !important;">
-            <i class="bi bi-plus-lg me-2"></i>Créer la caisse
+            <i class="bi bi-plus-lg me-2"></i>{{ __('finances.creer_caisse') }}
         </button>
     </div>
     @endif
@@ -161,31 +161,31 @@
         <div class="modal-dialog">
             <div class="modal-content card theme-card">
                 <div class="modal-header">
-                    <h5 class="modal-title">Enregistrement de caisse</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                    <h5 class="modal-title">{{ __('finances.caisse_registration_title') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('eleves.close') }}"></button>
                 </div>
                 <form method="POST" action="{{ route('finances.caisse.store') }}">
                     @csrf
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label class="form-label">Libellé caisse <span class="text-danger">*</span></label>
+                            <label class="form-label">{{ __('finances.label_libelle_caisse') }} <span class="text-danger">*</span></label>
                             <input type="text" name="libelle" class="form-control" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Montant initial <span class="text-danger">*</span></label>
+                            <label class="form-label">{{ __('finances.label_montant_initial') }} <span class="text-danger">*</span></label>
                             <input type="number" name="montant_initial" class="form-control" min="0" step="0.01" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Statut</label>
+                            <label class="form-label">{{ __('finances.label_statut') }}</label>
                             <select name="status" class="form-select">
-                                <option value="1">Active</option>
-                                <option value="0">Inactive</option>
+                                <option value="1">{{ __('finances.statut_active') }}</option>
+                                <option value="0">{{ __('finances.statut_inactive') }}</option>
                             </select>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn btn-primary">Enregistrer</button>
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">{{ __('finances.cancel_button') }}</button>
+                        <button type="submit" class="btn btn-primary">{{ __('finances.save_button') }}</button>
                     </div>
                 </form>
             </div>
@@ -197,8 +197,8 @@
             <div class="modal-dialog modal-lg">
                 <div class="modal-content card theme-card">
                     <div class="modal-header">
-                        <h5 class="modal-title">Nouvelle entrée caisse</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                        <h5 class="modal-title">{{ __('finances.nouvelle_entree_caisse') }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('eleves.close') }}"></button>
                     </div>
                     <form method="POST" action="{{ route('finances.encaissements.store') }}">
                         @csrf
@@ -206,11 +206,11 @@
                         <div class="modal-body">
                             <div class="row g-3">
                                 <div class="col-md-4">
-                                    <label class="form-label">Caisse référence</label>
+                                    <label class="form-label">{{ __('finances.caisse_reference_label') }}</label>
                                     <input type="text" class="form-control" value="{{ $caisse->reference }} ({{ \App\Support\Devise::format($caisse->montant_net) }})" disabled>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label">Année scolaire <span class="text-danger">*</span></label>
+                                    <label class="form-label">{{ __('eleves.label_annee') }} <span class="text-danger">*</span></label>
                                     <select name="id_annee_scolaire" class="form-select" required>
                                         @foreach($annees as $annee)
                                             <option value="{{ $annee->id_anneeScolaire }}">{{ $annee->annee }}</option>
@@ -218,29 +218,29 @@
                                     </select>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label">Type opération <span class="text-danger">*</span></label>
+                                    <label class="form-label">{{ __('finances.label_type_operation') }} <span class="text-danger">*</span></label>
                                     <select name="type_operation" class="form-select" required>
-                                        <option value="encaissement divers">Encaissement divers</option>
-                                        <option value="encaissement scolaire">Encaissement scolaire</option>
+                                        <option value="encaissement divers">{{ __('finances.encaissement_divers') }}</option>
+                                        <option value="encaissement scolaire">{{ __('finances.encaissement_scolaire') }}</option>
                                     </select>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label">Date <span class="text-danger">*</span></label>
+                                    <label class="form-label">{{ __('finances.label_date') }} <span class="text-danger">*</span></label>
                                     <input type="date" name="date_encaissement" class="form-control" value="{{ now()->toDateString() }}" required>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label">Motif <span class="text-danger">*</span></label>
+                                    <label class="form-label">{{ __('finances.label_motif') }} <span class="text-danger">*</span></label>
                                     <input type="text" name="motif_encaissement" class="form-control" required>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label">Montant <span class="text-danger">*</span></label>
+                                    <label class="form-label">{{ __('finances.label_montant') }} <span class="text-danger">*</span></label>
                                     <input type="number" name="montant_encaissement" class="form-control" min="1" step="0.01" required>
                                 </div>
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
-                            <button type="submit" class="btn btn-primary">Soumettre</button>
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">{{ __('finances.cancel_button') }}</button>
+                            <button type="submit" class="btn btn-primary">{{ __('finances.submit_button') }}</button>
                         </div>
                     </form>
                 </div>
@@ -251,8 +251,8 @@
             <div class="modal-dialog modal-lg">
                 <div class="modal-content card theme-card">
                     <div class="modal-header">
-                        <h5 class="modal-title">Nouvelle sortie caisse</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                        <h5 class="modal-title">{{ __('finances.nouvelle_sortie_caisse') }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('eleves.close') }}"></button>
                     </div>
                     <form method="POST" action="{{ route('finances.decaissements.store') }}">
                         @csrf
@@ -260,11 +260,11 @@
                         <div class="modal-body">
                             <div class="row g-3">
                                 <div class="col-md-4">
-                                    <label class="form-label">Caisse référence</label>
+                                    <label class="form-label">{{ __('finances.caisse_reference_label') }}</label>
                                     <input type="text" class="form-control" value="{{ $caisse->reference }} ({{ \App\Support\Devise::format($caisse->montant_net) }})" disabled>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label">Année scolaire <span class="text-danger">*</span></label>
+                                    <label class="form-label">{{ __('eleves.label_annee') }} <span class="text-danger">*</span></label>
                                     <select name="id_annee_scolaire" class="form-select" required>
                                         @foreach($annees as $annee)
                                             <option value="{{ $annee->id_anneeScolaire }}">{{ $annee->annee }}</option>
@@ -272,22 +272,22 @@
                                     </select>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label">Date <span class="text-danger">*</span></label>
+                                    <label class="form-label">{{ __('finances.label_date') }} <span class="text-danger">*</span></label>
                                     <input type="date" name="date_decaissement" class="form-control" value="{{ now()->toDateString() }}" required>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label">Motif <span class="text-danger">*</span></label>
+                                    <label class="form-label">{{ __('finances.label_motif') }} <span class="text-danger">*</span></label>
                                     <input type="text" name="motif_decaissement" class="form-control" required>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label">Montant <span class="text-danger">*</span></label>
+                                    <label class="form-label">{{ __('finances.label_montant') }} <span class="text-danger">*</span></label>
                                     <input type="number" name="montant_decaissement" class="form-control" min="1" step="0.01" required>
                                 </div>
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
-                            <button type="submit" class="btn btn-primary">Envoyer</button>
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">{{ __('finances.cancel_button') }}</button>
+                            <button type="submit" class="btn btn-primary">{{ __('finances.send_button') }}</button>
                         </div>
                     </form>
                 </div>
@@ -319,17 +319,26 @@
     }
 </style>
 @push('scripts')
+    @php
+        $caisseI18n = [
+            'confirmTitle' => __('finances.confirm_validate_depense_title'),
+            'confirmText' => __('finances.confirm_validate_depense_text'),
+            'confirmYes' => __('finances.confirm_yes_validate'),
+            'cancel' => __('finances.cancel_button'),
+        ];
+    @endphp
     <script>
+        const caisseI18n = @json($caisseI18n);
         document.querySelectorAll('.js-validate-decaissement').forEach((form) => {
             form.addEventListener('submit', function (event) {
                 event.preventDefault();
                 Swal.fire({
-                    title: 'Valider cette dépense ?',
-                    text: 'Le montant sera déduit de la caisse.',
+                    title: caisseI18n.confirmTitle,
+                    text: caisseI18n.confirmText,
                     icon: 'question',
                     showCancelButton: true,
-                    confirmButtonText: 'Oui, valider',
-                    cancelButtonText: 'Annuler',
+                    confirmButtonText: caisseI18n.confirmYes,
+                    cancelButtonText: caisseI18n.cancel,
                     confirmButtonColor: '#198754'
                 }).then((result) => {
                     if (result.isConfirmed) {
