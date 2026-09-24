@@ -5,6 +5,7 @@ import { Button, Dialog, FAB, Portal, Text, TextInput } from 'react-native-paper
 import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
+import { useLocale } from '@/context/LocaleContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useAllPaginated, usePaginatedApi } from '@/lib/useApi';
 
@@ -23,6 +24,7 @@ interface Cap {
 }
 
 export default function CapsScreen() {
+  const { t } = useLocale();
   const list = usePaginatedApi<Cap>('/configuration/caps');
   const academies = useAllPaginated<Academie>('/configuration/academies');
   const [editing, setEditing] = useState<Cap | null>(null);
@@ -47,7 +49,7 @@ export default function CapsScreen() {
 
   async function handleSubmit() {
     if (!nom.trim() || !code.trim() || !localite.trim() || !idAcademie) {
-      setError('Tous les champs sont requis.');
+      setError(t('configuration.an_tous_champs_requis'));
       return;
     }
     setIsSubmitting(true);
@@ -63,7 +65,7 @@ export default function CapsScreen() {
       setSuccessVisible(true);
       list.refresh();
     } catch (err) {
-      setError(apiErrorMessage(err, 'Impossible d’enregistrer ce CAP.'));
+      setError(apiErrorMessage(err, t('configuration.cap_save_error')));
     } finally {
       setIsSubmitting(false);
     }
@@ -88,7 +90,7 @@ export default function CapsScreen() {
         contentContainerStyle={styles.content}
         refreshing={list.isRefreshing}
         onRefresh={list.refresh}
-        ListEmptyComponent={<Text style={styles.empty}>{list.error ?? 'Aucun CAP.'}</Text>}
+        ListEmptyComponent={<Text style={styles.empty}>{list.error ?? t('configuration.cap_empty')}</Text>}
         renderItem={({ item }) => (
           <View style={styles.row}>
             <View style={styles.rowInfo}>
@@ -99,10 +101,10 @@ export default function CapsScreen() {
             </View>
             <View style={styles.actions}>
               <Button compact onPress={() => openDialog(item)}>
-                Modifier
+                {t('configuration.modifier')}
               </Button>
               <Button compact textColor="#d33" onPress={() => handleDelete(item)}>
-                Supprimer
+                {t('configuration.supprimer')}
               </Button>
             </View>
           </View>
@@ -112,18 +114,18 @@ export default function CapsScreen() {
 
       <Portal>
         <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
-          <Dialog.Title>{editing ? 'Modifier le CAP' : 'Nouveau CAP'}</Dialog.Title>
+          <Dialog.Title>{editing ? t('configuration.cap_modal_edit_title') : t('configuration.cap_modal_create_title')}</Dialog.Title>
           <Dialog.Content>
-            <TextInput mode="outlined" label={requiredLabel('Nom')} value={nom} onChangeText={setNom} style={styles.input} />
-            <TextInput mode="outlined" label={requiredLabel('Code')} value={code} onChangeText={setCode} style={styles.input} />
-            <TextInput mode="outlined" label={requiredLabel('Localité')} value={localite} onChangeText={setLocalite} style={styles.input} />
-            <SelectField label={requiredLabel('Académie')} value={idAcademie} options={academieOptions} onChange={(v) => setIdAcademie(v as number)} />
+            <TextInput mode="outlined" label={requiredLabel(t('configuration.perm_nom_label'))} value={nom} onChangeText={setNom} style={styles.input} />
+            <TextInput mode="outlined" label={requiredLabel(t('configuration.aca_th_code'))} value={code} onChangeText={setCode} style={styles.input} />
+            <TextInput mode="outlined" label={requiredLabel(t('configuration.aca_th_localite'))} value={localite} onChangeText={setLocalite} style={styles.input} />
+            <SelectField label={requiredLabel(t('configuration.menu_academies'))} value={idAcademie} options={academieOptions} onChange={(v) => setIdAcademie(v as number)} />
             {error ? <Text style={styles.error}>{error}</Text> : null}
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setDialogVisible(false)}>Annuler</Button>
+            <Button onPress={() => setDialogVisible(false)}>{t('configuration.annuler')}</Button>
             <Button loading={isSubmitting} onPress={handleSubmit}>
-              Enregistrer
+              {t('configuration.enregistrer')}
             </Button>
           </Dialog.Actions>
         </Dialog>
@@ -131,7 +133,7 @@ export default function CapsScreen() {
 
       <SuccessSnackbar
         visible={successVisible}
-        message={editing ? 'CAP modifié avec succès.' : 'CAP créé avec succès.'}
+        message={editing ? t('configuration.cap_edit_success') : t('configuration.cap_create_success')}
         onDismiss={() => setSuccessVisible(false)}
       />
     </View>
