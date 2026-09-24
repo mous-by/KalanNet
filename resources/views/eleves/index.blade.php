@@ -6,15 +6,44 @@
         $canEditEleve = $user->droit === 'SupAdmin' || $user->userHasPermission('eleves_modification');
         $canDeleteEleve = $user->droit === 'SupAdmin' || $user->userHasAnyPermission(['eleves_supprimer', 'eleves_suppression']);
         $canTransferEleve = $user->droit === 'SupAdmin' || $user->userHasPermission('eleves_modification');
+        $elevesIndexI18n = [
+            'printSelected' => __('eleves.print_selected'),
+            'printFiltered' => __('eleves.print_filtered'),
+            'exportSelected' => __('eleves.export_selected'),
+            'exportFiltered' => __('eleves.export_filtered'),
+            'printHelpDefault' => __('eleves.print_help_default'),
+            'printHelpSelected' => __('eleves.print_help_selected'),
+            'exportHelpDefault' => __('eleves.export_help_default'),
+            'exportHelpSelected' => __('eleves.export_help_selected'),
+            'swalConfirmDefault' => __('eleves.swal_confirm_default'),
+            'swalConfirmDefinitive' => __('eleves.swal_confirm_definitive'),
+            'swalYesContinue' => __('eleves.swal_yes_continue'),
+            'cancel' => __('eleves.cancel'),
+            'transferTitle' => __('eleves.transfer_title'),
+            'transferDestinationPlaceholder' => __('eleves.transfer_destination_placeholder'),
+            'transferMotifPlaceholder' => __('eleves.transfer_motif_placeholder'),
+            'transferTravailLabel' => __('eleves.transfer_travail_label'),
+            'transferTravailTresBon' => __('eleves.transfer_travail_tres_bon'),
+            'transferTravailBon' => __('eleves.transfer_travail_bon'),
+            'transferTravailMoyen' => __('eleves.transfer_travail_moyen'),
+            'transferTravailInsuffisant' => __('eleves.transfer_travail_insuffisant'),
+            'transferConduiteLabel' => __('eleves.transfer_conduite_label'),
+            'transferConduiteExcellente' => __('eleves.transfer_conduite_excellente'),
+            'transferConduiteBonne' => __('eleves.transfer_conduite_bonne'),
+            'transferConduitePassable' => __('eleves.transfer_conduite_passable'),
+            'transferConduiteSurveiller' => __('eleves.transfer_conduite_surveiller'),
+            'transferSave' => __('eleves.transfer_save'),
+            'transferValidation' => __('eleves.transfer_validation'),
+        ];
     @endphp
 
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-        <div class="breadcrumb-title pe-3">Élèves</div>
+        <div class="breadcrumb-title pe-3">{{ __('eleves.title') }}</div>
         <div class="ps-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0 p-0">
                     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bi bi-house-door"></i></a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Liste des élèves inscrits</li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ __('eleves.list_title') }}</li>
                 </ol>
             </nav>
         </div>
@@ -34,16 +63,16 @@
     <div class="col-12">
         <div class="card theme-card shadow-sm">
             <div class="card-header">
-                <h5 class="mb-0 fw-bold">Liste des élèves inscrits</h5>
+                <h5 class="mb-0 fw-bold">{{ __('eleves.list_title') }}</h5>
             </div>
             <div class="card-body p-4">
-                <p class="mb-2 fw-bold text-muted">Filtré par</p>
+                <p class="mb-2 fw-bold text-muted">{{ __('eleves.filtered_by') }}</p>
                 <form action="{{ route('eleves.index') }}" method="POST" class="row g-3" data-auto-filter="true">
                     @csrf
                     <div class="col-md-4">
-                        <label class="form-label" for="id_classe">Classe</label>
+                        <label class="form-label" for="id_classe">{{ __('eleves.th_classe') }}</label>
                         <select class="form-select" id="id_classe" name="id_classe">
-                            <option value="">Toutes les classes</option>
+                            <option value="">{{ __('eleves.all_classes') }}</option>
                             @foreach($classes as $classe)
                                 <option value="{{ $classe->id_classe }}" {{ request('id_classe') == $classe->id_classe ? 'selected' : '' }}>
                                     {{ $classe->nom_classe }}
@@ -53,9 +82,9 @@
                     </div>
 
                     <div class="col-md-4">
-                        <label class="form-label" for="id_annee">Année Scolaire</label>
+                        <label class="form-label" for="id_annee">{{ __('eleves.th_annee') }}</label>
                         <select class="form-select" id="id_annee" name="id_annee">
-                            <option value="">Toutes les années</option>
+                            <option value="">{{ __('eleves.all_annees') }}</option>
                             @foreach($annees as $annee)
                                 <option value="{{ $annee->id_anneeScolaire }}" {{ request('id_annee') == $annee->id_anneeScolaire ? 'selected' : '' }}>
                                     {{ $annee->annee }}
@@ -65,10 +94,10 @@
                     </div>
 
                     <div class="col-md-4">
-                        <label class="form-label" for="search_eleve">Recherche</label>
+                        <label class="form-label" for="search_eleve">{{ __('eleves.search') }}</label>
                         <div class="input-group">
-                            <input type="text" name="search" id="search_eleve" placeholder="Tapez nom, prénom ou matricule..." class="form-control" value="{{ request('search') }}">
-                            <button type="submit" class="btn btn-primary">Rechercher</button>
+                            <input type="text" name="search" id="search_eleve" placeholder="{{ __('eleves.search_placeholder') }}" class="form-control" value="{{ request('search') }}">
+                            <button type="submit" class="btn btn-primary">{{ __('eleves.search_button') }}</button>
                         </div>
                     </div>
                 </form>
@@ -87,11 +116,11 @@
                     <input type="hidden" name="search" value="{{ request('search') }}">
                     <input type="hidden" name="selected_eleves" id="selected-eleves-input">
                     <button type="submit" class="btn btn-primary w-100" id="print-eleves-list">
-                        <i class="bi bi-printer me-2"></i> Imprimer la liste filtrée
+                        <i class="bi bi-printer me-2"></i> {{ __('eleves.print_filtered') }}
                     </button>
                 </form>
                 <div class="small text-muted mt-1" id="print-selection-help">
-                    Cochez des élèves pour imprimer uniquement la sélection.
+                    {{ __('eleves.print_help_default') }}
                 </div>
             @endif
         </div>
@@ -104,11 +133,11 @@
                     <input type="hidden" name="search" value="{{ request('search') }}">
                     <input type="hidden" name="selected_eleves" id="selected-eleves-excel-input">
                     <button type="submit" class="btn btn-success w-100" id="export-eleves-list">
-                        <i class="bi bi-file-earmark-excel me-2"></i> Exporter la liste filtrée
+                        <i class="bi bi-file-earmark-excel me-2"></i> {{ __('eleves.export_filtered') }}
                     </button>
                 </form>
                 <div class="small text-muted mt-1" id="export-selection-help">
-                    Cochez des élèves pour exporter uniquement la sélection.
+                    {{ __('eleves.export_help_default') }}
                 </div>
             @endif
         </div>
@@ -120,10 +149,10 @@
             <div class="d-flex align-items-center mb-3">
                 <div class="ms-auto">
                     <a href="{{ route('inscriptions.create') }}" class="btn px-4 theme-pill-active">
-                        <i class="bi bi-plus-lg me-2"></i>Ajouter
+                        <i class="bi bi-plus-lg me-2"></i>{{ __('eleves.add') }}
                     </a>
                     <a href="{{ route('inscriptions.group.create') }}" class="btn btn-primary px-4 ms-2">
-                        <i class="bi bi-people me-2"></i>Groupe
+                        <i class="bi bi-people me-2"></i>{{ __('eleves.add_group') }}
                     </a>
                 </div>
             </div>
@@ -133,13 +162,13 @@
                 <ul class="nav nav-pills" role="tablist">
                     <li class="nav-item">
                         <button class="nav-link active px-4 py-2 theme-pill-active">
-                            <i class="bi bi-list-task me-2"></i>Liste Inscription
+                            <i class="bi bi-list-task me-2"></i>{{ __('eleves.nav_list') }}
                         </button>
                     </li>
                 </ul>
 
                 <div class="text-muted small">
-                    {{ number_format($eleves->count(), 0, ',', ' ') }} élève(s)
+                    {{ __('eleves.count_students', ['count' => number_format($eleves->count(), 0, ',', ' ')]) }}
                 </div>
             </div>
 
@@ -154,19 +183,19 @@
                         <thead>
                             <tr>
                                 <th class="text-center"><input type="checkbox" id="check_all"></th>
-                                <th>N°</th>
-                                <th>Prénom & Nom</th>
-                                <th>Matricule</th>
-                                <th>Classe</th>
-                                <th>Année</th>
-                                <th>Genre</th>
-                                <th>Date naissance</th>
-                                <th>Lieu naissance</th>
-                                <th>Adresse</th>
-                                <th>Cas social</th>
-                                <th>Date inscription</th>
-                                <th>Photo</th>
-                                <th class="text-center">Action</th>
+                                <th>{{ __('eleves.th_num') }}</th>
+                                <th>{{ __('eleves.th_name') }}</th>
+                                <th>{{ __('eleves.th_matricule') }}</th>
+                                <th>{{ __('eleves.th_classe') }}</th>
+                                <th>{{ __('eleves.th_annee') }}</th>
+                                <th>{{ __('eleves.th_genre') }}</th>
+                                <th>{{ __('eleves.th_date_naissance') }}</th>
+                                <th>{{ __('eleves.th_lieu_naissance') }}</th>
+                                <th>{{ __('eleves.th_adresse') }}</th>
+                                <th>{{ __('eleves.th_cas_social') }}</th>
+                                <th>{{ __('eleves.th_date_inscription') }}</th>
+                                <th>{{ __('eleves.th_photo') }}</th>
+                                <th class="text-center">{{ __('eleves.th_action') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -178,20 +207,20 @@
                                         <h6 class="mb-0 fw-bold">{{ $eleve->prenom_eleve }} {{ $eleve->nom_eleve }}</h6>
                                     </td>
                                     <td><span class="badge bg-light text-dark font-monospace">{{ $eleve->matricule }}</span></td>
-                                    <td>{{ $eleve->classe?->nom_classe ?? 'Non renseignée' }}</td>
-                                    <td>{{ $annees->firstWhere('id_anneeScolaire', $eleve->id_annee)?->annee ?? 'Non renseignée' }}</td>
+                                    <td>{{ $eleve->classe?->nom_classe ?? __('eleves.not_specified') }}</td>
+                                    <td>{{ $annees->firstWhere('id_anneeScolaire', $eleve->id_annee)?->annee ?? __('eleves.not_specified') }}</td>
                                     <td>
                                         @if($eleve->genre_eleve == 'Masculin')
-                                            <span class="text-primary"><i class="bi bi-gender-male me-1"></i> Masculin</span>
+                                            <span class="text-primary"><i class="bi bi-gender-male me-1"></i> {{ __('eleves.genre_masculin') }}</span>
                                         @else
-                                            <span class="text-pink"><i class="bi bi-gender-female me-1"></i> Féminin</span>
+                                            <span class="text-pink"><i class="bi bi-gender-female me-1"></i> {{ __('eleves.genre_feminin') }}</span>
                                         @endif
                                     </td>
-                                    <td>{{ $eleve->date_naissance ? \Carbon\Carbon::parse($eleve->date_naissance)->format('d/m/Y') : 'Non renseignée' }}</td>
-                                    <td>{{ $eleve->lieu_naiss ?: 'Non renseigné' }}</td>
-                                    <td>{{ $eleve->adresse_eleve ?: 'Non renseignée' }}</td>
-                                    <td>{{ $eleve->cas_social ?: 'normal' }}</td>
-                                    <td>{{ $eleve->date_inscription ? \Carbon\Carbon::parse($eleve->date_inscription)->format('d/m/Y') : 'Non renseignée' }}</td>
+                                    <td>{{ $eleve->date_naissance ? \Carbon\Carbon::parse($eleve->date_naissance)->format('d/m/Y') : __('eleves.not_specified') }}</td>
+                                    <td>{{ $eleve->lieu_naiss ?: __('eleves.not_specified_m') }}</td>
+                                    <td>{{ $eleve->adresse_eleve ?: __('eleves.not_specified') }}</td>
+                                    <td>{{ $eleve->cas_social ?: __('eleves.social_normal') }}</td>
+                                    <td>{{ $eleve->date_inscription ? \Carbon\Carbon::parse($eleve->date_inscription)->format('d/m/Y') : __('eleves.not_specified') }}</td>
                                     <td class="text-center">
                                         <div class="avatar-sm bg-light rounded-circle mx-auto d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">
                                             @if($eleve->image)
@@ -210,7 +239,7 @@
                                                 @if($canEditEleve)
                                                     <li>
                                                         <a href="{{ route('eleves.edit', $eleve->id_eleve) }}" class="dropdown-item">
-                                                            <i class="bi bi-pencil text-warning me-2"></i>Modifier
+                                                            <i class="bi bi-pencil text-warning me-2"></i>{{ __('eleves.action_edit') }}
                                                         </a>
                                                     </li>
                                                 @endif
@@ -219,7 +248,7 @@
                                                         <form action="{{ route('eleves.transfer', $eleve->id_eleve) }}" method="POST" data-transfer-form>
                                                             @csrf
                                                             <button type="submit" class="dropdown-item">
-                                                                <i class="bi bi-arrow-left-right text-success me-2"></i>Transférer
+                                                                <i class="bi bi-arrow-left-right text-success me-2"></i>{{ __('eleves.action_transfer') }}
                                                             </button>
                                                         </form>
                                                     </li>
@@ -227,11 +256,11 @@
                                                 @if($canDeleteEleve)
                                                     <li><hr class="dropdown-divider"></li>
                                                     <li>
-                                                        <form action="{{ route('eleves.destroy', $eleve->id_eleve) }}" method="POST" data-confirm-delete data-confirm-title="Retirer cet élève ?" data-confirm-text="L’élève ne sera plus visible dans les listes actives, mais son historique restera conservé.">
+                                                        <form action="{{ route('eleves.destroy', $eleve->id_eleve) }}" method="POST" data-confirm-delete data-confirm-title="{{ __('eleves.confirm_remove_title') }}" data-confirm-text="{{ __('eleves.confirm_remove_text') }}">
                                                             @csrf
                                                             @method('DELETE')
                                                             <button type="submit" class="dropdown-item text-danger">
-                                                                <i class="bi bi-trash me-2"></i>Retirer de la liste active
+                                                                <i class="bi bi-trash me-2"></i>{{ __('eleves.action_remove') }}
                                                             </button>
                                                         </form>
                                                     </li>
@@ -242,7 +271,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="14" class="text-center py-4 text-muted">Aucun élève trouvé.</td>
+                                    <td colspan="14" class="text-center py-4 text-muted">{{ __('eleves.empty') }}</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -254,9 +283,9 @@
                     <div class="empty-eleves-icon mx-auto mb-3 d-flex align-items-center justify-content-center">
                         <i class="bi bi-funnel fs-1"></i>
                     </div>
-                    <h5 class="fw-bold mb-2">Aucune liste affichée pour le moment</h5>
+                    <h5 class="fw-bold mb-2">{{ __('eleves.empty_state_title') }}</h5>
                     <p class="text-muted mb-0">
-                        Sélectionnez une classe et une année scolaire dans les filtres, puis validez la recherche pour afficher les élèves inscrits.
+                        {{ __('eleves.empty_state_text') }}
                     </p>
                 </div>
             @endif
@@ -280,6 +309,7 @@
     </style>
 
     <script>
+        const elevesI18n = @json($elevesIndexI18n);
         const checkAll = document.getElementById('check_all');
         const selectedInput = document.getElementById('selected-eleves-input');
         const selectedExcelInput = document.getElementById('selected-eleves-excel-input');
@@ -300,23 +330,23 @@
             }
             if (printButton) {
                 printButton.innerHTML = ids.length > 0
-                    ? `<i class="bi bi-printer me-2"></i> Imprimer ${ids.length} élève(s) coché(s)`
-                    : `<i class="bi bi-printer me-2"></i> Imprimer la liste filtrée`;
+                    ? `<i class="bi bi-printer me-2"></i> ${elevesI18n.printSelected.replace(':count', ids.length)}`
+                    : `<i class="bi bi-printer me-2"></i> ${elevesI18n.printFiltered}`;
             }
             if (exportButton) {
                 exportButton.innerHTML = ids.length > 0
-                    ? `<i class="bi bi-file-earmark-excel me-2"></i> Exporter ${ids.length} élève(s) coché(s)`
-                    : `<i class="bi bi-file-earmark-excel me-2"></i> Exporter la liste filtrée`;
+                    ? `<i class="bi bi-file-earmark-excel me-2"></i> ${elevesI18n.exportSelected.replace(':count', ids.length)}`
+                    : `<i class="bi bi-file-earmark-excel me-2"></i> ${elevesI18n.exportFiltered}`;
             }
             if (printHelp) {
                 printHelp.textContent = ids.length > 0
-                    ? 'Seuls les élèves cochés seront envoyés dans le PDF.'
-                    : 'Cochez des élèves pour imprimer uniquement la sélection.';
+                    ? elevesI18n.printHelpSelected
+                    : elevesI18n.printHelpDefault;
             }
             if (exportHelp) {
                 exportHelp.textContent = ids.length > 0
-                    ? 'Seuls les élèves cochés seront envoyés dans le fichier Excel.'
-                    : 'Cochez des élèves pour exporter uniquement la sélection.';
+                    ? elevesI18n.exportHelpSelected
+                    : elevesI18n.exportHelpDefault;
             }
             if (checkAll) {
                 const boxes = document.querySelectorAll('.check_eleve');
@@ -342,20 +372,20 @@
             form.addEventListener('submit', (event) => {
                 event.preventDefault();
                 if (!window.Swal) {
-                    if (confirm(form.dataset.confirmText || 'Confirmer la suppression ?')) {
+                    if (confirm(form.dataset.confirmText || elevesI18n.swalConfirmDefault)) {
                         form.submit();
                     }
                     return;
                 }
                 Swal.fire({
-                    title: form.dataset.confirmTitle || 'Confirmer la suppression ?',
-                    text: form.dataset.confirmText || 'Cette action est définitive.',
+                    title: form.dataset.confirmTitle || elevesI18n.swalConfirmDefault,
+                    text: form.dataset.confirmText || elevesI18n.swalConfirmDefinitive,
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#dc3545',
                     cancelButtonColor: '#6c757d',
-                    confirmButtonText: 'Oui, continuer',
-                    cancelButtonText: 'Annuler'
+                    confirmButtonText: elevesI18n.swalYesContinue,
+                    cancelButtonText: elevesI18n.cancel
                 }).then((result) => {
                     if (result.isConfirmed) {
                         form.submit();
@@ -373,36 +403,36 @@
                 }
 
                 Swal.fire({
-                    title: 'Transférer cet élève',
+                    title: elevesI18n.transferTitle,
                     html: `
-                        <input id="swal-destination" class="swal2-input" placeholder="Nouvelle école / destination">
-                        <input id="swal-motif" class="swal2-input" placeholder="Motif du transfert">
+                        <input id="swal-destination" class="swal2-input" placeholder="${elevesI18n.transferDestinationPlaceholder}">
+                        <input id="swal-motif" class="swal2-input" placeholder="${elevesI18n.transferMotifPlaceholder}">
                         <select id="swal-travail" class="swal2-input">
-                            <option value="">Travail scolaire</option>
-                            <option value="Très bon">Très bon</option>
-                            <option value="Bon">Bon</option>
-                            <option value="Moyen">Moyen</option>
-                            <option value="Insuffisant">Insuffisant</option>
+                            <option value="">${elevesI18n.transferTravailLabel}</option>
+                            <option value="Très bon">${elevesI18n.transferTravailTresBon}</option>
+                            <option value="Bon">${elevesI18n.transferTravailBon}</option>
+                            <option value="Moyen">${elevesI18n.transferTravailMoyen}</option>
+                            <option value="Insuffisant">${elevesI18n.transferTravailInsuffisant}</option>
                         </select>
                         <select id="swal-conduite" class="swal2-input">
-                            <option value="">Conduite</option>
-                            <option value="Excellente">Excellente</option>
-                            <option value="Bonne">Bonne</option>
-                            <option value="Passable">Passable</option>
-                            <option value="À surveiller">À surveiller</option>
+                            <option value="">${elevesI18n.transferConduiteLabel}</option>
+                            <option value="Excellente">${elevesI18n.transferConduiteExcellente}</option>
+                            <option value="Bonne">${elevesI18n.transferConduiteBonne}</option>
+                            <option value="Passable">${elevesI18n.transferConduitePassable}</option>
+                            <option value="À surveiller">${elevesI18n.transferConduiteSurveiller}</option>
                         </select>
                     `,
                     focusConfirm: false,
                     showCancelButton: true,
-                    confirmButtonText: 'Enregistrer le transfert',
-                    cancelButtonText: 'Annuler',
+                    confirmButtonText: elevesI18n.transferSave,
+                    cancelButtonText: elevesI18n.cancel,
                     preConfirm: () => {
                         const destination = document.getElementById('swal-destination').value.trim();
                         const motif = document.getElementById('swal-motif').value.trim();
                         const travail = document.getElementById('swal-travail').value;
                         const conduite = document.getElementById('swal-conduite').value;
                         if (!destination || !motif || !conduite) {
-                            Swal.showValidationMessage('Destination, motif et conduite sont obligatoires.');
+                            Swal.showValidationMessage(elevesI18n.transferValidation);
                             return false;
                         }
                         return { destination, motif, travail, conduite };

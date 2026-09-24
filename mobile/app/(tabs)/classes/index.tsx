@@ -4,6 +4,7 @@ import { ActivityIndicator, Button, FAB, Text } from 'react-native-paper';
 
 import OfflineBanner from '@/components/OfflineBanner';
 import { useAuth } from '@/context/AuthContext';
+import { useLocale } from '@/context/LocaleContext';
 import { useOffline } from '@/context/OfflineContext';
 import { removeQueueItem } from '@/lib/offlineQueue';
 import { hasPermission } from '@/lib/permissions';
@@ -12,6 +13,7 @@ import { Classe } from '@/types/api';
 
 export default function ClassesScreen() {
   const { user } = useAuth();
+  const { t } = useLocale();
   const { queue } = useOffline();
   const { data, isLoading, error, reload } = useApiGet<{ data: Classe[] }>('/classes', [], { cacheKey: 'classes' });
   const canManage = hasPermission(user, 'classes_creation');
@@ -36,11 +38,11 @@ export default function ClassesScreen() {
                   <View key={item.id} style={[styles.row, item.status === 'conflict' ? styles.conflictRow : styles.queuedRow]}>
                     <Text style={styles.name}>{item.label}</Text>
                     <Text style={item.status === 'conflict' ? styles.conflictText : styles.queuedText}>
-                      {item.status === 'conflict' ? (item.message ?? 'Conflit à vérifier') : 'En attente de synchronisation'}
+                      {item.status === 'conflict' ? (item.message ?? t('classes.conflict_default')) : t('classes.queued_message')}
                     </Text>
                     {item.status === 'conflict' ? (
                       <Button compact textColor="#d33" onPress={() => removeQueueItem(item.id)}>
-                        Abandonner
+                        {t('classes.abandon')}
                       </Button>
                     ) : null}
                   </View>
@@ -49,13 +51,13 @@ export default function ClassesScreen() {
             ) : undefined
           }
           ListEmptyComponent={
-            error ? <Text style={styles.error}>{error}</Text> : <Text style={styles.empty}>Aucune classe.</Text>
+            error ? <Text style={styles.error}>{error}</Text> : <Text style={styles.empty}>{t('classes.empty')}</Text>
           }
           renderItem={({ item }) => (
             <Pressable style={styles.row} onPress={() => router.push(`/classes/${item.id_classe}`)}>
               <Text style={styles.name}>{item.nom_classe}</Text>
               <Text style={styles.meta}>
-                {item.ordreEnseignement} · {item.eleves_count ?? 0} élève(s)
+                {item.ordreEnseignement} · {item.eleves_count ?? 0} {t('classes.students_suffix')}
               </Text>
             </Pressable>
           )}

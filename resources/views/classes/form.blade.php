@@ -61,16 +61,22 @@
             'id' => $enseignant->id_enseignant,
             'nom' => $enseignant->nom_prenom_enseignant,
         ])->values();
+        $classeFormI18n = [
+            'none' => __('classes.none'),
+            'remove' => __('classes.remove'),
+            'matieresShownFor' => __('classes.matieres_shown_for'),
+            'chooseOrdreHelp' => __('classes.choose_ordre_help'),
+        ];
     @endphp
 
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-        <div class="breadcrumb-title pe-3">Classes</div>
+        <div class="breadcrumb-title pe-3">{{ __('classes.title') }}</div>
         <div class="ps-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0 p-0">
                     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bi bi-house-door"></i></a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('classes.index') }}">Liste des classes</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">{{ $isEdit ? 'Modification' : 'Enregistrement' }}</li>
+                    <li class="breadcrumb-item"><a href="{{ route('classes.index') }}">{{ __('classes.breadcrumb_list') }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ $isEdit ? __('classes.modification') : __('classes.enregistrement') }}</li>
                 </ol>
             </nav>
         </div>
@@ -94,37 +100,37 @@
 
         <div class="card border-top border-4 border-primary shadow-sm mb-4">
             <div class="card-header">
-                <h5 class="mb-0 fw-bold">{{ $isEdit ? 'Modifier la classe' : 'Nouvelle classe' }}</h5>
+                <h5 class="mb-0 fw-bold">{{ $isEdit ? __('classes.edit_title') : __('classes.new_title') }}</h5>
             </div>
             <div class="card-body">
                 <div class="row g-3">
                     @if($estSante)
                         <div class="col-md-6">
-                            <label class="form-label" for="id_filiere">Filière <span class="text-danger">*</span></label>
+                            <label class="form-label" for="id_filiere">{{ __('classes.filiere_label') }} <span class="text-danger">*</span></label>
                             <select class="form-select" id="id_filiere" name="id_filiere" required>
-                                <option value="">Choisir...</option>
+                                <option value="">{{ __('classes.choose') }}</option>
                                 @foreach($filieres as $filiere)
                                     <option value="{{ $filiere->id_filiere }}" @selected((string) old('id_filiere', $classe->id_filiere) === (string) $filiere->id_filiere)>{{ $filiere->nom_filiere }}</option>
                                 @endforeach
                             </select>
                             @if($filieres->isEmpty())
-                                <small class="text-danger d-block mt-1">Aucune filière créée. <a href="{{ route('configuration.filieres') }}">En créer une</a>.</small>
+                                <small class="text-danger d-block mt-1">{{ __('classes.no_filiere_created') }} <a href="{{ route('configuration.filieres') }}">{{ __('classes.create_one_link') }}</a>.</small>
                             @endif
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label" for="nom_classe">Nom de la classe <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="nom_classe" name="nom_classe" value="{{ old('nom_classe', $classe->nom_classe) }}" placeholder="Proposé automatiquement (ex: Infirmier 1ère année A)" required>
-                            <small class="text-muted d-block mt-1">Proposé à partir de la filière — modifiable.</small>
+                            <label class="form-label" for="nom_classe">{{ __('classes.th_nom') }} <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="nom_classe" name="nom_classe" value="{{ old('nom_classe', $classe->nom_classe) }}" placeholder="{{ __('classes.name_placeholder_sante') }}" required>
+                            <small class="text-muted d-block mt-1">{{ __('classes.name_suggested_help') }}</small>
                         </div>
                     @else
                         <div class="col-md-6">
-                            <label class="form-label" for="nom_classe">Nom de la classe <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="nom_classe" name="nom_classe" value="{{ old('nom_classe', $classe->nom_classe) }}" placeholder="Ex: 7eme année A" required>
+                            <label class="form-label" for="nom_classe">{{ __('classes.th_nom') }} <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="nom_classe" name="nom_classe" value="{{ old('nom_classe', $classe->nom_classe) }}" placeholder="{{ __('classes.name_placeholder') }}" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label" for="ordre_enseignement">Ordre d'enseignement <span class="text-danger">*</span></label>
+                            <label class="form-label" for="ordre_enseignement">{{ __('classes.ordre_label') }} <span class="text-danger">*</span></label>
                             <select class="form-select" id="ordre_enseignement" name="ordre_enseignement" required>
-                                <option value="">Choisir...</option>
+                                <option value="">{{ __('classes.choose') }}</option>
                                 @foreach($ordres as $value => $label)
                                     <option value="{{ $value }}" @selected(old('ordre_enseignement', $classe->ordreEnseignement) === $value)>{{ $label }}</option>
                                 @endforeach
@@ -137,15 +143,15 @@
 
         <div class="card border-top border-4 border-primary shadow-sm">
             <div class="card-header">
-                <h5 class="mb-0 fw-bold">Matières associées</h5>
+                <h5 class="mb-0 fw-bold">{{ __('classes.matieres_associees') }}</h5>
             </div>
             <div class="card-body">
                 <div class="alert alert-info border-0 border-start border-info border-4 py-2" id="matiere-order-help">
-                    {{ $estSante ? 'Toutes les matières disponibles sont proposées.' : 'Choisissez l’ordre d’enseignement pour afficher automatiquement les matières correspondantes.' }}
+                    {{ $estSante ? __('classes.matieres_help_sante') : __('classes.choose_ordre_help') }}
                 </div>
                 <div class="d-flex justify-content-center mb-3">
                     <button type="button" class="btn btn-primary px-4" data-bs-toggle="modal" data-bs-target="#matieresModal">
-                        <i class="bi bi-plus-circle me-2"></i>Ajouter une matière
+                        <i class="bi bi-plus-circle me-2"></i>{{ __('classes.add_matiere') }}
                     </button>
                 </div>
 
@@ -153,10 +159,10 @@
                     <table class="table table-bordered table-striped table-hover align-middle mb-0">
                         <thead>
                             <tr>
-                                <th>Matière</th>
-                                <th>Enseignant</th>
-                                <th style="width: 140px;">Coefficient</th>
-                                <th class="text-center" style="width: 90px;">Action</th>
+                                <th>{{ __('classes.th_matiere') }}</th>
+                                <th>{{ __('classes.th_enseignant') }}</th>
+                                <th style="width: 140px;">{{ __('classes.th_coefficient') }}</th>
+                                <th class="text-center" style="width: 90px;">{{ __('classes.th_action') }}</th>
                             </tr>
                         </thead>
                         <tbody id="table-matieres">
@@ -168,7 +174,7 @@
                                     </td>
                                     <td>
                                         <select class="form-select" name="id_enseignants[]">
-                                            <option value="">Aucun</option>
+                                            <option value="">{{ __('classes.none') }}</option>
                                             @foreach($enseignants as $enseignant)
                                                 <option value="{{ $enseignant->id_enseignant }}" @selected((string) $row['id_enseignants'] === (string) $enseignant->id_enseignant)>
                                                     {{ $enseignant->nom_prenom_enseignant }}
@@ -180,7 +186,7 @@
                                         <input type="number" name="coefficient[]" class="form-control" min="0" max="5" step="0.01" value="{{ $row['coefficient'] }}" required>
                                     </td>
                                     <td class="text-center">
-                                        <button type="button" class="btn btn-light btn-sm remove-row" title="Supprimer">
+                                        <button type="button" class="btn btn-light btn-sm remove-row" title="{{ __('classes.remove') }}">
                                             <i class="bi bi-trash text-danger"></i>
                                         </button>
                                     </td>
@@ -191,8 +197,8 @@
                 </div>
 
                 <div class="d-flex justify-content-between align-items-center mt-4">
-                    <a href="{{ route('classes.index') }}" class="btn btn-light px-4">Retour</a>
-                    <button type="submit" class="btn btn-primary px-4">{{ $isEdit ? 'Modifier' : 'Enregistrer' }}</button>
+                    <a href="{{ route('classes.index') }}" class="btn btn-light px-4">{{ __('classes.back') }}</a>
+                    <button type="submit" class="btn btn-primary px-4">{{ $isEdit ? __('classes.action_edit') : __('classes.save') }}</button>
                 </div>
             </div>
         </div>
@@ -204,17 +210,17 @@
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header text-white" style="background-color: var(--theme-accent) !important;">
                     <h5 class="modal-title fw-bold" id="matieresModalLabel">
-                        <i class="bi bi-journal-plus me-2"></i>Choisir les matières
+                        <i class="bi bi-journal-plus me-2"></i>{{ __('classes.choose_matieres_title') }}
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4">
                     <div class="mb-3">
-                        <input type="text" class="form-control form-control-lg" id="matiere_search" placeholder="Rechercher une matière...">
+                        <input type="text" class="form-control form-control-lg" id="matiere_search" placeholder="{{ __('classes.search_matiere') }}">
                     </div>
                     <label class="matiere-check-card d-flex align-items-center gap-3 border rounded-3 p-3 mb-3" for="matiere_select_all">
                         <input type="checkbox" class="form-check-input matiere-checkbox-lg flex-shrink-0" id="matiere_select_all">
-                        <span class="fw-bold">Tout sélectionner</span>
+                        <span class="fw-bold">{{ __('classes.select_all') }}</span>
                     </label>
                     <div id="matiere_checkbox_list" class="row row-cols-1 row-cols-md-2 g-3" style="max-height: 420px; overflow-y: auto;">
                         @foreach($matieres as $matiere)
@@ -226,12 +232,12 @@
                             </div>
                         @endforeach
                     </div>
-                    <p class="text-muted small mb-0 mt-3" id="matiere_empty_msg" style="display:none;">Aucune matière disponible.</p>
+                    <p class="text-muted small mb-0 mt-3" id="matiere_empty_msg" style="display:none;">{{ __('classes.no_matiere_available') }}</p>
                 </div>
                 <div class="modal-footer bg-light px-4 py-3">
-                    <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">{{ __('classes.cancel') }}</button>
                     <button type="button" class="btn text-white px-4 fw-semibold" id="matiere_add_selection" style="background-color: var(--theme-accent) !important;">
-                        <i class="bi bi-check2-circle me-1"></i>Ajouter la sélection
+                        <i class="bi bi-check2-circle me-1"></i>{{ __('classes.add_selection') }}
                     </button>
                 </div>
             </div>
@@ -245,6 +251,7 @@
             const ordreMatiereMap = @json($ordreMatiereMap);
             const matieres = @json($matieresJson);
             const enseignants = @json($enseignantsJson);
+            const i18n = @json($classeFormI18n);
             const tbody = document.getElementById('table-matieres');
             const nomClasse = document.getElementById('nom_classe');
             const ordreSelect = document.getElementById('ordre_enseignement');
@@ -259,7 +266,7 @@
             const matiereEmptyMsg = document.getElementById('matiere_empty_msg');
 
             function enseignantOptions() {
-                return '<option value="">Aucun</option>' + enseignants.map(function (enseignant) {
+                return '<option value="">' + i18n.none + '</option>' + enseignants.map(function (enseignant) {
                     return '<option value="' + enseignant.id + '">' + escapeHtml(enseignant.nom) + '</option>';
                 }).join('');
             }
@@ -281,7 +288,7 @@
                     '<td><span class="fw-bold">' + escapeHtml(matiere.nom) + '</span><input type="hidden" name="id_matiere[]" value="' + matiere.id + '"></td>' +
                     '<td><select class="form-select" name="id_enseignants[]">' + enseignantOptions() + '</select></td>' +
                     '<td><input type="number" name="coefficient[]" class="form-control" min="0" max="5" step="0.01" value="1" required></td>' +
-                    '<td class="text-center"><button type="button" class="btn btn-light btn-sm remove-row" title="Supprimer"><i class="bi bi-trash text-danger"></i></button></td>' +
+                    '<td class="text-center"><button type="button" class="btn btn-light btn-sm remove-row" title="' + i18n.remove + '"><i class="bi bi-trash text-danger"></i></button></td>' +
                     '</tr>'
                 );
             }
@@ -339,8 +346,8 @@
                 filterMatiereCheckboxes();
 
                 help.textContent = expectedOrder
-                    ? 'Matières affichées pour : ' + expectedOrder
-                    : 'Choisissez l’ordre d’enseignement pour afficher automatiquement les matières correspondantes.';
+                    ? i18n.matieresShownFor.replace(':ordre', expectedOrder)
+                    : i18n.chooseOrdreHelp;
             }
 
             if (ordreSelect) {

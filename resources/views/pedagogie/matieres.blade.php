@@ -6,12 +6,12 @@
         $canDeleteMatiere = auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('matieres_supprimer');
     @endphp
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-        <div class="breadcrumb-title pe-3">Matières</div>
+        <div class="breadcrumb-title pe-3">{{ __('matieres.title') }}</div>
         <div class="ps-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0 p-0">
                     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bi bi-house-door"></i></a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Listes des matières</li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ __('matieres.breadcrumb_active') }}</li>
                 </ol>
             </nav>
         </div>
@@ -20,7 +20,7 @@
     @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('matieres_creation'))
     <div class="mb-3 d-flex justify-content-end">
         <a href="#" class="btn px-4 theme-pill-active" data-bs-toggle="modal" data-bs-target="#addNewCCModal">
-            <i class="bi bi-plus-lg me-2"></i>Matière
+            <i class="bi bi-plus-lg me-2"></i>{{ __('matieres.add') }}
         </a>
     </div>
     @endif
@@ -42,9 +42,9 @@
                 <table class="table table-striped table-bordered align-middle" style="width:100%">
                     <thead>
                         <tr>
-                            <th>Matière</th>
-                            <th>Ordre(s) d'enseignement</th>
-                            <th class="text-center dt-no-sorting">Action</th>
+                            <th>{{ __('matieres.th_matiere') }}</th>
+                            <th>{{ __('matieres.th_ordres') }}</th>
+                            <th class="text-center dt-no-sorting">{{ __('matieres.th_action') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -62,7 +62,7 @@
                                                 @if($canEditMatiere)
                                                     <li>
                                                         <a class="dropdown-item py-2 edit-matiere" href="#" data-bs-toggle="modal" data-bs-target="#modalCenter" data-id="{{ $matiere->id_matiere }}" data-nom="{{ $matiere->nom_matiere }}" data-ordres='@json($matiere->ordres->pluck('ordre_enseignement')->values())'>
-                                                            <i class="bi bi-pencil text-warning me-2"></i>Modifier
+                                                            <i class="bi bi-pencil text-warning me-2"></i>{{ __('matieres.edit') }}
                                                         </a>
                                                     </li>
                                                 @endif
@@ -71,11 +71,11 @@
                                                 @endif
                                                 @if($canDeleteMatiere)
                                                     <li>
-                                                        <form action="{{ route('pedagogie.matieres.destroy', $matiere->id_matiere) }}" method="POST" onsubmit="return confirm('Supprimer cette matière ?');">
+                                                        <form action="{{ route('pedagogie.matieres.destroy', $matiere->id_matiere) }}" method="POST" onsubmit="return confirm('{{ __('matieres.confirm_delete') }}');">
                                                             @csrf
                                                             @method('DELETE')
                                                             <button type="submit" class="dropdown-item py-2 text-danger">
-                                                                <i class="bi bi-trash me-2"></i>Supprimer
+                                                                <i class="bi bi-trash me-2"></i>{{ __('matieres.delete') }}
                                                             </button>
                                                         </form>
                                                     </li>
@@ -89,13 +89,13 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="3" class="text-center py-4 text-muted">Aucune matière n'a encore été créée.</td>
+                                <td colspan="3" class="text-center py-4 text-muted">{{ __('matieres.empty') }}</td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
-            
+
             @if($matieres->hasPages())
                 <div class="mt-4">
                     {{ $matieres->links() }}
@@ -108,18 +108,18 @@
         <div class="modal-dialog">
             <div class="modal-content card theme-card">
                 <div class="modal-header">
-                    <h5 class="modal-title">Enregistrement de matière</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                    <h5 class="modal-title">{{ __('matieres.create_title') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('matieres.close') }}"></button>
                 </div>
                 <form method="POST" action="{{ route('pedagogie.matieres.store') }}">
                     @csrf
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label class="form-label">Nom de la matière <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="nom_matiere" placeholder="Nom de la matière" required>
+                            <label class="form-label">{{ __('matieres.name') }} <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="nom_matiere" placeholder="{{ __('matieres.name') }}" required>
                         </div>
                         <div class="mb-2">
-                            <label class="form-label">Ordre(s) d'enseignement <span class="text-danger">*</span></label>
+                            <label class="form-label">{{ __('matieres.th_ordres') }} <span class="text-danger">*</span></label>
                             <div class="d-flex flex-wrap gap-3">
                                 @foreach($allOrdres as $value => $label)
                                     <div class="form-check">
@@ -131,8 +131,8 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn btn-primary">Envoyer</button>
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">{{ __('matieres.cancel') }}</button>
+                        <button type="submit" class="btn btn-primary">{{ __('matieres.send') }}</button>
                     </div>
                 </form>
             </div>
@@ -143,19 +143,19 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content card theme-card">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="modalCenterTitle">Modifier matière</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                    <h5 class="modal-title" id="modalCenterTitle">{{ __('matieres.edit_title') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('matieres.close') }}"></button>
                 </div>
                 <form method="POST" action="" id="edit-matiere-form">
                     @csrf
                     @method('PUT')
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label class="form-label">Nom matière</label>
-                            <input type="text" id="edit_nom_matiere" class="form-control" name="nom_matiere" placeholder="Nom de la matière" required>
+                            <label class="form-label">{{ __('matieres.name_short') }}</label>
+                            <input type="text" id="edit_nom_matiere" class="form-control" name="nom_matiere" placeholder="{{ __('matieres.name') }}" required>
                         </div>
                         <div class="mb-2">
-                            <label class="form-label">Ordre(s) d'enseignement</label>
+                            <label class="form-label">{{ __('matieres.th_ordres') }}</label>
                             <div class="d-flex flex-wrap gap-3">
                                 @foreach($allOrdres as $value => $label)
                                     <div class="form-check">
@@ -167,8 +167,8 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Fermer</button>
-                        <button type="submit" class="btn btn-primary">Modifier</button>
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">{{ __('matieres.close') }}</button>
+                        <button type="submit" class="btn btn-primary">{{ __('matieres.edit') }}</button>
                     </div>
                 </form>
             </div>

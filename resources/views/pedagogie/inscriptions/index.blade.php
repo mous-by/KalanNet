@@ -8,17 +8,17 @@
     // liste preparee derriere l'onglet "Inscription individuelle").
     $activeTab = $activeTab ?? request('tab', 'individual');
     $planificationRequired = $planificationRequired ?? true;
-    $planificationLabel = $planificationLabel ?? 'Formule de paiement';
+    $planificationLabel = $planificationRequired ? __('inscriptions.formule_paiement_label') : __('inscriptions.cooperative_label');
 @endphp
 
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-        <div class="breadcrumb-title pe-3">Élèves</div>
+        <div class="breadcrumb-title pe-3">{{ __('eleves.title') }}</div>
         <div class="ps-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0 p-0">
                     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bi bi-house-door"></i></a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('eleves.index') }}">Élèves</a></li>
-                    <li class="breadcrumb-item active">Inscription</li>
+                    <li class="breadcrumb-item"><a href="{{ route('eleves.index') }}">{{ __('eleves.title') }}</a></li>
+                    <li class="breadcrumb-item active">{{ __('inscriptions.title') }}</li>
                 </ol>
             </nav>
         </div>
@@ -38,13 +38,13 @@
         <div class="card-body">
             <ul class="nav nav-pills mb-4" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <a class="nav-link {{ $activeTab === 'individual' ? 'active theme-pill-active' : '' }}" href="{{ route('inscriptions.index', ['tab' => 'individual']) }}">Inscription individuelle</a>
+                    <a class="nav-link {{ $activeTab === 'individual' ? 'active theme-pill-active' : '' }}" href="{{ route('inscriptions.index', ['tab' => 'individual']) }}">{{ __('inscriptions.tab_individual') }}</a>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <a class="nav-link {{ $activeTab === 'group' ? 'active theme-pill-active' : '' }}" href="{{ route('inscriptions.index', ['tab' => 'group']) }}">Inscription par groupe</a>
+                    <a class="nav-link {{ $activeTab === 'group' ? 'active theme-pill-active' : '' }}" href="{{ route('inscriptions.index', ['tab' => 'group']) }}">{{ __('inscriptions.tab_group') }}</a>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <a class="nav-link {{ $activeTab === 'reinscription' ? 'active theme-pill-active' : '' }}" href="{{ route('inscriptions.index', ['tab' => 'reinscription']) }}">Réinscription</a>
+                    <a class="nav-link {{ $activeTab === 'reinscription' ? 'active theme-pill-active' : '' }}" href="{{ route('inscriptions.index', ['tab' => 'reinscription']) }}">{{ __('inscriptions.tab_reinscription') }}</a>
                 </li>
             </ul>
 
@@ -52,89 +52,104 @@
                 <div class="tab-pane fade {{ $activeTab === 'individual' ? 'show active' : '' }}" id="tab-individual" role="tabpanel">
                     <div class="card border-0">
                         <div class="card-header bg-white">
-                            <h5 class="mb-0 fw-bold">Inscription individuelle</h5>
+                            <h5 class="mb-0 fw-bold">{{ __('inscriptions.individual_title') }}</h5>
                         </div>
                         <div class="card-body p-4 p-lg-5">
                             <form action="{{ route('inscriptions.store') }}" method="POST" enctype="multipart/form-data" data-planification-form>
                                 @csrf
                                 <div class="row g-4">
                                     <div class="col-md-4">
-                                        <label class="form-label small fw-bold text-uppercase">Prénom <span class="text-danger">*</span></label>
-                                        <input type="text" name="prenom_eleve" class="form-control rounded-3" value="{{ old('prenom_eleve') }}" placeholder="Prénom" required>
+                                        <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_prenom') }} <span class="text-danger">*</span></label>
+                                        <input type="text" name="prenom_eleve" class="form-control rounded-3" value="{{ old('prenom_eleve') }}" placeholder="{{ __('eleves.label_prenom') }}" required>
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label small fw-bold text-uppercase">Nom <span class="text-danger">*</span></label>
-                                        <input type="text" name="nom_eleve" class="form-control rounded-3" value="{{ old('nom_eleve') }}" placeholder="Nom" required>
+                                        <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_nom') }} <span class="text-danger">*</span></label>
+                                        <input type="text" name="nom_eleve" class="form-control rounded-3" value="{{ old('nom_eleve') }}" placeholder="{{ __('eleves.label_nom') }}" required>
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label small fw-bold text-uppercase">Date de naissance</label>
+                                        <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_date_naissance') }}</label>
                                         <input type="date" name="date_naissance" class="form-control rounded-3" value="{{ old('date_naissance') }}">
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label small fw-bold text-uppercase">Lieu de naissance</label>
-                                        <input type="text" name="lieu_naiss" class="form-control rounded-3" value="{{ old('lieu_naiss') }}" placeholder="Ex: Kayes">
+                                        <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_lieu_naissance') }}</label>
+                                        <input type="text" name="lieu_naiss" class="form-control rounded-3" value="{{ old('lieu_naiss') }}" placeholder="{{ __('inscriptions.lieu_naissance_placeholder') }}">
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label small fw-bold text-uppercase">Adresse / Quartier</label>
-                                        <input type="text" name="adresse_eleve" class="form-control rounded-3" value="{{ old('adresse_eleve') }}" placeholder="Quartier ou adresse">
+                                        <label class="form-label small fw-bold text-uppercase">{{ __('inscriptions.adresse_label') }}</label>
+                                        <input type="text" name="adresse_eleve" class="form-control rounded-3" value="{{ old('adresse_eleve') }}" placeholder="{{ __('inscriptions.adresse_placeholder') }}">
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label small fw-bold text-uppercase">Genre <span class="text-danger">*</span></label>
+                                        <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_genre') }} <span class="text-danger">*</span></label>
                                         <select name="genre_eleve" class="form-select rounded-3" required>
-                                            <option value="">Sélectionner...</option>
-                                            <option value="Masculin" @selected(old('genre_eleve') === 'Masculin')>Masculin</option>
-                                            <option value="Féminin" @selected(old('genre_eleve') === 'Féminin')>Féminin</option>
+                                            <option value="">{{ __('inscriptions.select_generic') }}</option>
+                                            <option value="Masculin" @selected(old('genre_eleve') === 'Masculin')>{{ __('eleves.genre_masculin') }}</option>
+                                            <option value="Féminin" @selected(old('genre_eleve') === 'Féminin')>{{ __('eleves.genre_feminin') }}</option>
                                         </select>
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label small fw-bold text-uppercase">Matricule</label>
-                                        <input type="text" name="matricule" class="form-control rounded-3" value="{{ old('matricule') }}" placeholder="Automatique si vide">
+                                        <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_matricule') }}</label>
+                                        <input type="text" name="matricule" class="form-control rounded-3" value="{{ old('matricule') }}" placeholder="{{ __('inscriptions.matricule_placeholder') }}">
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label small fw-bold text-uppercase">Date d'inscription</label>
+                                        <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_date_inscription') }}</label>
                                         <input type="date" name="date_inscription" class="form-control rounded-3" value="{{ old('date_inscription', now()->toDateString()) }}">
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label small fw-bold text-uppercase">Cas social</label>
+                                        <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_cas_social') }}</label>
                                         <select name="cas_social" class="form-select rounded-3">
-                                            @foreach(['normal' => 'Normal', 'Dipenser' => 'Dispensé', 'Malade' => 'Malade'] as $value => $label)
+                                            @php
+                                                $casSocialMap = [
+                                                    'normal' => __('eleves.cas_social_normal'),
+                                                    'Dipenser' => __('eleves.cas_social_dispense'),
+                                                    'Malade' => __('eleves.cas_social_malade'),
+                                                ];
+                                            @endphp
+                                            @foreach($casSocialMap as $value => $label)
                                                 <option value="{{ $value }}" @selected(old('cas_social', 'normal') === $value)>{{ $label }}</option>
                                             @endforeach
                                         </select>
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label small fw-bold text-uppercase">Classe <span class="text-danger">*</span></label>
+                                        <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_classe') }} <span class="text-danger">*</span></label>
                                         <select name="id_classe" class="form-select rounded-3" required data-planification-classe>
-                                            <option value="">Sélectionner une classe...</option>
+                                            <option value="">{{ __('inscriptions.select_classe') }}</option>
                                             @foreach($classes as $classe)
                                                 <option value="{{ $classe->id_classe }}" @selected(old('id_classe') == $classe->id_classe)>{{ $classe->nom_classe }} - {{ $classe->ordreEnseignement }}</option>
                                             @endforeach
                                         </select>
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label small fw-bold text-uppercase">Mode de paiement</label>
+                                        <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_mode_paiement') }}</label>
                                         <select name="mode_paiement" class="form-select rounded-3">
-                                            @foreach(['' => 'Non défini', 'Mensuel' => 'Mensuel', 'Trimestriel' => 'Trimestriel', 'Annuel' => 'Annuel'] as $value => $label)
+                                            @php
+                                                $modePaiementMap = [
+                                                    '' => __('eleves.mode_paiement_non_defini'),
+                                                    'Mensuel' => __('eleves.mode_paiement_mensuel'),
+                                                    'Trimestriel' => __('eleves.mode_paiement_trimestriel'),
+                                                    'Annuel' => __('eleves.mode_paiement_annuel'),
+                                                ];
+                                            @endphp
+                                            @foreach($modePaiementMap as $value => $label)
                                                 <option value="{{ $value }}" @selected(old('mode_paiement') === $value)>{{ $label }}</option>
                                             @endforeach
                                         </select>
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label small fw-bold text-uppercase">Langue LV2</label>
+                                        <label class="form-label small fw-bold text-uppercase">{{ __('eleves.lv2_label') }}</label>
                                         <select name="id_matiere_lv2" class="form-select rounded-3">
-                                            <option value="">Non applicable / pas encore choisie</option>
+                                            <option value="">{{ __('eleves.lv2_none') }}</option>
                                             @foreach($matieresLv2 as $matiereLv2)
                                                 <option value="{{ $matiereLv2->id_matiere }}" @selected(old('id_matiere_lv2') == $matiereLv2->id_matiere)>
                                                     {{ $matiereLv2->nom_matiere }}
                                                 </option>
                                             @endforeach
                                         </select>
-                                        <small class="text-muted d-block mt-1">Secondaire Générale / Technique et Professionnel uniquement.</small>
+                                        <small class="text-muted d-block mt-1">{{ __('eleves.lv2_help') }}</small>
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label small fw-bold text-uppercase">Année scolaire <span class="text-danger">*</span></label>
+                                        <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_annee') }} <span class="text-danger">*</span></label>
                                         <select name="id_annee" class="form-select rounded-3" required data-planification-annee>
-                                            <option value="">Choisir une année...</option>
+                                            <option value="">{{ __('eleves.choose_annee') }}</option>
                                             @foreach($annees as $annee)
                                                 <option value="{{ $annee->id_anneeScolaire }}" @selected(old('id_annee') == $annee->id_anneeScolaire)>{{ $annee->annee }}</option>
                                             @endforeach
@@ -148,46 +163,58 @@
                                             @endif
                                         </label>
                                         <select name="id_planification" class="form-select rounded-3" @required($planificationRequired) data-planification-select>
-                                            <option value="">{{ $planificationRequired ? 'Veuillez choisir' : 'Sans coopérative / sans frais' }}</option>
+                                            <option value="">{{ $planificationRequired ? __('inscriptions.select_planification') : __('inscriptions.no_cooperative_no_fee') }}</option>
                                             @foreach($planifications as $planification)
-                                                <option value="{{ $planification->id_planification }}" data-classe="{{ $planification->id_classe }}" data-annee="{{ $planification->id_annee }}" @selected(old('id_planification') == $planification->id_planification)>{{ $planificationRequired ? $planification->motif : 'Coopérative' }} - {{ number_format((float) $planification->montant_planification, 0, ',', ' ') }} F</option>
+                                                <option value="{{ $planification->id_planification }}" data-classe="{{ $planification->id_classe }}" data-annee="{{ $planification->id_annee }}" @selected(old('id_planification') == $planification->id_planification)>{{ $planificationRequired ? $planification->motif : __('inscriptions.cooperative_label') }} - {{ number_format((float) $planification->montant_planification, 0, ',', ' ') }} F</option>
                                             @endforeach
                                         </select>
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label small fw-bold text-uppercase">Photo</label>
+                                        <label class="form-label small fw-bold text-uppercase">{{ __('inscriptions.photo_label') }}</label>
                                         <input type="file" name="image" class="form-control rounded-3" accept="image/*">
                                     </div>
 
                                     <div class="col-12">
                                         <div class="card theme-card shadow-sm">
                                             <div class="card-header">
-                                                <h6 class="mb-0 fw-bold">Parent déjà inscrit</h6>
+                                                <h6 class="mb-0 fw-bold">{{ __('inscriptions.parent_already_title') }}</h6>
                                             </div>
                                             <div class="card-body">
                                                 <div class="row g-3">
                                                     <div class="col-md-4">
-                                                        <label class="form-label">Parent</label>
+                                                        <label class="form-label">{{ __('inscriptions.parent_label') }}</label>
                                                         <select name="parent_id" class="form-select">
-                                                            <option value="">Aucun rattachement maintenant</option>
+                                                            <option value="">{{ __('inscriptions.no_attach_now') }}</option>
                                                             @foreach($parents as $parent)
                                                                 <option value="{{ $parent->id_parent }}" @selected(old('parent_id') == $parent->id_parent)>{{ $parent->nom_prenom_parent }}</option>
                                                             @endforeach
                                                         </select>
                                                     </div>
                                                     <div class="col-md-4">
-                                                        <label class="form-label">Lien de parenté</label>
+                                                        <label class="form-label">{{ __('inscriptions.lien_parente_label') }}</label>
                                                         <select name="lien_parent" class="form-select">
-                                                            @foreach(['Parent', 'Père', 'Mère', 'Frère', 'Sœur', 'Tuteur', 'Tutrice', 'Autre'] as $lien)
-                                                                <option value="{{ $lien }}" @selected(old('lien_parent', 'Parent') === $lien)>{{ $lien }}</option>
+                                                            @php
+                                                                $lienParentMap = [
+                                                                    'Parent' => __('inscriptions.lien_parent_generic'),
+                                                                    'Père' => __('parents.lien_pere'),
+                                                                    'Mère' => __('parents.lien_mere'),
+                                                                    'Frère' => __('parents.lien_frere'),
+                                                                    'Sœur' => __('parents.lien_soeur'),
+                                                                    'Tuteur' => __('parents.lien_tuteur'),
+                                                                    'Tutrice' => __('parents.lien_tutrice'),
+                                                                    'Autre' => __('parents.lien_autre'),
+                                                                ];
+                                                            @endphp
+                                                            @foreach($lienParentMap as $value => $label)
+                                                                <option value="{{ $value }}" @selected(old('lien_parent', 'Parent') === $value)>{{ $label }}</option>
                                                             @endforeach
                                                         </select>
                                                     </div>
                                                     <div class="col-md-4">
-                                                        <label class="form-label">Informer</label>
+                                                        <label class="form-label">{{ __('parents.th_informer') }}</label>
                                                         <select name="informer" class="form-select">
-                                                            <option value="Oui" @selected(old('informer', 'Oui') === 'Oui')>Oui</option>
-                                                            <option value="Non" @selected(old('informer') === 'Non')>Non</option>
+                                                            <option value="Oui" @selected(old('informer', 'Oui') === 'Oui')>{{ __('parents.informer_oui') }}</option>
+                                                            <option value="Non" @selected(old('informer') === 'Non')>{{ __('parents.informer_non') }}</option>
                                                         </select>
                                                     </div>
                                                 </div>
@@ -198,8 +225,8 @@
                                     <div class="col-12 mt-5">
                                         <hr class="my-4">
                                         <div class="d-flex justify-content-between">
-                                            <button type="reset" class="btn btn-light px-5">Réinitialiser</button>
-                                            <button type="submit" class="btn btn-primary px-5 py-2 fw-bold">Valider l'inscription</button>
+                                            <button type="reset" class="btn btn-light px-5">{{ __('inscriptions.reset') }}</button>
+                                            <button type="submit" class="btn btn-primary px-5 py-2 fw-bold">{{ __('inscriptions.validate_inscription') }}</button>
                                         </div>
                                     </div>
                                 </div>
