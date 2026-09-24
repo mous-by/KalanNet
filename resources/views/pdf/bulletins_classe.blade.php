@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="UTF-8">
-    <title>Bulletins - {{ $classe->nom_classe }}</title>
+    <title>{{ __('bulletins.pdf_title_classe', ['classe' => $classe->nom_classe]) }}</title>
     <style>
         @page { margin: 8px; }
         body { font-family: Arial, DejaVu Sans, sans-serif; font-size: 10px; margin: 0; padding: 0; color: #000; }

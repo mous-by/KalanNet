@@ -16,21 +16,21 @@
     }
 
     if ($schoolType === 'complexe scolaire') {
-        $schoolLabel = 'Complexe scolaire ' . ($ecole->nomComplexe ?: $ecole->nomEcole);
+        $schoolLabel = __('bulletins.complexe_scolaire_prefix', ['name' => $ecole->nomComplexe ?: $ecole->nomEcole]);
         if (in_array($ordre, ['fondamentale1', 'fondamentale2'], true) && !empty($ecole->nomFondamental)) {
-            $subSchoolLabel = 'École Fondamentale : ' . $ecole->nomFondamental;
+            $subSchoolLabel = __('bulletins.ecole_fondamentale_prefix', ['name' => $ecole->nomFondamental]);
         } elseif ($ordre === 'secondaire' && !empty($ecole->nomLycee)) {
-            $subSchoolLabel = 'Lycée : ' . $ecole->nomLycee;
+            $subSchoolLabel = __('bulletins.lycee_prefix', ['name' => $ecole->nomLycee]);
         } elseif ($ordre === 'secondaire' && !empty($ecole->nomProfessionnel)) {
-            $subSchoolLabel = 'École Professionnelle : ' . $ecole->nomProfessionnel;
+            $subSchoolLabel = __('bulletins.ecole_professionnelle_prefix', ['name' => $ecole->nomProfessionnel]);
         } else {
             $subSchoolLabel = null;
         }
     } else {
         $schoolLabel = match (true) {
-            in_array($ordre, ['fondamentale1', 'fondamentale2'], true) && !empty($ecole->nomFondamental) => 'École Fondamentale : ' . $ecole->nomFondamental,
-            $ordre === 'secondaire' && !empty($ecole->nomLycee) => 'Lycée : ' . $ecole->nomLycee,
-            $ordre === 'secondaire' && !empty($ecole->nomProfessionnel) => 'École Professionnelle : ' . $ecole->nomProfessionnel,
+            in_array($ordre, ['fondamentale1', 'fondamentale2'], true) && !empty($ecole->nomFondamental) => __('bulletins.ecole_fondamentale_prefix', ['name' => $ecole->nomFondamental]),
+            $ordre === 'secondaire' && !empty($ecole->nomLycee) => __('bulletins.lycee_prefix', ['name' => $ecole->nomLycee]),
+            $ordre === 'secondaire' && !empty($ecole->nomProfessionnel) => __('bulletins.ecole_professionnelle_prefix', ['name' => $ecole->nomProfessionnel]),
             default => $ecole->nomEcole,
         };
         $subSchoolLabel = null;
@@ -46,9 +46,9 @@
             <td class="left-content">
                 MINISTERE DE L'EDUCATION NATIONALE<br>
                 ********************<br>
-                Académie d'Enseignement de {{ $academyName }}
+                {{ __('bulletins.academie_de', ['name' => $academyName]) }}
                 @if(in_array($ordre, ['fondamentale1', 'fondamentale2'], true) && $capName)
-                    <div class="cap-texte">CAP de {{ $capName }}</div>
+                    <div class="cap-texte">{{ __('bulletins.cap_de', ['name' => $capName]) }}</div>
                 @endif
             </td>
             <td class="right-content">
@@ -80,17 +80,17 @@
 
     <div class="period-title">
         @if(!empty($apercu->mois_nom))
-            Composition du mois {{ strtoupper($apercu->mois_nom ?? '') }} {{ $apercu->annee }}
+            {{ strtoupper(__('bulletins.composition_du_mois', ['mois' => $apercu->mois_nom ?? '', 'annee' => $apercu->annee])) }}
         @else
-            BULLETIN DU {{ strtoupper($apercu->nom_trimestre ?? '') }} {{ $apercu->annee }}
+            {{ strtoupper(__('bulletins.bulletin_du_trimestre', ['trimestre' => $apercu->nom_trimestre ?? '', 'annee' => $apercu->annee])) }}
         @endif
     </div>
 
     <table class="identity-table">
         <tr>
-            <td>Nom et prénom</td>
-            <td>Sexe</td>
-            <td>Classe</td>
+            <td>{{ __('bulletins.identity_nom_prenom') }}</td>
+            <td>{{ __('bulletins.identity_sexe') }}</td>
+            <td>{{ __('bulletins.th_classe') }}</td>
         </tr>
         <tr>
             <td><strong>{{ $apercu->nom_eleve }} {{ $apercu->prenom_eleve }}</strong></td>
@@ -103,9 +103,9 @@
         @if($ordre === 'fondamentale1')
             <thead>
                 <tr>
-                    <th>Matière</th>
-                    <th>Note</th>
-                    <th>Coefficient</th>
+                    <th>{{ __('bulletins.pdf_th_matiere') }}</th>
+                    <th>{{ __('bulletins.pdf_th_note') }}</th>
+                    <th>{{ __('bulletins.pdf_th_coefficient') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -121,7 +121,7 @@
                     </tr>
                 @endforeach
                 <tr class="total-row">
-                    <td>Totaux</td>
+                    <td>{{ __('bulletins.pdf_totaux') }}</td>
                     <td>{{ number_format($totalNotes, 2) }}</td>
                     <td>{{ number_format($totalCoef, 2) }}</td>
                 </tr>
@@ -129,13 +129,13 @@
         @else
             <thead>
                 <tr>
-                    <th class="text-left">Matière</th>
+                    <th class="text-left">{{ __('bulletins.pdf_th_matiere') }}</th>
                     <th>M.Class</th>
                     <th>M.Compo</th>
                     <th>M.Gle</th>
                     <th>Coef</th>
                     <th>M.Coef</th>
-                    <th>Appréciation</th>
+                    <th>{{ __('bulletins.pdf_th_appreciation') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -162,7 +162,7 @@
 
                 @if($note_conduite !== null)
                     <tr>
-                        <td class="text-left">Conduite</td>
+                        <td class="text-left">{{ __('bulletins.pdf_conduite') }}</td>
                         <td></td>
                         <td></td>
                         <td>{{ number_format($note_conduite, 2) }}</td>
@@ -173,7 +173,7 @@
                 @endif
 
                 <tr class="total-row">
-                    <td>Total</td>
+                    <td>{{ __('bulletins.pdf_total') }}</td>
                     <td></td>
                     <td></td>
                     <td></td>
@@ -187,16 +187,16 @@
 
     <table class="summary-table">
         <tr>
-            <td><strong>Moyenne :</strong> {{ number_format($moyenne_periode ?? 0, 2) }}</td>
-            <td><strong>Rang :</strong> {{ $rangAffiche }} / {{ $totalAffiche }}</td>
-            <td><strong>Moyenne du premier :</strong> {{ number_format($moyenne_premier ?? 0, 2) }}</td>
+            <td><strong>{{ __('bulletins.pdf_moyenne_label') }}</strong> {{ number_format($moyenne_periode ?? 0, 2) }}</td>
+            <td><strong>{{ __('bulletins.pdf_rang_label') }}</strong> {{ $rangAffiche }} / {{ $totalAffiche }}</td>
+            <td><strong>{{ __('bulletins.pdf_moyenne_premier_label') }}</strong> {{ number_format($moyenne_premier ?? 0, 2) }}</td>
         </tr>
     </table>
 
     <table class="signature-table">
         <tr>
-            <td><strong>AVIS DU DIRECTEUR GÉNÉRAL</strong></td>
-            <td><strong>LE TUTEUR</strong></td>
+            <td><strong>{{ __('bulletins.pdf_avis_directeur') }}</strong></td>
+            <td><strong>{{ __('bulletins.pdf_le_tuteur') }}</strong></td>
         </tr>
     </table>
 </div>

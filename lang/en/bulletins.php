@@ -51,4 +51,33 @@ return [
     'month_10' => 'October',
     'month_11' => 'November',
     'month_12' => 'December',
+
+    // PDF - printed report card (the official Mali banner is deliberately
+    // left untranslated: "MINISTERE DE L'EDUCATION NATIONALE" / "REPUBLIQUE
+    // DU MALI" / the national motto are the document's official wording,
+    // not interface text)
+    'pdf_title_single' => 'Report card - :nom',
+    'pdf_title_classe' => 'Report cards - :classe',
+    'academie_de' => 'Académie d\'Enseignement de :name',
+    'cap_de' => 'CAP de :name',
+    'complexe_scolaire_prefix' => 'Complexe scolaire :name',
+    'ecole_fondamentale_prefix' => 'École Fondamentale : :name',
+    'lycee_prefix' => 'Lycée : :name',
+    'ecole_professionnelle_prefix' => 'École Professionnelle : :name',
+    'composition_du_mois' => 'Monthly test for :mois :annee',
+    'bulletin_du_trimestre' => 'Report card for :trimestre :annee',
+    'identity_nom_prenom' => 'Full name',
+    'identity_sexe' => 'Gender',
+    'pdf_th_matiere' => 'Subject',
+    'pdf_th_note' => 'Grade',
+    'pdf_th_coefficient' => 'Coefficient',
+    'pdf_totaux' => 'Totals',
+    'pdf_th_appreciation' => 'Remark',
+    'pdf_conduite' => 'Conduct',
+    'pdf_total' => 'Total',
+    'pdf_moyenne_label' => 'Average:',
+    'pdf_rang_label' => 'Rank:',
+    'pdf_moyenne_premier_label' => 'Top student average:',
+    'pdf_avis_directeur' => 'PRINCIPAL\'S REMARK',
+    'pdf_le_tuteur' => 'GUARDIAN',
 ];

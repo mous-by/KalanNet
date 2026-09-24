@@ -51,4 +51,33 @@ return [
     'month_10' => 'Octobre',
     'month_11' => 'Novembre',
     'month_12' => 'Décembre',
+
+    // PDF - bulletin imprime (le bandeau officiel Mali n'est volontairement
+    // pas traduit : "MINISTERE DE L'EDUCATION NATIONALE" / "REPUBLIQUE DU
+    // MALI" / la devise nationale sont le libelle officiel du document, pas
+    // du texte d'interface)
+    'pdf_title_single' => 'Bulletin - :nom',
+    'pdf_title_classe' => 'Bulletins - :classe',
+    'academie_de' => "Académie d'Enseignement de :name",
+    'cap_de' => 'CAP de :name',
+    'complexe_scolaire_prefix' => 'Complexe scolaire :name',
+    'ecole_fondamentale_prefix' => 'École Fondamentale : :name',
+    'lycee_prefix' => 'Lycée : :name',
+    'ecole_professionnelle_prefix' => 'École Professionnelle : :name',
+    'composition_du_mois' => 'Composition du mois :mois :annee',
+    'bulletin_du_trimestre' => 'Bulletin du :trimestre :annee',
+    'identity_nom_prenom' => 'Nom et prénom',
+    'identity_sexe' => 'Sexe',
+    'pdf_th_matiere' => 'Matière',
+    'pdf_th_note' => 'Note',
+    'pdf_th_coefficient' => 'Coefficient',
+    'pdf_totaux' => 'Totaux',
+    'pdf_th_appreciation' => 'Appréciation',
+    'pdf_conduite' => 'Conduite',
+    'pdf_total' => 'Total',
+    'pdf_moyenne_label' => 'Moyenne :',
+    'pdf_rang_label' => 'Rang :',
+    'pdf_moyenne_premier_label' => 'Moyenne du premier :',
+    'pdf_avis_directeur' => 'AVIS DU DIRECTEUR GÉNÉRAL',
+    'pdf_le_tuteur' => 'LE TUTEUR',
 ];

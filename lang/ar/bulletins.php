@@ -51,4 +51,32 @@ return [
     'month_10' => 'أكتوبر',
     'month_11' => 'نوفمبر',
     'month_12' => 'ديسمبر',
+
+    // PDF - كشف النقاط المطبوع (الترويسة الرسمية لمالي غير مترجمة عمدًا:
+    // "MINISTERE DE L'EDUCATION NATIONALE" / "REPUBLIQUE DU MALI" / الشعار
+    // الوطني هي الصياغة الرسمية للوثيقة، وليست نص واجهة)
+    'pdf_title_single' => 'كشف النقاط - :nom',
+    'pdf_title_classe' => 'كشوف النقاط - :classe',
+    'academie_de' => "Académie d'Enseignement de :name",
+    'cap_de' => 'CAP de :name',
+    'complexe_scolaire_prefix' => 'Complexe scolaire :name',
+    'ecole_fondamentale_prefix' => 'École Fondamentale : :name',
+    'lycee_prefix' => 'Lycée : :name',
+    'ecole_professionnelle_prefix' => 'École Professionnelle : :name',
+    'composition_du_mois' => 'فرض شهر :mois :annee',
+    'bulletin_du_trimestre' => 'كشف نقاط :trimestre :annee',
+    'identity_nom_prenom' => 'الاسم واللقب',
+    'identity_sexe' => 'الجنس',
+    'pdf_th_matiere' => 'المادة',
+    'pdf_th_note' => 'النقطة',
+    'pdf_th_coefficient' => 'المعامل',
+    'pdf_totaux' => 'المجاميع',
+    'pdf_th_appreciation' => 'الملاحظة',
+    'pdf_conduite' => 'السلوك',
+    'pdf_total' => 'المجموع',
+    'pdf_moyenne_label' => 'المعدل:',
+    'pdf_rang_label' => 'الرتبة:',
+    'pdf_moyenne_premier_label' => 'معدل الأول:',
+    'pdf_avis_directeur' => 'رأي المدير العام',
+    'pdf_le_tuteur' => 'الولي',
 ];
