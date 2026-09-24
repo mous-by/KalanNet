@@ -2,12 +2,12 @@
 
 @section('content')
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-        <div class="breadcrumb-title pe-3">Finances</div>
+        <div class="breadcrumb-title pe-3">{{ __('finances.title') }}</div>
         <div class="ps-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0 p-0">
                     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bi bi-house-door"></i></a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Gestion Financière</li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ __('finances.breadcrumb_management') }}</li>
                 </ol>
             </nav>
         </div>
@@ -21,10 +21,10 @@
     <div class="col-12 col-md-9 pt-4 pt-md-0 p-md-3">
     <div class="mb-3 d-flex justify-content-end gap-2">
         <button class="btn px-4 theme-pill-active">
-            <i class="bi bi-file-earmark-bar-graph me-2"></i>Rapport
+            <i class="bi bi-file-earmark-bar-graph me-2"></i>{{ __('finances.report_button') }}
         </button>
         <a href="{{ route('finances.paiements') }}" class="btn px-4 theme-pill-active">
-            <i class="bi bi-cash-stack me-2"></i>Nouveau Paiement
+            <i class="bi bi-cash-stack me-2"></i>{{ __('finances.new_payment_button') }}
         </a>
     </div>
 
@@ -36,7 +36,7 @@
                 <div class="card-body p-4">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
-                            <h6 class="text-muted text-uppercase fw-bold small mb-3">Total Recettes</h6>
+                            <h6 class="text-muted text-uppercase fw-bold small mb-3">{{ __('finances.total_recettes') }}</h6>
                             <h2 class="fw-bold mb-0 text-success">{{ number_format($totalRecettes, \App\Support\Devise::decimales(), ',', ' ') }} <small class="fs-6">{{ \App\Support\Devise::symbole() }}</small></h2>
                         </div>
                         <div class="widget-icon theme-icon-box rounded-3">
@@ -51,7 +51,7 @@
                 <div class="card-body p-4">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
-                            <h6 class="text-muted text-uppercase fw-bold small mb-3">Total Dépenses</h6>
+                            <h6 class="text-muted text-uppercase fw-bold small mb-3">{{ __('finances.total_depenses') }}</h6>
                             <h2 class="fw-bold mb-0 text-danger">{{ number_format($totalDepenses, \App\Support\Devise::decimales(), ',', ' ') }} <small class="fs-6">{{ \App\Support\Devise::symbole() }}</small></h2>
                         </div>
                         <div class="widget-icon theme-icon-box rounded-3">
@@ -66,7 +66,7 @@
                 <div class="card-body p-4">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
-                            <h6 class="text-muted text-uppercase fw-bold small mb-3">Solde en Caisse</h6>
+                            <h6 class="text-muted text-uppercase fw-bold small mb-3">{{ __('finances.solde_caisse') }}</h6>
                             <h2 class="fw-bold mb-0 text-primary">{{ number_format($caisse ? $caisse->montant_net : 0, \App\Support\Devise::decimales(), ',', ' ') }} <small class="fs-6">{{ \App\Support\Devise::symbole() }}</small></h2>
                         </div>
                         <div class="widget-icon theme-icon-box rounded-3">
@@ -83,18 +83,18 @@
         <div class="col-lg-8">
             <div class="card theme-card shadow-sm overflow-hidden h-100">
                 <div class="card-header theme-header p-4 border-0 d-flex justify-content-between align-items-center">
-                    <h5 class="fw-bold mb-0">Derniers Paiements Élèves</h5>
-                    <a href="{{ route('finances.paiements') }}" class="btn btn-sm btn-light">Tout voir</a>
+                    <h5 class="fw-bold mb-0">{{ __('finances.recent_payments_title') }}</h5>
+                    <a href="{{ route('finances.paiements') }}" class="btn btn-sm btn-light">{{ __('finances.see_all') }}</a>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
                         <thead>
                             <tr>
-                                <th class="px-4 py-3">Élève</th>
-                                <th class="py-3">Classe</th>
-                                <th class="py-3">Montant</th>
-                                <th class="py-3">Date</th>
-                                <th class="px-4 py-3 text-end">Reçu</th>
+                                <th class="px-4 py-3">{{ __('finances.th_eleve') }}</th>
+                                <th class="py-3">{{ __('finances.label_classe') }}</th>
+                                <th class="py-3">{{ __('finances.th_montant') }}</th>
+                                <th class="py-3">{{ __('finances.th_date') }}</th>
+                                <th class="px-4 py-3 text-end">{{ __('finances.th_recu') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -105,14 +105,14 @@
                                         <small class="text-muted">{{ $p->motif }}</small>
                                     </td>
                                     <td><span class="badge bg-light text-primary border border-primary-subtle">{{ $p->classe->nom_classe }}</span></td>
-                                    <td class="fw-bold">{{ number_format($p->montant, 0, ',', ' ') }}</td>
+                                    <td class="fw-bold">@devise($p->montant)</td>
                                     <td class="small">{{ date('d/m/Y', strtotime($p->date_paiement)) }}</td>
                                     <td class="px-4 text-end">
                                         <button class="btn btn-light btn-sm p-2"><i class="bi bi-printer"></i></button>
                                     </td>
                                 </tr>
                             @empty
-                                <tr><td colspan="5" class="text-center py-5">Aucun paiement récent.</td></tr>
+                                <tr><td colspan="5" class="text-center py-5">{{ __('finances.empty_recent_payments') }}</td></tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -127,20 +127,20 @@
                     <div class="icon-box theme-icon-soft rounded-circle mx-auto mb-4 p-4" style="width: 80px; height: 80px; display: flex; align-items: center; justify-content: center;">
                         <i class="bi bi-safe fs-1"></i>
                     </div>
-                    <h5 class="fw-bold mb-1">Caisse Principale</h5>
-                    <p class="text-muted small mb-4">Référence: {{ $caisse ? $caisse->reference : 'N/A' }}</p>
-                    
+                    <h5 class="fw-bold mb-1">{{ __('finances.caisse_principale') }}</h5>
+                    <p class="text-muted small mb-4">{{ __('finances.reference_label', ['reference' => $caisse ? $caisse->reference : 'N/A']) }}</p>
+
                     <div class="d-grid gap-3">
                         <div class="p-3 bg-light rounded-3 text-start d-flex justify-content-between align-items-center">
-                            <span class="text-muted small fw-bold">STATUT</span>
+                            <span class="text-muted small fw-bold">{{ __('finances.statut_label') }}</span>
                             @if($caisse && $caisse->status == 1)
-                                <span class="badge bg-success px-3">Ouverte</span>
+                                <span class="badge bg-success px-3">{{ __('finances.statut_ouverte') }}</span>
                             @else
-                                <span class="badge bg-danger px-3">Fermée</span>
+                                <span class="badge bg-danger px-3">{{ __('finances.statut_fermee') }}</span>
                             @endif
                         </div>
-                        <a href="{{ route('finances.caisse') }}" class="btn btn-outline-primary py-2">Historique des Mouvements</a>
-                        <button class="btn btn-light py-2">Clôture de Caisse</button>
+                        <a href="{{ route('finances.caisse') }}" class="btn btn-outline-primary py-2">{{ __('finances.movement_history') }}</a>
+                        <button class="btn btn-light py-2">{{ __('finances.caisse_closure') }}</button>
                     </div>
                 </div>
             </div>
