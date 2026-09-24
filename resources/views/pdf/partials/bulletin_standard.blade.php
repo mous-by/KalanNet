@@ -44,16 +44,19 @@
     <table class="header-table">
         <tr>
             <td class="left-content">
-                MINISTERE DE L'EDUCATION NATIONALE<br>
-                ********************<br>
+                @if($ecole->pays?->entete_document_gauche)
+                    {{ $ecole->pays->entete_document_gauche }}<br>
+                    ********************<br>
+                @endif
                 {{ __('bulletins.academie_de', ['name' => $academyName]) }}
                 @if(in_array($ordre, ['fondamentale1', 'fondamentale2'], true) && $capName)
                     <div class="cap-texte">{{ __('bulletins.cap_de', ['name' => $capName]) }}</div>
                 @endif
             </td>
             <td class="right-content">
-                <strong>REPUBLIQUE DU MALI</strong><br>
-                UN PEUPLE - UN BUT - UNE FOI
+                @if($ecole->pays?->entete_document_droite)
+                    <strong>{!! nl2br(e($ecole->pays->entete_document_droite)) !!}</strong>
+                @endif
             </td>
         </tr>
     </table>

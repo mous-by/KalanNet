@@ -83,6 +83,21 @@
                             <div class="form-text">Laissez les deux champs d'un examen vides s'il n'existe pas à ce niveau dans votre pays (ex : le Mali n'a pas d'examen de fin de primaire) — les écoles concernées basculeront alors sur une décision de passage par moyenne.</div>
                         </div>
 
+                        <div class="col-12 mt-4">
+                            <h6 class="fw-bold text-uppercase small text-muted">En-tête officiel des documents imprimés (bulletins, reçus...)</h6>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-text mb-2">Ce texte apparaît en haut des bulletins et reçus de toutes les écoles de votre pays (ministère, république, devise nationale...). Laissez vide tant que vous ne l'avez pas renseigné — rien ne sera affiché à la place.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Bloc gauche (ex : ministère)</label>
+                            <textarea name="entete_document_gauche" class="form-control" rows="2" maxlength="200" placeholder="Ex : MINISTERE DE L'EDUCATION NATIONALE">{{ old('entete_document_gauche', $pays->entete_document_gauche) }}</textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Bloc droit (ex : république, devise nationale)</label>
+                            <textarea name="entete_document_droite" class="form-control" rows="2" maxlength="200" placeholder="Ex : REPUBLIQUE DU MALI&#10;UN PEUPLE - UN BUT - UNE FOI">{{ old('entete_document_droite', $pays->entete_document_droite) }}</textarea>
+                        </div>
+
                         <div class="col-12 mt-3">
                             <button type="submit" class="btn btn-primary px-4">
                                 <i class="bi bi-check2-circle me-2"></i>Enregistrer

@@ -192,8 +192,9 @@
 
         <div class="card-content">
             <div class="head">
-                <div>RÉPUBLIQUE DU MALI</div>
-                <div class="motto"><span>Un Peuple</span> - <span>Un But</span> - <span>Une Foi</span></div>
+                @if($ecole?->pays?->entete_document_droite)
+                    <div>{!! nl2br(e($ecole->pays->entete_document_droite)) !!}</div>
+                @endif
                 <div class="school-name">{{ $schoolName }}</div>
                 @if(!empty($adminPhone))
                     <div class="school-contact">Tél : {{ $adminPhone }}</div>

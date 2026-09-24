@@ -209,6 +209,8 @@ class ConfigurationController extends Controller
             'nom_examen_intermediaire' => 'nullable|string|max:30|required_with:niveau_examen_intermediaire',
             'niveau_examen_final' => 'nullable|integer|min:1|max:20|required_with:nom_examen_final',
             'nom_examen_final' => 'nullable|string|max:30|required_with:niveau_examen_final',
+            'entete_document_gauche' => 'nullable|string|max:200',
+            'entete_document_droite' => 'nullable|string|max:200',
         ]);
 
         $pays->update($data);

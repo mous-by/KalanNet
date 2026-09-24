@@ -106,13 +106,16 @@
     <table class="header">
         <tr>
             <td width="50%">
-                <strong>MINISTÈRE DE L'ÉDUCATION NATIONALE</strong><br>
+                @if($ecole?->pays?->entete_document_gauche)
+                    <strong>{{ $ecole->pays->entete_document_gauche }}</strong><br>
+                @endif
                 Académie d'Enseignement de {{ $ecole?->academie ?? '' }}<br>
                 CAP de {{ $ecole?->cap ?? '' }}
             </td>
             <td width="50%" class="text-right">
-                <strong>RÉPUBLIQUE DU MALI</strong><br>
-                Un Peuple - Un But - Une Foi
+                @if($ecole?->pays?->entete_document_droite)
+                    <strong>{!! nl2br(e($ecole->pays->entete_document_droite)) !!}</strong>
+                @endif
             </td>
         </tr>
     </table>

@@ -24,6 +24,8 @@ class Pays extends Model
         'nom_examen_intermediaire',
         'niveau_examen_final',
         'nom_examen_final',
+        'entete_document_gauche',
+        'entete_document_droite',
     ];
 
     protected $casts = [

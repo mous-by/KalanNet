@@ -14,8 +14,17 @@
 </head>
 <body>
     <div style="display:flex; justify-content:space-between;">
-        <div><strong>MINISTERE DE L'EDUCATION NATIONALE</strong><br>{{ $ecole?->academie }}<br>{{ $ecole?->cap }}</div>
-        <div class="right"><strong>REPUBLIQUE DU MALI</strong><br>Un Peuple - Un But - Une Foi</div>
+        <div>
+            @if($ecole?->pays?->entete_document_gauche)
+                <strong>{{ $ecole->pays->entete_document_gauche }}</strong><br>
+            @endif
+            {{ $ecole?->academie }}<br>{{ $ecole?->cap }}
+        </div>
+        <div class="right">
+            @if($ecole?->pays?->entete_document_droite)
+                <strong>{!! nl2br(e($ecole->pays->entete_document_droite)) !!}</strong>
+            @endif
+        </div>
     </div>
     <p class="title">{{ $ecole?->nomEcole ?? 'École' }}</p>
     <p class="title">Reçu de paiement N° {{ $paiement->numero_recu }}</p>

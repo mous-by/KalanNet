@@ -18,13 +18,16 @@
 <body>
     <div style="display:flex; justify-content:space-between;">
         <div>
-            <strong>MINISTERE DE L'EDUCATION NATIONALE</strong><br>
+            @if($ecole?->pays?->entete_document_gauche)
+                <strong>{{ $ecole->pays->entete_document_gauche }}</strong><br>
+            @endif
             {{ $ecole?->academie }}<br>
             {{ $ecole?->cap }}
         </div>
         <div class="right">
-            <strong>REPUBLIQUE DU MALI</strong><br>
-            Un Peuple - Un But - Une Foi
+            @if($ecole?->pays?->entete_document_droite)
+                <strong>{!! nl2br(e($ecole->pays->entete_document_droite)) !!}</strong>
+            @endif
         </div>
     </div>
 
