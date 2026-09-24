@@ -212,6 +212,17 @@ return [
     'ut_search_placeholder' => 'الاسم أو البريد الإلكتروني أو الوظيفة...',
     'ut_toutes_ecoles' => 'جميع المدارس',
 
+    // filieres.blade.php
+    'menu_filieres_singulier' => 'شعبة',
+    'fil_intro' => 'تُنظم الشعب (ممرض، قابلة...) صفوف مدرسة الصحة، بدلاً من الطور التعليمي الأساسي/الثانوي المستخدم في المدارس الأخرى.',
+    'fil_confirm_delete' => 'هل تريد حذف هذه الشعبة؟',
+    'fil_empty' => 'لم يتم إنشاء أي شعبة بعد.',
+    'fil_modal_create_title' => 'تسجيل شعبة',
+    'fil_nom_label' => 'اسم الشعبة',
+    'fil_nom_placeholder' => 'مثال: ممرض، قابلة...',
+    'fil_envoyer' => 'إرسال',
+    'fil_modal_edit_title' => 'تعديل الشعبة',
+
     // partials/classe-officielle-fields.blade.php
     'classe_off_nom_label' => 'اسم الصف الرسمي',
     'classe_off_ordre_label' => 'الطور التعليمي',

@@ -212,6 +212,17 @@ return [
     'ut_search_placeholder' => 'Name, email, role...',
     'ut_toutes_ecoles' => 'All schools',
 
+    // filieres.blade.php
+    'menu_filieres_singulier' => 'Track',
+    'fil_intro' => 'Tracks (Nurse, Midwife...) structure the classes of a Health School, instead of the Primary/Secondary teaching cycle used by other schools.',
+    'fil_confirm_delete' => 'Delete this track?',
+    'fil_empty' => 'No track has been created yet.',
+    'fil_modal_create_title' => 'Register a track',
+    'fil_nom_label' => 'Track name',
+    'fil_nom_placeholder' => 'E.g.: Nurse, Midwife...',
+    'fil_envoyer' => 'Submit',
+    'fil_modal_edit_title' => 'Edit track',
+
     // partials/classe-officielle-fields.blade.php
     'classe_off_nom_label' => 'Official class name',
     'classe_off_ordre_label' => 'Teaching cycle',

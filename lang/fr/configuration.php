@@ -212,6 +212,17 @@ return [
     'ut_search_placeholder' => 'Nom, email, fonction...',
     'ut_toutes_ecoles' => 'Toutes les écoles',
 
+    // filieres.blade.php
+    'menu_filieres_singulier' => 'Filière',
+    'fil_intro' => "Les filières (Infirmier, Sage-femme...) structurent les classes d'une École de Santé, à la place de l'ordre d'enseignement Fondamentale/Secondaire utilisé par les autres écoles.",
+    'fil_confirm_delete' => 'Supprimer cette filière ?',
+    'fil_empty' => "Aucune filière n'a encore été créée.",
+    'fil_modal_create_title' => 'Enregistrement de filière',
+    'fil_nom_label' => 'Nom de la filière',
+    'fil_nom_placeholder' => 'Ex : Infirmier, Sage-femme...',
+    'fil_envoyer' => 'Envoyer',
+    'fil_modal_edit_title' => 'Modifier filière',
+
     // partials/classe-officielle-fields.blade.php
     'classe_off_nom_label' => 'Nom de la classe officielle',
     'classe_off_ordre_label' => "Ordre d'enseignement",
