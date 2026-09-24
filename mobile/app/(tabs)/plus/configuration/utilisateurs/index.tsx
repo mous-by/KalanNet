@@ -5,6 +5,7 @@ import { ActivityIndicator, Button, FAB, Searchbar, Text } from 'react-native-pa
 
 import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
+import { useLocale } from '@/context/LocaleContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { hasPermission } from '@/lib/permissions';
 import { useApiGet } from '@/lib/useApi';
@@ -19,6 +20,7 @@ interface ConfigUser {
 }
 
 export default function UtilisateursScreen() {
+  const { t } = useLocale();
   const { user } = useAuth();
   const [search, setSearch] = useState('');
   const { data, isLoading, error, reload } = useApiGet<{ data: ConfigUser[] }>(
@@ -49,7 +51,7 @@ export default function UtilisateursScreen() {
     setActionError(null);
     try {
       await api.patch(`/configuration/utilisateurs/${target.idUtilisateur}/status`, { statut: target.statut ? 0 : 1 });
-      setSuccessMessage(target.statut ? 'Utilisateur désactivé avec succès.' : 'Utilisateur activé avec succès.');
+      setSuccessMessage(target.statut ? t('configuration.ut_deactivate_success') : t('configuration.ut_activate_success'));
       setSuccessVisible(true);
       reload();
     } catch (err) {
@@ -61,7 +63,7 @@ export default function UtilisateursScreen() {
     setActionError(null);
     try {
       await api.delete(`/configuration/utilisateurs/${target.idUtilisateur}`);
-      setSuccessMessage('Utilisateur supprimé avec succès.');
+      setSuccessMessage(t('configuration.ut_delete_success'));
       setSuccessVisible(true);
       reload();
     } catch (err) {
@@ -71,7 +73,7 @@ export default function UtilisateursScreen() {
 
   return (
     <View style={styles.container}>
-      <Searchbar placeholder="Nom ou email…" value={search} onChangeText={setSearch} style={styles.search} />
+      <Searchbar placeholder={t('configuration.ut_search_placeholder_mobile')} value={search} onChangeText={setSearch} style={styles.search} />
       {isLoading ? (
         <ActivityIndicator style={styles.spinner} size="large" />
       ) : error ? (
@@ -83,7 +85,7 @@ export default function UtilisateursScreen() {
           contentContainerStyle={styles.list}
           refreshing={false}
           onRefresh={reload}
-          ListEmptyComponent={<Text style={styles.empty}>Aucun utilisateur.</Text>}
+          ListEmptyComponent={<Text style={styles.empty}>{t('configuration.empty_utilisateurs')}</Text>}
           renderItem={({ item }) => (
             <View style={styles.row}>
               <Text style={styles.name}>{item.nomPrenom}</Text>
@@ -93,19 +95,19 @@ export default function UtilisateursScreen() {
               <View style={styles.actions}>
                 {canAssignPermissionsTo(item) ? (
                   <Button compact onPress={() => router.push(`/plus/configuration/utilisateurs/${item.idUtilisateur}/permissions`)}>
-                    Permissions
+                    {t('configuration.menu_permissions')}
                   </Button>
                 ) : null}
                 {item.idUtilisateur !== user?.id ? (
                   <>
                     {canEditStatus ? (
                       <Button compact onPress={() => toggleStatus(item)}>
-                        {item.statut ? 'Désactiver' : 'Activer'}
+                        {item.statut ? t('configuration.ut_toggle_title_desactiver') : t('configuration.ut_toggle_title_activer')}
                       </Button>
                     ) : null}
                     {canDelete ? (
                       <Button compact textColor="#d33" onPress={() => handleDelete(item)}>
-                        Supprimer
+                        {t('configuration.supprimer')}
                       </Button>
                     ) : null}
                   </>

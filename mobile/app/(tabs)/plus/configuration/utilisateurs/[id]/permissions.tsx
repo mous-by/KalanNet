@@ -5,6 +5,7 @@ import { ActivityIndicator, Checkbox, Text } from 'react-native-paper';
 
 import SubmitButton from '@/components/SubmitButton';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
+import { useLocale } from '@/context/LocaleContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
 
@@ -27,6 +28,7 @@ interface PermissionsData {
 }
 
 export default function UserPermissionsScreen() {
+  const { t } = useLocale();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data, isLoading, error } = useApiGet<PermissionsData>(`/configuration/utilisateurs/${id}/permissions`, [id]);
   const managedOrdersOptions = Object.entries(data?.complexe_orders ?? {}).map(([value, label]) => ({ value, label }));
@@ -65,7 +67,7 @@ export default function UserPermissionsScreen() {
 
   async function handleSave() {
     if (isComplexGestionnaire && managedOrders.size === 0) {
-      setSaveError('Veuillez sélectionner au moins un ordre d’enseignement géré.');
+      setSaveError(t('configuration.up_ordre_requis_mobile'));
       return;
     }
     setSaveError(null);
@@ -78,26 +80,26 @@ export default function UserPermissionsScreen() {
       setSuccessVisible(true);
       setTimeout(() => router.back(), 900);
     } catch (err) {
-      setSaveError(apiErrorMessage(err, 'Impossible d’enregistrer les permissions.'));
+      setSaveError(apiErrorMessage(err, t('configuration.up_save_error_mobile')));
     } finally {
       setIsSaving(false);
     }
   }
 
   if (isLoading) return <ActivityIndicator style={styles.spinner} size="large" />;
-  if (error || !data) return <Text style={styles.error}>{error ?? 'Introuvable.'}</Text>;
+  if (error || !data) return <Text style={styles.error}>{error ?? t('configuration.up_introuvable')}</Text>;
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <Text style={styles.title}>{data.utilisateur.nomPrenom}</Text>
-      {data.read_only ? <Text style={styles.note}>Lecture seule : vous ne pouvez pas modifier ces permissions.</Text> : null}
+      {data.read_only ? <Text style={styles.note}>{t('configuration.up_readonly_mobile')}</Text> : null}
 
       {isComplexGestionnaire ? (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
-            Ordres d'enseignement gérés <Text style={styles.required}>*</Text>
+            {t('configuration.up_ordres_geres_title')} <Text style={styles.required}>*</Text>
           </Text>
-          <Text style={styles.note}>Ce gestionnaire d'un complexe scolaire doit être limité à un ou plusieurs ordres.</Text>
+          <Text style={styles.note}>{t('configuration.up_complexe_note_mobile')}</Text>
           {managedOrdersOptions.map((option) => (
             <Checkbox.Item
               key={option.value}
@@ -129,9 +131,9 @@ export default function UserPermissionsScreen() {
 
       {saveError ? <Text style={styles.error}>{saveError}</Text> : null}
 
-      {!data.read_only ? <SubmitButton label="Enregistrer" onPress={handleSave} loading={isSaving} /> : null}
+      {!data.read_only ? <SubmitButton label={t('configuration.enregistrer')} onPress={handleSave} loading={isSaving} /> : null}
 
-      <SuccessSnackbar visible={successVisible} message="Permissions enregistrées avec succès." onDismiss={() => setSuccessVisible(false)} />
+      <SuccessSnackbar visible={successVisible} message={t('configuration.up_save_success_mobile')} onDismiss={() => setSuccessVisible(false)} />
     </ScrollView>
   );
 }

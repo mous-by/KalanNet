@@ -409,6 +409,40 @@ const STRINGS = {
     'configuration.tn_note_max_label': 'Note maximale',
     'configuration.tn_edit_success': 'Type de note modifié avec succès.',
     'configuration.tn_create_success': 'Type de note créé avec succès.',
+
+    // Configuration - utilisateurs/index.tsx
+    'configuration.ut_deactivate_success': 'Utilisateur désactivé avec succès.',
+    'configuration.ut_activate_success': 'Utilisateur activé avec succès.',
+    'configuration.ut_delete_success': 'Utilisateur supprimé avec succès.',
+    'configuration.ut_search_placeholder_mobile': 'Nom ou email…',
+    'configuration.empty_utilisateurs': 'Aucun utilisateur trouvé.',
+    'configuration.menu_permissions': 'Permissions',
+    'configuration.ut_toggle_title_desactiver': 'Désactiver',
+    'configuration.ut_toggle_title_activer': 'Activer',
+
+    // Configuration - utilisateurs/new.tsx
+    'configuration.uf_genre_masculin': 'Masculin',
+    'configuration.uf_genre_feminin': 'Féminin',
+    'configuration.uf_champs_obligatoires_mobile': 'Veuillez remplir tous les champs obligatoires.',
+    'configuration.uf_create_error_mobile': 'Impossible de créer cet utilisateur.',
+    'configuration.uf_note_mobile': "Ce formulaire crée un compte classique (Admin/Gestionnaire). Pour lier un compte à un enseignant, un parent, un DAE ou un DCAP, utilisez la version web.",
+    'configuration.uf_nom_prenom_label': 'Nom et prénom',
+    'configuration.uf_email_label': 'E-mail',
+    'configuration.ut_th_telephone': 'Téléphone',
+    'configuration.ut_th_genre': 'Genre',
+    'configuration.uf_fonction_optionnelle': 'Fonction (optionnel)',
+    'configuration.uf_droit_label': 'Droit',
+    'configuration.uf_creer_utilisateur': "Créer l'utilisateur",
+    'configuration.uf_create_success_mobile': 'Utilisateur créé avec succès.',
+
+    // Configuration - utilisateurs/[id]/permissions.tsx
+    'configuration.up_ordre_requis_mobile': 'Veuillez sélectionner au moins un ordre d’enseignement géré.',
+    'configuration.up_save_error_mobile': 'Impossible d’enregistrer les permissions.',
+    'configuration.up_introuvable': 'Introuvable.',
+    'configuration.up_readonly_mobile': 'Lecture seule : vous ne pouvez pas modifier ces permissions.',
+    'configuration.up_ordres_geres_title': "Ordres d'enseignement gérés",
+    'configuration.up_complexe_note_mobile': "Ce gestionnaire d'un complexe scolaire doit être limité à un ou plusieurs ordres.",
+    'configuration.up_save_success_mobile': 'Permissions enregistrées avec succès.',
   },
   en: {
     'language.label': 'Language',
@@ -806,6 +840,40 @@ const STRINGS = {
     'configuration.tn_note_max_label': 'Max grade',
     'configuration.tn_edit_success': 'Grade type updated successfully.',
     'configuration.tn_create_success': 'Grade type created successfully.',
+
+    // Configuration - utilisateurs/index.tsx
+    'configuration.ut_deactivate_success': 'User deactivated successfully.',
+    'configuration.ut_activate_success': 'User activated successfully.',
+    'configuration.ut_delete_success': 'User deleted successfully.',
+    'configuration.ut_search_placeholder_mobile': 'Name or email…',
+    'configuration.empty_utilisateurs': 'No user found.',
+    'configuration.menu_permissions': 'Permissions',
+    'configuration.ut_toggle_title_desactiver': 'Deactivate',
+    'configuration.ut_toggle_title_activer': 'Activate',
+
+    // Configuration - utilisateurs/new.tsx
+    'configuration.uf_genre_masculin': 'Male',
+    'configuration.uf_genre_feminin': 'Female',
+    'configuration.uf_champs_obligatoires_mobile': 'Please fill in all required fields.',
+    'configuration.uf_create_error_mobile': 'Could not create this user.',
+    'configuration.uf_note_mobile': 'This form creates a standard account (Admin/Manager). To link an account to a teacher, a parent, a DAE or a DCAP, use the web version.',
+    'configuration.uf_nom_prenom_label': 'Full name',
+    'configuration.uf_email_label': 'Email',
+    'configuration.ut_th_telephone': 'Phone',
+    'configuration.ut_th_genre': 'Gender',
+    'configuration.uf_fonction_optionnelle': 'Role (optional)',
+    'configuration.uf_droit_label': 'Role',
+    'configuration.uf_creer_utilisateur': 'Create user',
+    'configuration.uf_create_success_mobile': 'User created successfully.',
+
+    // Configuration - utilisateurs/[id]/permissions.tsx
+    'configuration.up_ordre_requis_mobile': 'Please select at least one managed teaching cycle.',
+    'configuration.up_save_error_mobile': 'Could not save the permissions.',
+    'configuration.up_introuvable': 'Not found.',
+    'configuration.up_readonly_mobile': 'Read-only: you cannot change these permissions.',
+    'configuration.up_ordres_geres_title': 'Managed teaching cycles',
+    'configuration.up_complexe_note_mobile': 'This manager of a school complex must be limited to one or more cycles.',
+    'configuration.up_save_success_mobile': 'Permissions saved successfully.',
   },
   ar: {
     'language.label': 'اللغة',
@@ -1203,6 +1271,40 @@ const STRINGS = {
     'configuration.tn_note_max_label': 'النقطة القصوى',
     'configuration.tn_edit_success': 'تم تعديل نوع النقطة بنجاح.',
     'configuration.tn_create_success': 'تم إنشاء نوع النقطة بنجاح.',
+
+    // Configuration - utilisateurs/index.tsx
+    'configuration.ut_deactivate_success': 'تم تعطيل المستخدم بنجاح.',
+    'configuration.ut_activate_success': 'تم تفعيل المستخدم بنجاح.',
+    'configuration.ut_delete_success': 'تم حذف المستخدم بنجاح.',
+    'configuration.ut_search_placeholder_mobile': 'الاسم أو البريد الإلكتروني…',
+    'configuration.empty_utilisateurs': 'لم يتم العثور على أي مستخدم.',
+    'configuration.menu_permissions': 'الصلاحيات',
+    'configuration.ut_toggle_title_desactiver': 'تعطيل',
+    'configuration.ut_toggle_title_activer': 'تفعيل',
+
+    // Configuration - utilisateurs/new.tsx
+    'configuration.uf_genre_masculin': 'ذكر',
+    'configuration.uf_genre_feminin': 'أنثى',
+    'configuration.uf_champs_obligatoires_mobile': 'يرجى ملء جميع الحقول المطلوبة.',
+    'configuration.uf_create_error_mobile': 'تعذر إنشاء هذا المستخدم.',
+    'configuration.uf_note_mobile': 'ينشئ هذا النموذج حسابًا عاديًا (مسؤول/مسؤول تنفيذي). لربط حساب بمعلم أو ولي أمر أو DAE أو DCAP، استخدم النسخة الإلكترونية.',
+    'configuration.uf_nom_prenom_label': 'الاسم الكامل',
+    'configuration.uf_email_label': 'البريد الإلكتروني',
+    'configuration.ut_th_telephone': 'الهاتف',
+    'configuration.ut_th_genre': 'الجنس',
+    'configuration.uf_fonction_optionnelle': 'الوظيفة (اختياري)',
+    'configuration.uf_droit_label': 'الصلاحية',
+    'configuration.uf_creer_utilisateur': 'إنشاء المستخدم',
+    'configuration.uf_create_success_mobile': 'تم إنشاء المستخدم بنجاح.',
+
+    // Configuration - utilisateurs/[id]/permissions.tsx
+    'configuration.up_ordre_requis_mobile': 'يرجى اختيار طور تعليمي واحد على الأقل للإشراف عليه.',
+    'configuration.up_save_error_mobile': 'تعذر حفظ الصلاحيات.',
+    'configuration.up_introuvable': 'غير موجود.',
+    'configuration.up_readonly_mobile': 'قراءة فقط: لا يمكنك تعديل هذه الصلاحيات.',
+    'configuration.up_ordres_geres_title': 'الأطوار التعليمية المُدارة',
+    'configuration.up_complexe_note_mobile': 'يجب أن يقتصر هذا المسؤول التنفيذي لمجمع مدرسي على طور واحد أو أكثر.',
+    'configuration.up_save_success_mobile': 'تم حفظ الصلاحيات بنجاح.',
   },
 } satisfies Record<Locale, Record<string, string>>;
 

@@ -8,14 +8,11 @@ import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
+import { useLocale } from '@/context/LocaleContext';
 import { api, apiErrorMessage } from '@/lib/api';
 
-const GENRE_OPTIONS = [
-  { value: 'Masculin', label: 'Masculin' },
-  { value: 'Féminin', label: 'Féminin' },
-];
-
 export default function NewUtilisateurScreen() {
+  const { t } = useLocale();
   const { user } = useAuth();
   const [nomPrenom, setNomPrenom] = useState('');
   const [email, setEmail] = useState('');
@@ -26,6 +23,11 @@ export default function NewUtilisateurScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
+
+  const GENRE_OPTIONS = [
+    { value: 'Masculin', label: t('configuration.uf_genre_masculin') },
+    { value: 'Féminin', label: t('configuration.uf_genre_feminin') },
+  ];
 
   const droitOptions =
     user?.droit === 'SupAdmin'
@@ -40,7 +42,7 @@ export default function NewUtilisateurScreen() {
 
   async function handleSubmit() {
     if (!isValid) {
-      setError('Veuillez remplir tous les champs obligatoires.');
+      setError(t('configuration.uf_champs_obligatoires_mobile'));
       return;
     }
     setError(null);
@@ -65,7 +67,7 @@ export default function NewUtilisateurScreen() {
         }
       }, 900);
     } catch (err) {
-      setError(apiErrorMessage(err, 'Impossible de créer cet utilisateur.'));
+      setError(apiErrorMessage(err, t('configuration.uf_create_error_mobile')));
     } finally {
       setIsSubmitting(false);
     }
@@ -73,22 +75,19 @@ export default function NewUtilisateurScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <Text style={styles.note}>
-        Ce formulaire crée un compte classique (Admin/Gestionnaire). Pour lier un compte à un enseignant, un parent, un DAE ou un
-        DCAP, utilisez la version web.
-      </Text>
-      <TextInput mode="outlined" label={requiredLabel('Nom et prénom')} value={nomPrenom} onChangeText={setNomPrenom} style={styles.input} />
-      <TextInput mode="outlined" label={requiredLabel('Email')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" style={styles.input} />
-      <TextInput mode="outlined" label={requiredLabel('Téléphone')} value={telephone} onChangeText={setTelephone} keyboardType="phone-pad" style={styles.input} />
-      <SelectField label={requiredLabel('Genre')} value={genre} options={GENRE_OPTIONS} onChange={(v) => setGenre(v as string)} />
-      <TextInput mode="outlined" label="Fonction (optionnel)" value={fonction} onChangeText={setFonction} style={styles.input} />
-      <SelectField label={requiredLabel('Droit')} value={droit} options={droitOptions} onChange={(v) => setDroit(v as string)} />
+      <Text style={styles.note}>{t('configuration.uf_note_mobile')}</Text>
+      <TextInput mode="outlined" label={requiredLabel(t('configuration.uf_nom_prenom_label'))} value={nomPrenom} onChangeText={setNomPrenom} style={styles.input} />
+      <TextInput mode="outlined" label={requiredLabel(t('configuration.uf_email_label'))} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" style={styles.input} />
+      <TextInput mode="outlined" label={requiredLabel(t('configuration.ut_th_telephone'))} value={telephone} onChangeText={setTelephone} keyboardType="phone-pad" style={styles.input} />
+      <SelectField label={requiredLabel(t('configuration.ut_th_genre'))} value={genre} options={GENRE_OPTIONS} onChange={(v) => setGenre(v as string)} />
+      <TextInput mode="outlined" label={t('configuration.uf_fonction_optionnelle')} value={fonction} onChangeText={setFonction} style={styles.input} />
+      <SelectField label={requiredLabel(t('configuration.uf_droit_label'))} value={droit} options={droitOptions} onChange={(v) => setDroit(v as string)} />
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <SubmitButton label="Créer l'utilisateur" onPress={handleSubmit} loading={isSubmitting} />
+      <SubmitButton label={t('configuration.uf_creer_utilisateur')} onPress={handleSubmit} loading={isSubmitting} />
 
-      <SuccessSnackbar visible={successVisible} message="Utilisateur créé avec succès." onDismiss={() => setSuccessVisible(false)} />
+      <SuccessSnackbar visible={successVisible} message={t('configuration.uf_create_success_mobile')} onDismiss={() => setSuccessVisible(false)} />
     </ScrollView>
   );
 }
