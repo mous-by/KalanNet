@@ -77,4 +77,21 @@ return [
     'statut_fermee' => 'Fermée',
     'movement_history' => 'Historique des Mouvements',
     'caisse_closure' => 'Clôture de Caisse',
+
+    // historique.blade.php
+    'breadcrumb_paiements_eleves' => 'Paiements élèves',
+    'breadcrumb_historique' => 'Historique',
+    'back_button' => 'Retour',
+    'all_classes' => 'Toutes',
+    'all_annees' => 'Toutes',
+    'label_statut' => 'Statut',
+    'all_statuts' => 'Tous',
+    'statut_valide' => 'Valide',
+    'statut_annule' => 'Annulé',
+    'th_reference' => 'Référence',
+    'th_payeur' => 'Payeur',
+    'th_actions' => 'Actions',
+    'receipt_pdf_title' => 'Reçu PDF',
+    'receipt_thermal_title' => 'Reçu thermique',
+    'empty_history' => 'Aucun historique trouvé.',
 ];

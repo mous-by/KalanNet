@@ -77,4 +77,21 @@ return [
     'statut_fermee' => 'مغلق',
     'movement_history' => 'سجل الحركات',
     'caisse_closure' => 'إغلاق الصندوق',
+
+    // historique.blade.php
+    'breadcrumb_paiements_eleves' => 'مدفوعات التلاميذ',
+    'breadcrumb_historique' => 'السجل',
+    'back_button' => 'رجوع',
+    'all_classes' => 'الكل',
+    'all_annees' => 'الكل',
+    'label_statut' => 'الحالة',
+    'all_statuts' => 'الكل',
+    'statut_valide' => 'صالح',
+    'statut_annule' => 'ملغى',
+    'th_reference' => 'المرجع',
+    'th_payeur' => 'الدافع',
+    'th_actions' => 'الإجراءات',
+    'receipt_pdf_title' => 'إيصال PDF',
+    'receipt_thermal_title' => 'إيصال حراري',
+    'empty_history' => 'لم يتم العثور على أي سجل.',
 ];

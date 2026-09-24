@@ -2,19 +2,19 @@
 
 @section('content')
 <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-    <div class="breadcrumb-title pe-3">Finances</div>
+    <div class="breadcrumb-title pe-3">{{ __('finances.title') }}</div>
     <div class="ps-3">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-0 p-0">
                 <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bi bi-house-door"></i></a></li>
-                <li class="breadcrumb-item"><a href="{{ route('finances.paiements') }}">Paiements élèves</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Historique</li>
+                <li class="breadcrumb-item"><a href="{{ route('finances.paiements') }}">{{ __('finances.breadcrumb_paiements_eleves') }}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ __('finances.breadcrumb_historique') }}</li>
             </ol>
         </nav>
     </div>
     <div class="ms-auto">
         <a href="{{ route('finances.paiements') }}" class="btn theme-outline-btn">
-            <i class="bi bi-arrow-left me-1"></i>Retour
+            <i class="bi bi-arrow-left me-1"></i>{{ __('finances.back_button') }}
         </a>
     </div>
 </div>
@@ -29,29 +29,29 @@
     @csrf
     <div class="card-body row g-3 align-items-end">
         <div class="col-md-3">
-            <label class="form-label">Classe</label>
+            <label class="form-label">{{ __('finances.label_classe') }}</label>
             <select name="classe_id" class="form-select auto-submit">
-                <option value="">Toutes</option>
+                <option value="">{{ __('finances.all_classes') }}</option>
                 @foreach($classes as $classe)
                     <option value="{{ $classe->id_classe }}" @selected(($filters['classe_id'] ?? '') == $classe->id_classe)>{{ $classe->nom_classe }}</option>
                 @endforeach
             </select>
         </div>
         <div class="col-md-3">
-            <label class="form-label">Année</label>
+            <label class="form-label">{{ __('finances.label_annee') }}</label>
             <select name="annee_scolaire_id" class="form-select auto-submit">
-                <option value="">Toutes</option>
+                <option value="">{{ __('finances.all_annees') }}</option>
                 @foreach($annees as $annee)
                     <option value="{{ $annee->id_anneeScolaire }}" @selected(($filters['annee_scolaire_id'] ?? '') == $annee->id_anneeScolaire)>{{ $annee->annee }}</option>
                 @endforeach
             </select>
         </div>
         <div class="col-md-2">
-            <label class="form-label">Statut</label>
+            <label class="form-label">{{ __('finances.label_statut') }}</label>
             <select name="statut" class="form-select auto-submit">
-                <option value="">Tous</option>
-                <option value="valide" @selected(($filters['statut'] ?? '') === 'valide')>Valide</option>
-                <option value="annule" @selected(($filters['statut'] ?? '') === 'annule')>Annulé</option>
+                <option value="">{{ __('finances.all_statuts') }}</option>
+                <option value="valide" @selected(($filters['statut'] ?? '') === 'valide')>{{ __('finances.statut_valide') }}</option>
+                <option value="annule" @selected(($filters['statut'] ?? '') === 'annule')>{{ __('finances.statut_annule') }}</option>
             </select>
         </div>
         <div class="col-md-4 d-flex gap-2 justify-content-end">
@@ -67,15 +67,15 @@
         <table class="table table-striped table-bordered align-middle mb-0">
             <thead>
                 <tr>
-                    <th>Date</th>
-                    <th>Référence</th>
-                    <th>Reçu</th>
-                    <th>Élève</th>
-                    <th>Classe</th>
-                    <th>Motif</th>
-                    <th class="text-end">Montant</th>
-                    <th>Payeur</th>
-                    <th class="text-center">Actions</th>
+                    <th>{{ __('finances.th_date') }}</th>
+                    <th>{{ __('finances.th_reference') }}</th>
+                    <th>{{ __('finances.th_recu') }}</th>
+                    <th>{{ __('finances.th_eleve') }}</th>
+                    <th>{{ __('finances.label_classe') }}</th>
+                    <th>{{ __('finances.th_motif') }}</th>
+                    <th class="text-end">{{ __('finances.th_montant') }}</th>
+                    <th>{{ __('finances.th_payeur') }}</th>
+                    <th class="text-center">{{ __('finances.th_actions') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -87,21 +87,21 @@
                     <td class="fw-bold">{{ $paiement->eleve?->nom_eleve }} {{ $paiement->eleve?->prenom_eleve }}</td>
                     <td>{{ $paiement->classe?->nom_classe }}</td>
                     <td>{{ $paiement->motif }}</td>
-                    <td class="text-end fw-bold">{{ number_format((float) ($paiement->montant_paye ?? $paiement->montant), 0, ',', ' ') }} F</td>
+                    <td class="text-end fw-bold">@devise((float) ($paiement->montant_paye ?? $paiement->montant))</td>
                     <td>{{ $paiement->nom_payeur }}</td>
                     <td class="text-center">
                         <div class="btn-group">
-                            <a href="{{ route('finances.paiements.download', $paiement->id_paiement) }}" class="btn btn-sm history-action-btn history-action-receipt" title="Reçu PDF" aria-label="Reçu PDF">
+                            <a href="{{ route('finances.paiements.download', $paiement->id_paiement) }}" class="btn btn-sm history-action-btn history-action-receipt" title="{{ __('finances.receipt_pdf_title') }}" aria-label="{{ __('finances.receipt_pdf_title') }}">
                                 <i class="bi bi-receipt"></i>
                             </a>
-                            <a href="{{ route('finances.paiements.thermique', $paiement->id_paiement) }}" class="btn btn-sm history-action-btn history-action-print" title="Reçu thermique" aria-label="Reçu thermique">
+                            <a href="{{ route('finances.paiements.thermique', $paiement->id_paiement) }}" class="btn btn-sm history-action-btn history-action-print" title="{{ __('finances.receipt_thermal_title') }}" aria-label="{{ __('finances.receipt_thermal_title') }}">
                                 <i class="bi bi-printer"></i>
                             </a>
                         </div>
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="9" class="text-center text-muted py-5">Aucun historique trouvé.</td></tr>
+                <tr><td colspan="9" class="text-center text-muted py-5">{{ __('finances.empty_history') }}</td></tr>
             @endforelse
             </tbody>
         </table>
