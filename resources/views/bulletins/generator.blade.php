@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Génération des bulletins – KalanNet</title>
+    <title>{{ __('bulletins.gen_window_title') }}</title>
     <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <style>
@@ -415,7 +415,7 @@
     <header class="kn-header">
         <div class="kn-logo-mark">KN</div>
         <div class="kn-header-text">
-            <h1>Génération des bulletins</h1>
+            <h1>{{ __('bulletins.gen_header_title') }}</h1>
             <p>{{ $classe->nom_classe }}</p>
         </div>
     </header>
@@ -440,12 +440,12 @@
             </svg>
         </div>
         <div class="kn-progress-info">
-            <div class="kn-progress-label" id="kn-label">Chargement de la liste des élèves...</div>
+            <div class="kn-progress-label" id="kn-label">{{ __('bulletins.gen_loading_students_label') }}</div>
             <div class="kn-progress-track">
                 <div class="kn-progress-fill" id="kn-fill"></div>
             </div>
             <div class="kn-progress-stats">
-                <span id="kn-count">0 / 0 bulletins</span>
+                <span id="kn-count">{{ __('bulletins.gen_count', ['done' => 0, 'total' => 0]) }}</span>
                 <span id="kn-pct">0%</span>
             </div>
         </div>
@@ -457,13 +457,13 @@
         <!-- Colonne 1 : En attente -->
         <div class="kn-col kn-col-pending">
             <div class="kn-col-title">
-                En attente
+                {{ __('bulletins.gen_column_pending') }}
                 <span class="kn-badge kn-badge-pending" id="kn-badge-pending">0</span>
             </div>
             <div class="kn-scroll" id="kn-pending-list">
                 <div class="kn-pending-item">
                     <div class="kn-status-dot spinning">⟳</div>
-                    <span class="kn-pname">Chargement...</span>
+                    <span class="kn-pname">{{ __('bulletins.gen_loading_generic') }}</span>
                 </div>
             </div>
         </div>
@@ -471,23 +471,23 @@
         <!-- Colonne 2 : Bulletins téléchargeables -->
         <div class="kn-col kn-col-done">
             <div class="kn-col-title">
-                Téléchargements
+                {{ __('bulletins.gen_column_downloads') }}
                 <span class="kn-badge kn-badge-done" id="kn-badge-done">0</span>
             </div>
             <div class="kn-scroll" id="kn-done-list">
-                <div class="kn-empty" id="kn-done-empty">Les bulletins générés<br>apparaîtront ici</div>
+                <div class="kn-empty" id="kn-done-empty">{!! __('bulletins.gen_done_empty') !!}</div>
             </div>
         </div>
 
         <!-- Colonne 3 : Aperçu PDF -->
         <div class="kn-col kn-col-preview">
-            <div class="kn-col-title">Aperçu</div>
+            <div class="kn-col-title">{{ __('bulletins.gen_column_preview') }}</div>
             <div class="kn-preview-wrap">
                 <div class="kn-preview-placeholder" id="kn-placeholder">
                     <span>📄</span>
-                    <p>Cliquez sur 👁 pour prévisualiser un bulletin</p>
+                    <p>{{ __('bulletins.gen_preview_hint') }}</p>
                 </div>
-                <iframe id="kn-preview-iframe" title="Aperçu bulletin"></iframe>
+                <iframe id="kn-preview-iframe" title="{{ __('bulletins.gen_column_preview') }}"></iframe>
             </div>
         </div>
 
@@ -495,15 +495,15 @@
 
     <!-- FOOTER -->
     <div class="kn-footer">
-        <div class="kn-footer-status" id="kn-status">⏳ Génération en cours...</div>
+        <div class="kn-footer-status" id="kn-status">{{ __('bulletins.gen_status_generating') }}</div>
         <div class="kn-footer-actions">
             <button id="kn-btn-merge" class="kn-btn kn-btn-merge" disabled>
-                📄 Télécharger en 1 seul PDF
+                {{ __('bulletins.gen_btn_merge') }}
             </button>
             <button id="kn-btn-zip" class="kn-btn kn-btn-zip" disabled>
-                📦 Télécharger en ZIP
+                {{ __('bulletins.gen_btn_zip') }}
             </button>
-            <button onclick="window.close()" class="kn-btn kn-btn-close">✕ Fermer</button>
+            <button onclick="window.close()" class="kn-btn kn-btn-close">{{ __('bulletins.gen_btn_close') }}</button>
         </div>
     </div>
 
@@ -511,7 +511,7 @@
     <div class="kn-overlay" id="kn-overlay">
         <div class="kn-overlay-box">
             <div class="kn-overlay-spinner"></div>
-            <h3 id="kn-overlay-title">Traitement en cours...</h3>
+            <h3 id="kn-overlay-title">{{ __('bulletins.gen_overlay_default_title') }}</h3>
             <p id="kn-overlay-msg"></p>
             <div class="kn-overlay-progress">
                 <div class="kn-overlay-bar" id="kn-overlay-bar"></div>
@@ -519,8 +519,34 @@
         </div>
     </div>
 
+@php
+    $genI18n = [
+        'downloadTitle' => __('bulletins.gen_download_title_attr'),
+        'previewTitle' => __('bulletins.gen_column_preview'),
+        'fusionTitle' => __('bulletins.gen_fusion_title'),
+        'fusionError' => __('bulletins.gen_fusion_error'),
+        'zipTitle' => __('bulletins.gen_zip_title'),
+        'zipError' => __('bulletins.gen_zip_error'),
+        'errorLoadingStudents' => __('bulletins.gen_error_loading_students'),
+        'errorLoadingStatus' => __('bulletins.gen_error_loading_status'),
+        'networkError' => __('bulletins.gen_network_error'),
+        'noStudentsFound' => __('bulletins.gen_no_students_found'),
+        'noBulletinsAvailable' => __('bulletins.gen_no_bulletins_available'),
+        'noStudent' => __('bulletins.gen_no_student'),
+        'preparing' => __('bulletins.gen_preparing'),
+        'generating' => __('bulletins.gen_generating'),
+        'finalizing' => __('bulletins.gen_finalizing'),
+        'successLabel' => __('bulletins.gen_success_label'),
+        'successStatus' => __('bulletins.gen_success_status'),
+        'partialLabel' => __('bulletins.gen_partial_label'),
+        'partialStatus' => __('bulletins.gen_partial_status'),
+        'allGenerated' => __('bulletins.gen_all_generated'),
+        'count' => __('bulletins.gen_count'),
+    ];
+@endphp
 <script>
 (function () {
+    const I18N = @json($genI18n);
     const CLASS_NAME    = @json($classe->nom_classe);
     const STUDENTS_URL  = @json(route('pedagogie.bulletins.students', $classe->id_classe));
     const PARAMS = {
@@ -559,7 +585,7 @@
     function setProgress(done, tot, labelText) {
         const pct = tot ? Math.round((done / tot) * 100) : 0;
         elFill.style.width      = pct + '%';
-        elCount.textContent     = done + ' / ' + tot + ' bulletin' + (tot > 1 ? 's' : '');
+        elCount.textContent     = I18N.count.replace(':done', done).replace(':total', tot);
         elPct.textContent       = pct + '%';
         if (labelText) elLabel.textContent = labelText;
     }
@@ -619,7 +645,7 @@
             remaining--;
             elBadgePend.textContent = remaining;
             if (remaining === 0 && document.body.classList.contains('done')) {
-                elPendingList.innerHTML = '<div class="kn-empty success">✅ Tout généré !</div>';
+                elPendingList.innerHTML = '<div class="kn-empty success">' + I18N.allGenerated + '</div>';
             }
         }, { once: true });
     }
@@ -640,7 +666,7 @@
 
             const viewBtn = document.createElement('button');
             viewBtn.className = 'kn-view-link';
-            viewBtn.title = 'Aperçu';
+            viewBtn.title = I18N.previewTitle;
             viewBtn.textContent = '👁';
             viewBtn.addEventListener('click', () => showPreview(blobUrl));
 
@@ -648,7 +674,7 @@
             dlLink.className = 'kn-dl-link';
             dlLink.href = blobUrl;
             dlLink.download = fname;
-            dlLink.title = 'Télécharger';
+            dlLink.title = I18N.downloadTitle;
             dlLink.textContent = '⬇';
 
             const nameSpan = document.createElement('span');
@@ -696,7 +722,7 @@
     async function mergePDF() {
         if (!blobs.length) return;
         const fname = safeName(CLASS_NAME) + '_Bulletins.pdf';
-        showOverlay('Fusion des bulletins en cours...', fname, 0);
+        showOverlay(I18N.fusionTitle, fname, 0);
         try {
             const { PDFDocument } = PDFLib;
             const merged = await PDFDocument.create();
@@ -713,7 +739,7 @@
             setOverlayPct(100);
             triggerDownload(URL.createObjectURL(pdfBlob), fname);
         } catch (e) {
-            alert('Erreur lors de la fusion PDF : ' + e.message);
+            alert(I18N.fusionError.replace(':message', e.message));
         } finally {
             hideOverlay();
         }
@@ -723,7 +749,7 @@
     async function downloadZip() {
         if (!blobs.length) return;
         const fname = safeName(CLASS_NAME) + '_Bulletins.zip';
-        showOverlay('Création du dossier ZIP...', fname, 0);
+        showOverlay(I18N.zipTitle, fname, 0);
         try {
             const zip    = new JSZip();
             const folder = zip.folder(safeName(CLASS_NAME) + '_Bulletins');
@@ -734,7 +760,7 @@
             );
             triggerDownload(URL.createObjectURL(zipBlob), fname);
         } catch (e) {
-            alert('Erreur lors de la création du ZIP : ' + e.message);
+            alert(I18N.zipError.replace(':message', e.message));
         } finally {
             hideOverlay();
         }
@@ -766,25 +792,25 @@
             if (!res.ok) throw new Error('HTTP ' + res.status);
             students = await res.json();
         } catch (e) {
-            elLabel.textContent = '❌ Impossible de charger la liste des élèves.';
-            elStatus.textContent = '❌ Erreur de chargement';
+            elLabel.textContent = I18N.errorLoadingStudents;
+            elStatus.textContent = I18N.errorLoadingStatus;
             elStatus.className = 'kn-footer-status error';
-            elPendingList.innerHTML = '<div class="kn-empty" style="color:var(--red)">Erreur réseau</div>';
+            elPendingList.innerHTML = '<div class="kn-empty" style="color:var(--red)">' + I18N.networkError + '</div>';
             return;
         }
 
         if (!students.length) {
-            elLabel.textContent = 'Aucun élève trouvé pour cette sélection.';
-            elStatus.textContent = '⚠ Aucun bulletin disponible';
+            elLabel.textContent = I18N.noStudentsFound;
+            elStatus.textContent = I18N.noBulletinsAvailable;
             elStatus.className = 'kn-footer-status error';
-            elPendingList.innerHTML = '<div class="kn-empty">Aucun élève</div>';
+            elPendingList.innerHTML = '<div class="kn-empty">' + I18N.noStudent + '</div>';
             return;
         }
 
         total     = students.length;
         remaining = students.length;
         elBadgePend.textContent = remaining;
-        setProgress(0, total, 'Préparation de ' + total + ' bulletin' + (total > 1 ? 's' : '') + '...');
+        setProgress(0, total, I18N.preparing.replace(':count', total));
 
         // Construire la liste d'attente
         elPendingList.innerHTML = '';
@@ -794,7 +820,7 @@
         for (let i = 0; i < students.length; i++) {
             const s = students[i];
             setPendingStatus(s.id, 'spinning');
-            setProgress(doneCount, total, 'Génération : ' + s.prenom + ' ' + s.nom + '...');
+            setProgress(doneCount, total, I18N.generating.replace(':name', s.prenom + ' ' + s.nom));
 
             try {
                 const blob    = await fetchBlob(s.url);
@@ -815,8 +841,8 @@
 
             setProgress(doneCount, total,
                 i + 1 < students.length
-                    ? 'Génération : ' + students[i + 1].prenom + ' ' + students[i + 1].nom + '...'
-                    : 'Finalisation...'
+                    ? I18N.generating.replace(':name', students[i + 1].prenom + ' ' + students[i + 1].nom)
+                    : I18N.finalizing
             );
         }
 
@@ -831,16 +857,16 @@
             document.body.classList.add('done');
             const errors = total - doneCount;
             if (errors === 0) {
-                elLabel.textContent  = '✅ ' + doneCount + ' bulletin' + (doneCount > 1 ? 's générés' : ' généré') + ' avec succès !';
-                elStatus.textContent = '✅ ' + doneCount + ' bulletin' + (doneCount > 1 ? 's générés' : ' généré');
+                elLabel.textContent  = I18N.successLabel.replace(':count', doneCount);
+                elStatus.textContent = I18N.successStatus.replace(':count', doneCount);
                 elStatus.className   = 'kn-footer-status done';
             } else {
-                elLabel.textContent  = '⚠ ' + doneCount + '/' + total + ' générés – ' + errors + ' erreur(s)';
-                elStatus.textContent = '⚠ ' + errors + ' erreur(s)';
+                elLabel.textContent  = I18N.partialLabel.replace(':done', doneCount).replace(':total', total).replace(':errors', errors);
+                elStatus.textContent = I18N.partialStatus.replace(':errors', errors);
                 elStatus.className   = 'kn-footer-status error';
             }
             if (remaining === 0) {
-                elPendingList.innerHTML = '<div class="kn-empty success">✅ Tout généré !</div>';
+                elPendingList.innerHTML = '<div class="kn-empty success">' + I18N.allGenerated + '</div>';
             }
         }, 850);
     }
