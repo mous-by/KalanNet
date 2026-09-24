@@ -120,4 +120,17 @@ return [
     'annees_format_help' => 'Format recommandé : AAAA-AAAA',
     'annees_date_debut_label' => 'Date de début',
     'annees_date_fin_label' => 'Date de fin',
+
+    // ecoles.blade.php
+    'eco_gestion' => 'Gestion des écoles',
+    'eco_search_placeholder' => 'Rechercher une école...',
+    'eco_th_type' => 'Type',
+    'eco_th_contact' => 'Contact',
+    'eco_adresse_non_renseignee' => 'Adresse non renseignée',
+    'eco_email_non_renseigne' => 'Email non renseigné',
+    'eco_confirm_delete' => 'Supprimer cette école ?',
+    'eco_lecture_seule' => 'Lecture seule',
+    'eco_empty' => 'Aucune école trouvée.',
+    'eco_modal_create_title' => 'Nouvelle école',
+    'eco_modal_edit_title' => 'Modifier une école',
 ];

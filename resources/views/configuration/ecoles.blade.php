@@ -2,13 +2,13 @@
 
 @section('content')
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-        <div class="breadcrumb-title pe-3">Configuration</div>
+        <div class="breadcrumb-title pe-3">{{ __('configuration.title') }}</div>
         <div class="ps-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0 p-0">
                     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bx bx-home"></i></a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('configuration.index') }}">Aperçu</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Écoles</li>
+                    <li class="breadcrumb-item"><a href="{{ route('configuration.index') }}">{{ __('configuration.menu_apercu') }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ __('configuration.menu_ecoles') }}</li>
                 </ol>
             </nav>
         </div>
@@ -23,20 +23,20 @@
         <div class="col-12 col-lg-9">
             <div class="card theme-card shadow-sm">
                 <div class="card-header theme-header d-flex align-items-center justify-content-between flex-wrap gap-2">
-                    <h5 class="mb-0 fw-bold"><i class="bx bx-building me-2"></i>Gestion des écoles</h5>
+                    <h5 class="mb-0 fw-bold"><i class="bx bx-building me-2"></i>{{ __('configuration.eco_gestion') }}</h5>
                     @if(Auth::user()->droit === 'SupAdmin')
-                        <button type="button" class="btn btn-sm d-flex align-items-center gap-1 shadow-sm text-white" 
+                        <button type="button" class="btn btn-sm d-flex align-items-center gap-1 shadow-sm text-white"
                                 style="background-color: var(--theme-accent) !important; color: var(--text-on-accent) !important; border: none;"
                                 data-bs-toggle="modal" data-bs-target="#ecoleCreateModal">
                             <i class="bi bi-plus-lg"></i>
-                            <span>Ajouter</span>
+                            <span>{{ __('configuration.ajouter') }}</span>
                         </button>
                     @endif
                 </div>
                 <div class="card-body">
                     <div class="d-flex justify-content-end align-items-center flex-wrap mb-3 gap-3">
                         <form action="{{ route('configuration.ecoles') }}" method="GET" class="col-md-5" data-auto-filter="true">
-                            <input type="text" name="search" class="form-control" placeholder="Rechercher une école..." value="{{ request('search') }}">
+                            <input type="text" name="search" class="form-control" placeholder="{{ __('configuration.eco_search_placeholder') }}" value="{{ request('search') }}">
                         </form>
                     </div>
 
@@ -44,14 +44,14 @@
                         <table class="table table-striped table-bordered align-middle">
                             <thead>
                                 <tr>
-                                    <th>École</th>
-                                    <th>Pays</th>
-                                    <th>Type</th>
-                                    <th>Académie</th>
-                                    <th>CAP</th>
-                                    <th>Contact</th>
-                                    <th>Statut</th>
-                                    <th class="text-end">Actions</th>
+                                    <th>{{ __('configuration.menu_ecoles') }}</th>
+                                    <th>{{ __('configuration.menu_pays') }}</th>
+                                    <th>{{ __('configuration.eco_th_type') }}</th>
+                                    <th>{{ __('configuration.menu_academies') }}</th>
+                                    <th>{{ __('configuration.menu_caps') }}</th>
+                                    <th>{{ __('configuration.eco_th_contact') }}</th>
+                                    <th>{{ __('configuration.th_statut') }}</th>
+                                    <th class="text-end">{{ __('configuration.th_actions') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -68,7 +68,7 @@
                                                 </div>
                                                 <div>
                                                     <div class="fw-bold">{{ $ecole->nomEcole }}</div>
-                                                    <small class="text-muted">{{ $ecole->adresse ?? 'Adresse non renseignée' }}</small>
+                                                    <small class="text-muted">{{ $ecole->adresse ?? __('configuration.eco_adresse_non_renseignee') }}</small>
                                                 </div>
                                             </div>
                                         </td>
@@ -78,28 +78,28 @@
                                         <td>{{ $ecole->capRef->nom_cap ?? $ecole->cap ?? 'N/A' }}</td>
                                         <td>
                                             <div>{{ $ecole->telephone ?? 'N/A' }}</div>
-                                            <small class="text-muted">{{ $ecole->email ?: 'Email non renseigné' }}</small>
+                                            <small class="text-muted">{{ $ecole->email ?: __('configuration.eco_email_non_renseigne') }}</small>
                                         </td>
                                         <td><span class="badge theme-icon-soft">{{ ucfirst($ecole->statut ?? 'public') }}</span></td>
                                         <td class="text-end">
                                             @if(Auth::user()->droit === 'SupAdmin')
-                                                <button class="btn btn-light btn-sm p-2" data-bs-toggle="modal" data-bs-target="#ecoleEditModal{{ $ecole->idEcole }}" title="Modifier">
+                                                <button class="btn btn-light btn-sm p-2" data-bs-toggle="modal" data-bs-target="#ecoleEditModal{{ $ecole->idEcole }}" title="{{ __('configuration.modifier') }}">
                                                     <i class="bx bx-edit text-warning fs-5"></i>
                                                 </button>
-                                                <form action="{{ route('configuration.ecoles.destroy', $ecole->idEcole) }}" method="POST" class="d-inline" onsubmit="return confirm('Supprimer cette école ?');">
+                                                <form action="{{ route('configuration.ecoles.destroy', $ecole->idEcole) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('configuration.eco_confirm_delete') }}');">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button class="btn btn-light btn-sm p-2" title="Supprimer">
+                                                    <button class="btn btn-light btn-sm p-2" title="{{ __('configuration.supprimer') }}">
                                                         <i class="bx bx-trash text-danger fs-5"></i>
                                                     </button>
                                                 </form>
                                             @else
-                                                <span class="text-muted small">Lecture seule</span>
+                                                <span class="text-muted small">{{ __('configuration.eco_lecture_seule') }}</span>
                                             @endif
                                         </td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="8" class="text-center py-4 text-muted">Aucune école trouvée.</td></tr>
+                                    <tr><td colspan="8" class="text-center py-4 text-muted">{{ __('configuration.eco_empty') }}</td></tr>
                                 @endforelse
                             </tbody>
                         </table>
@@ -116,7 +116,7 @@
     @if(Auth::user()->droit === 'SupAdmin')
         @include('configuration.partials.ecole-modal', [
             'modalId' => 'ecoleCreateModal',
-            'title' => 'Nouvelle école',
+            'title' => __('configuration.eco_modal_create_title'),
             'action' => route('configuration.ecoles.store'),
             'method' => 'POST',
             'ecole' => null,
@@ -125,7 +125,7 @@
         @foreach($ecoles as $ecole)
             @include('configuration.partials.ecole-modal', [
                 'modalId' => 'ecoleEditModal'.$ecole->idEcole,
-                'title' => 'Modifier une école',
+                'title' => __('configuration.eco_modal_edit_title'),
                 'action' => route('configuration.ecoles.update', $ecole->idEcole),
                 'method' => 'PUT',
                 'ecole' => $ecole,

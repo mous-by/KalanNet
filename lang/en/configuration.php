@@ -120,4 +120,17 @@ return [
     'annees_format_help' => 'Recommended format: YYYY-YYYY',
     'annees_date_debut_label' => 'Start date',
     'annees_date_fin_label' => 'End date',
+
+    // ecoles.blade.php
+    'eco_gestion' => 'Schools management',
+    'eco_search_placeholder' => 'Search a school...',
+    'eco_th_type' => 'Type',
+    'eco_th_contact' => 'Contact',
+    'eco_adresse_non_renseignee' => 'No address provided',
+    'eco_email_non_renseigne' => 'No email provided',
+    'eco_confirm_delete' => 'Delete this school?',
+    'eco_lecture_seule' => 'Read-only',
+    'eco_empty' => 'No school found.',
+    'eco_modal_create_title' => 'New school',
+    'eco_modal_edit_title' => 'Edit a school',
 ];

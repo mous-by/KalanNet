@@ -120,4 +120,17 @@ return [
     'annees_format_help' => 'الصيغة الموصى بها: AAAA-AAAA',
     'annees_date_debut_label' => 'تاريخ البداية',
     'annees_date_fin_label' => 'تاريخ النهاية',
+
+    // ecoles.blade.php
+    'eco_gestion' => 'إدارة المدارس',
+    'eco_search_placeholder' => 'ابحث عن مدرسة...',
+    'eco_th_type' => 'النوع',
+    'eco_th_contact' => 'الاتصال',
+    'eco_adresse_non_renseignee' => 'العنوان غير محدد',
+    'eco_email_non_renseigne' => 'البريد الإلكتروني غير محدد',
+    'eco_confirm_delete' => 'هل تريد حذف هذه المدرسة؟',
+    'eco_lecture_seule' => 'قراءة فقط',
+    'eco_empty' => 'لم يتم العثور على أي مدرسة.',
+    'eco_modal_create_title' => 'مدرسة جديدة',
+    'eco_modal_edit_title' => 'تعديل مدرسة',
 ];
