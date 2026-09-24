@@ -2,12 +2,12 @@
 
 @section('content')
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-        <div class="breadcrumb-title pe-3">Élèves & Parents</div>
+        <div class="breadcrumb-title pe-3">{{ __('eleves.title_parents') }}</div>
         <div class="ps-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0 p-0">
                     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bi bi-house-door"></i></a></li>
-                    <li class="breadcrumb-item active">Cartes scolaires</li>
+                    <li class="breadcrumb-item active">{{ __('cartes.breadcrumb_title') }}</li>
                 </ol>
             </nav>
         </div>
@@ -19,48 +19,51 @@
 
     <div class="card theme-card shadow-sm mb-3">
         <div class="card-header theme-header">
-            <h5 class="mb-0 fw-bold">Cartes d'identité scolaires</h5>
+            <h5 class="mb-0 fw-bold">{{ __('cartes.page_title') }}</h5>
         </div>
         <div class="card-body p-4">
+            @php
+                $cartesTemplates = [
+                    'institutionnel' => [__('cartes.template_institutionnel'), __('cartes.template_institutionnel_desc')],
+                    'moderne' => [__('cartes.template_moderne'), __('cartes.template_moderne_desc')],
+                    'vertical' => [__('cartes.template_vertical'), __('cartes.template_vertical_desc')],
+                    'epure' => [__('cartes.template_epure'), __('cartes.template_epure_desc')],
+                    'horizon' => [__('cartes.template_horizon'), __('cartes.template_horizon_desc')],
+                    'compact' => [__('cartes.template_compact'), __('cartes.template_compact_desc')],
+                ];
+            @endphp
             <form action="{{ route('eleves.cartes') }}" method="POST" class="row g-3 align-items-end" data-auto-filter="true" data-auto-filter-fields="id_classe,id_annee,search">
                 @csrf
                 <div class="col-md-4">
-                    <label class="form-label">Classe</label>
+                    <label class="form-label">{{ __('eleves.label_classe') }}</label>
                     <select name="id_classe" class="form-select" required>
-                        <option value="">Choisir une classe...</option>
+                        <option value="">{{ __('eleves.choose_classe') }}</option>
                         @foreach($classes as $classe)
                             <option value="{{ $classe->id_classe }}" @selected(request('id_classe') == $classe->id_classe)>{{ $classe->nom_classe }}</option>
                         @endforeach
                     </select>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Année scolaire</label>
+                    <label class="form-label">{{ __('eleves.label_annee') }}</label>
                     <select name="id_annee" class="form-select" required>
-                        <option value="">Choisir une année...</option>
+                        <option value="">{{ __('eleves.choose_annee') }}</option>
                         @foreach($annees as $annee)
                             <option value="{{ $annee->id_anneeScolaire }}" @selected(request('id_annee') == $annee->id_anneeScolaire)>{{ $annee->annee }}</option>
                         @endforeach
                     </select>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Recherche</label>
-                    <input type="search" name="search" class="form-control" value="{{ request('search') }}" placeholder="Nom, prénom ou matricule" data-auto-filter-search="true">
+                    <label class="form-label">{{ __('cartes.label_recherche') }}</label>
+                    <input type="search" name="search" class="form-control" value="{{ request('search') }}" placeholder="{{ __('eleves.search_quick_placeholder') }}" data-auto-filter-search="true">
                 </div>
             </form>
             <div class="row g-3 align-items-end">
                 <div class="col-12">
                     <hr class="my-2">
-                    <h6 class="fw-bold mb-3">Atelier de configuration avant impression</h6>
-                    <label class="form-label fw-bold">Modèle de carte</label>
+                    <h6 class="fw-bold mb-3">{{ __('cartes.workshop_title') }}</h6>
+                    <label class="form-label fw-bold">{{ __('cartes.model_label') }}</label>
                     <div class="row g-3">
-                        @foreach([
-                            'institutionnel' => ['Institutionnel', 'Sobre, administratif, très lisible'],
-                            'moderne' => ['Moderne', 'Couleur forte, présentation plus actuelle'],
-                            'vertical' => ['Badge vertical', 'Format carte professionnelle avec photo mise en avant'],
-                            'epure' => ['Épuré', 'Fond blanc, rendu plus propre'],
-                            'horizon' => ['Horizon', 'Carte large avec bande officielle'],
-                            'compact' => ['Compact', 'Plus de cartes par page, pratique pour les grands effectifs'],
-                        ] as $value => [$label, $description])
+                        @foreach($cartesTemplates as $value => [$label, $description])
                             <div class="col-md-4">
                                 <label class="card-template-option d-block">
                                     <input type="radio" name="template" value="{{ $value }}" class="form-check-input me-2 card-config" @checked(request('template', 'epure') === $value)>
@@ -72,27 +75,27 @@
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Couleur principale</label>
+                    <label class="form-label">{{ __('cartes.primary_color_label') }}</label>
                     <input type="color" name="primary_color" class="form-control form-control-color card-config" value="{{ request('primary_color', '#0f766e') }}">
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Couleur secondaire</label>
+                    <label class="form-label">{{ __('cartes.secondary_color_label') }}</label>
                     <input type="color" name="secondary_color" class="form-control form-control-color card-config" value="{{ request('secondary_color', '#f59e0b') }}">
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Titre sur la carte</label>
-                    <input type="text" name="card_title" class="form-control card-config" value="{{ request('card_title', 'CARTE D’IDENTITÉ SCOLAIRE') }}">
+                    <label class="form-label">{{ __('cartes.card_title_label') }}</label>
+                    <input type="text" name="card_title" class="form-control card-config" value="{{ request('card_title', __('cartes.card_title_default')) }}">
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Signature</label>
-                    <input type="text" name="signature_label" class="form-control card-config" value="{{ request('signature_label', 'Directeur') }}">
+                    <label class="form-label">{{ __('cartes.signature_label_label') }}</label>
+                    <input type="text" name="signature_label" class="form-control card-config" value="{{ request('signature_label', __('cartes.signature_label_default')) }}">
                     <div class="mt-3">
-                        <label class="form-label">Signature électronique</label>
+                        <label class="form-label">{{ __('cartes.signature_electronic_label') }}</label>
                         <div class="d-flex align-items-center gap-2">
                             <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#signature-modal">
-                                <i class="bi bi-pencil-square me-2"></i>Signer
+                                <i class="bi bi-pencil-square me-2"></i>{{ __('cartes.sign_button') }}
                             </button>
-                            <span class="small text-muted" id="signature-status">Aucune signature</span>
+                            <span class="small text-muted" id="signature-status">{{ __('cartes.no_signature') }}</span>
                         </div>
                         <input type="hidden" name="signature_image" id="signature-image-input" class="card-config" value="{{ request('signature_image') }}">
                     </div>
@@ -102,25 +105,25 @@
                         <label class="form-check">
                             <input type="hidden" name="show_mali_flag" value="0">
                             <input type="checkbox" name="show_mali_flag" value="1" class="form-check-input card-config" @checked(request('show_mali_flag', '1') === '1')>
-                            <span class="form-check-label">Afficher le drapeau du Mali</span>
+                            <span class="form-check-label">{{ __('cartes.show_flag_label') }}</span>
                         </label>
                         <label class="form-check">
                             <input type="hidden" name="show_school_logo" value="0">
                             <input type="checkbox" name="show_school_logo" value="1" class="form-check-input card-config" @checked(request('show_school_logo', '1') === '1')>
-                            <span class="form-check-label">Afficher le logo de l’école</span>
+                            <span class="form-check-label">{{ __('cartes.show_logo_label') }}</span>
                         </label>
                         <label class="form-check">
                             <input type="hidden" name="show_qr" value="0">
                             <input type="checkbox" name="show_qr" value="1" class="form-check-input card-config" @checked(request('show_qr', '1') === '1')>
-                            <span class="form-check-label">Afficher un QR code par élève</span>
+                            <span class="form-check-label">{{ __('cartes.show_qr_label') }}</span>
                         </label>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Présentation du drapeau</label>
+                    <label class="form-label">{{ __('cartes.flag_style_label') }}</label>
                     <select name="mali_flag_style" class="form-select card-config">
-                        <option value="corner" @selected(request('mali_flag_style', 'corner') === 'corner')>En haut à gauche</option>
-                        <option value="watermark" @selected(request('mali_flag_style') === 'watermark')>Filigrane diagonal</option>
+                        <option value="corner" @selected(request('mali_flag_style', 'corner') === 'corner')>{{ __('cartes.flag_style_corner') }}</option>
+                        <option value="watermark" @selected(request('mali_flag_style') === 'watermark')>{{ __('cartes.flag_style_watermark') }}</option>
                     </select>
                 </div>
             </div>
@@ -132,15 +135,15 @@
             <div class="empty-eleves-icon mx-auto mb-3 d-flex align-items-center justify-content-center">
                 <i class="bi bi-person-vcard fs-1"></i>
             </div>
-            <h5 class="fw-bold mb-2">Préparer les cartes scolaires</h5>
-            <p class="text-muted mb-0">Choisissez une classe et une année scolaire pour afficher les élèves concernés.</p>
+            <h5 class="fw-bold mb-2">{{ __('cartes.empty_title') }}</h5>
+            <p class="text-muted mb-0">{{ __('cartes.empty_desc') }}</p>
         </div>
     @else
         <div class="card theme-card shadow-sm cards-students-card">
             <div class="card-header theme-header cards-students-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div>
-                    <h5 class="mb-0 fw-bold">Élèves disponibles</h5>
-                    <div class="small fw-semibold cards-students-count">{{ number_format($eleves->count(), 0, ',', ' ') }} élève(s)</div>
+                    <h5 class="mb-0 fw-bold">{{ __('cartes.available_title') }}</h5>
+                    <div class="small fw-semibold cards-students-count">{{ __('cartes.count_eleves', ['count' => number_format($eleves->count(), 0, ',', ' ')]) }}</div>
                 </div>
                 @if($eleves->isNotEmpty())
                     <form action="{{ route('eleves.cartes.pdf') }}" method="POST" target="_blank" id="cards-form">
@@ -151,8 +154,8 @@
                         <input type="hidden" name="template" value="{{ request('template', 'epure') }}" data-card-config-target="template">
                         <input type="hidden" name="primary_color" value="{{ request('primary_color', '#0f766e') }}" data-card-config-target="primary_color">
                         <input type="hidden" name="secondary_color" value="{{ request('secondary_color', '#f59e0b') }}" data-card-config-target="secondary_color">
-                        <input type="hidden" name="card_title" value="{{ request('card_title', 'CARTE D’IDENTITÉ SCOLAIRE') }}" data-card-config-target="card_title">
-                        <input type="hidden" name="signature_label" value="{{ request('signature_label', 'Directeur') }}" data-card-config-target="signature_label">
+                        <input type="hidden" name="card_title" value="{{ request('card_title', __('cartes.card_title_default')) }}" data-card-config-target="card_title">
+                        <input type="hidden" name="signature_label" value="{{ request('signature_label', __('cartes.signature_label_default')) }}" data-card-config-target="signature_label">
                         <input type="hidden" name="signature_image" value="{{ request('signature_image') }}" data-card-config-target="signature_image">
                         <input type="hidden" name="show_mali_flag" value="{{ request('show_mali_flag', '1') }}" data-card-config-target="show_mali_flag">
                         <input type="hidden" name="mali_flag_style" value="{{ request('mali_flag_style', 'corner') }}" data-card-config-target="mali_flag_style">
@@ -160,7 +163,7 @@
                         <input type="hidden" name="show_qr" value="{{ request('show_qr', '1') }}" data-card-config-target="show_qr">
                         <input type="hidden" name="selected_eleves" id="cards-selected-input">
                         <button type="submit" class="btn btn-primary" id="cards-print-button">
-                            <i class="bi bi-printer me-2"></i>Imprimer toutes les cartes
+                            <i class="bi bi-printer me-2"></i>{{ __('cartes.print_all_button') }}
                         </button>
                     </form>
                 @endif
@@ -170,11 +173,11 @@
                     <thead>
                     <tr>
                         <th class="text-center" style="width: 48px;"><input type="checkbox" id="cards-check-all"></th>
-                        <th>Élève</th>
-                        <th>Matricule</th>
-                        <th>Classe</th>
-                        <th>Genre</th>
-                        <th>Contact parent</th>
+                        <th>{{ __('parents.th_eleve') }}</th>
+                        <th>{{ __('eleves.label_matricule') }}</th>
+                        <th>{{ __('eleves.label_classe') }}</th>
+                        <th>{{ __('eleves.label_genre') }}</th>
+                        <th>{{ __('cartes.th_contact_parent') }}</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -192,18 +195,18 @@
                                     </div>
                                     <div>
                                         <div class="fw-bold">{{ $eleve->prenom_eleve }} {{ $eleve->nom_eleve }}</div>
-                                        <div class="small text-muted">{{ $eleve->date_naissance ? \Carbon\Carbon::parse($eleve->date_naissance)->format('d/m/Y') : 'Naissance non renseignée' }}</div>
+                                        <div class="small text-muted">{{ $eleve->date_naissance ? \Carbon\Carbon::parse($eleve->date_naissance)->format('d/m/Y') : __('cartes.birth_not_specified') }}</div>
                                     </div>
                                 </div>
                             </td>
                             <td><span class="badge bg-light text-dark font-monospace">{{ $eleve->matricule }}</span></td>
                             <td>{{ $eleve->classe?->nom_classe }}</td>
                             <td>{{ $eleve->genre_eleve }}</td>
-                            <td>{{ $eleve->parents->first()?->telephone_parent ?? 'Non renseigné' }}</td>
+                            <td>{{ $eleve->parents->first()?->telephone_parent ?? __('eleves.not_specified_m') }}</td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="text-center py-5 text-muted">Aucun élève trouvé pour ces critères.</td>
+                            <td colspan="6" class="text-center py-5 text-muted">{{ __('cartes.empty_table') }}</td>
                         </tr>
                     @endforelse
                     </tbody>
@@ -216,8 +219,8 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="signature-modal-title">Signature électronique</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                    <h5 class="modal-title" id="signature-modal-title">{{ __('cartes.signature_modal_title') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('eleves.close') }}"></button>
                 </div>
                 <div class="modal-body">
                     <div class="signature-pad-wrap">
@@ -225,8 +228,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" id="signature-clear">Effacer</button>
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Valider</button>
+                    <button type="button" class="btn btn-outline-secondary" id="signature-clear">{{ __('cartes.clear_button') }}</button>
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">{{ __('parents.validate') }}</button>
                 </div>
             </div>
         </div>
@@ -293,7 +296,16 @@
         }
     </style>
 
+    @php
+        $cartesI18n = [
+            'printAll' => __('cartes.print_all_button'),
+            'printN' => __('cartes.print_n_button'),
+            'signatureSaved' => __('cartes.signature_saved'),
+            'noSignature' => __('cartes.no_signature'),
+        ];
+    @endphp
     <script>
+        const cartesI18n = @json($cartesI18n);
         const cardsCheckAll = document.getElementById('cards-check-all');
         const cardsSelectedInput = document.getElementById('cards-selected-input');
         const cardsPrintButton = document.getElementById('cards-print-button');
@@ -311,8 +323,8 @@
             if (cardsSelectedInput) cardsSelectedInput.value = ids.join(',');
             if (cardsPrintButton) {
                 cardsPrintButton.innerHTML = ids.length > 0
-                    ? `<i class="bi bi-printer me-2"></i>Imprimer ${ids.length} carte(s)`
-                    : `<i class="bi bi-printer me-2"></i>Imprimer toutes les cartes`;
+                    ? `<i class="bi bi-printer me-2"></i>${cartesI18n.printN.replace(':count', ids.length)}`
+                    : `<i class="bi bi-printer me-2"></i>${cartesI18n.printAll}`;
             }
             const boxes = document.querySelectorAll('.cards-check');
             if (cardsCheckAll) {
@@ -351,7 +363,7 @@
 
             function updateSignatureStatus() {
                 if (!signatureStatus) return;
-                signatureStatus.textContent = signatureInput.value ? 'Signature enregistrée' : 'Aucune signature';
+                signatureStatus.textContent = signatureInput.value ? cartesI18n.signatureSaved : cartesI18n.noSignature;
             }
 
             function resizePad() {
