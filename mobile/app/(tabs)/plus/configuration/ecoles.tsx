@@ -70,6 +70,9 @@ const MALI_TYPE_OPTIONS = [
   'Secondaire Technique et Professionnel',
 ];
 const NON_MALI_TYPE_OPTIONS = ['Complexe Scolaire', 'Primaire', 'Secondaire Generale', 'Secondaire Technique et Professionnel'];
+// École de Santé est independante du pays (filiere/annee, pas de cycle
+// Fondamentale/Secondaire) -- proposee quel que soit le pays choisi.
+const SANTE_TYPE = 'École de Santé';
 
 const STATUT_OPTIONS = [
   { value: 'public', label: 'Public' },
@@ -155,15 +158,16 @@ export default function EcolesScreen() {
   // ConfigurationController::validateEcole() cote backend.
   const selectedPays = (paysListe ?? []).find((p) => p.id === idPays) ?? null;
   const estMali = !selectedPays || selectedPays.code_iso === MALI_CODE_ISO;
+  const estSante = typeEcole === SANTE_TYPE;
   const isComplexe = typeEcole === 'Complexe Scolaire';
   const needsCap =
     estMali && typeEcole
       ? CAP_ALWAYS_REQUIRED_TYPES.includes(typeEcole) || (typeEcole === 'Complexe Scolaire' && nomFondamental.trim() !== '')
       : false;
-  const typeOptions = (estMali ? MALI_TYPE_OPTIONS : NON_MALI_TYPE_OPTIONS).map((t) => ({ value: t, label: t }));
+  const typeOptions = [...(estMali ? MALI_TYPE_OPTIONS : NON_MALI_TYPE_OPTIONS), SANTE_TYPE].map((t) => ({ value: t, label: t }));
 
   async function handleSubmit() {
-    if (!nomEcole.trim() || !typeEcole || !statut || (estMali && !idAcademie) || (needsCap && !idCap)) {
+    if (!nomEcole.trim() || !typeEcole || !statut || (estMali && !estSante && !idAcademie) || (needsCap && !idCap)) {
       setFormError('Veuillez remplir tous les champs obligatoires.');
       return;
     }
@@ -286,7 +290,7 @@ export default function EcolesScreen() {
               <SelectField label={requiredLabel('Type')} value={typeEcole} options={typeOptions} onChange={(v) => setTypeEcole(v as string)} />
               <SelectField label={requiredLabel('Statut')} value={statut} options={STATUT_OPTIONS} onChange={(v) => setStatut(v as string)} />
               <SelectField
-                label={estMali ? requiredLabel('Académie') : 'Académie (optionnel hors Mali)'}
+                label={estMali && !estSante ? requiredLabel('Académie') : 'Académie (optionnel)'}
                 value={idAcademie}
                 options={academieOptions}
                 onChange={(v) => {
@@ -294,7 +298,9 @@ export default function EcolesScreen() {
                   setIdCap(null);
                 }}
               />
-              {!estMali ? (
+              {estSante ? (
+                <Text style={styles.helperText}>Sans objet pour une École de Santé — laissez vide.</Text>
+              ) : !estMali ? (
                 <Text style={styles.helperText}>
                   Aucune académie qui convient ? Créez-la d’abord depuis l’écran Académies, puis revenez ici la sélectionner.
                 </Text>

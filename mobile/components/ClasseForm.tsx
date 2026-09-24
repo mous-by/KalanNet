@@ -10,7 +10,7 @@ import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useApiGet } from '@/lib/useApi';
-import { Classe, Enseignant, Matiere } from '@/types/api';
+import { Classe, Enseignant, Filiere, Matiere } from '@/types/api';
 
 interface LigneForm {
   id_matiere: number | null;
@@ -25,6 +25,10 @@ interface FormOptions {
   // pas un tableau — voir ClasseController::ordresDisponibles() cote backend,
   // qui renvoie un tableau associatif dans toutes ses branches.
   ordres: Record<string, string>;
+  // Ecole de Sante : filiere a la place de l'ordre d'enseignement (voir
+  // ClasseController::estSante() cote backend).
+  filieres: Filiere[];
+  est_sante: boolean;
 }
 
 interface Props {
@@ -37,7 +41,9 @@ export default function ClasseForm({ classe, onSaved }: Props) {
   const { data: options, error: optionsError } = useApiGet<FormOptions>('/classes/form-options', [], { cacheKey: 'classes-form-options' });
 
   const [nomClasse, setNomClasse] = useState(classe?.nom_classe ?? '');
+  const [nomClasseDirty, setNomClasseDirty] = useState(!!classe?.nom_classe);
   const [ordre, setOrdre] = useState<string | null>(classe?.ordreEnseignement ?? null);
+  const [idFiliere, setIdFiliere] = useState<number | null>(classe?.id_filiere ?? null);
   const [lignes, setLignes] = useState<LigneForm[]>([{ id_matiere: null, id_enseignant: null, coefficient: '1' }]);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -68,18 +74,29 @@ export default function ClasseForm({ classe, onSaved }: Props) {
     setLignes((prev) => prev.filter((_, i) => i !== index));
   }
 
+  const estSante = options?.est_sante ?? false;
+
+  // Propose "Nom de la filière" comme point de depart du nom de classe des
+  // qu'une filiere est choisie, sans ecraser une saisie deja faite (meme
+  // logique que classes/form.blade.php cote web).
+  useEffect(() => {
+    if (!estSante || nomClasseDirty || !idFiliere) return;
+    const filiere = (options?.filieres ?? []).find((f) => f.id_filiere === idFiliere);
+    if (filiere) setNomClasse(filiere.nom_filiere);
+  }, [estSante, idFiliere, nomClasseDirty, options?.filieres]);
+
   async function handleSubmit() {
     setError(null);
     const validLignes = lignes.filter((l) => l.id_matiere);
-    if (!nomClasse.trim() || !ordre || validLignes.length === 0) {
-      setError('Le nom, l’ordre d’enseignement et au moins une matière sont requis.');
+    if (!nomClasse.trim() || (estSante ? !idFiliere : !ordre) || validLignes.length === 0) {
+      setError(estSante ? 'Le nom, la filière et au moins une matière sont requis.' : 'Le nom, l’ordre d’enseignement et au moins une matière sont requis.');
       return;
     }
 
     setIsSubmitting(true);
     const payload = {
       nom_classe: nomClasse.trim(),
-      ordre_enseignement: ordre,
+      ...(estSante ? { id_filiere: idFiliere } : { ordre_enseignement: ordre }),
       id_matiere: validLignes.map((l) => l.id_matiere),
       id_enseignants: validLignes.map((l) => l.id_enseignant),
       coefficient: validLignes.map((l) => Number(l.coefficient) || 0),
@@ -114,6 +131,7 @@ export default function ClasseForm({ classe, onSaved }: Props) {
   }
 
   const ordreOptions = Object.entries(options?.ordres ?? {}).map(([value, label]) => ({ value, label }));
+  const filiereOptions = (options?.filieres ?? []).map((f) => ({ value: f.id_filiere, label: f.nom_filiere }));
   const matiereOptions = (options?.matieres ?? []).map((m) => ({ value: m.id_matiere, label: m.nom_matiere }));
   const enseignantOptions = (options?.enseignants ?? []).map((e) => ({ value: e.id_enseignant, label: e.nom_prenom_enseignant }));
 
@@ -121,8 +139,23 @@ export default function ClasseForm({ classe, onSaved }: Props) {
     <View>
       <OfflineBanner />
       {optionsError ? <Text style={styles.error}>{optionsError}</Text> : null}
-      <TextInput mode="outlined" label={requiredLabel('Nom de la classe')} value={nomClasse} onChangeText={setNomClasse} style={styles.input} />
-      <SelectField label={requiredLabel("Ordre d'enseignement")} value={ordre} options={ordreOptions} onChange={(v) => setOrdre(v as string)} />
+      {estSante ? (
+        <SelectField label={requiredLabel('Filière')} value={idFiliere} options={filiereOptions} onChange={(v) => setIdFiliere(v as number)} />
+      ) : null}
+      <TextInput
+        mode="outlined"
+        label={requiredLabel('Nom de la classe')}
+        value={nomClasse}
+        onChangeText={(v) => {
+          setNomClasse(v);
+          setNomClasseDirty(v.trim() !== '');
+        }}
+        placeholder={estSante ? 'Proposé automatiquement (ex: Infirmier 1ère année A)' : undefined}
+        style={styles.input}
+      />
+      {!estSante ? (
+        <SelectField label={requiredLabel("Ordre d'enseignement")} value={ordre} options={ordreOptions} onChange={(v) => setOrdre(v as string)} />
+      ) : null}
 
       <Text style={styles.sectionTitle}>Matières</Text>
       {lignes.map((ligne, index) => (

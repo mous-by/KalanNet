@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\V1\EleveController;
 use App\Http\Controllers\Api\V1\EmargementController;
 use App\Http\Controllers\Api\V1\EnseignantController;
 use App\Http\Controllers\Api\V1\EvaluationController;
+use App\Http\Controllers\Api\V1\FiliereController;
 use App\Http\Controllers\Api\V1\FinanceController;
 use App\Http\Controllers\Api\V1\MatiereController;
 use App\Http\Controllers\Api\V1\NotificationController;
@@ -160,6 +161,11 @@ Route::prefix('v1')->group(function () {
         Route::put('/configuration/ecoles/{id}', [ConfigurationController::class, 'updateEcole']);
         Route::delete('/configuration/ecoles/{id}', [ConfigurationController::class, 'destroyEcole']);
         Route::get('/pays', [ConfigurationController::class, 'pays']);
+
+        Route::get('/configuration/filieres', [FiliereController::class, 'index']);
+        Route::post('/configuration/filieres', [FiliereController::class, 'store']);
+        Route::put('/configuration/filieres/{id}', [FiliereController::class, 'update']);
+        Route::delete('/configuration/filieres/{id}', [FiliereController::class, 'destroy']);
 
         Route::get('/configuration/annees', [ConfigurationController::class, 'annees']);
         Route::post('/configuration/annees', [ConfigurationController::class, 'storeAnnee']);

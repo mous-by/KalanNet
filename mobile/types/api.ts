@@ -63,11 +63,21 @@ export interface ClasseOfficielle {
 export interface Classe {
   id_classe: number;
   nom_classe: string;
-  ordreEnseignement: string;
+  ordreEnseignement: string | null;
   idEcole: number;
+  id_filiere: number | null;
   eleves_count?: number;
   classeOfficielle?: ClasseOfficielle | null;
+  filiere?: Filiere | null;
   ligneClasses?: LigneClasse[];
+  [key: string]: unknown;
+}
+
+export interface Filiere {
+  id_filiere: number;
+  nom_filiere: string;
+  id_ecole: number;
+  actif?: boolean;
   [key: string]: unknown;
 }
 
