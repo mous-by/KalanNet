@@ -180,6 +180,38 @@ return [
     'eco_modal_create_title' => 'Nouvelle école',
     'eco_modal_edit_title' => 'Modifier une école',
 
+    // partials/users-table.blade.php
+    'ut_th_nom_prenom' => 'Nom & Prénom',
+    'ut_th_email' => 'Email',
+    'ut_th_genre' => 'Genre',
+    'ut_th_telephone' => 'Téléphone',
+    'ut_th_academie' => 'Académie',
+    'ut_th_action' => 'Action',
+    'ut_non_assigne' => 'Non assigné',
+    'ut_ordres_prefix' => 'Ordres:',
+    'ut_aucun_ordre_assigne' => 'Aucun ordre assigné',
+    'ut_modifier_utilisateur' => "Modifier l'utilisateur",
+    'ut_assigner_permissions_title' => 'Assigner les permissions',
+    'ut_toggle_title_desactiver' => 'Désactiver',
+    'ut_toggle_title_activer' => 'Activer',
+    'ut_confirm_delete_title' => 'Supprimer ce compte ?',
+    'ut_confirm_delete_text' => "Le compte d'accès sera supprimé. Les fiches enseignant, parent et les historiques métier restent conservés.",
+    'ut_supprimer_compte' => 'Supprimer le compte',
+    'ut_confirmation' => 'Confirmation',
+    'ut_confirm_desactiver_text' => 'Voulez-vous vraiment désactiver',
+    'ut_confirm_activer_text' => 'Voulez-vous vraiment activer',
+    'ut_oui_desactiver' => 'Oui, désactiver',
+    'ut_oui_activer' => 'Oui, activer',
+    'ut_oui_supprimer' => 'Oui, supprimer',
+
+    // utilisateurs.blade.php
+    'ut_tab_administrateurs' => 'Administrateurs',
+    'ut_tab_enseignants' => 'Enseignants',
+    'ut_tab_parents' => 'Parents',
+    'ut_liste_title' => 'Liste des utilisateurs',
+    'ut_search_placeholder' => 'Nom, email, fonction...',
+    'ut_toutes_ecoles' => 'Toutes les écoles',
+
     // partials/classe-officielle-fields.blade.php
     'classe_off_nom_label' => 'Nom de la classe officielle',
     'classe_off_ordre_label' => "Ordre d'enseignement",

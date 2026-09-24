@@ -10,17 +10,17 @@
 
     $tabs = [
         'administrateurs' => [
-            'label' => 'Administrateurs',
+            'label' => __('configuration.ut_tab_administrateurs'),
             'permission' => 'administrateur_tabsConfig',
             'users' => $administrateurs,
         ],
         'enseignants' => [
-            'label' => 'Enseignants',
+            'label' => __('configuration.ut_tab_enseignants'),
             'permission' => 'enseignants_tabsConfig',
             'users' => $enseignants,
         ],
         'parents' => [
-            'label' => 'Parents',
+            'label' => __('configuration.ut_tab_parents'),
             'permission' => 'parents_tabsConfig',
             'users' => $parents,
         ],
@@ -60,13 +60,13 @@
 
 @section('content')
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-        <div class="breadcrumb-title pe-3">Configuration</div>
+        <div class="breadcrumb-title pe-3">{{ __('configuration.title') }}</div>
         <div class="ps-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0 p-0">
                     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bx bx-home"></i></a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('configuration.index') }}">Aperçu</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Utilisateurs</li>
+                    <li class="breadcrumb-item"><a href="{{ route('configuration.index') }}">{{ __('configuration.menu_apercu') }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ __('configuration.menu_utilisateurs') }}</li>
                 </ol>
             </nav>
         </div>
@@ -81,14 +81,14 @@
         <div class="col-12 col-lg-9">
             <div class="card theme-card shadow-sm">
                 <div class="card-header theme-header d-flex align-items-center justify-content-between flex-wrap gap-2">
-                    <h5 class="mb-0 fw-bold"><i class="bx bx-group me-2"></i>Liste des utilisateurs</h5>
+                    <h5 class="mb-0 fw-bold"><i class="bx bx-group me-2"></i>{{ __('configuration.ut_liste_title') }}</h5>
                     <div class="d-flex align-items-center gap-2 flex-wrap">
                         <form action="{{ route('configuration.utilisateurs') }}" method="GET" data-auto-filter="true">
                             <div class="d-flex flex-wrap gap-2">
-                                <input type="text" name="search" class="form-control" placeholder="Nom, email, fonction..." value="{{ request('search') }}" style="max-width: 220px;">
+                                <input type="text" name="search" class="form-control" placeholder="{{ __('configuration.ut_search_placeholder') }}" value="{{ request('search') }}" style="max-width: 220px;">
                                 @if($connectedUser->droit === 'SupAdmin')
                                     <select name="idEcole" class="form-select" style="max-width: 260px;">
-                                        <option value="">Toutes les écoles</option>
+                                        <option value="">{{ __('configuration.ut_toutes_ecoles') }}</option>
                                         @foreach($availableSchools as $school)
                                             <option value="{{ $school->idEcole }}" @selected((int) $schoolFilter === (int) $school->idEcole)>{{ $school->nomEcole }}</option>
                                         @endforeach
@@ -101,7 +101,7 @@
                                class="btn btn-sm d-flex align-items-center gap-1 shadow-sm text-white"
                                style="background-color: var(--theme-accent) !important; color: var(--text-on-accent) !important; border: none;">
                                 <i class="bi bi-plus-lg"></i>
-                                <span>Ajouter</span>
+                                <span>{{ __('configuration.ajouter') }}</span>
                             </a>
                         @endif
                     </div>
@@ -174,6 +174,10 @@
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            const i18nConfirmDeleteTitle = @json(__('configuration.ut_confirm_delete_title'));
+            const i18nOuiSupprimer = @json(__('configuration.ut_oui_supprimer'));
+            const i18nAnnuler = @json(__('configuration.annuler'));
+
             document.querySelectorAll('select[name="idEcole"]').forEach(function (select) {
                 select.addEventListener('change', function () {
                     select.closest('form')?.submit();
@@ -183,7 +187,7 @@
             document.querySelectorAll('[data-confirm-delete]').forEach(function (form) {
                 form.addEventListener('submit', function (event) {
                     event.preventDefault();
-                    const title = form.dataset.confirmTitle || 'Supprimer ce compte ?';
+                    const title = form.dataset.confirmTitle || i18nConfirmDeleteTitle;
                     const text = form.dataset.confirmText || '';
                     if (!window.Swal) {
                         if (confirm(title)) form.submit();
@@ -194,8 +198,8 @@
                         text,
                         icon: 'warning',
                         showCancelButton: true,
-                        confirmButtonText: 'Oui, supprimer',
-                        cancelButtonText: 'Annuler',
+                        confirmButtonText: i18nOuiSupprimer,
+                        cancelButtonText: i18nAnnuler,
                         confirmButtonColor: '#dc3545',
                         cancelButtonColor: '#6c757d',
                     }).then(result => {

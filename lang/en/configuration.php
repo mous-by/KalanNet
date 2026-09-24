@@ -180,6 +180,38 @@ return [
     'eco_modal_create_title' => 'New school',
     'eco_modal_edit_title' => 'Edit a school',
 
+    // partials/users-table.blade.php
+    'ut_th_nom_prenom' => 'Full name',
+    'ut_th_email' => 'Email',
+    'ut_th_genre' => 'Gender',
+    'ut_th_telephone' => 'Phone',
+    'ut_th_academie' => 'Academy',
+    'ut_th_action' => 'Action',
+    'ut_non_assigne' => 'Not assigned',
+    'ut_ordres_prefix' => 'Cycles:',
+    'ut_aucun_ordre_assigne' => 'No cycle assigned',
+    'ut_modifier_utilisateur' => 'Edit user',
+    'ut_assigner_permissions_title' => 'Assign permissions',
+    'ut_toggle_title_desactiver' => 'Deactivate',
+    'ut_toggle_title_activer' => 'Activate',
+    'ut_confirm_delete_title' => 'Delete this account?',
+    'ut_confirm_delete_text' => 'The login account will be deleted. The teacher/parent records and business history are kept.',
+    'ut_supprimer_compte' => 'Delete account',
+    'ut_confirmation' => 'Confirmation',
+    'ut_confirm_desactiver_text' => 'Do you really want to deactivate',
+    'ut_confirm_activer_text' => 'Do you really want to activate',
+    'ut_oui_desactiver' => 'Yes, deactivate',
+    'ut_oui_activer' => 'Yes, activate',
+    'ut_oui_supprimer' => 'Yes, delete',
+
+    // utilisateurs.blade.php
+    'ut_tab_administrateurs' => 'Administrators',
+    'ut_tab_enseignants' => 'Teachers',
+    'ut_tab_parents' => 'Parents',
+    'ut_liste_title' => 'Users list',
+    'ut_search_placeholder' => 'Name, email, role...',
+    'ut_toutes_ecoles' => 'All schools',
+
     // partials/classe-officielle-fields.blade.php
     'classe_off_nom_label' => 'Official class name',
     'classe_off_ordre_label' => 'Teaching cycle',

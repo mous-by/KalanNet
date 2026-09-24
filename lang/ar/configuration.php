@@ -180,6 +180,38 @@ return [
     'eco_modal_create_title' => 'مدرسة جديدة',
     'eco_modal_edit_title' => 'تعديل مدرسة',
 
+    // partials/users-table.blade.php
+    'ut_th_nom_prenom' => 'الاسم الكامل',
+    'ut_th_email' => 'البريد الإلكتروني',
+    'ut_th_genre' => 'الجنس',
+    'ut_th_telephone' => 'الهاتف',
+    'ut_th_academie' => 'الأكاديمية',
+    'ut_th_action' => 'إجراء',
+    'ut_non_assigne' => 'غير معين',
+    'ut_ordres_prefix' => 'الأطوار:',
+    'ut_aucun_ordre_assigne' => 'لا يوجد طور معين',
+    'ut_modifier_utilisateur' => 'تعديل المستخدم',
+    'ut_assigner_permissions_title' => 'تعيين الصلاحيات',
+    'ut_toggle_title_desactiver' => 'تعطيل',
+    'ut_toggle_title_activer' => 'تفعيل',
+    'ut_confirm_delete_title' => 'هل تريد حذف هذا الحساب؟',
+    'ut_confirm_delete_text' => 'سيتم حذف حساب الدخول. ستبقى بطاقات المعلم وولي الأمر والسجلات محفوظة.',
+    'ut_supprimer_compte' => 'حذف الحساب',
+    'ut_confirmation' => 'تأكيد',
+    'ut_confirm_desactiver_text' => 'هل تريد فعلاً تعطيل',
+    'ut_confirm_activer_text' => 'هل تريد فعلاً تفعيل',
+    'ut_oui_desactiver' => 'نعم، تعطيل',
+    'ut_oui_activer' => 'نعم، تفعيل',
+    'ut_oui_supprimer' => 'نعم، حذف',
+
+    // utilisateurs.blade.php
+    'ut_tab_administrateurs' => 'المسؤولون',
+    'ut_tab_enseignants' => 'المعلمون',
+    'ut_tab_parents' => 'أولياء الأمور',
+    'ut_liste_title' => 'قائمة المستخدمين',
+    'ut_search_placeholder' => 'الاسم أو البريد الإلكتروني أو الوظيفة...',
+    'ut_toutes_ecoles' => 'جميع المدارس',
+
     // partials/classe-officielle-fields.blade.php
     'classe_off_nom_label' => 'اسم الصف الرسمي',
     'classe_off_ordre_label' => 'الطور التعليمي',
