@@ -61,4 +61,21 @@ return [
     'perm_nom_label' => 'Nom de la permission',
     'perm_nom_placeholder' => 'Ex: types_notes_apercu',
     'perm_nom_help' => 'Recommandé : minuscules séparées par des tirets bas (_).',
+
+    // shared actions
+    'modifier' => 'Modifier',
+    'supprimer' => 'Supprimer',
+    'fermer' => 'Fermer',
+    'th_actions' => 'Actions',
+
+    // academies.blade.php + partials/academie-modal.blade.php
+    'aca_gestion' => 'Gestion des académies',
+    'aca_search_placeholder' => 'Nom, code ou localité...',
+    'aca_th_code' => 'Code',
+    'aca_th_localite' => 'Localité',
+    'aca_confirm_delete' => 'Supprimer cette académie ?',
+    'aca_empty' => 'Aucune académie trouvée.',
+    'aca_modal_create_title' => 'Nouvelle académie',
+    'aca_modal_edit_title' => 'Modifier une académie',
+    'aca_nom_label' => 'Nom de l\'académie',
 ];

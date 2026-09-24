@@ -61,4 +61,21 @@ return [
     'perm_nom_label' => 'اسم الصلاحية',
     'perm_nom_placeholder' => 'مثال: types_notes_apercu',
     'perm_nom_help' => 'يُستحسن: أحرف صغيرة مفصولة بشرطات سفلية (_).',
+
+    // shared actions
+    'modifier' => 'تعديل',
+    'supprimer' => 'حذف',
+    'fermer' => 'إغلاق',
+    'th_actions' => 'إجراءات',
+
+    // academies.blade.php + partials/academie-modal.blade.php
+    'aca_gestion' => 'إدارة الأكاديميات',
+    'aca_search_placeholder' => 'الاسم أو الرمز أو الموقع...',
+    'aca_th_code' => 'الرمز',
+    'aca_th_localite' => 'الموقع',
+    'aca_confirm_delete' => 'هل تريد حذف هذه الأكاديمية؟',
+    'aca_empty' => 'لم يتم العثور على أي أكاديمية.',
+    'aca_modal_create_title' => 'أكاديمية جديدة',
+    'aca_modal_edit_title' => 'تعديل أكاديمية',
+    'aca_nom_label' => 'اسم الأكاديمية',
 ];

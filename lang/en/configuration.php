@@ -61,4 +61,21 @@ return [
     'perm_nom_label' => 'Permission name',
     'perm_nom_placeholder' => 'E.g: types_notes_apercu',
     'perm_nom_help' => 'Recommended: lowercase separated by underscores (_).',
+
+    // shared actions
+    'modifier' => 'Edit',
+    'supprimer' => 'Delete',
+    'fermer' => 'Close',
+    'th_actions' => 'Actions',
+
+    // academies.blade.php + partials/academie-modal.blade.php
+    'aca_gestion' => 'Academies management',
+    'aca_search_placeholder' => 'Name, code or locality...',
+    'aca_th_code' => 'Code',
+    'aca_th_localite' => 'Locality',
+    'aca_confirm_delete' => 'Delete this academy?',
+    'aca_empty' => 'No academy found.',
+    'aca_modal_create_title' => 'New academy',
+    'aca_modal_edit_title' => 'Edit an academy',
+    'aca_nom_label' => 'Academy name',
 ];
