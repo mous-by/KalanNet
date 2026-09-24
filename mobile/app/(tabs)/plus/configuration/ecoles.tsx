@@ -7,6 +7,7 @@ import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
+import { useLocale } from '@/context/LocaleContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useAllPaginated, useApiGet, usePaginatedApi } from '@/lib/useApi';
 
@@ -79,11 +80,6 @@ const STATUT_OPTIONS = [
   { value: 'prive', label: 'Privé' },
 ];
 
-const OUI_NON_OPTIONS = [
-  { value: '0', label: 'Non' },
-  { value: '1', label: 'Oui' },
-];
-
 // Le CAP n'existe qu'au Mali : obligatoire pour Fondamentale I/II/Collège, et
 // pour un Complexe Scolaire seulement s'il contient une fondamentale (meme
 // regle que ConfigurationController::validateEcole() cote backend).
@@ -91,6 +87,11 @@ const CAP_ALWAYS_REQUIRED_TYPES = ['Fondamentale I', 'Fondamentale II', 'Collèg
 const MALI_CODE_ISO = 'ML';
 
 export default function EcolesScreen() {
+  const { t } = useLocale();
+  const OUI_NON_OPTIONS = [
+    { value: '0', label: t('configuration.non') },
+    { value: '1', label: t('configuration.oui') },
+  ];
   const { user } = useAuth();
   const isSupAdmin = user?.droit === 'SupAdmin';
   const list = usePaginatedApi<Ecole>('/configuration/ecoles');
@@ -168,7 +169,7 @@ export default function EcolesScreen() {
 
   async function handleSubmit() {
     if (!nomEcole.trim() || !typeEcole || !statut || (estMali && !estSante && !idAcademie) || (needsCap && !idCap)) {
-      setFormError('Veuillez remplir tous les champs obligatoires.');
+      setFormError(t('configuration.uf_champs_obligatoires_mobile'));
       return;
     }
     setIsSubmitting(true);
@@ -207,7 +208,7 @@ export default function EcolesScreen() {
       setSuccessVisible(true);
       list.refresh();
     } catch (err) {
-      setFormError(apiErrorMessage(err, 'Impossible d’enregistrer cette école.'));
+      setFormError(apiErrorMessage(err, t('configuration.eco_save_error_mobile')));
     } finally {
       setIsSubmitting(false);
     }
@@ -235,7 +236,7 @@ export default function EcolesScreen() {
     .filter((o) => o.actif)
     .map((o) => ({ value: o.id, label: `${o.nom} — ${Number(o.montant).toLocaleString('fr-FR')} ${o.devise}` }));
 
-  if (list.isLoading) return <Text style={styles.empty}>Chargement…</Text>;
+  if (list.isLoading) return <Text style={styles.empty}>{t('configuration.loading_mobile')}</Text>;
 
   return (
     <View style={styles.container}>
@@ -246,7 +247,7 @@ export default function EcolesScreen() {
         refreshing={list.isRefreshing}
         onRefresh={list.refresh}
         onEndReached={list.loadMore}
-        ListEmptyComponent={<Text style={styles.empty}>{list.error ?? 'Aucune école.'}</Text>}
+        ListEmptyComponent={<Text style={styles.empty}>{list.error ?? t('configuration.eco_empty')}</Text>}
         renderItem={({ item }) => (
           <View style={styles.row}>
             <View style={styles.rowInfo}>
@@ -258,10 +259,10 @@ export default function EcolesScreen() {
             {isSupAdmin ? (
               <View style={styles.actions}>
                 <Button compact onPress={() => openDialog(item)}>
-                  Modifier
+                  {t('configuration.modifier')}
                 </Button>
                 <Button compact textColor="#d33" onPress={() => handleDelete(item)}>
-                  Supprimer
+                  {t('configuration.supprimer')}
                 </Button>
               </View>
             ) : null}
@@ -272,12 +273,12 @@ export default function EcolesScreen() {
 
       <Portal>
         <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)} style={styles.dialog}>
-          <Dialog.Title>{editing ? 'Modifier l’école' : 'Nouvelle école'}</Dialog.Title>
+          <Dialog.Title>{editing ? t('configuration.eco_modal_edit_title') : t('configuration.eco_modal_create_title')}</Dialog.Title>
           <Dialog.ScrollArea style={styles.dialogScroll}>
             <ScrollView contentContainerStyle={styles.dialogContent}>
-              <TextInput mode="outlined" label={requiredLabel("Nom de l'école")} value={nomEcole} onChangeText={setNomEcole} style={styles.input} />
+              <TextInput mode="outlined" label={requiredLabel(t('configuration.eco_modal_nom_label'))} value={nomEcole} onChangeText={setNomEcole} style={styles.input} />
               <SelectField
-                label={requiredLabel('Pays')}
+                label={requiredLabel(t('configuration.menu_pays'))}
                 value={idPays}
                 options={paysOptions}
                 onChange={(v) => {
@@ -287,10 +288,10 @@ export default function EcolesScreen() {
                   setIdCap(null);
                 }}
               />
-              <SelectField label={requiredLabel('Type')} value={typeEcole} options={typeOptions} onChange={(v) => setTypeEcole(v as string)} />
-              <SelectField label={requiredLabel('Statut')} value={statut} options={STATUT_OPTIONS} onChange={(v) => setStatut(v as string)} />
+              <SelectField label={requiredLabel(t('configuration.eco_th_type'))} value={typeEcole} options={typeOptions} onChange={(v) => setTypeEcole(v as string)} />
+              <SelectField label={requiredLabel(t('configuration.th_statut'))} value={statut} options={STATUT_OPTIONS} onChange={(v) => setStatut(v as string)} />
               <SelectField
-                label={estMali && !estSante ? requiredLabel('Académie') : 'Académie (optionnel)'}
+                label={estMali && !estSante ? requiredLabel(t('configuration.menu_academies')) : t('configuration.eco_academie_optionnelle_mobile')}
                 value={idAcademie}
                 options={academieOptions}
                 onChange={(v) => {
@@ -299,44 +300,42 @@ export default function EcolesScreen() {
                 }}
               />
               {estSante ? (
-                <Text style={styles.helperText}>Sans objet pour une École de Santé — laissez vide.</Text>
+                <Text style={styles.helperText}>{t('configuration.eco_sante_helper_mobile')}</Text>
               ) : !estMali ? (
-                <Text style={styles.helperText}>
-                  Aucune académie qui convient ? Créez-la d’abord depuis l’écran Académies, puis revenez ici la sélectionner.
-                </Text>
+                <Text style={styles.helperText}>{t('configuration.eco_academie_helper_mobile')}</Text>
               ) : null}
-              {needsCap ? <SelectField label={requiredLabel('CAP')} value={idCap} options={capOptions} onChange={(v) => setIdCap(v as number)} /> : null}
-              <TextInput mode="outlined" label="Téléphone (optionnel)" value={telephone} onChangeText={setTelephone} keyboardType="phone-pad" style={styles.input} />
-              <TextInput mode="outlined" label="Email (optionnel)" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" style={styles.input} />
-              <SelectField label="Notification SMS" value={notificationSms} options={OUI_NON_OPTIONS} onChange={(v) => setNotificationSms(v as string)} />
-              <SelectField label="Notification email parents" value={notificationEmail} options={OUI_NON_OPTIONS} onChange={(v) => setNotificationEmail(v as string)} />
+              {needsCap ? <SelectField label={requiredLabel(t('configuration.menu_caps'))} value={idCap} options={capOptions} onChange={(v) => setIdCap(v as number)} /> : null}
+              <TextInput mode="outlined" label={t('configuration.eco_telephone_optionnel_mobile')} value={telephone} onChangeText={setTelephone} keyboardType="phone-pad" style={styles.input} />
+              <TextInput mode="outlined" label={t('configuration.eco_email_optionnel_mobile')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" style={styles.input} />
+              <SelectField label={t('configuration.eco_modal_notif_sms_label')} value={notificationSms} options={OUI_NON_OPTIONS} onChange={(v) => setNotificationSms(v as string)} />
+              <SelectField label={t('configuration.eco_modal_notif_email_label')} value={notificationEmail} options={OUI_NON_OPTIONS} onChange={(v) => setNotificationEmail(v as string)} />
               {user?.droit === 'SupAdmin' ? (
                 <SelectField
-                  label={editing ? "Changer/activer l'abonnement" : "Plan d'abonnement initial (optionnel)"}
+                  label={editing ? t('configuration.eco_modal_abonnement_label_edit') : t('configuration.eco_modal_abonnement_label_create_mobile')}
                   value={abonnementOffreId}
                   options={offreOptions}
                   onChange={(v) => setAbonnementOffreId(v as number)}
                 />
               ) : null}
-              <TextInput mode="outlined" label="Adresse (optionnel)" value={adresse} onChangeText={setAdresse} multiline style={styles.input} />
+              <TextInput mode="outlined" label={t('configuration.eco_adresse_optionnel_mobile')} value={adresse} onChangeText={setAdresse} multiline style={styles.input} />
               {isComplexe ? (
                 <>
-                  <TextInput mode="outlined" label="Nom du Complexe Scolaire" value={nomComplexe} onChangeText={setNomComplexe} style={styles.input} />
-                  <TextInput mode="outlined" label="Nom école fondamentale du complexe (optionnel)" value={nomFondamental} onChangeText={setNomFondamental} style={styles.input} />
-                  <TextInput mode="outlined" label="Nom Lycée (optionnel)" value={nomLycee} onChangeText={setNomLycee} style={styles.input} />
-                  <TextInput mode="outlined" label="Nom Technique et Professionnelle (optionnel)" value={nomProfessionnel} onChangeText={setNomProfessionnel} style={styles.input} />
+                  <TextInput mode="outlined" label={t('configuration.eco_modal_nomComplexe_label')} value={nomComplexe} onChangeText={setNomComplexe} style={styles.input} />
+                  <TextInput mode="outlined" label={t('configuration.eco_modal_nomFondamental_label_mobile')} value={nomFondamental} onChangeText={setNomFondamental} style={styles.input} />
+                  <TextInput mode="outlined" label={t('configuration.eco_modal_nomLycee_label_mobile')} value={nomLycee} onChangeText={setNomLycee} style={styles.input} />
+                  <TextInput mode="outlined" label={t('configuration.eco_modal_nomProfessionnel_label_mobile')} value={nomProfessionnel} onChangeText={setNomProfessionnel} style={styles.input} />
                 </>
               ) : null}
               <Button mode="outlined" onPress={pickLogo} style={styles.input}>
-                {logoUri ? 'Changer le logo' : "Choisir un logo (optionnel)"}
+                {logoUri ? t('configuration.eco_changer_logo_mobile') : t('configuration.eco_choisir_logo_mobile')}
               </Button>
               {formError ? <Text style={styles.error}>{formError}</Text> : null}
             </ScrollView>
           </Dialog.ScrollArea>
           <Dialog.Actions>
-            <Button onPress={() => setDialogVisible(false)}>Annuler</Button>
+            <Button onPress={() => setDialogVisible(false)}>{t('configuration.annuler')}</Button>
             <Button loading={isSubmitting} onPress={handleSubmit}>
-              Enregistrer
+              {t('configuration.enregistrer')}
             </Button>
           </Dialog.Actions>
         </Dialog>
@@ -344,7 +343,7 @@ export default function EcolesScreen() {
 
       <SuccessSnackbar
         visible={successVisible}
-        message={editing ? 'École modifiée avec succès.' : 'École créée avec succès.'}
+        message={editing ? t('configuration.eco_edit_success_mobile') : t('configuration.eco_create_success_mobile')}
         onDismiss={() => setSuccessVisible(false)}
       />
     </View>
