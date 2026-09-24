@@ -15,12 +15,12 @@
 </a>
 
 <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-    <div class="breadcrumb-title pe-3">Ajouter</div>
+    <div class="breadcrumb-title pe-3">{{ __('finances.add_breadcrumb') }}</div>
     <div class="ps-3">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-0 p-0">
                 <li class="breadcrumb-item"><a href="{{ route('finances.index') }}"><i class="bi bi-house"></i></a></li>
-                <li class="breadcrumb-item active" aria-current="page">Ajouter des Paiements</li>
+                <li class="breadcrumb-item active" aria-current="page">{{ __('finances.add_paiements_breadcrumb') }}</li>
             </ol>
         </nav>
     </div>
@@ -58,14 +58,14 @@
             <div class="card theme-card w-100">
                 <div class="card-header theme-header">
                     <i class="bi bi-table me-1"></i>
-                    {{ $isPublicSchool ? 'Coopérative scolaire' : 'Formule de paiement' }}
+                    {{ $isPublicSchool ? __('finances.cooperative_scolaire') : __('finances.menu_planifications_private') }}
                 </div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6">
                             <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
-                                <label class="form-label mb-0">Classes<span class="text-danger fs-6">*</span></label>
-                                <button type="button" class="btn btn-sm btn-outline-primary" id="toggle-classes">Tout sélectionner</button>
+                                <label class="form-label mb-0">{{ __('finances.label_classes') }}<span class="text-danger fs-6">*</span></label>
+                                <button type="button" class="btn btn-sm btn-outline-primary" id="toggle-classes">{{ __('finances.select_all_classes') }}</button>
                             </div>
                             @php
                                 $selectedClasses = collect(old('id_classes', []))->map(fn ($id) => (string) $id)->all();
@@ -84,9 +84,9 @@
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label" for="id_annee">Année <span class="text-danger fs-6">*</span></label>
+                            <label class="form-label" for="id_annee">{{ __('finances.label_annee') }} <span class="text-danger fs-6">*</span></label>
                             <select class="single-select form-select" id="id_annee" name="id_annee" required>
-                                <option value="">Sélectionner une année</option>
+                                <option value="">{{ __('finances.select_annee') }}</option>
                                 @foreach($annees as $annee)
                                     <option value="{{ $annee->id_anneeScolaire }}" data-debut="{{ \Illuminate\Support\Carbon::parse($annee->date_debut)->toDateString() }}" data-fin="{{ \Illuminate\Support\Carbon::parse($annee->date_fin)->toDateString() }}" @selected(old('id_annee') == $annee->id_anneeScolaire)>{{ $annee->annee }}</option>
                                 @endforeach
@@ -102,11 +102,11 @@
                         <table class="table table-striped table-bordered" style="width:100%" id="dynamic-table">
                             <thead>
                                 <tr>
-                                    <th style="width: 30%;">{{ $isPublicSchool ? 'Type' : 'Motif' }}</th>
-                                    <th style="width: 20%;">Date de debut</th>
-                                    <th style="width: 20%;">Date de fin</th>
-                                    <th style="width: 20%;">{{ $isPublicSchool ? 'Montant coopérative' : 'Frais scolaire' }}</th>
-                                    <th class="text-center" style="width: 10%; font-size: 14px;">Action</th>
+                                    <th style="width: 30%;">{{ $isPublicSchool ? __('finances.th_type') : __('finances.th_motif') }}</th>
+                                    <th style="width: 20%;">{{ __('finances.th_date_debut') }}</th>
+                                    <th style="width: 20%;">{{ __('finances.th_date_fin') }}</th>
+                                    <th style="width: 20%;">{{ $isPublicSchool ? __('finances.th_montant_cooperative') : __('finances.th_frais_scolaire') }}</th>
+                                    <th class="text-center" style="width: 10%; font-size: 14px;">{{ __('classes.th_action') }}</th>
                                 </tr>
                             </thead>
                             <tbody id="tableListe_FormulePaiement">
@@ -115,12 +115,12 @@
                                         <input type="hidden" name="row_key[]" class="row-key-input" value="1">
                                         <select name="motif[]" class="form-select planification-motif" required>
                                             @if($isPublicSchool)
-                                                <option value="cooperative">Coopérative</option>
+                                                <option value="cooperative">{{ __('finances.th_cooperative') }}</option>
                                             @else
-                                                <option value="mensuelle">mensuelle</option>
-                                                <option value="trimestrielle">trimestrielle</option>
-                                                <option value="annuelle">annuelle</option>
-                                                <option value="par_tranche">par tranche</option>
+                                                <option value="mensuelle">{{ __('finances.motif_mensuelle') }}</option>
+                                                <option value="trimestrielle">{{ __('finances.motif_trimestrielle') }}</option>
+                                                <option value="annuelle">{{ __('finances.motif_annuelle') }}</option>
+                                                <option value="par_tranche">{{ __('finances.motif_par_tranche') }}</option>
                                             @endif
                                         </select>
                                     </td>
@@ -140,7 +140,7 @@
                     </div>
 
                     <div>
-                        <button type="submit" name="envoie_re" class="btn btn-primary" style="float: right;">Envoyer</button>
+                        <button type="submit" name="envoie_re" class="btn btn-primary" style="float: right;">{{ __('finances.send_button') }}</button>
                     </div>
                 </div>
             </div>
@@ -150,7 +150,27 @@
 @endsection
 
 @push('scripts')
+@php
+    $createPlanifI18n = [
+        'selectAll' => __('finances.select_all_classes'),
+        'deselectAll' => __('finances.deselect_all_classes'),
+        'tranche1st' => __('finances.tranche_label_1st'),
+        'trancheNth' => __('finances.tranche_label_nth'),
+        'locale' => app()->getLocale(),
+        'nombreDeTranches' => __('finances.nombre_de_tranches'),
+        'nTranchesOption' => __('finances.n_tranches_option'),
+        'montantTotalDevise' => __('finances.montant_total_devise', ['devise' => \App\Support\Devise::symbole()]),
+        'montantTotalPlaceholder' => __('finances.montant_total_placeholder'),
+        'repartitionLabel' => __('finances.repartition_proposee_label'),
+        'repartitionSuffix' => __('finances.repartition_proposee_suffix'),
+        'thTranche' => __('finances.th_tranche'),
+        'thMontantDevise' => __('finances.label_montant') . ' (' . \App\Support\Devise::symbole() . ')',
+        'thDateLimite' => __('finances.th_date_limite'),
+        'totalLabel' => __('finances.total_label'),
+    ];
+@endphp
 <script>
+const createPlanifI18n = @json($createPlanifI18n);
 let rowKeyCounter = 1;
 $('#form-fields').attr('data-row-key', 1);
 
@@ -356,13 +376,13 @@ $(document).on('click', '#toggle-classes', function() {
     const checkboxes = $('.classe-checkbox');
     const allChecked = checkboxes.length > 0 && checkboxes.filter(':checked').length === checkboxes.length;
     checkboxes.prop('checked', !allChecked);
-    $(this).text(allChecked ? 'Tout sélectionner' : 'Tout désélectionner');
+    $(this).text(allChecked ? createPlanifI18n.selectAll : createPlanifI18n.deselectAll);
 });
 
 function updateToggleClassesLabel() {
     const checkboxes = $('.classe-checkbox');
     const allChecked = checkboxes.length > 0 && checkboxes.filter(':checked').length === checkboxes.length;
-    $('#toggle-classes').text(allChecked ? 'Tout désélectionner' : 'Tout sélectionner');
+    $('#toggle-classes').text(allChecked ? createPlanifI18n.deselectAll : createPlanifI18n.selectAll);
 }
 
 $(document).on('change', '.classe-checkbox', updateToggleClassesLabel);
@@ -372,8 +392,19 @@ updateToggleClassesLabel();
 const TRANCHE_MIN = 2;
 const TRANCHE_MAX = 6;
 
+function ordinalSuffix(n) {
+    if (createPlanifI18n.locale === 'en') {
+        if (n % 10 === 1 && n % 100 !== 11) return 'st';
+        if (n % 10 === 2 && n % 100 !== 12) return 'nd';
+        if (n % 10 === 3 && n % 100 !== 13) return 'rd';
+        return 'th';
+    }
+    if (createPlanifI18n.locale === 'ar') return '';
+    return 'e';
+}
+
 function trancheLabel(n) {
-    return n === 1 ? '1ère tranche' : n + 'e tranche';
+    return n === 1 ? createPlanifI18n.tranche1st : createPlanifI18n.trancheNth.replace(':n', n).replace(':suffix', ordinalSuffix(n));
 }
 
 function selectedAnneeDates() {
@@ -439,7 +470,7 @@ function buildTrancheEditor(row) {
     const key = row.attr('data-row-key');
     let options = '';
     for (let n = TRANCHE_MIN; n <= TRANCHE_MAX; n++) {
-        options += `<option value="${n}" ${n === 3 ? 'selected' : ''}>${n} tranches</option>`;
+        options += `<option value="${n}" ${n === 3 ? 'selected' : ''}>${createPlanifI18n.nTranchesOption.replace(':n', n)}</option>`;
     }
 
     return $(`
@@ -447,25 +478,25 @@ function buildTrancheEditor(row) {
             <td colspan="5" class="bg-light">
                 <div class="row g-3 align-items-end">
                     <div class="col-md-3">
-                        <label class="form-label">Nombre de tranches</label>
+                        <label class="form-label">${createPlanifI18n.nombreDeTranches}</label>
                         <select class="form-select tranche-count">${options}</select>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">Montant total (F CFA)</label>
-                        <input type="number" min="1" class="form-control tranche-total" placeholder="Ex : 150000">
+                        <label class="form-label">${createPlanifI18n.montantTotalDevise}</label>
+                        <input type="number" min="1" class="form-control tranche-total" placeholder="${createPlanifI18n.montantTotalPlaceholder}">
                     </div>
                     <div class="col-md-5 small text-muted">
-                        Répartition proposée : <strong class="tranche-shares"></strong>. Vous pouvez ensuite modifier chaque montant et chaque date limite.
+                        ${createPlanifI18n.repartitionLabel} <strong class="tranche-shares"></strong>. ${createPlanifI18n.repartitionSuffix}
                     </div>
                 </div>
                 <div class="table-responsive mt-3">
                     <table class="table table-sm table-bordered mb-0 bg-white">
                         <thead>
-                            <tr><th style="width: 30%;">Tranche</th><th style="width: 35%;">Montant (F CFA)</th><th style="width: 35%;">Date limite</th></tr>
+                            <tr><th style="width: 30%;">${createPlanifI18n.thTranche}</th><th style="width: 35%;">${createPlanifI18n.thMontantDevise}</th><th style="width: 35%;">${createPlanifI18n.thDateLimite}</th></tr>
                         </thead>
                         <tbody class="tranche-lines"></tbody>
                         <tfoot>
-                            <tr><th>Total</th><th class="tranche-sum">0</th><th></th></tr>
+                            <tr><th>${createPlanifI18n.totalLabel}</th><th class="tranche-sum">0</th><th></th></tr>
                         </tfoot>
                     </table>
                 </div>
