@@ -395,6 +395,20 @@ const STRINGS = {
     'configuration.sc_penalite_label_mobile': 'Pénalité sur la note de conduite (0-18)',
     'configuration.sc_edit_success': 'Statut modifié avec succès.',
     'configuration.sc_create_success': 'Statut créé avec succès.',
+
+    // Configuration - types-notes.tsx
+    'configuration.tn_type_devoir': 'Devoir',
+    'configuration.tn_type_composition': 'Composition',
+    'configuration.tn_code_abrev_composition': 'Comp',
+    'configuration.tn_save_error': 'Impossible d’enregistrer ce type de note.',
+    'configuration.tn_empty_mobile': 'Aucun type de note.',
+    'configuration.tn_note_max_prefix': 'Note maximale :',
+    'configuration.tn_modal_edit_title_mobile': 'Modifier le type de note',
+    'configuration.tn_modal_create_title_mobile': 'Nouveau type de note',
+    'configuration.tn_th_type': 'Type',
+    'configuration.tn_note_max_label': 'Note maximale',
+    'configuration.tn_edit_success': 'Type de note modifié avec succès.',
+    'configuration.tn_create_success': 'Type de note créé avec succès.',
   },
   en: {
     'language.label': 'Language',
@@ -778,6 +792,20 @@ const STRINGS = {
     'configuration.sc_penalite_label_mobile': 'Conduct grade penalty (0-18)',
     'configuration.sc_edit_success': 'Status updated successfully.',
     'configuration.sc_create_success': 'Status created successfully.',
+
+    // Configuration - types-notes.tsx
+    'configuration.tn_type_devoir': 'Assignment',
+    'configuration.tn_type_composition': 'Exam',
+    'configuration.tn_code_abrev_composition': 'Exam',
+    'configuration.tn_save_error': 'Could not save this grade type.',
+    'configuration.tn_empty_mobile': 'No grade type.',
+    'configuration.tn_note_max_prefix': 'Max grade:',
+    'configuration.tn_modal_edit_title_mobile': 'Edit grade type',
+    'configuration.tn_modal_create_title_mobile': 'New grade type',
+    'configuration.tn_th_type': 'Type',
+    'configuration.tn_note_max_label': 'Max grade',
+    'configuration.tn_edit_success': 'Grade type updated successfully.',
+    'configuration.tn_create_success': 'Grade type created successfully.',
   },
   ar: {
     'language.label': 'اللغة',
@@ -1161,6 +1189,20 @@ const STRINGS = {
     'configuration.sc_penalite_label_mobile': 'عقوبة على نقطة السلوك (0-18)',
     'configuration.sc_edit_success': 'تم تعديل الحالة بنجاح.',
     'configuration.sc_create_success': 'تم إنشاء الحالة بنجاح.',
+
+    // Configuration - types-notes.tsx
+    'configuration.tn_type_devoir': 'واجب',
+    'configuration.tn_type_composition': 'تأليف',
+    'configuration.tn_code_abrev_composition': 'تأليف',
+    'configuration.tn_save_error': 'تعذر حفظ نوع النقطة هذا.',
+    'configuration.tn_empty_mobile': 'لا يوجد نوع نقطة.',
+    'configuration.tn_note_max_prefix': 'النقطة القصوى:',
+    'configuration.tn_modal_edit_title_mobile': 'تعديل نوع النقطة',
+    'configuration.tn_modal_create_title_mobile': 'نوع نقطة جديد',
+    'configuration.tn_th_type': 'النوع',
+    'configuration.tn_note_max_label': 'النقطة القصوى',
+    'configuration.tn_edit_success': 'تم تعديل نوع النقطة بنجاح.',
+    'configuration.tn_create_success': 'تم إنشاء نوع النقطة بنجاح.',
   },
 } satisfies Record<Locale, Record<string, string>>;
 

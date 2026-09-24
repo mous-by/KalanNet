@@ -5,6 +5,7 @@ import { Button, Dialog, FAB, Portal, Text, TextInput } from 'react-native-paper
 import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
+import { useLocale } from '@/context/LocaleContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { useAllPaginated, usePaginatedApi } from '@/lib/useApi';
 import { useKeyboardHeight } from '@/lib/useKeyboardHeight';
@@ -16,15 +17,18 @@ interface TypeNote {
   valeur: number;
 }
 
-const TYPE_OPTIONS = [
-  { value: 'devoir', label: 'Devoir' },
-  { value: 'composition', label: 'Composition' },
-  { value: 'NT10', label: 'NT10' },
-];
-
-const TYPE_LABELS: Record<string, string> = { devoir: 'Devoir', composition: 'Comp', NT10: 'NT10' };
-
 export default function TypesNotesScreen() {
+  const { t } = useLocale();
+  const TYPE_OPTIONS = [
+    { value: 'devoir', label: t('configuration.tn_type_devoir') },
+    { value: 'composition', label: t('configuration.tn_type_composition') },
+    { value: 'NT10', label: 'NT10' },
+  ];
+  const TYPE_LABELS: Record<string, string> = {
+    devoir: t('configuration.tn_type_devoir'),
+    composition: t('configuration.tn_code_abrev_composition'),
+    NT10: 'NT10',
+  };
   const list = usePaginatedApi<TypeNote>('/configuration/types-notes');
   const { items: allTypesNotes } = useAllPaginated<TypeNote>('/configuration/types-notes');
   const keyboardHeight = useKeyboardHeight();
@@ -61,7 +65,7 @@ export default function TypesNotesScreen() {
 
   async function handleSubmit() {
     if (!typeNote || !codeNote.trim() || !valeur) {
-      setError('Tous les champs sont requis.');
+      setError(t('configuration.an_tous_champs_requis'));
       return;
     }
     setIsSubmitting(true);
@@ -77,7 +81,7 @@ export default function TypesNotesScreen() {
       setSuccessVisible(true);
       list.refresh();
     } catch (err) {
-      setError(apiErrorMessage(err, 'Impossible d’enregistrer ce type de note.'));
+      setError(apiErrorMessage(err, t('configuration.tn_save_error')));
     } finally {
       setIsSubmitting(false);
     }
@@ -100,21 +104,21 @@ export default function TypesNotesScreen() {
         contentContainerStyle={styles.content}
         refreshing={list.isRefreshing}
         onRefresh={list.refresh}
-        ListEmptyComponent={<Text style={styles.empty}>{list.error ?? 'Aucun type de note.'}</Text>}
+        ListEmptyComponent={<Text style={styles.empty}>{list.error ?? t('configuration.tn_empty_mobile')}</Text>}
         renderItem={({ item }) => (
           <View style={styles.row}>
             <View style={styles.rowInfo}>
               <Text style={styles.title}>
                 {item.typeNote} — {item.codeNote}
               </Text>
-              <Text style={styles.meta}>Note maximale : {item.valeur}</Text>
+              <Text style={styles.meta}>{t('configuration.tn_note_max_prefix')} {item.valeur}</Text>
             </View>
             <View style={styles.actions}>
               <Button compact onPress={() => openDialog(item)}>
-                Modifier
+                {t('configuration.modifier')}
               </Button>
               <Button compact textColor="#d33" onPress={() => handleDelete(item)}>
-                Supprimer
+                {t('configuration.supprimer')}
               </Button>
             </View>
           </View>
@@ -124,17 +128,17 @@ export default function TypesNotesScreen() {
 
       <Portal>
         <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)} style={{ marginBottom: keyboardHeight }}>
-          <Dialog.Title>{editing ? 'Modifier le type de note' : 'Nouveau type de note'}</Dialog.Title>
+          <Dialog.Title>{editing ? t('configuration.tn_modal_edit_title_mobile') : t('configuration.tn_modal_create_title_mobile')}</Dialog.Title>
           <Dialog.Content>
-            <SelectField label={requiredLabel('Type')} value={typeNote} options={TYPE_OPTIONS} onChange={(v) => handleTypeChange(v as string)} />
-            <TextInput mode="outlined" label={requiredLabel('Code')} value={codeNote} onChangeText={setCodeNote} style={styles.input} />
-            <TextInput mode="outlined" label={requiredLabel('Note maximale')} keyboardType="numeric" value={valeur} onChangeText={setValeur} style={styles.input} />
+            <SelectField label={requiredLabel(t('configuration.tn_th_type'))} value={typeNote} options={TYPE_OPTIONS} onChange={(v) => handleTypeChange(v as string)} />
+            <TextInput mode="outlined" label={requiredLabel(t('configuration.aca_th_code'))} value={codeNote} onChangeText={setCodeNote} style={styles.input} />
+            <TextInput mode="outlined" label={requiredLabel(t('configuration.tn_note_max_label'))} keyboardType="numeric" value={valeur} onChangeText={setValeur} style={styles.input} />
             {error ? <Text style={styles.error}>{error}</Text> : null}
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setDialogVisible(false)}>Annuler</Button>
+            <Button onPress={() => setDialogVisible(false)}>{t('configuration.annuler')}</Button>
             <Button loading={isSubmitting} onPress={handleSubmit}>
-              Enregistrer
+              {t('configuration.enregistrer')}
             </Button>
           </Dialog.Actions>
         </Dialog>
@@ -142,7 +146,7 @@ export default function TypesNotesScreen() {
 
       <SuccessSnackbar
         visible={successVisible}
-        message={editing ? 'Type de note modifié avec succès.' : 'Type de note créé avec succès.'}
+        message={editing ? t('configuration.tn_edit_success') : t('configuration.tn_create_success')}
         onDismiss={() => setSuccessVisible(false)}
       />
     </View>
