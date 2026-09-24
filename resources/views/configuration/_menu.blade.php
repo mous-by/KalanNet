@@ -33,7 +33,7 @@
 <div class="card theme-card shadow-sm h-100">
     <div class="card-header theme-header d-flex align-items-center gap-2 py-3">
         <i class="bi bi-gear-fill fs-5"></i>
-        <span class="fw-semibold">Configuration</span>
+        <span class="fw-semibold">{{ __('configuration.title') }}</span>
     </div>
     <div class="card-body p-2">
 
@@ -41,7 +41,7 @@
         @if($connectedUser->droit === 'SupAdmin')
             <ul class="nav flex-column mb-1">
                 <li class="nav-item">
-                    @include('configuration._menu_link', ['route' => 'configuration.index', 'icon' => 'bi-grid-fill', 'label' => 'Aperçu'])
+                    @include('configuration._menu_link', ['route' => 'configuration.index', 'icon' => 'bi-grid-fill', 'label' => __('configuration.menu_apercu')])
                 </li>
             </ul>
             <hr class="my-2 opacity-25">
@@ -49,16 +49,16 @@
 
         {{-- Utilisateurs --}}
         @if($showUsers || $showAssign)
-            <p class="text-uppercase fw-bold px-2 mb-1" class="config-menu-section-label">Utilisateurs</p>
+            <p class="text-uppercase fw-bold px-2 mb-1" class="config-menu-section-label">{{ __('configuration.menu_section_utilisateurs') }}</p>
             <ul class="nav flex-column mb-1">
                 @if($showUsers)
                     <li class="nav-item">
-                        @include('configuration._menu_link', ['route' => 'configuration.utilisateurs', 'icon' => 'bi-people-fill', 'label' => 'Utilisateurs'])
+                        @include('configuration._menu_link', ['route' => 'configuration.utilisateurs', 'icon' => 'bi-people-fill', 'label' => __('configuration.menu_utilisateurs')])
                     </li>
                 @endif
                 @if($showAssign)
                     <li class="nav-item">
-                        @include('configuration._menu_link', ['route' => 'configuration.utilisateurs.permissions.assigner', 'icon' => 'bi-person-check-fill', 'label' => 'Assigner permissions'])
+                        @include('configuration._menu_link', ['route' => 'configuration.utilisateurs.permissions.assigner', 'icon' => 'bi-person-check-fill', 'label' => __('configuration.menu_assigner_permissions')])
                     </li>
                 @endif
             </ul>
@@ -67,31 +67,31 @@
 
         {{-- Structure scolaire --}}
         @if($showEcoles || $showAcademies || $showCaps || $showPays || $showFilieres)
-            <p class="text-uppercase fw-bold px-2 mb-1" class="config-menu-section-label">Structure</p>
+            <p class="text-uppercase fw-bold px-2 mb-1" class="config-menu-section-label">{{ __('configuration.menu_section_structure') }}</p>
             <ul class="nav flex-column mb-1">
                 @if($showEcoles)
                     <li class="nav-item">
-                        @include('configuration._menu_link', ['route' => 'configuration.ecoles', 'icon' => 'bi-building-fill', 'label' => 'Écoles'])
+                        @include('configuration._menu_link', ['route' => 'configuration.ecoles', 'icon' => 'bi-building-fill', 'label' => __('configuration.menu_ecoles')])
                     </li>
                 @endif
                 @if($showAcademies)
                     <li class="nav-item">
-                        @include('configuration._menu_link', ['route' => 'configuration.academies', 'icon' => 'bi-bank2', 'label' => 'Académies'])
+                        @include('configuration._menu_link', ['route' => 'configuration.academies', 'icon' => 'bi-bank2', 'label' => __('configuration.menu_academies')])
                     </li>
                 @endif
                 @if($showCaps)
                     <li class="nav-item">
-                        @include('configuration._menu_link', ['route' => 'configuration.caps', 'icon' => 'bi-diagram-3-fill', 'label' => 'CAP'])
+                        @include('configuration._menu_link', ['route' => 'configuration.caps', 'icon' => 'bi-diagram-3-fill', 'label' => __('configuration.menu_caps')])
                     </li>
                 @endif
                 @if($showPays)
                     <li class="nav-item">
-                        @include('configuration._menu_link', ['route' => 'configuration.pays', 'icon' => 'bi-globe-americas', 'label' => 'Pays'])
+                        @include('configuration._menu_link', ['route' => 'configuration.pays', 'icon' => 'bi-globe-americas', 'label' => __('configuration.menu_pays')])
                     </li>
                 @endif
                 @if($showFilieres)
                     <li class="nav-item">
-                        @include('configuration._menu_link', ['route' => 'configuration.filieres', 'icon' => 'bi-diagram-3-fill', 'label' => 'Filières'])
+                        @include('configuration._menu_link', ['route' => 'configuration.filieres', 'icon' => 'bi-diagram-3-fill', 'label' => __('configuration.menu_filieres')])
                     </li>
                 @endif
             </ul>
@@ -100,10 +100,10 @@
 
         {{-- Revendeurs --}}
         @if($connectedUser->droit === 'SupAdmin')
-            <p class="text-uppercase fw-bold px-2 mb-1" class="config-menu-section-label">Partenaires</p>
+            <p class="text-uppercase fw-bold px-2 mb-1" class="config-menu-section-label">{{ __('configuration.menu_section_partenaires') }}</p>
             <ul class="nav flex-column mb-1">
                 <li class="nav-item">
-                    @include('configuration._menu_link', ['route' => 'configuration.revendeurs', 'icon' => 'bi-briefcase-fill', 'label' => 'Revendeurs'])
+                    @include('configuration._menu_link', ['route' => 'configuration.revendeurs', 'icon' => 'bi-briefcase-fill', 'label' => __('configuration.menu_revendeurs')])
                 </li>
             </ul>
             <hr class="my-2 opacity-25">
@@ -111,26 +111,26 @@
 
         {{-- Paramètres pédagogiques --}}
         @if($showAnnees || $showNotes || $showClasses || $showStatus)
-            <p class="text-uppercase fw-bold px-2 mb-1" class="config-menu-section-label">Paramètres</p>
+            <p class="text-uppercase fw-bold px-2 mb-1" class="config-menu-section-label">{{ __('configuration.menu_section_parametres') }}</p>
             <ul class="nav flex-column mb-1">
                 @if($showAnnees)
                     <li class="nav-item">
-                        @include('configuration._menu_link', ['route' => 'configuration.annees', 'icon' => 'bi-calendar3', 'label' => 'Années scolaires'])
+                        @include('configuration._menu_link', ['route' => 'configuration.annees', 'icon' => 'bi-calendar3', 'label' => __('configuration.menu_annees')])
                     </li>
                 @endif
                 @if($showNotes)
                     <li class="nav-item">
-                        @include('configuration._menu_link', ['route' => 'configuration.types-notes', 'icon' => 'bi-clipboard2-check-fill', 'label' => 'Types de notes'])
+                        @include('configuration._menu_link', ['route' => 'configuration.types-notes', 'icon' => 'bi-clipboard2-check-fill', 'label' => __('configuration.menu_types_notes')])
                     </li>
                 @endif
                 @if($showClasses)
                     <li class="nav-item">
-                        @include('configuration._menu_link', ['route' => 'configuration.classes-officielles', 'icon' => 'bi-building-check', 'label' => 'Classes officielles'])
+                        @include('configuration._menu_link', ['route' => 'configuration.classes-officielles', 'icon' => 'bi-building-check', 'label' => __('configuration.menu_classes_officielles')])
                     </li>
                 @endif
                 @if($showStatus)
                     <li class="nav-item">
-                        @include('configuration._menu_link', ['route' => 'configuration.status-controles', 'icon' => 'bi-check2-circle', 'label' => 'Statuts de contrôle'])
+                        @include('configuration._menu_link', ['route' => 'configuration.status-controles', 'icon' => 'bi-check2-circle', 'label' => __('configuration.menu_status_controles')])
                     </li>
                 @endif
             </ul>
@@ -139,10 +139,10 @@
 
         {{-- Sécurité --}}
         @if($showPerms)
-            <p class="text-uppercase fw-bold px-2 mb-1" class="config-menu-section-label">Sécurité</p>
+            <p class="text-uppercase fw-bold px-2 mb-1" class="config-menu-section-label">{{ __('configuration.menu_section_securite') }}</p>
             <ul class="nav flex-column mb-1">
                 <li class="nav-item">
-                    @include('configuration._menu_link', ['route' => 'configuration.permissions', 'icon' => 'bi-shield-lock-fill', 'label' => 'Permissions'])
+                    @include('configuration._menu_link', ['route' => 'configuration.permissions', 'icon' => 'bi-shield-lock-fill', 'label' => __('configuration.menu_permissions')])
                 </li>
             </ul>
         @endif
