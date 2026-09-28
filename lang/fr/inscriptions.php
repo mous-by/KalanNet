@@ -112,4 +112,6 @@ return [
     'js_target_year_auto_help' => 'Année cible proposée automatiquement.',
     'js_next_year_missing_help' => "L'année suivante n'est pas encore créée. Créez-la dans Configuration > Années scolaires avant de valider une réinscription.",
     'reinscription_formule_requise' => 'Choisissez la formule de paiement de la nouvelle année pour chaque élève qui passe ou redouble (créez-la d\'abord dans Finances > Planifications si elle n\'existe pas).',
+    'subventionne_etat_label' => 'Subventionné par l\'État',
+    'subventionne_etat_help' => 'L\'État paie la totalité des frais de l\'année. Encaissez son versement dans Finances > Subventions État.',
 ];

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { Text, TextInput } from 'react-native-paper';
+import { Checkbox, Text, TextInput } from 'react-native-paper';
 
 import DateField from '@/components/DateField';
 import OfflineBanner from '@/components/OfflineBanner';
@@ -83,6 +83,7 @@ export default function NewEleveScreen() {
   const [modePaiement, setModePaiement] = useState<string>('');
   const [idAnnee, setIdAnnee] = useState<number | null>(null);
   const [idPlanification, setIdPlanification] = useState<number | null>(null);
+  const [subventionne, setSubventionne] = useState(false);
   const [idMatiereLv2, setIdMatiereLv2] = useState<number | null>(null);
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
 
@@ -99,6 +100,9 @@ export default function NewEleveScreen() {
   const planificationLabel = options?.planification_label ?? t('eleves.formule_paiement_default');
 
   const classeOptions = (options?.classes ?? []).map((c) => ({ value: c.id_classe, label: `${c.nom_classe} - ${c.ordreEnseignement}` }));
+  // « Subventionné par l'État » : secondaire d'une école privée seulement.
+  const subventionPossible =
+    planificationRequired && ((options?.classes ?? []).find((c) => c.id_classe === idClasse)?.ordreEnseignement ?? '').startsWith('secondaire');
   const anneeOptions = (options?.annees ?? []).map((a) => ({ value: a.id_anneeScolaire, label: a.annee }));
   const parentOptions = [{ value: 0, label: t('eleves.no_attach_now') }, ...(options?.parents ?? []).map((p) => ({ value: p.id_parent, label: p.nom_prenom_parent }))];
   const matiereLv2Options = [
@@ -154,6 +158,7 @@ export default function NewEleveScreen() {
         id_annee: idAnnee,
         id_planification: idPlanification || undefined,
         id_matiere_lv2: idMatiereLv2 || undefined,
+        subventionne_etat: subventionPossible && subventionne ? 1 : undefined,
         ...(parentId ? { parent_id: parentId, lien_parent: lienParent, informer } : {}),
       };
 
@@ -186,6 +191,7 @@ export default function NewEleveScreen() {
       form.append('id_annee', String(idAnnee));
       if (idPlanification) form.append('id_planification', String(idPlanification));
       if (idMatiereLv2) form.append('id_matiere_lv2', String(idMatiereLv2));
+      if (subventionPossible && subventionne) form.append('subventionne_etat', '1');
       if (avatarUri) form.append('image', { uri: avatarUri, name: 'eleve.jpg', type: 'image/jpeg' } as unknown as Blob);
       if (parentId) {
         form.append('parent_id', String(parentId));
@@ -262,6 +268,18 @@ export default function NewEleveScreen() {
         onChange={(v) => setIdPlanification((v as number) || null)}
         disabled={!idClasse || !idAnnee}
       />
+      {subventionPossible ? (
+        <>
+          <Checkbox.Item
+            label={t('eleves.subventionne_etat_label')}
+            status={subventionne ? 'checked' : 'unchecked'}
+            onPress={() => setSubventionne(!subventionne)}
+            position="leading"
+            style={styles.checkbox}
+          />
+          <Text style={styles.helper}>{t('eleves.subventionne_etat_help')}</Text>
+        </>
+      ) : null}
 
       <Text style={styles.sectionTitle}>{t('eleves.parent_already_title')}</Text>
       <SelectField label={t('eleves.parent_label')} value={parentId ?? 0} options={parentOptions} onChange={(v) => setParentId((v as number) || null)} />
@@ -285,6 +303,8 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
   },
+  checkbox: { paddingHorizontal: 0 },
+  helper: { opacity: 0.6, fontSize: 12, marginTop: -4, marginBottom: 12 },
   avatarRow: {
     alignItems: 'center',
     marginBottom: 20,

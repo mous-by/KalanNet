@@ -284,6 +284,7 @@ class InscriptionController extends Controller
             'informer' => 'nullable|string|in:Oui,Non',
             'id_planification' => [$this->schoolRequiresPlanification() ? 'required' : 'nullable', 'integer', 'exists:planification,id_planification'],
             'id_matiere_lv2' => ['nullable', 'integer', Rule::exists('matiere', 'id_matiere')->where('est_lv2', true)],
+            'subventionne_etat' => 'nullable|boolean',
         ]);
 
         $classe = Classe::where('idEcole', session('idEcole'))->findOrFail($data['id_classe']);
@@ -299,7 +300,14 @@ class InscriptionController extends Controller
             $this->ensureMatiereLv2CompatibleWithClasse((int) $data['id_matiere_lv2'], $classe);
         }
 
-        DB::transaction(function () use ($request, $data, $planificationId) {
+        $subventionne = !empty($data['subventionne_etat']);
+        if ($subventionne && !\App\Support\SubventionEtat::classeEligible($classe)) {
+            throw ValidationException::withMessages([
+                'subventionne_etat' => __('eleves.statut_subventionne_non_eligible'),
+            ]);
+        }
+
+        DB::transaction(function () use ($request, $data, $planificationId, $subventionne) {
             $eleve = new Eleve();
             $eleve->prenom_eleve = $data['prenom_eleve'];
             $eleve->nom_eleve = $data['nom_eleve'];
@@ -316,6 +324,7 @@ class InscriptionController extends Controller
             $eleve->mode_paiement = $data['mode_paiement'] ?? null;
             $eleve->id_matiere_lv2 = $data['id_matiere_lv2'] ?? null;
             $eleve->id_ecole = session('idEcole');
+            $eleve->statut_paiement = $subventionne ? 'subventionne' : 'normal';
             $eleve->save();
 
             if (!empty($data['parent_id'])) {
@@ -334,6 +343,8 @@ class InscriptionController extends Controller
                 'id_planification' => $planificationId,
                 'date_inscription' => $eleve->date_inscription,
             ]);
+
+            \App\Support\SubventionEtat::synchroniser($eleve);
         });
 
         return redirect()->route('eleves.index')->with('success', 'Élève inscrit avec succès.');

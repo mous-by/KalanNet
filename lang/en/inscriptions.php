@@ -112,4 +112,6 @@ return [
     'js_target_year_auto_help' => 'Target school year suggested automatically.',
     'js_next_year_missing_help' => 'The next school year has not been created yet. Create it in Configuration > School years before confirming a re-enrollment.',
     'reinscription_formule_requise' => 'Choose the new year\'s payment plan for every student who moves up or repeats (create it first in Finances > Planning if it does not exist).',
+    'subventionne_etat_label' => 'Subsidised by the State',
+    'subventionne_etat_help' => 'The State pays all of the year\'s fees. Record its payment in Finances > State subsidies.',
 ];

@@ -114,7 +114,7 @@
                                         <select name="id_classe" class="form-select rounded-3" required data-planification-classe>
                                             <option value="">{{ __('inscriptions.select_classe') }}</option>
                                             @foreach($classes as $classe)
-                                                <option value="{{ $classe->id_classe }}" @selected(old('id_classe') == $classe->id_classe)>{{ $classe->nom_classe }} - {{ $classe->ordreEnseignement }}</option>
+                                                <option value="{{ $classe->id_classe }}" data-subvention="{{ \App\Support\SubventionEtat::classeEligible($classe) ? '1' : '0' }}" @selected(old('id_classe') == $classe->id_classe)>{{ $classe->nom_classe }} - {{ $classe->ordreEnseignement }}</option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -168,6 +168,14 @@
                                                 <option value="{{ $planification->id_planification }}" data-classe="{{ $planification->id_classe }}" data-annee="{{ $planification->id_annee }}" @selected(old('id_planification') == $planification->id_planification)>{{ $planificationRequired ? $planification->motif : __('inscriptions.cooperative_label') }} - {{ number_format((float) $planification->montant_planification, 0, ',', ' ') }} F</option>
                                             @endforeach
                                         </select>
+                                    </div>
+                                    <div class="col-md-4 d-none" data-subvention-field>
+                                        <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_statut_paiement') }}</label>
+                                        <div class="form-check mt-2">
+                                            <input type="checkbox" name="subventionne_etat" value="1" id="subventionne_etat" class="form-check-input" @checked(old('subventionne_etat'))>
+                                            <label for="subventionne_etat" class="form-check-label">{{ __('inscriptions.subventionne_etat_label') }}</label>
+                                        </div>
+                                        <div class="form-text">{{ __('inscriptions.subventionne_etat_help') }}</div>
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label small fw-bold text-uppercase">{{ __('inscriptions.photo_label') }}</label>
@@ -624,6 +632,21 @@
         ];
     @endphp
     <script>
+        // « Subventionné par l'État » : seulement pour une classe du secondaire d'une école privée.
+        document.querySelectorAll('[data-subvention-field]').forEach((field) => {
+            const form = field.closest('form');
+            const classeSelect = form?.querySelector('[data-planification-classe]');
+            const checkbox = field.querySelector('input[type="checkbox"]');
+            if (!classeSelect || !checkbox) return;
+            const sync = () => {
+                const eligible = classeSelect.selectedOptions[0]?.dataset.subvention === '1';
+                field.classList.toggle('d-none', !eligible);
+                if (!eligible) checkbox.checked = false;
+            };
+            classeSelect.addEventListener('change', sync);
+            sync();
+        });
+
         document.querySelectorAll('[data-planification-form]').forEach((form) => {
             const classeSelect = form.querySelector('[data-planification-classe]');
             const anneeSelect = form.querySelector('[data-planification-annee]');
