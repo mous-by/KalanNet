@@ -15,22 +15,30 @@
         }
     }
 
+    $estFondamental = in_array($ordre, ['fondamentale1', 'fondamentale2'], true);
+    $estTechnique = str_starts_with((string) $ordre, 'secondairetechnique');
+    $estLycee = !$estTechnique && str_starts_with((string) $ordre, 'secondaire');
+    // Libellé du cycle adapté au pays (ex: "Fondamentale II" au Mali, "Secondaire 1er cycle" ailleurs).
+    $cycleLabel = trim(preg_replace('/\s*\(.*\)\s*$/', '', \App\Support\ExamenNational::ordresLabels($ecole)[$ordre] ?? ''));
+
     if ($schoolType === 'complexe scolaire') {
         $schoolLabel = __('bulletins.complexe_scolaire_prefix', ['name' => $ecole->nomComplexe ?: $ecole->nomEcole]);
-        if (in_array($ordre, ['fondamentale1', 'fondamentale2'], true) && !empty($ecole->nomFondamental)) {
-            $subSchoolLabel = __('bulletins.ecole_fondamentale_prefix', ['name' => $ecole->nomFondamental]);
-        } elseif ($ordre === 'secondaire' && !empty($ecole->nomLycee)) {
+        if ($estFondamental && !empty($ecole->nomFondamental)) {
+            // Un seul nom pour la fondamentale : on précise le cycle (I ou II).
+            $subSchoolLabel = __('bulletins.ecole_fondamentale_prefix', ['name' => $ecole->nomFondamental])
+                . ($cycleLabel !== '' ? ' — ' . $cycleLabel : '');
+        } elseif ($estLycee && !empty($ecole->nomLycee)) {
             $subSchoolLabel = __('bulletins.lycee_prefix', ['name' => $ecole->nomLycee]);
-        } elseif ($ordre === 'secondaire' && !empty($ecole->nomProfessionnel)) {
+        } elseif ($estTechnique && !empty($ecole->nomProfessionnel)) {
             $subSchoolLabel = __('bulletins.ecole_professionnelle_prefix', ['name' => $ecole->nomProfessionnel]);
         } else {
-            $subSchoolLabel = null;
+            $subSchoolLabel = $cycleLabel !== '' ? $cycleLabel : null;
         }
     } else {
         $schoolLabel = match (true) {
-            in_array($ordre, ['fondamentale1', 'fondamentale2'], true) && !empty($ecole->nomFondamental) => __('bulletins.ecole_fondamentale_prefix', ['name' => $ecole->nomFondamental]),
-            $ordre === 'secondaire' && !empty($ecole->nomLycee) => __('bulletins.lycee_prefix', ['name' => $ecole->nomLycee]),
-            $ordre === 'secondaire' && !empty($ecole->nomProfessionnel) => __('bulletins.ecole_professionnelle_prefix', ['name' => $ecole->nomProfessionnel]),
+            $estFondamental && !empty($ecole->nomFondamental) => __('bulletins.ecole_fondamentale_prefix', ['name' => $ecole->nomFondamental]),
+            $estLycee && !empty($ecole->nomLycee) => __('bulletins.lycee_prefix', ['name' => $ecole->nomLycee]),
+            $estTechnique && !empty($ecole->nomProfessionnel) => __('bulletins.ecole_professionnelle_prefix', ['name' => $ecole->nomProfessionnel]),
             default => $ecole->nomEcole,
         };
         $subSchoolLabel = null;
