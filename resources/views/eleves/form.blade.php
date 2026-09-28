@@ -94,14 +94,7 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_mode_paiement') }}</label>
-                        <select name="mode_paiement" class="form-select">
-                            @foreach(['' => __('eleves.mode_paiement_non_defini'), 'Mensuel' => __('eleves.mode_paiement_mensuel'), 'Trimestriel' => __('eleves.mode_paiement_trimestriel'), 'Annuel' => __('eleves.mode_paiement_annuel')] as $value => $label)
-                                <option value="{{ $value }}" @selected(old('mode_paiement', $eleve->mode_paiement) === $value)>{{ $label }}</option>
-                            @endforeach
-                        </select>
-                    </div>
+                    <input type="hidden" name="mode_paiement" value="{{ $eleve->mode_paiement }}">
                     @unless($ecolePublique ?? false)
                     <div class="col-md-4">
                         <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_statut_paiement') }}</label>

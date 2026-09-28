@@ -47,13 +47,6 @@ export default function NewEleveScreen() {
     { value: 'Malade', label: t('eleves.cas_social_malade') },
   ];
 
-  const MODE_PAIEMENT_OPTIONS = [
-    { value: '', label: t('eleves.mode_paiement_non_defini') },
-    { value: 'Mensuel', label: t('eleves.mode_paiement_mensuel') },
-    { value: 'Trimestriel', label: t('eleves.mode_paiement_trimestriel') },
-    { value: 'Annuel', label: t('eleves.mode_paiement_annuel') },
-  ];
-
   const LIEN_PARENT_OPTIONS = [
     { value: 'Parent', label: t('eleves.lien_parent_generic') },
     { value: 'Père', label: t('eleves.lien_pere') },
@@ -80,7 +73,6 @@ export default function NewEleveScreen() {
   const [dateInscription, setDateInscription] = useState<string | null>(new Date().toISOString().slice(0, 10));
   const [casSocial, setCasSocial] = useState<string>('normal');
   const [idClasse, setIdClasse] = useState<number | null>(null);
-  const [modePaiement, setModePaiement] = useState<string>('');
   const [idAnnee, setIdAnnee] = useState<number | null>(null);
   const [idPlanification, setIdPlanification] = useState<number | null>(null);
   const [subventionne, setSubventionne] = useState(false);
@@ -156,7 +148,6 @@ export default function NewEleveScreen() {
         date_inscription: dateInscription || undefined,
         cas_social: casSocial,
         id_classe: idClasse,
-        mode_paiement: modePaiement || undefined,
         id_annee: idAnnee,
         id_planification: estSubventionne ? undefined : idPlanification || undefined,
         id_matiere_lv2: idMatiereLv2 || undefined,
@@ -189,7 +180,6 @@ export default function NewEleveScreen() {
       if (dateInscription) form.append('date_inscription', dateInscription);
       form.append('cas_social', casSocial);
       form.append('id_classe', String(idClasse));
-      if (modePaiement) form.append('mode_paiement', modePaiement);
       form.append('id_annee', String(idAnnee));
       if (idPlanification && !estSubventionne) form.append('id_planification', String(idPlanification));
       if (idMatiereLv2) form.append('id_matiere_lv2', String(idMatiereLv2));
@@ -247,7 +237,6 @@ export default function NewEleveScreen() {
           setIdPlanification(null);
         }}
       />
-      <SelectField label={t('eleves.label_mode_paiement')} value={modePaiement} options={MODE_PAIEMENT_OPTIONS} onChange={(v) => setModePaiement(v as string)} />
       <SelectField
         label={t('eleves.lv2_label')}
         value={idMatiereLv2 ?? 0}

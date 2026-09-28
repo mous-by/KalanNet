@@ -42,12 +42,6 @@ export default function EditEleveScreen() {
     { value: 'Malade', label: t('eleves.cas_social_malade') },
   ];
 
-  const MODE_PAIEMENT_OPTIONS = [
-    { value: '', label: t('eleves.mode_paiement_non_defini') },
-    { value: 'Mensuel', label: t('eleves.mode_paiement_mensuel') },
-    { value: 'Trimestriel', label: t('eleves.mode_paiement_trimestriel') },
-    { value: 'Annuel', label: t('eleves.mode_paiement_annuel') },
-  ];
   const { data, isLoading: isLoadingEleve, error: eleveError } = useApiGet<{ eleve: Eleve }>(`/eleves/${id}`, [id], {
     cacheKey: `eleve-${id}`,
   });
@@ -150,7 +144,6 @@ export default function EditEleveScreen() {
       />
       <SelectField label={requiredLabel(t('eleves.label_annee'))} value={form.id_annee ?? null} options={anneeOptions} onChange={(v) => set('id_annee', v as number)} />
       <SelectField label={t('eleves.label_cas_social')} value={form.cas_social ?? 'normal'} options={CAS_SOCIAL_OPTIONS} onChange={(v) => set('cas_social', v as string)} />
-      <SelectField label={t('eleves.label_mode_paiement')} value={form.mode_paiement ?? ''} options={MODE_PAIEMENT_OPTIONS} onChange={(v) => set('mode_paiement', v as string)} />
       {!ecolePublique ? (
         <SelectField
           label={t('eleves.statut_financier_label')}

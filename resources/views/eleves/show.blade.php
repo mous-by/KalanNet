@@ -178,7 +178,8 @@
                         </div>
                         <div class="info-row"><span>{{ __('eleves.row_total_prevu') }}</span><strong>{{ \App\Support\Devise::format($paymentSummary['montant_final'], $eleve->ecole ?? null) }}</strong></div>
                         <div class="info-row"><span>{{ __('eleves.row_reduction') }}</span><strong>{{ \App\Support\Devise::format($paymentSummary['reduction'], $eleve->ecole ?? null) }}</strong></div>
-                        <div class="info-row"><span>{{ __('eleves.row_mode') }}</span><strong>{{ $paymentSummary['plan']?->mode_paiement ?: $eleve->mode_paiement ?: __('eleves.not_specified_m') }}</strong></div>
+                        @php($formulesEleve = $paymentSummary['legacy_planifications']->pluck('motif')->filter()->map(fn ($motif) => ucfirst($motif))->implode(', '))
+                        <div class="info-row"><span>{{ __('eleves.row_formule') }}</span><strong>{{ $formulesEleve ?: __('eleves.not_specified_f') }}@if(($eleve->statut_paiement ?? null) === 'subventionne') — {{ __('finances.pris_en_charge_etat') }}@endif</strong></div>
                         <div class="info-row"><span>{{ __('eleves.row_payeur') }}</span><strong>{{ $paymentSummary['plan']?->payeur_libelle ?: __('eleves.not_specified_m') }}</strong></div>
                     </div>
                 </div>

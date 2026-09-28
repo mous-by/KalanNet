@@ -210,4 +210,6 @@ return [
     'no_dossier' => 'Aucun dossier ne correspond à ces critères.',
     'statut_subventionne_help' => '« Subventionné » : l\'État paie la totalité des frais de l\'année (secondaire, écoles privées).',
     'statut_subventionne_non_eligible' => 'Le statut « Subventionné » est réservé aux classes du secondaire des écoles privées.',
+    'row_formule' => 'Formule de paiement',
+    'not_specified_f' => 'Non renseignée',
 ];

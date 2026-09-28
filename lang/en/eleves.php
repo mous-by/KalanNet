@@ -210,4 +210,6 @@ return [
     'no_dossier' => 'No file matches these criteria.',
     'statut_subventionne_help' => '“Subsidised”: the State pays all of the year\'s fees (secondary classes, private schools).',
     'statut_subventionne_non_eligible' => 'The “Subsidised” status is only available for secondary classes in private schools.',
+    'row_formule' => 'Payment plan',
+    'not_specified_f' => 'Not specified',
 ];

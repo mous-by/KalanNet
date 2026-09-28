@@ -119,22 +119,6 @@
                                         </select>
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_mode_paiement') }}</label>
-                                        <select name="mode_paiement" class="form-select rounded-3">
-                                            @php
-                                                $modePaiementMap = [
-                                                    '' => __('eleves.mode_paiement_non_defini'),
-                                                    'Mensuel' => __('eleves.mode_paiement_mensuel'),
-                                                    'Trimestriel' => __('eleves.mode_paiement_trimestriel'),
-                                                    'Annuel' => __('eleves.mode_paiement_annuel'),
-                                                ];
-                                            @endphp
-                                            @foreach($modePaiementMap as $value => $label)
-                                                <option value="{{ $value }}" @selected(old('mode_paiement') === $value)>{{ $label }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4">
                                         <label class="form-label small fw-bold text-uppercase">{{ __('eleves.lv2_label') }}</label>
                                         <select name="id_matiere_lv2" class="form-select rounded-3">
                                             <option value="">{{ __('eleves.lv2_none') }}</option>
