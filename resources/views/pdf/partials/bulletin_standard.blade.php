@@ -2,7 +2,7 @@
     $schoolType = strtolower((string) ($ecole->typeEcole ?? ''));
     $academyName = $ecole->academieRef->nom_academie ?? $ecole->academie ?? '';
     $capName = $ecole->capRef->nom_cap ?? $ecole->cap ?? '';
-    $academyName = trim(preg_replace('/^\s*(academie|académie)\s+(d[’\']?|de)\s+/iu', '', (string) $academyName));
+    $academyName = \App\Support\NomAcademie::sansPrefixe($academyName);
     $capName = trim(preg_replace('/^\s*cap\s+(d[’\']?|de)?\s*/iu', '', (string) $capName));
     $logoBase64 = null;
 

@@ -109,7 +109,7 @@
                 @if($ecole?->pays?->entete_document_gauche)
                     <strong>{{ $ecole->pays->entete_document_gauche }}</strong><br>
                 @endif
-                Académie d'Enseignement de {{ $ecole?->academie ?? '' }}<br>
+                Académie d'Enseignement de {{ \App\Support\NomAcademie::sansPrefixe($ecole?->academieRef?->nom_academie ?? $ecole?->academie) }}<br>
                 CAP de {{ $ecole?->cap ?? '' }}
             </td>
             <td width="50%" class="text-right">
