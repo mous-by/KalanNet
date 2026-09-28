@@ -113,5 +113,11 @@ return [
     'js_next_year_missing_help' => "L'année suivante n'est pas encore créée. Créez-la dans Configuration > Années scolaires avant de valider une réinscription.",
     'reinscription_formule_requise' => 'Choisissez la formule de paiement de la nouvelle année pour chaque élève qui passe ou redouble (créez-la d\'abord dans Finances > Planifications si elle n\'existe pas).',
     'subventionne_etat_label' => 'Subventionné par l\'État',
-    'subventionne_etat_help' => 'L\'État paie la totalité des frais de l\'année. Encaissez son versement dans Finances > Subventions État.',
+    'subventionne_etat_help' => 'L\'État paie la totalité des frais de l\'année : pas de formule à choisir, la formule annuelle de la classe est appliquée automatiquement.',
+    'formule_annuelle_auto' => 'Formule annuelle appliquée automatiquement',
+    'subvention_formule_annuelle_manquante' => 'La classe :classe n\'a pas de formule annuelle pour cette année : créez-la d\'abord dans Finances > Planifications. C\'est elle qui fixe le montant payé par l\'État.',
+    'ligne_prefix' => 'Ligne :ligne :',
+    'import_dont_subventionnes' => 'Dont :count élève(s) subventionné(s) par l\'État.',
+    'excel_subvention_help' => 'Élèves subventionnés par l\'État : écrivez « Oui » dans la colonne J (subventionne_etat) du modèle Excel. La formule annuelle leur est appliquée automatiquement.',
+    'formule_obligatoire' => 'Choisissez la formule de paiement de l\'élève (ou cochez « Subventionné par l\'État » si c\'est le cas).',
 ];

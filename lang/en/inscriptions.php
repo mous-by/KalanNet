@@ -113,5 +113,11 @@ return [
     'js_next_year_missing_help' => 'The next school year has not been created yet. Create it in Configuration > School years before confirming a re-enrollment.',
     'reinscription_formule_requise' => 'Choose the new year\'s payment plan for every student who moves up or repeats (create it first in Finances > Planning if it does not exist).',
     'subventionne_etat_label' => 'Subsidised by the State',
-    'subventionne_etat_help' => 'The State pays all of the year\'s fees. Record its payment in Finances > State subsidies.',
+    'subventionne_etat_help' => 'The State pays all of the year\'s fees: no plan to choose, the class\'s annual plan is applied automatically.',
+    'formule_annuelle_auto' => 'Annual plan applied automatically',
+    'subvention_formule_annuelle_manquante' => 'Class :classe has no annual plan for this year: create it first in Finances > Planning. It sets the amount paid by the State.',
+    'ligne_prefix' => 'Line :ligne:',
+    'import_dont_subventionnes' => 'Including :count student(s) subsidised by the State.',
+    'excel_subvention_help' => 'Students subsidised by the State: write “Yes” in column J (subventionne_etat) of the Excel template. The annual plan is applied to them automatically.',
+    'formule_obligatoire' => 'Choose the student\'s payment plan (or tick “Subsidised by the State” if applicable).',
 ];

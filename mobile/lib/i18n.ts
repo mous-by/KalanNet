@@ -317,7 +317,7 @@ const STRINGS = {
     'finances.trimestre_option': 'Trimestre :n',
     'finances.pris_en_charge_etat': 'Pris en charge par l’État',
     'eleves.subventionne_etat_label': 'Subventionné par l’État',
-    'eleves.subventionne_etat_help': 'L’État paie la totalité des frais de l’année.',
+    'eleves.subventionne_etat_help': 'L’État paie la totalité des frais de l’année : pas de formule à choisir, la formule annuelle de la classe est appliquée automatiquement.',
 
     // Configuration - commun
     'configuration.title': 'Configuration',
@@ -781,7 +781,7 @@ const STRINGS = {
     'finances.trimestre_option': 'Term :n',
     'finances.pris_en_charge_etat': 'Paid by the State',
     'eleves.subventionne_etat_label': 'Subsidised by the State',
-    'eleves.subventionne_etat_help': 'The State pays all of the year’s fees.',
+    'eleves.subventionne_etat_help': 'The State pays all of the year’s fees: no plan to choose, the class’s annual plan is applied automatically.',
 
     // Configuration - common
     'configuration.title': 'Configuration',
@@ -1245,7 +1245,7 @@ const STRINGS = {
     'finances.trimestre_option': 'الفصل :n',
     'finances.pris_en_charge_etat': 'تتكفل به الدولة',
     'eleves.subventionne_etat_label': 'مدعوم من الدولة',
-    'eleves.subventionne_etat_help': 'تدفع الدولة جميع رسوم السنة.',
+    'eleves.subventionne_etat_help': 'تدفع الدولة جميع رسوم السنة: لا حاجة لاختيار صيغة، تُطبَّق الصيغة السنوية للقسم تلقائيًا.',
 
     // Configuration - مشترك
     'configuration.title': 'الإعدادات',

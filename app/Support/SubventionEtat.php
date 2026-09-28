@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Models\Classe;
 use App\Models\Ecole;
 use App\Models\Eleve;
+use App\Models\Planification;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -27,6 +28,23 @@ class SubventionEtat
         $ecole ??= Ecole::find($classe->idEcole);
 
         return $ecole !== null && !$ecole->estPublique();
+    }
+
+    /**
+     * Formule appliquée d'office à un élève subventionné, que l'utilisateur
+     * n'a donc pas à choisir : la formule annuelle de la classe (coût complet
+     * de l'année), ou à défaut la seule formule existante.
+     */
+    public static function formulePourSubventionne(int $classeId, int $anneeId): ?int
+    {
+        $formules = Planification::where('id_classe', $classeId)->where('id_annee', $anneeId)->get();
+        $annuelle = $formules->first(fn ($formule) => strtolower(trim((string) $formule->motif)) === 'annuelle');
+
+        if ($annuelle) {
+            return (int) $annuelle->id_planification;
+        }
+
+        return $formules->count() === 1 ? (int) $formules->first()->id_planification : null;
     }
 
     public static function estPrisEnCharge(int $eleveId, int $anneeId): bool

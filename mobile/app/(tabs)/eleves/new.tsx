@@ -119,7 +119,9 @@ export default function NewEleveScreen() {
     return [{ value: 0, label: planificationRequired ? t('eleves.select_generic') : t('eleves.no_cooperative_no_fee') }, ...items];
   }, [options?.planifications, idClasse, idAnnee, planificationRequired, user, t]);
 
-  const isValid = prenom.trim() && nom.trim() && genre && idClasse && idAnnee && (!planificationRequired || idPlanification);
+  // Subventionné : pas de formule à choisir, le serveur applique la formule annuelle.
+  const estSubventionne = subventionPossible && subventionne;
+  const isValid = prenom.trim() && nom.trim() && genre && idClasse && idAnnee && (!planificationRequired || estSubventionne || idPlanification);
 
   async function pickAvatar() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -156,9 +158,9 @@ export default function NewEleveScreen() {
         id_classe: idClasse,
         mode_paiement: modePaiement || undefined,
         id_annee: idAnnee,
-        id_planification: idPlanification || undefined,
+        id_planification: estSubventionne ? undefined : idPlanification || undefined,
         id_matiere_lv2: idMatiereLv2 || undefined,
-        subventionne_etat: subventionPossible && subventionne ? 1 : undefined,
+        subventionne_etat: estSubventionne ? 1 : undefined,
         ...(parentId ? { parent_id: parentId, lien_parent: lienParent, informer } : {}),
       };
 
@@ -189,9 +191,9 @@ export default function NewEleveScreen() {
       form.append('id_classe', String(idClasse));
       if (modePaiement) form.append('mode_paiement', modePaiement);
       form.append('id_annee', String(idAnnee));
-      if (idPlanification) form.append('id_planification', String(idPlanification));
+      if (idPlanification && !estSubventionne) form.append('id_planification', String(idPlanification));
       if (idMatiereLv2) form.append('id_matiere_lv2', String(idMatiereLv2));
-      if (subventionPossible && subventionne) form.append('subventionne_etat', '1');
+      if (estSubventionne) form.append('subventionne_etat', '1');
       if (avatarUri) form.append('image', { uri: avatarUri, name: 'eleve.jpg', type: 'image/jpeg' } as unknown as Blob);
       if (parentId) {
         form.append('parent_id', String(parentId));
@@ -261,13 +263,6 @@ export default function NewEleveScreen() {
           setIdPlanification(null);
         }}
       />
-      <SelectField
-        label={planificationRequired ? requiredLabel(planificationLabel) : planificationLabel}
-        value={idPlanification ?? 0}
-        options={planificationOptions}
-        onChange={(v) => setIdPlanification((v as number) || null)}
-        disabled={!idClasse || !idAnnee}
-      />
       {subventionPossible ? (
         <>
           <Checkbox.Item
@@ -279,6 +274,15 @@ export default function NewEleveScreen() {
           />
           <Text style={styles.helper}>{t('eleves.subventionne_etat_help')}</Text>
         </>
+      ) : null}
+      {!estSubventionne ? (
+        <SelectField
+          label={planificationRequired ? requiredLabel(planificationLabel) : planificationLabel}
+          value={idPlanification ?? 0}
+          options={planificationOptions}
+          onChange={(v) => setIdPlanification((v as number) || null)}
+          disabled={!idClasse || !idAnnee}
+        />
       ) : null}
 
       <Text style={styles.sectionTitle}>{t('eleves.parent_already_title')}</Text>

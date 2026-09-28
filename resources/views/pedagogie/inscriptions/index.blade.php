@@ -155,6 +155,14 @@
                                             @endforeach
                                         </select>
                                     </div>
+                                    <div class="col-md-4 d-none" data-subvention-field>
+                                        <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_statut_paiement') }}</label>
+                                        <div class="form-check mt-2">
+                                            <input type="checkbox" name="subventionne_etat" value="1" id="subventionne_etat" class="form-check-input" @checked(old('subventionne_etat'))>
+                                            <label for="subventionne_etat" class="form-check-label">{{ __('inscriptions.subventionne_etat_label') }}</label>
+                                        </div>
+                                        <div class="form-text">{{ __('inscriptions.subventionne_etat_help') }}</div>
+                                    </div>
                                     <div class="col-md-4">
                                         <label class="form-label small fw-bold text-uppercase">
                                             {{ $planificationLabel }}
@@ -168,14 +176,6 @@
                                                 <option value="{{ $planification->id_planification }}" data-classe="{{ $planification->id_classe }}" data-annee="{{ $planification->id_annee }}" @selected(old('id_planification') == $planification->id_planification)>{{ $planificationRequired ? $planification->motif : __('inscriptions.cooperative_label') }} - {{ number_format((float) $planification->montant_planification, 0, ',', ' ') }} F</option>
                                             @endforeach
                                         </select>
-                                    </div>
-                                    <div class="col-md-4 d-none" data-subvention-field>
-                                        <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_statut_paiement') }}</label>
-                                        <div class="form-check mt-2">
-                                            <input type="checkbox" name="subventionne_etat" value="1" id="subventionne_etat" class="form-check-input" @checked(old('subventionne_etat'))>
-                                            <label for="subventionne_etat" class="form-check-label">{{ __('inscriptions.subventionne_etat_label') }}</label>
-                                        </div>
-                                        <div class="form-text">{{ __('inscriptions.subventionne_etat_help') }}</div>
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label small fw-bold text-uppercase">{{ __('inscriptions.photo_label') }}</label>
@@ -255,6 +255,9 @@
                                     <div class="col-md-4">
                                         <label class="form-label small fw-bold text-uppercase">{{ __('inscriptions.excel_file_label') }} <span class="text-danger">*</span></label>
                                         <input type="file" name="fichier_excel" class="form-control rounded-3" accept=".xls,.xlsx" required>
+                                        @if($planificationRequired)
+                                            <div class="form-text">{{ __('inscriptions.excel_subvention_help') }}</div>
+                                        @endif
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_classe') }} <span class="text-danger">*</span></label>
@@ -590,12 +593,17 @@
                                                             </select>
                                                         </td>
                                                         <td style="min-width: 190px;">
+                                                            @if(($eleve->statut_paiement ?? null) === 'subventionne')
+                                                                <span class="badge bg-info text-dark">{{ __('finances.pris_en_charge_etat') }}</span>
+                                                                <div class="small text-muted">{{ __('inscriptions.formule_annuelle_auto') }}</div>
+                                                            @else
                                                             <select name="eleves[{{ $key }}][id_planification]" class="form-select form-select-sm" data-reinscription-planification data-required="{{ $planificationRequired ? '1' : '0' }}" @disabled($row['deja_reinscrit'] || $blockedDecision)>
                                                                 <option value="">{{ $planificationRequired ? __('inscriptions.select_planification') : __('inscriptions.no_cooperative_no_fee') }}</option>
                                                                 @foreach($planificationsCibles as $planification)
                                                                     <option value="{{ $planification->id_planification }}" data-classe="{{ $planification->id_classe }}">{{ $planificationRequired ? $planification->motif : __('inscriptions.cooperative_label') }} - {{ number_format((float) $planification->montant_planification, 0, ',', ' ') }}</option>
                                                                 @endforeach
                                                             </select>
+                                                            @endif
                                                         </td>
                                                         <td>
                                                             <input type="text" name="eleves[{{ $key }}][motif_decision]" class="form-control form-control-sm" data-reinscription-observation placeholder="{{ __('inscriptions.motif_placeholder') }}" @disabled($row['deja_reinscrit'] || $blockedDecision)>
@@ -638,12 +646,23 @@
             const classeSelect = form?.querySelector('[data-planification-classe]');
             const checkbox = field.querySelector('input[type="checkbox"]');
             if (!classeSelect || !checkbox) return;
+            // Subventionné : pas de formule à choisir, la formule annuelle de
+            // la classe est appliquée d'office par le serveur.
+            const planificationSelect = form.querySelector('[data-planification-select]');
+            const planificationBlock = planificationSelect?.closest('.col-md-4');
+            const planificationRequired = planificationSelect?.required ?? false;
             const sync = () => {
                 const eligible = classeSelect.selectedOptions[0]?.dataset.subvention === '1';
                 field.classList.toggle('d-none', !eligible);
                 if (!eligible) checkbox.checked = false;
+                if (planificationSelect && planificationBlock) {
+                    planificationBlock.classList.toggle('d-none', checkbox.checked);
+                    planificationSelect.required = planificationRequired && !checkbox.checked;
+                    if (checkbox.checked) planificationSelect.value = '';
+                }
             };
             classeSelect.addEventListener('change', sync);
+            checkbox.addEventListener('change', sync);
             sync();
         });
 

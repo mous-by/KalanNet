@@ -106,8 +106,9 @@ class InscriptionController extends Controller
         $worksheet = $spreadsheet->getActiveSheet();
         $highestRow = $worksheet->getHighestDataRow();
         $createdCount = 0;
+        $subventionnesCount = 0;
 
-        DB::transaction(function () use ($worksheet, $highestRow, $data, $idEcole, $classe, $planificationId, &$createdCount) {
+        DB::transaction(function () use ($worksheet, $highestRow, $data, $idEcole, $classe, $planificationId, &$createdCount, &$subventionnesCount) {
             $dateInscription = $data['date_inscription'] ?? now()->toDateString();
 
             for ($row = 2; $row <= $highestRow; $row++) {
@@ -157,6 +158,15 @@ class InscriptionController extends Controller
                     }
                 }
 
+                // Colonne optionnelle J : Oui = subventionné par l'État (la
+                // formule annuelle de la classe est alors appliquée d'office).
+                $valeurJ = mb_strtolower(trim((string) $worksheet->getCell('J' . $row)->getValue()));
+                $subventionne = in_array(\Illuminate\Support\Str::ascii($valeurJ), ['oui', 'o', 'yes', 'y', '1', 'x', 'subventionne'], true)
+                    || $valeurJ === 'نعم';
+                $planificationEleve = $subventionne
+                    ? $this->formuleSubventionneOuErreur($classe, (int) $data['id_annee'], 'fichier_excel', $row)
+                    : $planificationId;
+
                 $eleve = new Eleve();
                 $eleve->prenom_eleve = $prenom;
                 $eleve->nom_eleve = $nom;
@@ -174,15 +184,21 @@ class InscriptionController extends Controller
                 $eleve->id_matiere_lv2 = $idMatiereLv2;
                 $eleve->id_ecole = $idEcole;
                 $eleve->etat_dossier = 0;
+                $eleve->statut_paiement = $subventionne ? 'subventionne' : 'normal';
                 $eleve->save();
 
                 DB::table('ligne_inscription')->insert([
                     'id_eleve' => $eleve->id_eleve,
                     'id_classe' => $data['id_classe'],
                     'id_annee' => $data['id_annee'],
-                    'id_planification' => $planificationId,
+                    'id_planification' => $planificationEleve,
                     'date_inscription' => $dateInscription,
                 ]);
+
+                if ($subventionne) {
+                    \App\Support\SubventionEtat::synchroniser($eleve);
+                    $subventionnesCount++;
+                }
 
                 $createdCount++;
             }
@@ -192,7 +208,12 @@ class InscriptionController extends Controller
             }
         });
 
-        return redirect()->route('inscriptions.index', ['tab' => 'group'])->with('success', "Import effectué : {$createdCount} élève(s) inscrits.");
+        $message = "Import effectué : {$createdCount} élève(s) inscrits.";
+        if ($subventionnesCount > 0) {
+            $message .= ' ' . __('inscriptions.import_dont_subventionnes', ['count' => $subventionnesCount]);
+        }
+
+        return redirect()->route('inscriptions.index', ['tab' => 'group'])->with('success', $message);
     }
 
     public function downloadGroupTemplate()
@@ -212,6 +233,7 @@ class InscriptionController extends Controller
         $sheet->setCellValue('G1', 'cas_social');
         $sheet->setCellValue('H1', 'matricule');
         $sheet->setCellValue('I1', 'langue_lv2 (optionnel — Secondaire uniquement : Arabe, Allemand, Chinois, Russe...)');
+        $sheet->setCellValue('J1', 'subventionne_etat (Oui/Non — secondaire des écoles privées)');
         $sheet->setCellValue('A2', 'Issa');
         $sheet->setCellValue('B2', 'Diallo');
         $sheet->setCellValue('C2', '2009-04-22');
@@ -220,6 +242,7 @@ class InscriptionController extends Controller
         $sheet->setCellValue('F2', 'Masculin');
         $sheet->setCellValue('G2', 'normal');
         $sheet->setCellValue('I2', 'Arabe');
+        $sheet->setCellValue('J2', 'Non');
 
         $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
 
@@ -282,14 +305,19 @@ class InscriptionController extends Controller
             'parent_id' => 'nullable|exists:parents,id_parent',
             'lien_parent' => 'nullable|string|max:100',
             'informer' => 'nullable|string|in:Oui,Non',
-            'id_planification' => [$this->schoolRequiresPlanification() ? 'required' : 'nullable', 'integer', 'exists:planification,id_planification'],
+            'id_planification' => [$this->schoolRequiresPlanification() ? 'required_unless:subventionne_etat,1' : 'nullable', 'integer', 'exists:planification,id_planification'],
             'id_matiere_lv2' => ['nullable', 'integer', Rule::exists('matiere', 'id_matiere')->where('est_lv2', true)],
             'subventionne_etat' => 'nullable|boolean',
+        ], [
+            'id_planification.required_unless' => __('inscriptions.formule_obligatoire'),
         ]);
 
         $classe = Classe::where('idEcole', session('idEcole'))->findOrFail($data['id_classe']);
 
-        $planificationId = $data['id_planification'] ?? null;
+        $subventionne = !empty($data['subventionne_etat']);
+        $planificationId = $subventionne
+            ? $this->formuleSubventionneOuErreur($classe, (int) $data['id_annee'])
+            : ($data['id_planification'] ?? null);
         if ($planificationId) {
             Planification::where('id_classe', $data['id_classe'])
                 ->where('id_annee', $data['id_annee'])
@@ -298,13 +326,6 @@ class InscriptionController extends Controller
 
         if (!empty($data['id_matiere_lv2'])) {
             $this->ensureMatiereLv2CompatibleWithClasse((int) $data['id_matiere_lv2'], $classe);
-        }
-
-        $subventionne = !empty($data['subventionne_etat']);
-        if ($subventionne && !\App\Support\SubventionEtat::classeEligible($classe)) {
-            throw ValidationException::withMessages([
-                'subventionne_etat' => __('eleves.statut_subventionne_non_eligible'),
-            ]);
         }
 
         DB::transaction(function () use ($request, $data, $planificationId, $subventionne) {
@@ -666,9 +687,18 @@ class InscriptionController extends Controller
 
         // Comme à l'inscription : en école privée, chaque élève qui reste
         // dans l'école doit avoir sa formule de paiement pour la nouvelle année.
+        // Les élèves subventionnés n'ont pas de formule à choisir : la formule
+        // annuelle de leur nouvelle classe leur est appliquée d'office.
+        $subventionnes = Eleve::where('id_ecole', session('idEcole'))
+            ->whereIn('id_eleve', $selectedRows->pluck('id_eleve'))
+            ->where('statut_paiement', 'subventionne')
+            ->pluck('id_eleve')
+            ->mapWithKeys(fn ($id) => [(int) $id => true]);
+
         if ($this->schoolRequiresPlanification()) {
             $missingPlanification = $selectedRows->first(fn ($row) => in_array($row['decision'] ?? null, ['passant', 'redoublant'], true)
-                && empty($row['id_planification']));
+                && empty($row['id_planification'])
+                && !$subventionnes->has((int) $row['id_eleve']));
             if ($missingPlanification) {
                 throw ValidationException::withMessages([
                     'id_planification' => __('inscriptions.reinscription_formule_requise'),
@@ -685,7 +715,7 @@ class InscriptionController extends Controller
         $diplomes = 0;
         $ajournes = 0;
 
-        DB::transaction(function () use ($selectedRows, $data, $idEcole, $sourceClasse, $classes, $threshold, $dateReinscription, &$created, &$skipped, &$forced, &$sorties, &$diplomes, &$ajournes) {
+        DB::transaction(function () use ($selectedRows, $data, $idEcole, $sourceClasse, $classes, $threshold, $dateReinscription, $subventionnes, &$created, &$skipped, &$forced, &$sorties, &$diplomes, &$ajournes) {
             foreach ($selectedRows as $row) {
                 $eleve = Eleve::where('id_ecole', $idEcole)
                     ->where('id_classe', $sourceClasse->id_classe)
@@ -750,6 +780,10 @@ class InscriptionController extends Controller
                         $skipped++;
                         continue;
                     }
+                } elseif (in_array($decision, ['passant', 'redoublant'], true)
+                    && $subventionnes->has((int) $eleve->id_eleve)
+                    && \App\Support\SubventionEtat::classeEligible($classes->get($targetClasseId))) {
+                    $planificationId = $this->formuleSubventionneOuErreur($classes->get($targetClasseId), (int) $data['target_annee_id'], 'id_planification');
                 }
 
                 $insert = [
@@ -825,6 +859,28 @@ class InscriptionController extends Controller
 
         return redirect()->route('inscriptions.index', ['tab' => 'reinscription'])
             ->with('success', $message);
+    }
+
+    /**
+     * Élève subventionné : l'utilisateur ne choisit pas de formule, on applique
+     * la formule annuelle de la classe (montant dû par l'État).
+     */
+    protected function formuleSubventionneOuErreur(Classe $classe, int $anneeId, ?string $champ = 'subventionne_etat', ?int $ligne = null): int
+    {
+        if (!\App\Support\SubventionEtat::classeEligible($classe)) {
+            throw ValidationException::withMessages([
+                $champ => ($ligne ? __('inscriptions.ligne_prefix', ['ligne' => $ligne]) . ' ' : '') . __('eleves.statut_subventionne_non_eligible'),
+            ]);
+        }
+
+        $formule = \App\Support\SubventionEtat::formulePourSubventionne((int) $classe->id_classe, $anneeId);
+        if (!$formule) {
+            throw ValidationException::withMessages([
+                $champ => __('inscriptions.subvention_formule_annuelle_manquante', ['classe' => $classe->nom_classe]),
+            ]);
+        }
+
+        return $formule;
     }
 
     /**

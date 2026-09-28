@@ -63,9 +63,11 @@ class EleveController extends WebEleveController
             'parent_id' => 'nullable|exists:parents,id_parent',
             'lien_parent' => 'nullable|string|max:100',
             'informer' => 'nullable|string|in:Oui,Non',
-            'id_planification' => [$this->schoolRequiresPlanification() ? 'required' : 'nullable', 'integer', 'exists:planification,id_planification'],
+            'id_planification' => [$this->schoolRequiresPlanification() ? 'required_unless:subventionne_etat,1' : 'nullable', 'integer', 'exists:planification,id_planification'],
             'id_matiere_lv2' => ['nullable', 'integer', Rule::exists('matiere', 'id_matiere')->where('est_lv2', true)],
             'subventionne_etat' => 'nullable|boolean',
+        ], [
+            'id_planification.required_unless' => __('inscriptions.formule_obligatoire'),
         ]);
 
         $classe = Classe::where('idEcole', session('idEcole'))->findOrFail($data['id_classe']);
@@ -77,7 +79,15 @@ class EleveController extends WebEleveController
             ]);
         }
 
-        $planificationId = $data['id_planification'] ?? null;
+        // Subventionné : la formule annuelle de la classe est appliquée d'office.
+        $planificationId = $subventionne
+            ? \App\Support\SubventionEtat::formulePourSubventionne((int) $classe->id_classe, (int) $data['id_annee'])
+            : ($data['id_planification'] ?? null);
+        if ($subventionne && !$planificationId) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'subventionne_etat' => __('inscriptions.subvention_formule_annuelle_manquante', ['classe' => $classe->nom_classe]),
+            ]);
+        }
         if ($planificationId) {
             Planification::where('id_classe', $data['id_classe'])
                 ->where('id_annee', $data['id_annee'])
