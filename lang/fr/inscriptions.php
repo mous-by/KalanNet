@@ -111,4 +111,5 @@ return [
     'js_no_next_class_help' => "Aucune classe suivante trouvée. Si cette classe est terminale (fin de cycle sans orientation interne), les élèves admis pourront être proposés en « Admis sortant ». Sinon, créez la classe suivante dans Classes.",
     'js_target_year_auto_help' => 'Année cible proposée automatiquement.',
     'js_next_year_missing_help' => "L'année suivante n'est pas encore créée. Créez-la dans Configuration > Années scolaires avant de valider une réinscription.",
+    'reinscription_formule_requise' => 'Choisissez la formule de paiement de la nouvelle année pour chaque élève qui passe ou redouble (créez-la d\'abord dans Finances > Planifications si elle n\'existe pas).',
 ];

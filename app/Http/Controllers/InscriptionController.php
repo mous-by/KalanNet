@@ -425,6 +425,7 @@ class InscriptionController extends Controller
             'id_annee' => 'required|exists:anneescolaire,id_anneeScolaire',
             'statut' => 'required|in:passant,redoublant,non défini,non_defini,ajourne,abandon,exclu',
             'date_reinscription' => 'nullable|date',
+            'id_planification' => 'nullable|integer|exists:planification,id_planification',
         ]);
 
         $idEcole = session('idEcole');
@@ -436,6 +437,9 @@ class InscriptionController extends Controller
         AnneeScolaire::findOrFail($data['id_annee']);
 
         $dateReinscription = $data['date_reinscription'] ?? now()->toDateString();
+        $planificationId = !empty($data['id_planification'])
+            ? Planification::where('id_classe', $data['id_classe'])->where('id_annee', $data['id_annee'])->findOrFail($data['id_planification'])->id_planification
+            : null;
 
         if (DB::table('ligne_reinscription')
             ->where('id_eleve', $eleve->id_eleve)
@@ -445,7 +449,7 @@ class InscriptionController extends Controller
                 ->with('error', 'Cet élève a déjà été réinscrit pour l’année scolaire choisie.');
         }
 
-        DB::transaction(function () use ($eleve, $data, $dateReinscription) {
+        DB::transaction(function () use ($eleve, $data, $dateReinscription, $planificationId) {
             $reinscriptionId = DB::table('reinscription')->insertGetId([
                 'statut' => $data['statut'],
                 'date_reinscription' => $dateReinscription,
@@ -464,6 +468,7 @@ class InscriptionController extends Controller
             $eleve->id_annee = $data['id_annee'];
             $eleve->date_inscription = $dateReinscription;
             $eleve->save();
+            $this->lierFormuleAnnee($eleve, (int) $data['id_classe'], (int) $data['id_annee'], $planificationId, $dateReinscription);
             // Un élève subventionné le reste pour la nouvelle année (si sa classe y ouvre droit).
             \App\Support\SubventionEtat::synchroniser($eleve);
         });
@@ -622,6 +627,7 @@ class InscriptionController extends Controller
             'eleves.*.decision' => 'nullable|string|in:passant,redoublant,admis_sortant,diplome_sortant,en_attente_resultat,ajourne,abandon,exclu',
             'eleves.*.id_classe' => 'nullable|integer|exists:classe,id_classe',
             'eleves.*.motif_decision' => 'nullable|string|max:1000',
+            'eleves.*.id_planification' => 'nullable|integer|exists:planification,id_planification',
         ]);
 
         $idEcole = session('idEcole');
@@ -645,6 +651,18 @@ class InscriptionController extends Controller
             throw ValidationException::withMessages([
                 'motif_decision' => 'Le motif est obligatoire pour les décisions Ajourné, Abandon et Exclu.',
             ]);
+        }
+
+        // Comme à l'inscription : en école privée, chaque élève qui reste
+        // dans l'école doit avoir sa formule de paiement pour la nouvelle année.
+        if ($this->schoolRequiresPlanification()) {
+            $missingPlanification = $selectedRows->first(fn ($row) => in_array($row['decision'] ?? null, ['passant', 'redoublant'], true)
+                && empty($row['id_planification']));
+            if ($missingPlanification) {
+                throw ValidationException::withMessages([
+                    'id_planification' => __('inscriptions.reinscription_formule_requise'),
+                ]);
+            }
         }
 
         $classes = Classe::where('idEcole', $idEcole)->get()->keyBy('id_classe');
@@ -711,6 +729,18 @@ class InscriptionController extends Controller
                     continue;
                 }
 
+                $planificationId = null;
+                if (in_array($decision, ['passant', 'redoublant'], true) && !empty($row['id_planification'])) {
+                    $planificationId = Planification::where('id_classe', $targetClasseId)
+                        ->where('id_annee', (int) $data['target_annee_id'])
+                        ->whereKey((int) $row['id_planification'])
+                        ->value('id_planification');
+                    if (!$planificationId) {
+                        $skipped++;
+                        continue;
+                    }
+                }
+
                 $insert = [
                     'statut' => $statut,
                     'date_reinscription' => $dateReinscription,
@@ -741,6 +771,7 @@ class InscriptionController extends Controller
                     $eleve->date_inscription = $dateReinscription;
                     $eleve->etat_dossier = 0;
                     $eleve->save();
+                    $this->lierFormuleAnnee($eleve, $targetClasseId, (int) $data['target_annee_id'], $planificationId, $dateReinscription);
                     \App\Support\SubventionEtat::synchroniser($eleve);
                 } elseif ($decision === 'ajourne') {
                     $ajournes++;
@@ -783,6 +814,36 @@ class InscriptionController extends Controller
 
         return redirect()->route('inscriptions.index', ['tab' => 'reinscription'])
             ->with('success', $message);
+    }
+
+    /**
+     * ligne_inscription relie un élève à sa formule de paiement pour une année
+     * (paiements, dossier élève, espace parent, subventions). Une réinscription
+     * doit donc aussi l'écrire pour la nouvelle année.
+     */
+    private function lierFormuleAnnee(Eleve $eleve, int $classeId, int $anneeId, ?int $planificationId, string $date): void
+    {
+        $existe = DB::table('ligne_inscription')
+            ->where('id_eleve', $eleve->id_eleve)
+            ->where('id_annee', $anneeId)
+            ->exists();
+
+        if ($existe) {
+            DB::table('ligne_inscription')
+                ->where('id_eleve', $eleve->id_eleve)
+                ->where('id_annee', $anneeId)
+                ->update(['id_classe' => $classeId, 'id_planification' => $planificationId]);
+
+            return;
+        }
+
+        DB::table('ligne_inscription')->insert([
+            'id_eleve' => $eleve->id_eleve,
+            'id_classe' => $classeId,
+            'id_annee' => $anneeId,
+            'id_planification' => $planificationId,
+            'date_inscription' => $date,
+        ]);
     }
 
     private function passageThreshold(Classe $classe): float

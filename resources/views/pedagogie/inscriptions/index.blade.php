@@ -518,10 +518,15 @@
                                                     <th>{{ __('inscriptions.th_proposition') }}</th>
                                                     <th>{{ __('inscriptions.th_decision_finale') }}</th>
                                                     <th>{{ __('inscriptions.th_classe_finale') }}</th>
+                                                    <th>{{ $planificationLabel }}@if($planificationRequired) <span class="text-danger">*</span>@endif</th>
                                                     <th>{{ __('inscriptions.th_observation') }}</th>
                                                 </tr>
                                                 </thead>
                                                 <tbody>
+                                                @php
+                                                    $targetAnneeId = $reinscriptionPreview['targetAnnee']?->id_anneeScolaire;
+                                                    $planificationsCibles = $planifications->where('id_annee', $targetAnneeId);
+                                                @endphp
                                                 @foreach($reinscriptionPreview['rows'] as $row)
                                                     @php
                                                         $eleve = $row['eleve'];
@@ -573,6 +578,14 @@
                                                                 <option value="" @selected($row['classe_cible_id'] === null)>{{ __('inscriptions.aucune_classe') }}</option>
                                                                 @foreach($classes as $classe)
                                                                     <option value="{{ $classe->id_classe }}" @selected((int) $row['classe_cible_id'] === (int) $classe->id_classe)>{{ $classe->nom_classe }}</option>
+                                                                @endforeach
+                                                            </select>
+                                                        </td>
+                                                        <td style="min-width: 190px;">
+                                                            <select name="eleves[{{ $key }}][id_planification]" class="form-select form-select-sm" data-reinscription-planification data-required="{{ $planificationRequired ? '1' : '0' }}" @disabled($row['deja_reinscrit'] || $blockedDecision)>
+                                                                <option value="">{{ $planificationRequired ? __('inscriptions.select_planification') : __('inscriptions.no_cooperative_no_fee') }}</option>
+                                                                @foreach($planificationsCibles as $planification)
+                                                                    <option value="{{ $planification->id_planification }}" data-classe="{{ $planification->id_classe }}">{{ $planificationRequired ? $planification->motif : __('inscriptions.cooperative_label') }} - {{ number_format((float) $planification->montant_planification, 0, ',', ' ') }}</option>
                                                                 @endforeach
                                                             </select>
                                                         </td>
@@ -834,8 +847,34 @@
                         observation.required = ['ajourne', 'abandon', 'exclu'].includes(decision);
                         observation.placeholder = observation.required ? reinscriptionI18n.motifRequiredPlaceholder : reinscriptionI18n.motifPlaceholder;
                     }
+                    syncPlanification();
                 };
+                // Formule de paiement de la nouvelle année : seulement pour un élève
+                // qui reste dans l'école, filtrée sur sa classe cible, choisie
+                // d'office quand il n'y en a qu'une.
+                const planificationSelect = row?.querySelector('[data-reinscription-planification]');
+                const syncPlanification = () => {
+                    if (!planificationSelect || !classSelect) return;
+                    const staysInSchool = ['passant', 'redoublant'].includes(select.value) && classSelect.value !== '';
+                    const matching = [];
+                    Array.from(planificationSelect.options).forEach((option) => {
+                        if (!option.value) return;
+                        const ok = staysInSchool && option.dataset.classe === classSelect.value;
+                        option.hidden = !ok;
+                        option.disabled = !ok;
+                        if (ok) matching.push(option);
+                    });
+                    if (!matching.some((option) => option.selected)) {
+                        planificationSelect.value = matching.length === 1 ? matching[0].value : '';
+                    }
+                    planificationSelect.disabled = !staysInSchool || select.disabled;
+                    planificationSelect.required = staysInSchool && planificationSelect.dataset.required === '1' && !!rowCheck?.checked;
+                };
+                const rowCheck = row?.querySelector('[data-reinscription-check]');
                 select.addEventListener('change', syncClass);
+                classSelect?.addEventListener('change', syncPlanification);
+                rowCheck?.addEventListener('change', syncPlanification);
+                checkAll?.addEventListener('change', syncPlanification);
                 syncClass();
             });
 

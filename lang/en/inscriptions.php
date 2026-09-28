@@ -111,4 +111,5 @@ return [
     'js_no_next_class_help' => 'No next class found. If this class is a terminal one (end of cycle with no internal track), passing students can be proposed as "Passed and leaving". Otherwise, create the next class in Classes.',
     'js_target_year_auto_help' => 'Target school year suggested automatically.',
     'js_next_year_missing_help' => 'The next school year has not been created yet. Create it in Configuration > School years before confirming a re-enrollment.',
+    'reinscription_formule_requise' => 'Choose the new year\'s payment plan for every student who moves up or repeats (create it first in Finances > Planning if it does not exist).',
 ];
