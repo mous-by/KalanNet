@@ -20,8 +20,9 @@ class EncaisserSubventionEtatTool extends AbstractKalanbotTool
 
     public function description(): string
     {
-        return "Enregistrer un paiement global de subvention État, réparti automatiquement (FIFO) sur les "
-            . "échéances subventionnées ouvertes. Utiliser finances_subventions_etat_consulter d'abord.";
+        return "Enregistrer un virement global de l'État pour une année de subvention (même reçu des années plus tard), "
+            . "réparti automatiquement sur les élèves subventionnés de cette année dont les frais restent dus. "
+            . "Utiliser finances_subventions_etat_consulter d'abord.";
     }
 
     public function parametersSchema(): array

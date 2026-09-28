@@ -208,4 +208,6 @@ return [
     'motif_retour' => 'سبب العودة',
     'motif_retour_placeholder' => 'مثال: العودة إلى المؤسسة',
     'no_dossier' => 'لا يوجد ملف يطابق هذه المعايير.',
+    'statut_subventionne_help' => '«مدعوم»: تدفع الدولة جميع رسوم السنة (الثانوي، المدارس الخاصة).',
+    'statut_subventionne_non_eligible' => 'صفة «مدعوم» مخصصة لأقسام الثانوي في المدارس الخاصة فقط.',
 ];

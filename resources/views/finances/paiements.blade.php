@@ -202,6 +202,18 @@
                     </thead>
                     <tbody id="resultat_periode_tableau">
                         @forelse($paymentRows as $index => $row)
+                            @if($row->pris_en_charge_etat)
+                            {{-- Frais payés par l'État : aucun champ, pour ne pas décaler les tableaux id_eleve[]/montant_recu[] des autres lignes. --}}
+                            <tr class="table-light text-muted">
+                                <td class="text-center"><i class="bi bi-bank"></i></td>
+                                <td>{{ $index + 1 }}</td>
+                                <td>{{ $row->eleve->prenom_eleve }} {{ $row->eleve->nom_eleve }}</td>
+                                <td colspan="3"><span class="badge bg-info text-dark">{{ __('finances.pris_en_charge_etat') }}</span></td>
+                                <td>@devise($row->montant_total)</td>
+                                <td>@devise($row->reste_a_payer)</td>
+                                <td>—</td>
+                            </tr>
+                            @else
                             <tr class="{{ $row->row_class }}">
                                 <td class="text-center">
                                     <input type="checkbox" name="alert[]" value="{{ $row->eleve->id_eleve }}" class="form-check-input row-check checkItem">
@@ -256,6 +268,7 @@
                                     <input type="number" name="montant_recu[]" class="form-control form-control-sm montant_recu" min="1" max="{{ $row->reste_a_payer }}" value="{{ $row->a_payer_maintenant }}">
                                 </td>
                             </tr>
+                            @endif
                         @empty
                             <tr>
                                 <td colspan="9" class="text-center text-muted py-4">{{ $isPublicSchool ? __('finances.empty_coop_students') : __('finances.empty_type_students') }}</td>

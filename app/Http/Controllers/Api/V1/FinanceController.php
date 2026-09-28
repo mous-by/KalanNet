@@ -54,6 +54,7 @@ class FinanceController extends WebFinanceController
                 'montant_deja_paye' => $row->montant_deja_paye,
                 'reste_a_payer' => $row->reste_a_payer,
                 'a_payer_maintenant' => $row->a_payer_maintenant,
+                'pris_en_charge_etat' => $row->pris_en_charge_etat,
                 'tranche' => $row->tranche ? [
                     'soldees' => $row->tranche['soldees'],
                     'total' => $row->tranche['total'],
@@ -118,6 +119,10 @@ class FinanceController extends WebFinanceController
                         ->where('id_annee', $data['id_annee'])
                         ->where('etat_dossier', 0)
                         ->findOrFail($eleveId);
+
+                    if (\App\Support\SubventionEtat::estPrisEnCharge((int) $eleve->id_eleve, (int) $data['id_annee'])) {
+                        throw ValidationException::withMessages(['montant_recu' => __('finances.eleve_pris_en_charge_etat_erreur')]);
+                    }
 
                     $planification = \App\Models\Planification::where('id_classe', $data['id_classe'])
                         ->where('id_annee', $data['id_annee'])

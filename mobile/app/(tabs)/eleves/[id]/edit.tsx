@@ -121,6 +121,10 @@ export default function EditEleveScreen() {
   }
 
   const classeOptions = (options?.classes ?? []).map((c) => ({ value: c.id_classe, label: c.nom_classe }));
+  // « Subventionné » : réservé au secondaire d'une école privée (l'État paie tout).
+  const classeChoisie = (options?.classes ?? []).find((c) => c.id_classe === form.id_classe);
+  const subventionPossible = !ecolePublique && (classeChoisie?.ordreEnseignement ?? '').startsWith('secondaire');
+  const statutPaiementOptions = subventionPossible ? STATUT_PAIEMENT_OPTIONS : STATUT_PAIEMENT_OPTIONS.filter((o) => o.value !== 'subventionne');
   const anneeOptions = (options?.annees ?? []).map((a) => ({ value: a.id_anneeScolaire, label: a.annee }));
   const matiereLv2Options = [
     { value: 0, label: t('eleves.lv2_none') },
@@ -151,7 +155,7 @@ export default function EditEleveScreen() {
         <SelectField
           label={t('eleves.statut_financier_label')}
           value={form.statut_paiement ?? 'normal'}
-          options={STATUT_PAIEMENT_OPTIONS}
+          options={statutPaiementOptions}
           onChange={(v) => set('statut_paiement', v as string)}
         />
       ) : null}

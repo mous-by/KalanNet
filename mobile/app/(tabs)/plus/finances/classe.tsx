@@ -29,6 +29,7 @@ interface PaymentRow {
   montant_deja_paye: number;
   reste_a_payer: number;
   a_payer_maintenant?: number;
+  pris_en_charge_etat?: boolean;
   tranche?: {
     soldees: number;
     total: number;
@@ -218,12 +219,14 @@ export default function PaiementClasseScreen() {
                 <View style={styles.studentHeader}>
                   <Checkbox
                     status={entry.selected ? 'checked' : 'unchecked'}
+                    disabled={row.pris_en_charge_etat}
                     onPress={() => updateEntry(row.eleve.id_eleve, row, { selected: !entry.selected })}
                   />
                   <View style={styles.studentHeaderText}>
                     <Text style={styles.studentName}>
                       {row.eleve.prenom_eleve} {row.eleve.nom_eleve}
                     </Text>
+                    {row.pris_en_charge_etat ? <Text style={styles.priseEnCharge}>{t('finances.pris_en_charge_etat')}</Text> : null}
                     <Text style={styles.studentMeta}>
                       {t('finances.total_reste')
                         .replace(':total', formatMontant(row.montant_total, user))
@@ -300,6 +303,7 @@ export default function PaiementClasseScreen() {
 
 const styles = StyleSheet.create({
   content: { padding: 20 },
+  priseEnCharge: { color: '#0b7285', fontWeight: '600', fontSize: 12 },
   input: { marginBottom: 12 },
   spinner: { marginTop: 40 },
   empty: { textAlign: 'center', opacity: 0.6, marginTop: 24 },

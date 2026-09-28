@@ -23,6 +23,18 @@ class ReductionService
 
         $statut = $eleve->statut_paiement ?: 'normal';
 
+        // Subventionné : l'État paie la totalité, aucune règle de réduction.
+        if ($statut === 'subventionne') {
+            return [
+                'statut_paiement' => $statut,
+                'type_reduction' => 'aucune',
+                'reduction' => 0.0,
+                'montant_final' => $montantTotal,
+                'payeur_type' => 'etat',
+                'payeur_libelle' => null,
+            ];
+        }
+
         $config = ReductionPaiementConfig::query()
             ->where('ecole_id', $eleve->id_ecole)
             ->where('statut_paiement', $statut)

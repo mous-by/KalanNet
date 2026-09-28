@@ -20,8 +20,8 @@ class ConsulterSubventionsEtatTool extends AbstractKalanbotTool
 
     public function description(): string
     {
-        return "Consulter les échéances subventionnées par l'État restant dues, pour une année scolaire "
-            . "(et éventuellement une classe).";
+        return "Consulter les frais des élèves subventionnés restant dus par l'État, pour une année scolaire "
+            . "(ou toutes les années si non précisée, l'État payant souvent en retard) et éventuellement une classe.";
     }
 
     public function parametersSchema(): array
@@ -32,14 +32,14 @@ class ConsulterSubventionsEtatTool extends AbstractKalanbotTool
                 'annee_scolaire_id' => ['type' => 'INTEGER'],
                 'classe_id' => ['type' => 'INTEGER'],
             ],
-            'required' => ['annee_scolaire_id'],
+            'required' => [],
         ];
     }
 
     public function validationRules(): array
     {
         return [
-            'annee_scolaire_id' => 'required|integer',
+            'annee_scolaire_id' => 'nullable|integer',
             'classe_id' => 'nullable|integer',
         ];
     }
@@ -66,18 +66,19 @@ class ConsulterSubventionsEtatTool extends AbstractKalanbotTool
 
         $data = $this->extractViewData($outcome['result']);
         $rows = collect($data['subventionRows'] ?? [])->map(fn ($row) => [
-            'eleve' => trim((optional($row->plan->eleve)->prenom_eleve ?? '') . ' ' . (optional($row->plan->eleve)->nom_eleve ?? '')),
-            'classe' => optional($row->plan->classe)->nom_classe,
-            'echeance' => $row->echeance->libelle,
-            'montant_prevu' => (float) $row->echeance->montant_prevu,
+            'eleve' => trim(($row->eleve?->prenom_eleve ?? '') . ' ' . ($row->eleve?->nom_eleve ?? '')),
+            'annee' => $row->annee?->annee,
+            'classe' => $row->classe?->nom_classe,
+            'formule' => $row->libelle,
+            'montant_prevu' => (float) $row->montant_prevu,
             'deja_paye' => (float) $row->deja_paye,
             'reste' => (float) $row->reste,
         ])->values()->all();
 
         return [
             'success' => true,
-            'message' => count($rows) . ' échéance(s) subventionnée(s) restant due(s).',
-            'data' => ['echeances' => $rows],
+            'message' => count($rows) . ' élève(s) subventionné(s) dont les frais restent dus par l\'État.',
+            'data' => ['eleves' => $rows],
         ];
     }
 }

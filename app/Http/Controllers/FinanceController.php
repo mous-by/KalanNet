@@ -10,14 +10,12 @@ use App\Models\Paiement;
 use App\Models\Encaissement;
 use App\Models\Decaissement;
 use App\Models\Ecole;
-use App\Models\EcheancePaiement;
 use App\Models\Eleve;
 use App\Models\FraisScolaire;
 use App\Models\LignePaiementEleve;
 use App\Models\ParentModel;
 use App\Models\Planification;
 use App\Models\PlanificationTranche;
-use App\Models\PlanPaiement;
 use App\Models\ReductionPaiementConfig;
 use App\Models\Retrait;
 use App\Models\Trimestre;
@@ -570,6 +568,10 @@ class FinanceController extends Controller
                         ->where('etat_dossier', 0)
                         ->findOrFail($eleveId);
 
+                    if (\App\Support\SubventionEtat::estPrisEnCharge((int) $eleve->id_eleve, (int) $data['id_annee'])) {
+                        throw ValidationException::withMessages(['montant_recu' => __('finances.eleve_pris_en_charge_etat_erreur')]);
+                    }
+
                     $planificationId = (int) ($data['id_planification'][$index] ?? 0);
                     $planification = Planification::where('id_classe', $data['id_classe'])
                         ->where('id_annee', $data['id_annee'])
@@ -952,16 +954,25 @@ class FinanceController extends Controller
         $classes = Classe::where('idEcole', $idEcole)->orderBy('nom_classe')->get();
         $caisse = Caisse::where('id_ecole', $idEcole)->where('status', 1)->first();
         $filters = $request->only(['annee_scolaire_id', 'classe_id']);
-        $subventionRows = collect();
 
-        if (!empty($filters['annee_scolaire_id'])) {
-            $subventionRows = $this->stateSubventionRows(
-                (int) $filters['annee_scolaire_id'],
-                !empty($filters['classe_id']) ? (int) $filters['classe_id'] : null
-            );
-        }
+        // Sans année choisie : toutes les années encore dues, car l'État
+        // paie souvent avec plusieurs années de retard.
+        $subventionRows = $this->stateSubventionRows(
+            !empty($filters['annee_scolaire_id']) ? (int) $filters['annee_scolaire_id'] : null,
+            !empty($filters['classe_id']) ? (int) $filters['classe_id'] : null
+        );
+        $resumeParAnnee = $subventionRows
+            ->filter(fn ($row) => $row->planification !== null)
+            ->groupBy('id_annee')
+            ->map(fn ($rows) => (object) [
+                'annee' => $rows->first()->annee,
+                'eleves' => $rows->count(),
+                'reste' => $rows->sum('reste'),
+            ])
+            ->sortKeys()
+            ->values();
 
-        return view('finances.subventions-etat', compact('annees', 'classes', 'caisse', 'filters', 'subventionRows'));
+        return view('finances.subventions-etat', compact('annees', 'classes', 'caisse', 'filters', 'subventionRows', 'resumeParAnnee'));
     }
 
     public function storeSubventionEtat(Request $request)
@@ -987,41 +998,40 @@ class FinanceController extends Controller
         try {
             $result = DB::transaction(function () use ($data, $idEcole) {
                 $caisse = Caisse::where('id_ecole', $idEcole)->where('status', 1)->lockForUpdate()->firstOrFail();
+                $anneeId = (int) $data['annee_scolaire_id'];
+                $anneeLibelle = AnneeScolaire::find($anneeId)?->annee ?? (string) $anneeId;
                 $remainingGlobal = round((float) $data['montant_recu'], 2);
                 $reference = trim((string) ($data['reference_etat'] ?? '')) ?: $this->nextSubventionReference();
-                $rows = $this->stateSubventionRows((int) $data['annee_scolaire_id'], !empty($data['classe_id']) ? (int) $data['classe_id'] : null);
+                $rows = $this->stateSubventionRows($anneeId, !empty($data['classe_id']) ? (int) $data['classe_id'] : null)
+                    ->filter(fn ($row) => $row->planification !== null && $row->reste > 0);
                 $allocations = [];
 
+                // Le virement global de l'État est réparti élève par élève
+                // (classe puis nom) jusqu'à épuisement du montant reçu.
                 foreach ($rows as $row) {
                     if ($remainingGlobal <= 0) {
                         break;
                     }
 
                     $amount = min($remainingGlobal, (float) $row->reste);
-                    if ($amount <= 0) {
-                        continue;
-                    }
-
-                    $allocations[] = [
-                        'row' => $row,
-                        'amount' => $amount,
-                    ];
+                    $allocations[] = ['row' => $row, 'amount' => $amount];
                     $remainingGlobal = round($remainingGlobal - $amount, 2);
                 }
 
                 if (empty($allocations)) {
                     throw ValidationException::withMessages([
-                        'montant_recu' => 'Aucune échéance subventionnée ouverte pour cette sélection.',
+                        'montant_recu' => __('finances.aucun_montant_du_etat'),
                     ]);
                 }
 
                 $allocatedTotal = collect($allocations)->sum('amount');
+                $observation = trim((string) ($data['observation'] ?? ''));
                 $encaissement = Encaissement::create([
                     'type_operation' => 'Subvention État',
                     'date_encaissement' => $data['date_paiement'],
-                    'motif_encaissement' => 'Paiement global État - ' . $reference,
+                    'motif_encaissement' => 'Subvention État ' . $anneeLibelle . ' - ' . $reference . ($observation !== '' ? ' (' . $observation . ')' : ''),
                     'montant_encaissement' => $allocatedTotal,
-                    'id_annee_scolaire' => $data['annee_scolaire_id'],
+                    'id_annee_scolaire' => $anneeId,
                     'id_caisse' => $caisse->id_caisse,
                     'idUtilisateur' => Auth::id(),
                     'statut' => 'valide',
@@ -1035,11 +1045,10 @@ class FinanceController extends Controller
                         'date_paiement' => $data['date_paiement'],
                         'mode_reglement' => 'virement_etat',
                         'reference' => $reference,
-                        'id_classe' => $row->plan->classe_id,
-                        'id_annee' => $row->plan->annee_scolaire_id,
-                        'id_eleve' => $row->plan->eleve_id,
-                        'echeance_id' => $row->echeance->id,
-                        'motif' => 'Subvention État - ' . $row->echeance->libelle,
+                        'id_classe' => $row->classe?->id_classe,
+                        'id_annee' => $anneeId,
+                        'id_eleve' => $row->eleve?->id_eleve,
+                        'motif' => 'Subvention État ' . $anneeLibelle . ' - ' . $row->planification->motif,
                         'montant' => $amount,
                         'montant_paye' => $amount,
                         'parent' => null,
@@ -1050,17 +1059,24 @@ class FinanceController extends Controller
                         'id_utilisateur' => Auth::id(),
                         'id_caisse' => $caisse->id_caisse,
                         'numero_recu' => $this->referenceService->nextReceiptNumber($idEcole),
-                        'id_planification' => 0,
+                        'id_planification' => $row->planification->id_planification,
                         'statut' => 'valide',
                         'encaissement_id' => $encaissement->id_encaissement,
+                    ]);
+
+                    LignePaiementEleve::create([
+                        'id_classe' => $row->classe?->id_classe,
+                        'id_annee' => $anneeId,
+                        'id_paiement' => $paiement->id_paiement,
+                        'id_eleve' => $row->eleve?->id_eleve,
+                        'id_trimestre' => 0,
+                        'idEcole' => $idEcole,
                     ]);
 
                     if (!$encaissement->paiement_id) {
                         $encaissement->paiement_id = $paiement->id_paiement;
                         $encaissement->save();
                     }
-
-                    $this->refreshStateSubventionEcheanceStatus($row->echeance);
                 }
 
                 $caisse->montant_net = (float) $caisse->montant_net + $allocatedTotal;
@@ -1078,19 +1094,17 @@ class FinanceController extends Controller
         } catch (\Throwable) {
             return redirect()->route('finances.subventions-etat', $request->only(['annee_scolaire_id', 'classe_id']))
                 ->withInput()
-                ->with('error', 'Impossible d’enregistrer la subvention État.');
+                ->with('error', __('finances.subvention_enregistrement_erreur'));
         }
 
-        $message = 'Subvention État enregistrée : '
-            . \App\Support\Devise::format($result['allocated'])
-            . ' répartis sur '
-            . $result['count']
-            . ' échéance(s). Référence : '
-            . $result['reference']
-            . '.';
+        $message = __('finances.subvention_enregistree', [
+            'montant' => \App\Support\Devise::format($result['allocated']),
+            'count' => $result['count'],
+            'reference' => $result['reference'],
+        ]);
 
         if ($result['remaining'] > 0) {
-            $message .= ' Reliquat non affecté : ' . \App\Support\Devise::format($result['remaining']) . '.';
+            $message .= ' ' . __('finances.subvention_reliquat', ['montant' => \App\Support\Devise::format($result['remaining'])]);
         }
 
         return redirect()->route('finances.subventions-etat', $request->only(['annee_scolaire_id', 'classe_id']))
@@ -1536,7 +1550,6 @@ class FinanceController extends Controller
             ->get()
             ->keyBy('id_planification');
         $trancheService = app(PlanificationTrancheService::class);
-
         $students = Eleve::with('parents')
             ->where('id_ecole', $idEcole)
             ->where('id_classe', $classeId)
@@ -1551,8 +1564,9 @@ class FinanceController extends Controller
             ->whereIn('id_eleve', $students->pluck('id_eleve'))
             ->get()
             ->keyBy('id_eleve');
+        $subventionnes = \App\Support\SubventionEtat::elevesPrisEnCharge($anneeId, $students->pluck('id_eleve')->map(fn ($id) => (int) $id)->all());
 
-        return $students->map(function ($student) use ($inscriptions, $planifications, $typePlanification, $anneeId, $trancheService) {
+        return $students->map(function ($student) use ($inscriptions, $planifications, $typePlanification, $anneeId, $trancheService, $subventionnes) {
             $inscription = $inscriptions->get($student->id_eleve);
             $planification = $inscription ? $planifications->get($inscription->id_planification) : null;
             if (!$planification || !$this->legacyPlanMatchesType($planification->motif, $typePlanification)) {
@@ -1579,6 +1593,8 @@ class FinanceController extends Controller
                 // Pour une formule par tranche, on propose par defaut de solder
                 // la tranche en cours (le caissier peut saisir plus).
                 'a_payer_maintenant' => min($remaining, (float) ($tranche['courante']['reste'] ?? $remaining)),
+                // Frais payés en totalité par l'État : pas de paiement parent.
+                'pris_en_charge_etat' => isset($subventionnes[(int) $student->id_eleve]),
                 'row_class' => $tranche
                     ? $trancheService->delayClass($tranche)
                     : $this->legacyPaymentDelayClass($planification),
@@ -1763,60 +1779,83 @@ class FinanceController extends Controller
         }
     }
 
-    private function stateSubventionRows(int $anneeId, ?int $classeId = null)
+    /**
+     * Frais restant dus par l'État, élève par élève et année par année, à
+     * partir de l'historique subvention_etat_eleve : on retient la classe de
+     * l'année concernée, pas la situation actuelle de l'élève.
+     */
+    private function stateSubventionRows(?int $anneeId, ?int $classeId = null)
     {
         $idEcole = (int) session('idEcole');
-        $plans = PlanPaiement::with(['eleve', 'classe', 'anneeScolaire', 'echeances.paiements'])
-            ->where('ecole_id', $idEcole)
-            ->where('annee_scolaire_id', $anneeId)
-            ->where(function ($query) {
-                $query->where('payeur_type', 'etat')
-                    ->orWhere('statut_paiement', 'subventionne');
-            })
-            ->when($classeId, fn ($query) => $query->where('classe_id', $classeId))
-            ->orderBy('classe_id')
+        $subventions = DB::table('subvention_etat_eleve')
+            ->where('id_ecole', $idEcole)
+            ->when($anneeId, fn ($query) => $query->where('id_annee', $anneeId))
+            ->when($classeId, fn ($query) => $query->where('id_classe', $classeId))
             ->get();
 
-        return $plans->flatMap(function (PlanPaiement $plan) {
-            return $plan->echeances->map(function (EcheancePaiement $echeance) use ($plan) {
-                $paid = (float) $echeance->paiements
-                    ->where('statut', 'valide')
-                    ->sum(fn ($paiement) => (float) ($paiement->montant_paye ?? $paiement->montant));
-                $reste = max(0, (float) $echeance->montant_prevu - $paid);
+        if ($subventions->isEmpty()) {
+            return collect();
+        }
 
-                if ($reste <= 0) {
-                    return null;
-                }
+        $eleveIds = $subventions->pluck('id_eleve')->unique()->all();
+        $anneeIds = $subventions->pluck('id_annee')->unique()->all();
+        $classeIds = $subventions->pluck('id_classe')->unique()->all();
 
-                return (object) [
-                    'plan' => $plan,
-                    'echeance' => $echeance,
-                    'deja_paye' => $paid,
-                    'reste' => $reste,
-                ];
-            })->filter();
-        })->sortBy([
-            fn ($a, $b) => strcmp((string) $a->echeance->date_limite, (string) $b->echeance->date_limite),
-            fn ($a, $b) => strcmp((string) ($a->plan->classe?->nom_classe ?? ''), (string) ($b->plan->classe?->nom_classe ?? '')),
-            fn ($a, $b) => strcmp((string) ($a->plan->eleve?->nom_eleve ?? ''), (string) ($b->plan->eleve?->nom_eleve ?? '')),
+        $eleves = Eleve::withoutGlobalScopes()->whereIn('id_eleve', $eleveIds)->get()->keyBy('id_eleve');
+        $classes = Classe::withoutGlobalScopes()->whereIn('id_classe', $classeIds)->get()->keyBy('id_classe');
+        $annees = AnneeScolaire::whereIn('id_anneeScolaire', $anneeIds)->get()->keyBy('id_anneeScolaire');
+        $inscriptions = DB::table('ligne_inscription')
+            ->whereIn('id_eleve', $eleveIds)
+            ->whereIn('id_annee', $anneeIds)
+            ->whereNotNull('id_planification')
+            ->get()
+            ->keyBy(fn ($ligne) => $ligne->id_eleve . '-' . $ligne->id_annee . '-' . $ligne->id_classe);
+        $planifications = Planification::withoutGlobalScopes()
+            ->whereIn('id_classe', $classeIds)
+            ->whereIn('id_annee', $anneeIds)
+            ->get();
+
+        return $subventions->map(function ($subvention) use ($eleves, $classes, $annees, $inscriptions, $planifications) {
+            $inscription = $inscriptions->get($subvention->id_eleve . '-' . $subvention->id_annee . '-' . $subvention->id_classe);
+            $planification = $inscription
+                ? $planifications->firstWhere('id_planification', $inscription->id_planification)
+                : null;
+
+            // Élève réinscrit (pas de ligne d'inscription pour l'année) : on
+            // retient la formule de la classe si elle est unique.
+            if (!$planification) {
+                $candidates = $planifications
+                    ->where('id_classe', $subvention->id_classe)
+                    ->where('id_annee', $subvention->id_annee)
+                    ->filter(fn ($p) => $this->legacyPlanType($p->motif) !== 'cooperative');
+                $planification = $candidates->count() === 1 ? $candidates->first() : null;
+            }
+
+            $total = $planification ? (float) $planification->montant_planification : 0.0;
+            $paid = $planification ? $this->legacyPaidForPlan((int) $subvention->id_eleve, $planification, (int) $subvention->id_annee) : 0.0;
+            $reste = max(0, $total - $paid);
+
+            if ($planification && $reste <= 0) {
+                return null;
+            }
+
+            return (object) [
+                'eleve' => $eleves->get($subvention->id_eleve),
+                'classe' => $classes->get($subvention->id_classe),
+                'annee' => $annees->get($subvention->id_annee),
+                'id_annee' => (int) $subvention->id_annee,
+                'planification' => $planification,
+                'libelle' => $planification?->motif,
+                'date_limite' => $planification?->date_fin ? \Illuminate\Support\Carbon::parse($planification->date_fin) : null,
+                'montant_prevu' => $total,
+                'deja_paye' => $paid,
+                'reste' => $reste,
+            ];
+        })->filter()->sortBy([
+            fn ($a, $b) => $a->id_annee <=> $b->id_annee,
+            fn ($a, $b) => strcmp((string) ($a->classe?->nom_classe ?? ''), (string) ($b->classe?->nom_classe ?? '')),
+            fn ($a, $b) => strcmp((string) ($a->eleve?->nom_eleve ?? ''), (string) ($b->eleve?->nom_eleve ?? '')),
         ])->values();
-    }
-
-    private function refreshStateSubventionEcheanceStatus(EcheancePaiement $echeance): void
-    {
-        $paid = Paiement::where('echeance_id', $echeance->id)
-            ->where('statut', 'valide')
-            ->sum(DB::raw('COALESCE(montant_paye, montant)'));
-        $remaining = max(0, (float) $echeance->montant_prevu - (float) $paid);
-
-        $echeance->update([
-            'statut' => match (true) {
-                $remaining <= 0.0 => 'paye',
-                $paid > 0 => 'partiel',
-                now()->toDateString() > $echeance->date_limite->toDateString() => 'retard',
-                default => 'en_attente',
-            },
-        ]);
     }
 
     private function nextSubventionReference(): string

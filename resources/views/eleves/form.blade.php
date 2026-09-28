@@ -60,9 +60,9 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_classe') }} <span class="text-danger">*</span></label>
-                        <select name="id_classe" class="form-select" required>
+                        <select name="id_classe" class="form-select js-eleve-classe" required>
                             @foreach($classes as $classe)
-                                <option value="{{ $classe->id_classe }}" @selected(old('id_classe', $eleve->id_classe) == $classe->id_classe)>{{ $classe->nom_classe }}</option>
+                                <option value="{{ $classe->id_classe }}" data-subvention="{{ \App\Support\SubventionEtat::classeEligible($classe) ? '1' : '0' }}" @selected(old('id_classe', $eleve->id_classe) == $classe->id_classe)>{{ $classe->nom_classe }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -105,16 +105,17 @@
                     @unless($ecolePublique ?? false)
                     <div class="col-md-4">
                         <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_statut_paiement') }}</label>
-                        <select name="statut_paiement" class="form-select">
+                        <select name="statut_paiement" class="form-select js-statut-paiement">
                             @foreach([
                                 'normal' => __('eleves.statut_normal'),
                                 'subventionne' => __('eleves.statut_subventionne'),
                                 'boursier' => __('eleves.statut_boursier'),
                                 'gratuit' => __('eleves.statut_gratuit'),
                             ] as $value => $label)
-                                <option value="{{ $value }}" @selected(old('statut_paiement', $eleve->statut_paiement ?? 'normal') === $value)>{{ $label }}</option>
+                                <option value="{{ $value }}" @if($value === 'subventionne') data-subvention-only="1" @endif @selected(old('statut_paiement', $eleve->statut_paiement ?? 'normal') === $value)>{{ $label }}</option>
                             @endforeach
                         </select>
+                        <div class="form-text">{{ __('eleves.statut_subventionne_help') }}</div>
                     </div>
                     @endunless
                     <div class="col-md-4">
@@ -130,3 +131,25 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+    // « Subventionné » n'existe que pour une classe du secondaire d'une école privée.
+    document.addEventListener('DOMContentLoaded', function () {
+        const classeSelect = document.querySelector('.js-eleve-classe');
+        const statutSelect = document.querySelector('.js-statut-paiement');
+        if (!classeSelect || !statutSelect) return;
+        const option = statutSelect.querySelector('[data-subvention-only]');
+
+        function sync() {
+            const eligible = classeSelect.selectedOptions[0]?.dataset.subvention === '1';
+            option.hidden = !eligible;
+            option.disabled = !eligible;
+            if (!eligible && statutSelect.value === 'subventionne') statutSelect.value = 'normal';
+        }
+
+        classeSelect.addEventListener('change', sync);
+        sync();
+    });
+</script>
+@endpush

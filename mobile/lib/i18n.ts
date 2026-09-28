@@ -315,6 +315,7 @@ const STRINGS = {
     'finances.valider_paiements': 'Valider les paiements',
     'finances.label_trimestre': 'Trimestre',
     'finances.trimestre_option': 'Trimestre :n',
+    'finances.pris_en_charge_etat': 'Pris en charge par l’État',
 
     // Configuration - commun
     'configuration.title': 'Configuration',
@@ -776,6 +777,7 @@ const STRINGS = {
     'finances.valider_paiements': 'Confirm the payments',
     'finances.label_trimestre': 'Term',
     'finances.trimestre_option': 'Term :n',
+    'finances.pris_en_charge_etat': 'Paid by the State',
 
     // Configuration - common
     'configuration.title': 'Configuration',
@@ -1237,6 +1239,7 @@ const STRINGS = {
     'finances.valider_paiements': 'تأكيد المدفوعات',
     'finances.label_trimestre': 'الفصل',
     'finances.trimestre_option': 'الفصل :n',
+    'finances.pris_en_charge_etat': 'تتكفل به الدولة',
 
     // Configuration - مشترك
     'configuration.title': 'الإعدادات',

@@ -290,6 +290,15 @@ class EleveController extends WebEleveController
             $this->ensureMatiereLv2CompatibleWithClasse((int) $data['id_matiere_lv2'], $classe);
         }
 
+        // Ecole publique : jamais de subvention. Sinon, « subventionné » est
+        // réservé aux classes du secondaire (l'État paie alors tous les frais).
+        $statutPaiement = \App\Models\Ecole::find(session('idEcole'))?->estPublique() ? 'normal' : ($data['statut_paiement'] ?? 'normal');
+        if ($statutPaiement === 'subventionne' && !\App\Support\SubventionEtat::classeEligible($classe)) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'statut_paiement' => __('eleves.statut_subventionne_non_eligible'),
+            ]);
+        }
+
         $eleve->update([
             'prenom_eleve' => $data['prenom_eleve'],
             'nom_eleve' => $data['nom_eleve'],
@@ -300,12 +309,14 @@ class EleveController extends WebEleveController
             'adresse_eleve' => $data['adresse_eleve'] ?? null,
             'cas_social' => ($data['cas_social'] ?? null) ?: 'normal',
             'mode_paiement' => $data['mode_paiement'] ?? null,
-            'statut_paiement' => \App\Models\Ecole::find(session('idEcole'))?->estPublique() ? 'normal' : ($data['statut_paiement'] ?? 'normal'),
+            'statut_paiement' => $statutPaiement,
             'id_classe' => $data['id_classe'],
             'id_annee' => $data['id_annee'],
             'date_inscription' => $data['date_inscription'] ?? $eleve->date_inscription,
             'id_matiere_lv2' => array_key_exists('id_matiere_lv2', $data) ? $data['id_matiere_lv2'] : $eleve->id_matiere_lv2,
         ]);
+
+        \App\Support\SubventionEtat::synchroniser($eleve->fresh());
 
         return response()->json($eleve->fresh('classe'));
     }

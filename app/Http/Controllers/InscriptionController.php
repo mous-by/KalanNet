@@ -464,6 +464,8 @@ class InscriptionController extends Controller
             $eleve->id_annee = $data['id_annee'];
             $eleve->date_inscription = $dateReinscription;
             $eleve->save();
+            // Un élève subventionné le reste pour la nouvelle année (si sa classe y ouvre droit).
+            \App\Support\SubventionEtat::synchroniser($eleve);
         });
 
         return redirect()->route('inscriptions.index', ['tab' => 'reinscription'])
@@ -739,6 +741,7 @@ class InscriptionController extends Controller
                     $eleve->date_inscription = $dateReinscription;
                     $eleve->etat_dossier = 0;
                     $eleve->save();
+                    \App\Support\SubventionEtat::synchroniser($eleve);
                 } elseif ($decision === 'ajourne') {
                     $ajournes++;
                 } elseif (in_array($decision, ['admis_sortant', 'diplome_sortant'], true)) {

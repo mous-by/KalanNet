@@ -28,8 +28,8 @@
             <form method="GET" action="{{ route('finances.subventions-etat') }}" class="row g-3">
                 <div class="col-md-6">
                     <label class="form-label">{{ __('finances.label_annee_concernee') }}</label>
-                    <select name="annee_scolaire_id" class="form-select" onchange="this.form.submit()" required>
-                        <option value="">{{ __('finances.choose_ellipsis') }}</option>
+                    <select name="annee_scolaire_id" class="form-select" onchange="this.form.submit()">
+                        <option value="">{{ __('finances.toutes_annees_dues') }}</option>
                         @foreach($annees as $annee)
                             <option value="{{ $annee->id_anneeScolaire }}" @selected(($filters['annee_scolaire_id'] ?? '') == $annee->id_anneeScolaire)>{{ $annee->annee }}</option>
                         @endforeach
@@ -56,7 +56,7 @@
         <div class="col-md-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
-                    <small class="text-muted text-uppercase fw-bold">{{ __('finances.echeances_ouvertes') }}</small>
+                    <small class="text-muted text-uppercase fw-bold">{{ __('finances.eleves_subventionnes_dus') }}</small>
                     <h4 class="fw-bold mb-0">{{ $subventionRows->count() }}</h4>
                 </div>
             </div>
@@ -79,6 +79,34 @@
         </div>
     </div>
 
+    @if($resumeParAnnee->count() > 1)
+        <div class="card theme-card shadow-sm mb-4">
+            <div class="card-header theme-header border-0">
+                <h6 class="fw-bold mb-0">{{ __('finances.resume_par_annee_title') }}</h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th class="px-4">{{ __('finances.th_annee_subvention') }}</th>
+                            <th class="text-end">{{ __('finances.th_nb_eleves') }}</th>
+                            <th class="text-end px-4">{{ __('finances.th_reste_etat') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($resumeParAnnee as $resume)
+                            <tr>
+                                <td class="px-4 fw-semibold">{{ $resume->annee?->annee }}</td>
+                                <td class="text-end">{{ $resume->eleves }}</td>
+                                <td class="text-end px-4 fw-bold text-warning">@devise($resume->reste)</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+
     <div class="card theme-card shadow-sm overflow-hidden">
         <div class="card-header theme-header p-4 border-0">
             <h5 class="fw-bold mb-0">{{ __('finances.eleves_subventionnes_title') }}</h5>
@@ -89,9 +117,10 @@
                     <tr>
                         <th class="px-4">{{ __('finances.th_eleve') }}</th>
                         <th>{{ __('eleves.label_matricule') }}</th>
+                        <th>{{ __('finances.th_annee_subvention') }}</th>
                         <th>{{ __('finances.label_classe') }}</th>
-                        <th>{{ __('finances.th_echeance') }}</th>
-                        <th>{{ __('finances.th_date_limite') }}</th>
+                        <th>{{ __('finances.th_formule') }}</th>
+                        <th class="text-end">{{ __('finances.th_montant_total') }}</th>
                         <th class="text-end">{{ __('finances.th_deja_paye') }}</th>
                         <th class="text-end px-4">{{ __('finances.th_reste_etat') }}</th>
                     </tr>
@@ -99,17 +128,22 @@
                 <tbody>
                     @forelse($subventionRows as $row)
                         <tr>
-                            <td class="px-4 fw-semibold">{{ $row->plan->eleve?->nom_eleve }} {{ $row->plan->eleve?->prenom_eleve }}</td>
-                            <td><span class="badge bg-light text-dark">{{ $row->plan->eleve?->matricule ?: 'N/A' }}</span></td>
-                            <td>{{ $row->plan->classe?->nom_classe }}</td>
-                            <td>{{ $row->echeance->libelle }}</td>
-                            <td>{{ $row->echeance->date_limite?->format('d/m/Y') }}</td>
-                            <td class="text-end">@devise($row->deja_paye)</td>
-                            <td class="text-end px-4 fw-bold text-warning">@devise($row->reste)</td>
+                            <td class="px-4 fw-semibold">{{ $row->eleve?->nom_eleve }} {{ $row->eleve?->prenom_eleve }}</td>
+                            <td><span class="badge bg-light text-dark">{{ $row->eleve?->matricule ?: 'N/A' }}</span></td>
+                            <td>{{ $row->annee?->annee }}</td>
+                            <td>{{ $row->classe?->nom_classe }}</td>
+                            @if($row->planification)
+                                <td>{{ $row->libelle }}</td>
+                                <td class="text-end">@devise($row->montant_prevu)</td>
+                                <td class="text-end">@devise($row->deja_paye)</td>
+                                <td class="text-end px-4 fw-bold text-warning">@devise($row->reste)</td>
+                            @else
+                                <td colspan="4" class="text-danger small">{{ __('finances.subvention_sans_formule') }}</td>
+                            @endif
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="text-center text-muted py-5">{{ __('finances.empty_subventions') }}</td>
+                            <td colspan="8" class="text-center text-muted py-5">{{ __('finances.empty_subventions') }}</td>
                         </tr>
                     @endforelse
                 </tbody>
