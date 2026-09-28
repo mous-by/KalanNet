@@ -10,6 +10,7 @@ export interface Ecole {
   id: number;
   nom: string;
   type: string;
+  statut?: string | null;
   logo: string | null;
   devise?: Devise;
 }

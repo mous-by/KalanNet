@@ -9,6 +9,7 @@ import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
+import { useAuth } from '@/context/AuthContext';
 import { useLocale } from '@/context/LocaleContext';
 import { useOffline } from '@/context/OfflineContext';
 import { api, apiErrorMessage } from '@/lib/api';
@@ -19,6 +20,9 @@ export default function EditEleveScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useLocale();
   const { isOnline, enqueueAction } = useOffline();
+  const { user } = useAuth();
+  // Ecole publique : ni reduction ni subvention, seules les cooperatives.
+  const ecolePublique = user?.ecole?.statut === 'public';
 
   const GENRE_OPTIONS = [
     { value: 'Masculin', label: t('eleves.genre_masculin') },
@@ -143,12 +147,14 @@ export default function EditEleveScreen() {
       <SelectField label={requiredLabel(t('eleves.label_annee'))} value={form.id_annee ?? null} options={anneeOptions} onChange={(v) => set('id_annee', v as number)} />
       <SelectField label={t('eleves.label_cas_social')} value={form.cas_social ?? 'normal'} options={CAS_SOCIAL_OPTIONS} onChange={(v) => set('cas_social', v as string)} />
       <SelectField label={t('eleves.label_mode_paiement')} value={form.mode_paiement ?? ''} options={MODE_PAIEMENT_OPTIONS} onChange={(v) => set('mode_paiement', v as string)} />
-      <SelectField
-        label={t('eleves.statut_financier_label')}
-        value={form.statut_paiement ?? 'normal'}
-        options={STATUT_PAIEMENT_OPTIONS}
-        onChange={(v) => set('statut_paiement', v as string)}
-      />
+      {!ecolePublique ? (
+        <SelectField
+          label={t('eleves.statut_financier_label')}
+          value={form.statut_paiement ?? 'normal'}
+          options={STATUT_PAIEMENT_OPTIONS}
+          onChange={(v) => set('statut_paiement', v as string)}
+        />
+      ) : null}
       <DateField label={t('eleves.label_date_inscription')} value={form.date_inscription ?? null} onChange={(v) => set('date_inscription', v)} />
 
       {error ? <Text style={styles.error}>{error}</Text> : null}

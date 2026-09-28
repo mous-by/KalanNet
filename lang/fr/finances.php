@@ -274,4 +274,5 @@ return [
     'total_paye' => 'Total payé',
     'scan_verify' => 'Scannez pour vérifier le reçu',
     'thank_you_payment' => 'Merci pour votre paiement',
+    'subventions_non_applicables_public' => 'Les écoles publiques n\'ont ni subventions ni réductions : seules les coopératives s\'y appliquent.',
 ];

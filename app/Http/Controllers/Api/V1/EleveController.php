@@ -300,7 +300,7 @@ class EleveController extends WebEleveController
             'adresse_eleve' => $data['adresse_eleve'] ?? null,
             'cas_social' => ($data['cas_social'] ?? null) ?: 'normal',
             'mode_paiement' => $data['mode_paiement'] ?? null,
-            'statut_paiement' => $data['statut_paiement'] ?? 'normal',
+            'statut_paiement' => \App\Models\Ecole::find(session('idEcole'))?->estPublique() ? 'normal' : ($data['statut_paiement'] ?? 'normal'),
             'id_classe' => $data['id_classe'],
             'id_annee' => $data['id_annee'],
             'date_inscription' => $data['date_inscription'] ?? $eleve->date_inscription,

@@ -26,6 +26,7 @@ class UserResource extends JsonResource
                 'id' => $this->ecole->idEcole,
                 'nom' => $this->ecole->nomEcole,
                 'type' => $this->ecole->typeEcole,
+                'statut' => $this->ecole->statut,
                 'logo' => $this->ecole->logoEcole,
                 // Symbole/decimales de la devise du pays de l'ecole (FCFA par
                 // defaut si le pays n'est pas resolu) — evite de coder "FCFA"

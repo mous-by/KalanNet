@@ -268,8 +268,9 @@
                 @endif
                 @php
                     $isFondamentale = $user->ecole && in_array($user->ecole->typeEcole, ['Fondamentale I', 'Fondamentale II', 'Fondamental I', 'Fondamental II', 'Collège']);
+                    $isEcolePublique = (bool) $user->ecole?->estPublique();
                 @endphp
-                @if (!$isFondamentale && ($user->droit === 'SupAdmin' || $user->userHasAnyPermission(['subventions_etat_apercu', 'paiements_apercu'])))
+                @if (!$isFondamentale && !$isEcolePublique && ($user->droit === 'SupAdmin' || $user->userHasAnyPermission(['subventions_etat_apercu', 'paiements_apercu'])))
                 <li><a href="{{ route('finances.subventions-etat') }}"><i class="bi bi-circle"></i>{{ __('messages.menu.state_subsidies') }}</a></li>
                 @endif
                 @if ($user->userHasPermission('historique_paiement_apercu'))

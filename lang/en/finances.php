@@ -274,4 +274,5 @@ return [
     'total_paye' => 'Total paid',
     'scan_verify' => 'Scan to verify the receipt',
     'thank_you_payment' => 'Thank you for your payment',
+    'subventions_non_applicables_public' => 'Public schools have no subsidies or reductions: only cooperative fees apply.',
 ];

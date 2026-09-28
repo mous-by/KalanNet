@@ -274,4 +274,5 @@ return [
     'total_paye' => 'المجموع المدفوع',
     'scan_verify' => 'امسح للتحقق من الإيصال',
     'thank_you_payment' => 'شكرًا على دفعتكم',
+    'subventions_non_applicables_public' => 'لا توجد إعانات أو تخفيضات في المدارس العمومية: تُطبَّق التعاونيات فقط.',
 ];

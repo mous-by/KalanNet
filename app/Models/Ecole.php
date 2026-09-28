@@ -62,4 +62,11 @@ class Ecole extends Model
     {
         return \App\Support\Devise::format($montant, $this);
     }
+
+    // Une école publique ne pratique ni réduction ni subvention : seules les
+    // coopératives s'y appliquent.
+    public function estPublique(): bool
+    {
+        return strtolower(trim((string) $this->statut)) === 'public';
+    }
 }

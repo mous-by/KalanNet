@@ -102,6 +102,7 @@
                             @endforeach
                         </select>
                     </div>
+                    @unless($ecolePublique ?? false)
                     <div class="col-md-4">
                         <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_statut_paiement') }}</label>
                         <select name="statut_paiement" class="form-select">
@@ -115,6 +116,7 @@
                             @endforeach
                         </select>
                     </div>
+                    @endunless
                     <div class="col-md-4">
                         <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_date_inscription') }}</label>
                         <input type="date" name="date_inscription" class="form-control" value="{{ old('date_inscription', $eleve->date_inscription) }}">

@@ -164,8 +164,9 @@ class EleveController extends Controller
         $classes = Classe::where('idEcole', session('idEcole'))->orderBy('nom_classe')->get();
         $annees = AnneeScolaire::orderByDesc('id_anneeScolaire')->get();
         $matieresLv2 = \App\Models\Matiere::lv2()->with('ordres')->orderBy('nom_matiere')->get();
+        $ecolePublique = (bool) \App\Models\Ecole::find(session('idEcole'))?->estPublique();
 
-        return view('eleves.form', compact('eleve', 'classes', 'annees', 'matieresLv2'));
+        return view('eleves.form', compact('eleve', 'classes', 'annees', 'matieresLv2', 'ecolePublique'));
     }
 
     public function update(Request $request, $id)
@@ -205,7 +206,7 @@ class EleveController extends Controller
             'adresse_eleve' => $data['adresse_eleve'] ?? null,
             'cas_social' => $data['cas_social'] ?: 'normal',
             'mode_paiement' => $data['mode_paiement'] ?? null,
-            'statut_paiement' => $data['statut_paiement'] ?? 'normal',
+            'statut_paiement' => \App\Models\Ecole::find(session('idEcole'))?->estPublique() ? 'normal' : ($data['statut_paiement'] ?? 'normal'),
             'id_classe' => $data['id_classe'],
             'id_annee' => $data['id_annee'],
             'date_inscription' => $data['date_inscription'] ?? $eleve->date_inscription,

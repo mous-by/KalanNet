@@ -84,7 +84,7 @@ export default function EleveDetailScreen() {
           <InfoRow label={t('eleves.label_date_naissance')} value={eleve.date_naissance} />
           <InfoRow label={t('eleves.label_lieu_naissance')} value={eleve.lieu_naiss} />
           <InfoRow label={t('eleves.label_adresse_short')} value={eleve.adresse_eleve} />
-          <InfoRow label={t('eleves.info_statut_paiement')} value={eleve.statut_paiement} />
+          {user?.ecole?.statut !== 'public' ? <InfoRow label={t('eleves.info_statut_paiement')} value={eleve.statut_paiement} /> : null}
         </Card.Content>
       </Card>
 

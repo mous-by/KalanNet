@@ -2,6 +2,7 @@
 
 namespace App\Services\Paiements;
 
+use App\Models\Ecole;
 use App\Models\Eleve;
 use App\Models\ReductionPaiementConfig;
 
@@ -9,6 +10,17 @@ class ReductionService
 {
     public function apply(Eleve $eleve, float $montantTotal, int $anneeScolaireId): array
     {
+        if (Ecole::find($eleve->id_ecole)?->estPublique()) {
+            return [
+                'statut_paiement' => 'normal',
+                'type_reduction' => 'aucune',
+                'reduction' => 0.0,
+                'montant_final' => $montantTotal,
+                'payeur_type' => 'parent',
+                'payeur_libelle' => null,
+            ];
+        }
+
         $statut = $eleve->statut_paiement ?: 'normal';
 
         $config = ReductionPaiementConfig::query()

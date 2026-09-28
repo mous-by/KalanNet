@@ -808,7 +808,7 @@ class FinanceController extends Controller
         $this->ensurePermission('paiements_faire');
         $idEcole = session('idEcole');
         $ecole = Ecole::findOrFail($idEcole);
-        if (str_contains(strtolower((string) $ecole->typeEcole), 'public')) {
+        if ($ecole->estPublique()) {
             return redirect()->route('finances.paiements')
                 ->with('error', 'Les réductions de frais scolaires ne concernent pas les écoles publiques.');
         }
@@ -945,6 +945,9 @@ class FinanceController extends Controller
     {
         $this->ensureAnyPermission(['subventions_etat_apercu', 'paiements_apercu']);
         $idEcole = (int) session('idEcole');
+        if ($redirect = $this->refuseSubventionsForPublicSchool($idEcole)) {
+            return $redirect;
+        }
         $annees = AnneeScolaire::orderByDesc('id_anneeScolaire')->get();
         $classes = Classe::where('idEcole', $idEcole)->orderBy('nom_classe')->get();
         $caisse = Caisse::where('id_ecole', $idEcole)->where('status', 1)->first();
@@ -974,6 +977,9 @@ class FinanceController extends Controller
         ]);
 
         $idEcole = (int) session('idEcole');
+        if ($redirect = $this->refuseSubventionsForPublicSchool($idEcole)) {
+            return $redirect;
+        }
         if (!empty($data['classe_id'])) {
             Classe::where('idEcole', $idEcole)->findOrFail($data['classe_id']);
         }
@@ -1649,7 +1655,17 @@ class FinanceController extends Controller
 
     protected function isPublicSchool(?Ecole $ecole): bool
     {
-        return strtolower(trim((string) ($ecole->statut ?? ''))) === 'public';
+        return (bool) $ecole?->estPublique();
+    }
+
+    protected function refuseSubventionsForPublicSchool(int $idEcole): ?\Illuminate\Http\RedirectResponse
+    {
+        if (!$this->isPublicSchool(Ecole::find($idEcole))) {
+            return null;
+        }
+
+        return redirect()->route('finances.paiements')
+            ->with('error', __('finances.subventions_non_applicables_public'));
     }
 
     protected function resolveLegacyPayer(Eleve $eleve, $parentId, ?string $otherName, ?string $otherPhone): array
