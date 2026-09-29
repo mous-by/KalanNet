@@ -68,7 +68,7 @@
                                 @php($isAdminTarget = $utilisateur->droit === 'Admin')
                                 @php($connectedUser = Auth::user())
                                 @if(($editAllowed ?? false) && !$isCurrentUser && !$isSuperAdminTarget && ($connectedUser->droit === 'SupAdmin' || !$isAdminTarget))
-                                    <a href="{{ route('configuration.utilisateurs.edit', $utilisateur->idUtilisateur) }}" class="btn btn-light btn-sm p-2" title="{{ __('configuration.ut_modifier_utilisateur') }}">
+                                    <a href="{{ $utilisateur->droit === 'revendeur' ? route('configuration.revendeurs') : route('configuration.utilisateurs.edit', $utilisateur->idUtilisateur) }}" class="btn btn-light btn-sm p-2" title="{{ __('configuration.ut_modifier_utilisateur') }}">
                                         <i class="bx bx-edit text-warning fs-5"></i>
                                     </a>
                                 @endif

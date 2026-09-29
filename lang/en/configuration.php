@@ -361,4 +361,6 @@ return [
     'classe_off_modal_edit_title' => 'Edit the official class',
     'eco_modal_franco_arabe' => 'Franco-Arabic school',
     'eco_modal_franco_arabe_help' => 'Tick if the school teaches the franco-Arabic curriculum: only franco-Arabic subjects will be offered when setting up its classes.',
+    'revendeur_modifier_ici' => 'Reseller accounts are edited from Configuration > Resellers (the reseller\'s “Edit” button).',
+    'revendeur_suppression_interdite' => 'A reseller account cannot be deleted here: deactivate the reseller from Configuration > Resellers.',
 ];

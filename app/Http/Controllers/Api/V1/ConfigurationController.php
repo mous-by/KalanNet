@@ -258,6 +258,10 @@ class ConfigurationController extends WebConfigurationController
         $utilisateur = $this->userScope(User::query(), $authUser, $idEcole)->where('idUtilisateur', $id)->firstOrFail();
         $this->authorizeTargetUserEdit($authUser, $utilisateur);
 
+        if ($utilisateur->droit === 'revendeur') {
+            return response()->json(['message' => __('configuration.revendeur_modifier_ici')], 422);
+        }
+
         $type = $this->userFormType($utilisateur);
         $data = $this->validateUtilisateurByType($request, $type, $utilisateur);
         $this->validateManagedOrdersForUser($authUser, $type, $data, $idEcole);
@@ -328,6 +332,10 @@ class ConfigurationController extends WebConfigurationController
 
         if ($authUser->idUtilisateur === $utilisateur->idUtilisateur) {
             return response()->json(['message' => 'Vous ne pouvez pas supprimer votre propre compte.'], 422);
+        }
+
+        if ($utilisateur->droit === 'revendeur') {
+            return response()->json(['message' => __('configuration.revendeur_suppression_interdite')], 422);
         }
 
         if ($authUser->droit !== 'SupAdmin' && !$authUser->userHasPermission('utilisateurs_supprimer')) {

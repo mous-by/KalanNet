@@ -361,4 +361,6 @@ return [
     'classe_off_modal_edit_title' => 'Modifier la classe officielle',
     'eco_modal_franco_arabe' => 'École franco-arabe',
     'eco_modal_franco_arabe_help' => 'Cochez si l\'école enseigne le programme franco-arabe : seules les matières franco-arabes lui seront proposées pour composer ses classes.',
+    'revendeur_modifier_ici' => 'Les comptes revendeurs se modifient depuis Configuration > Revendeurs (bouton « Modifier » du revendeur).',
+    'revendeur_suppression_interdite' => 'Un compte revendeur ne se supprime pas d\'ici : désactivez le revendeur depuis Configuration > Revendeurs.',
 ];

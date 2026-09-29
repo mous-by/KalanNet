@@ -2,7 +2,8 @@
 
 @php
     $connectedUser = Auth::user();
-    $administrateurs = $utilisateurs->filter(fn ($u) => empty($u->id_enseignant) && empty($u->id_parent) && !in_array($u->droit, ['DAE', 'DCAP'], true));
+    $administrateurs = $utilisateurs->filter(fn ($u) => empty($u->id_enseignant) && empty($u->id_parent) && !in_array($u->droit, ['DAE', 'DCAP', 'revendeur'], true));
+    $revendeursUsers = $utilisateurs->filter(fn ($u) => $u->droit === 'revendeur');
     $enseignants = $utilisateurs->filter(fn ($u) => !empty($u->id_enseignant));
     $parents = $utilisateurs->filter(fn ($u) => !empty($u->id_parent));
     $daeUsers = $utilisateurs->filter(fn ($u) => $u->droit === 'DAE');
@@ -34,6 +35,12 @@
             'permission' => 'dcap_apercu',
             'users' => $dcapUsers,
         ],
+        // Visible par le SupAdmin seulement (aucune permission ne l'ouvre).
+        'revendeurs' => [
+            'label' => __('configuration.menu_revendeurs'),
+            'permission' => null,
+            'users' => $revendeursUsers,
+        ],
     ];
 
     $visibleTabs = collect($tabs)->filter(function ($tab, $key) use ($connectedUser) {
@@ -45,7 +52,7 @@
             return in_array($key, ['administrateurs', 'enseignants', 'parents'], true);
         }
 
-        return $connectedUser->userHasPermission($tab['permission']);
+        return $tab['permission'] !== null && $connectedUser->userHasPermission($tab['permission']);
     });
     if ($visibleTabs->isEmpty()) {
         $visibleTabs = collect(['administrateurs' => $tabs['administrateurs']]);
@@ -140,6 +147,17 @@
                                         'editAllowed' => $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('utilisateurs_modification'),
                                         'statusAllowed' => $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('dcap_activer'),
                                         'deleteAllowed' => $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('utilisateurs_supprimer'),
+                                    ])
+                                @elseif($key === 'revendeurs')
+                                    <div class="alert alert-info py-2 small">{{ __('configuration.revendeur_modifier_ici') }}</div>
+                                    @include('configuration.partials.users-table', [
+                                        'users' => $tab['users'],
+                                        'columns' => ['name', 'email', 'telephone'],
+                                        'showActions' => true,
+                                        'permissionAllowed' => false,
+                                        'editAllowed' => true,
+                                        'statusAllowed' => false,
+                                        'deleteAllowed' => false,
                                     ])
                                 @elseif($key === 'enseignants' || $key === 'parents')
                                     @include('configuration.partials.users-table', [

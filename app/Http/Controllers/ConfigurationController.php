@@ -549,6 +549,10 @@ class ConfigurationController extends Controller
 
         $this->authorizeTargetUserEdit($authUser, $utilisateur);
 
+        if ($utilisateur->droit === 'revendeur') {
+            return redirect()->route('configuration.revendeurs')->with('info', __('configuration.revendeur_modifier_ici'));
+        }
+
         return view('configuration.utilisateur-form', [
             'utilisateur' => $utilisateur,
             'selectedType' => $this->userFormType($utilisateur),
@@ -571,6 +575,12 @@ class ConfigurationController extends Controller
             ->firstOrFail();
 
         $this->authorizeTargetUserEdit($authUser, $utilisateur);
+
+        // Le formulaire utilisateur ne connaît pas le rôle revendeur : il
+        // l'écraserait (Admin/Gestionnaire). On passe par l'écran Revendeurs.
+        if ($utilisateur->droit === 'revendeur') {
+            return redirect()->route('configuration.revendeurs')->with('info', __('configuration.revendeur_modifier_ici'));
+        }
 
         $type = $this->userFormType($utilisateur);
         $data = $this->validateUtilisateurByType($request, $type, $utilisateur);
@@ -655,6 +665,10 @@ class ConfigurationController extends Controller
 
         if ($authUser->idUtilisateur === $utilisateur->idUtilisateur) {
             return redirect()->route('configuration.utilisateurs')->with('error', 'Vous ne pouvez pas supprimer votre propre compte.');
+        }
+
+        if ($utilisateur->droit === 'revendeur') {
+            return redirect()->route('configuration.utilisateurs')->with('error', __('configuration.revendeur_suppression_interdite'));
         }
 
         if ($authUser->droit !== 'SupAdmin' && !$authUser->userHasPermission('utilisateurs_supprimer')) {
