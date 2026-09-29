@@ -221,6 +221,27 @@ class Permission extends Model
         'classes_officielles_apercu' => [],
         'revendeur_apercu' => ['revendeur'],
         'revendeur_tarifs' => ['revendeur'],
+        // Programme officiel = référentiel national (partagé par toutes les
+        // écoles du pays) : seul le SupAdmin le crée/modifie/supprime.
+        'programmes_creation' => [],
+        'programmes_modification' => [],
+        'programmes_supprimer' => [],
+        // Gestion des comptes DAE/DCAP : propre à ces rôles.
+        'dae_apercu' => ['DAE'],
+        'dae_voiraction' => ['DAE'],
+        'dae_modifier' => ['DAE'],
+        'dae_activer' => ['DAE'],
+        'dae_permission' => ['DAE'],
+        'academies_apercu' => ['DAE'],
+        'dcap_apercu' => ['DCAP'],
+        'dcap_voiraction' => ['DCAP'],
+        'dcap_modifier' => ['DCAP'],
+        'dcap_activer' => ['DCAP'],
+        'dcap_permission' => ['DCAP'],
+        // Écrans de la plateforme.
+        'permissions_apercu' => [],
+        'abonnements_configuration' => [],
+        'abonnements_validation' => [],
     ];
 
     public static function accessiblePourRole(string $name, ?string $droit): bool
