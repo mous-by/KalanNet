@@ -80,8 +80,9 @@
                         <div class="col-md-3">
                             <label class="form-label">{{ __('configuration.menu_pays') }}</label>
                             <select name="id_pays" class="form-select js-pays-select">
+                                @php($paysParDefaut = $ecole->id_pays ?? $pays->firstWhere('code_iso', 'ML')?->id)
                                 @foreach($pays as $unPays)
-                                    <option value="{{ $unPays->id }}" data-code-iso="{{ $unPays->code_iso }}" @selected(old('id_pays', $ecole->id_pays ?? null) == $unPays->id)>
+                                    <option value="{{ $unPays->id }}" data-code-iso="{{ $unPays->code_iso }}" @selected(old('id_pays', $paysParDefaut) == $unPays->id)>
                                         {{ $unPays->nom }} ({{ $unPays->devise_symbole }})
                                     </option>
                                 @endforeach
