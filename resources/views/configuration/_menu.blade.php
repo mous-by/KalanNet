@@ -11,7 +11,10 @@
     // Sans objet pour une Ecole de Sante (filiere/annee, pas d'examen
     // national de type DEF/BAC).
     $adminEcoleType = $connectedUser->droit === 'Admin' ? ($connectedUser->ecole->typeEcole ?? null) : null;
-    $showPays      = $connectedUser->droit === 'Admin' && $adminEcoleType !== 'École de Santé';
+    // Sans objet non plus pour une école malienne (pays de référence, déjà
+    // configuré et partagé par toutes les écoles du Mali).
+    $showPays      = $connectedUser->droit === 'Admin' && $adminEcoleType !== 'École de Santé'
+                     && !\App\Support\ExamenNational::estMali($connectedUser->ecole);
     // Symétrique de Pays : les filières (Infirmier, Sage-femme...) ne
     // concernent QUE les Écoles de Santé.
     $showFilieres  = $connectedUser->droit === 'Admin' && $adminEcoleType === 'École de Santé';

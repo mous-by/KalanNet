@@ -171,6 +171,11 @@ class ConfigurationController extends Controller
         if ($ecole?->typeEcole === 'École de Santé') {
             abort(403, "La configuration des examens nationaux ne s'applique pas à une École de Santé.");
         }
+        // Le Mali est le pays de référence, déjà configuré (DEF/BAC) et
+        // partagé par toutes les écoles maliennes : rien à régler ici.
+        if (\App\Support\ExamenNational::estMali($ecole)) {
+            abort(403);
+        }
 
         $paysId = $ecole?->id_pays;
         if (!$paysId) {
@@ -195,6 +200,11 @@ class ConfigurationController extends Controller
         $ecole = $idEcole ? Ecole::withoutGlobalScopes()->find($idEcole) : null;
         if ($ecole?->typeEcole === 'École de Santé') {
             abort(403, "La configuration des examens nationaux ne s'applique pas à une École de Santé.");
+        }
+        // Le Mali est le pays de référence, déjà configuré (DEF/BAC) et
+        // partagé par toutes les écoles maliennes : rien à régler ici.
+        if (\App\Support\ExamenNational::estMali($ecole)) {
+            abort(403);
         }
 
         $ecolePaysId = $ecole?->id_pays;
