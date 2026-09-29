@@ -48,6 +48,9 @@ class MatiereController extends WebMatiereController
     {
         $this->authorizePermission('matieres_modification');
         $matiere = Matiere::findOrFail($id);
+        if (!$this->peutGererMatiere($matiere)) {
+            return response()->json(['message' => __('matieres.commune_non_modifiable')], 403);
+        }
         $data = $this->validateMatiere($request);
 
         DB::transaction(function () use ($matiere, $data) {
@@ -63,6 +66,9 @@ class MatiereController extends WebMatiereController
     {
         $this->authorizePermission('matieres_supprimer');
         $matiere = Matiere::findOrFail($id);
+        if (!$this->peutGererMatiere($matiere)) {
+            return response()->json(['message' => __('matieres.commune_non_modifiable')], 403);
+        }
 
         $usedInClasses = LigneClasse::where('id_matiere', $matiere->id_matiere)->exists();
         $usedInEvaluations = LigneEvaluation::where('id_matiere', $matiere->id_matiere)->exists();

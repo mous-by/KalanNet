@@ -98,7 +98,7 @@ export default function MatieresScreen() {
               <Text style={styles.title}>{item.nom_matiere}</Text>
               <Text style={styles.meta}>{(item.ordres ?? []).map((o) => ordreLabels[o.ordre_enseignement] ?? o.ordre_enseignement).join(', ')}</Text>
             </View>
-            {canEdit || canDelete ? (
+            {(canEdit || canDelete) && (user?.droit === 'SupAdmin' || item.id_ecole != null) ? (
               <View style={styles.actions}>
                 {canEdit ? (
                   <Button compact onPress={() => openDialog(item)}>

@@ -84,6 +84,9 @@ class MatiereController extends Controller
     {
         $this->authorizePermission('matieres_modification');
         $matiere = Matiere::findOrFail($id);
+        if (!$this->peutGererMatiere($matiere)) {
+            return redirect()->route('pedagogie.matieres')->with('error', __('matieres.commune_non_modifiable'));
+        }
         $data = $this->validateMatiere($request);
 
         DB::transaction(function () use ($matiere, $data, $request) {
@@ -102,6 +105,9 @@ class MatiereController extends Controller
     {
         $this->authorizePermission('matieres_supprimer');
         $matiere = Matiere::findOrFail($id);
+        if (!$this->peutGererMatiere($matiere)) {
+            return redirect()->route('pedagogie.matieres')->with('error', __('matieres.commune_non_modifiable'));
+        }
 
         $usedInClasses = LigneClasse::where('id_matiere', $matiere->id_matiere)->exists();
         $usedInEvaluations = LigneEvaluation::where('id_matiere', $matiere->id_matiere)->exists();
@@ -117,6 +123,19 @@ class MatiereController extends Controller
         });
 
         return redirect()->route('pedagogie.matieres')->with('success', 'La matière a été supprimée avec succès.');
+    }
+
+    /**
+     * Les matières communes (id_ecole null) servent à toutes les écoles : seul
+     * le SupAdmin peut les modifier ou les supprimer. Une école gère les siennes.
+     */
+    protected function peutGererMatiere(Matiere $matiere): bool
+    {
+        if (Auth::user()->droit === 'SupAdmin') {
+            return true;
+        }
+
+        return $matiere->id_ecole !== null && (int) $matiere->id_ecole === (int) session('idEcole');
     }
 
     protected function validateMatiere(Request $request): array

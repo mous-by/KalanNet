@@ -96,8 +96,9 @@
                                     @endif
                                 </td>
                                 <td>{{ $matiere->ordres->pluck('ordre_enseignement')->join(', ') }}</td>
+                                @php($matiereGerable = $estSupAdmin || ($matiere->id_ecole !== null && (int) $matiere->id_ecole === (int) session('idEcole')))
                                 <td class="text-center">
-                                    @if($canEditMatiere || $canDeleteMatiere)
+                                    @if(($canEditMatiere || $canDeleteMatiere) && $matiereGerable)
                                         <div class="dropdown">
                                             <a class="text-muted fs-5" href="#" data-bs-toggle="dropdown">
                                                 <i class="bi bi-three-dots"></i>
@@ -126,6 +127,8 @@
                                                 @endif
                                             </ul>
                                         </div>
+                                    @elseif(!$matiereGerable)
+                                        <span class="badge bg-light text-muted" title="{{ __('matieres.commune_hint') }}">{{ __('matieres.badge_commune') }}</span>
                                     @else
                                         <span class="text-muted">—</span>
                                     @endif

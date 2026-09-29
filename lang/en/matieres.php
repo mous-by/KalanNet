@@ -29,4 +29,7 @@ return [
     'badge_franco_arabe' => 'Franco-Arabic',
     'checkbox_franco_arabe' => 'Franco-Arabic subject',
     'checkbox_franco_arabe_help' => 'Offered only to franco-Arabic schools.',
+    'commune_non_modifiable' => 'This subject is shared by all schools: only the SupAdmin can edit or delete it.',
+    'badge_commune' => 'Shared',
+    'commune_hint' => 'Subject shared by all schools, managed by the SupAdmin.',
 ];

@@ -29,4 +29,7 @@ return [
     'badge_franco_arabe' => 'Franco-arabe',
     'checkbox_franco_arabe' => 'Matière franco-arabe',
     'checkbox_franco_arabe_help' => 'Proposée uniquement aux écoles franco-arabes.',
+    'commune_non_modifiable' => 'Cette matière est commune à toutes les écoles : seul le SupAdmin peut la modifier ou la supprimer.',
+    'badge_commune' => 'Commune',
+    'commune_hint' => 'Matière commune à toutes les écoles, gérée par le SupAdmin.',
 ];

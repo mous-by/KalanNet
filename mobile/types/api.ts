@@ -97,6 +97,7 @@ export interface LigneClasse {
 export interface Matiere {
   id_matiere: number;
   nom_matiere: string;
+  id_ecole?: number | null;
   ordres?: { ordre_enseignement: string }[];
   [key: string]: unknown;
 }
