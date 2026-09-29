@@ -31,6 +31,11 @@ class Ecole extends Model
         'academie',
         'notification_sms',
         'notification_email',
+        'franco_arabe',
+    ];
+
+    protected $casts = [
+        'franco_arabe' => 'boolean',
     ];
 
     public function utilisateurs()

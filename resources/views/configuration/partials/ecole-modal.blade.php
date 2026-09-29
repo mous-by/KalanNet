@@ -41,6 +41,13 @@
                                 <option value="prive" @selected(old('statut', $ecole->statut ?? 'public') === 'prive')>Privé</option>
                             </select>
                         </div>
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input type="checkbox" name="franco_arabe" value="1" id="franco_arabe_{{ $modalId }}" class="form-check-input" @checked(old('franco_arabe', $ecole->franco_arabe ?? false))>
+                                <label for="franco_arabe_{{ $modalId }}" class="form-check-label fw-semibold">{{ __('configuration.eco_modal_franco_arabe') }}</label>
+                            </div>
+                            <div class="form-text">{{ __('configuration.eco_modal_franco_arabe_help') }}</div>
+                        </div>
                         <div class="col-md-6 js-academie-field">
                             <div class="js-academie-input-group">
                                 <label class="form-label">{{ __('configuration.menu_academies') }}</label>

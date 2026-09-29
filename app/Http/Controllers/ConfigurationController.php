@@ -1535,9 +1535,11 @@ class ConfigurationController extends Controller
             'logoEcole' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'abonnement_offre_id' => 'nullable',
             'id_revendeur' => 'nullable|integer|exists:revendeurs,id',
+            'franco_arabe' => 'nullable|boolean',
         ]);
 
         unset($data['abonnement_offre_id']);
+        $data['franco_arabe'] = $request->boolean('franco_arabe');
         $data['id_pays'] = $paysId;
 
         // La creation a la volee n'est offerte que hors Mali : les 26

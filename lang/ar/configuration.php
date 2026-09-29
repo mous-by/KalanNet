@@ -359,4 +359,6 @@ return [
     'classe_off_empty' => 'لم يتم العثور على أي صف رسمي.',
     'classe_off_modal_create_title' => 'صف رسمي جديد',
     'classe_off_modal_edit_title' => 'تعديل الصف الرسمي',
+    'eco_modal_franco_arabe' => 'مدرسة فرنسية عربية',
+    'eco_modal_franco_arabe_help' => 'حدّد إذا كانت المدرسة تدرّس المنهج الفرنسي العربي: ستُقترح عليها المواد الفرنسية العربية فقط عند تكوين أقسامها.',
 ];

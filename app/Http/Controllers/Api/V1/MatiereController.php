@@ -13,19 +13,8 @@ class MatiereController extends WebMatiereController
 {
     public function index(Request $request)
     {
-        $user = $request->user();
-        $search = $request->get('search');
         $ordresAutorises = $this->ordresAutorises();
-
-        $matieres = Matiere::query()
-            ->with('ordres')
-            ->when($search, fn ($q) => $q->where('nom_matiere', 'like', "%{$search}%"))
-            ->when($user->droit !== 'SupAdmin' && !empty($ordresAutorises), fn ($q) => $q->whereHas(
-                'ordres',
-                fn ($inner) => $inner->whereIn('ordre_enseignement', $ordresAutorises)
-            ))
-            ->orderBy('nom_matiere')
-            ->get();
+        $matieres = $this->matieresFiltrees($request)->get();
 
         return response()->json([
             'data' => $matieres,
@@ -44,6 +33,7 @@ class MatiereController extends WebMatiereController
             $matiere = Matiere::create([
                 'nom_matiere' => $data['nom_matiere'],
                 'id_ecole' => $user->droit === 'SupAdmin' ? null : session('idEcole'),
+                'est_franco_arabe' => $this->estFrancoArabe(request()),
             ]);
 
             $this->syncOrdres($matiere, $data['ordre_enseignement']);

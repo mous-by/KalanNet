@@ -338,6 +338,7 @@ class ClasseController extends Controller
                     $inner->whereNull('id_ecole')->orWhere('id_ecole', $idEcole);
                 });
             })
+            ->when(!$estSante && $idEcole, fn ($query) => $query->visiblesPourEcole(Ecole::withoutGlobalScopes()->find($idEcole)))
             ->orderBy('nom_matiere')
             ->get();
     }

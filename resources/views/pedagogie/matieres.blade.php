@@ -4,6 +4,11 @@
     @php
         $canEditMatiere = auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('matieres_modification');
         $canDeleteMatiere = auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('matieres_supprimer');
+        $estSupAdmin = auth()->user()->droit === 'SupAdmin';
+        // Le filtre franco-arabe / classique n'a de sens que si les deux
+        // catalogues sont visibles (SupAdmin) ou pour une école franco-arabe.
+        $afficherFiltreType = $estSupAdmin || ($ecoleFrancoArabe ?? false);
+        $filtres = $filtres ?? [];
     @endphp
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
         <div class="breadcrumb-title pe-3">{{ __('matieres.title') }}</div>
@@ -38,6 +43,40 @@
                 <div class="alert alert-danger border-0 border-start border-danger border-4">{{ $errors->first() }}</div>
             @endif
 
+            <form method="GET" action="{{ route('pedagogie.matieres') }}" class="row g-2 align-items-end mb-3">
+                <div class="col-md-4">
+                    <label class="form-label small fw-bold">{{ __('matieres.filtre_recherche') }}</label>
+                    <input type="text" name="search" value="{{ $filtres['search'] ?? '' }}" class="form-control" placeholder="{{ __('matieres.filtre_recherche_placeholder') }}">
+                </div>
+                @if($afficherFiltreType)
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold">{{ __('matieres.filtre_type') }}</label>
+                        <select name="type" class="form-select" onchange="this.form.submit()">
+                            <option value="">{{ __('matieres.type_toutes') }}</option>
+                            <option value="classique" @selected(($filtres['type'] ?? '') === 'classique')>{{ __('matieres.type_classiques') }}</option>
+                            <option value="franco_arabe" @selected(($filtres['type'] ?? '') === 'franco_arabe')>{{ __('matieres.type_franco_arabes') }}</option>
+                        </select>
+                    </div>
+                @endif
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold">{{ __('matieres.th_ordres') }}</label>
+                    <select name="ordre" class="form-select" onchange="this.form.submit()">
+                        <option value="">{{ __('matieres.ordre_tous') }}</option>
+                        @foreach($allOrdres as $value => $label)
+                            @if($estSupAdmin || in_array($value, $ordresAutorises, true))
+                                <option value="{{ $value }}" @selected(($filtres['ordre'] ?? '') === $value)>{{ $label }}</option>
+                            @endif
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-fill"><i class="bi bi-search"></i></button>
+                    @if(array_filter($filtres))
+                        <a href="{{ route('pedagogie.matieres') }}" class="btn btn-light" title="{{ __('matieres.filtre_effacer') }}"><i class="bi bi-x-lg"></i></a>
+                    @endif
+                </div>
+            </form>
+
             <div class="table-responsive">
                 <table class="table table-striped table-bordered align-middle" style="width:100%">
                     <thead>
@@ -50,7 +89,12 @@
                     <tbody>
                         @forelse($matieres as $matiere)
                             <tr>
-                                <td class="fw-bold">{{ $matiere->nom_matiere }}</td>
+                                <td class="fw-bold">
+                                    <span dir="auto">{{ $matiere->nom_matiere }}</span>
+                                    @if($matiere->est_franco_arabe)
+                                        <span class="badge bg-success-subtle text-success ms-1">{{ __('matieres.badge_franco_arabe') }}</span>
+                                    @endif
+                                </td>
                                 <td>{{ $matiere->ordres->pluck('ordre_enseignement')->join(', ') }}</td>
                                 <td class="text-center">
                                     @if($canEditMatiere || $canDeleteMatiere)
@@ -61,7 +105,7 @@
                                             <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3">
                                                 @if($canEditMatiere)
                                                     <li>
-                                                        <a class="dropdown-item py-2 edit-matiere" href="#" data-bs-toggle="modal" data-bs-target="#modalCenter" data-id="{{ $matiere->id_matiere }}" data-nom="{{ $matiere->nom_matiere }}" data-ordres='@json($matiere->ordres->pluck('ordre_enseignement')->values())'>
+                                                        <a class="dropdown-item py-2 edit-matiere" href="#" data-bs-toggle="modal" data-bs-target="#modalCenter" data-id="{{ $matiere->id_matiere }}" data-nom="{{ $matiere->nom_matiere }}" data-franco-arabe="{{ $matiere->est_franco_arabe ? '1' : '0' }}" data-ordres='@json($matiere->ordres->pluck('ordre_enseignement')->values())'>
                                                             <i class="bi bi-pencil text-warning me-2"></i>{{ __('matieres.edit') }}
                                                         </a>
                                                     </li>
@@ -129,6 +173,13 @@
                                 @endforeach
                             </div>
                         </div>
+                        @if($estSupAdmin)
+                            <div class="form-check mt-3">
+                                <input class="form-check-input" type="checkbox" name="est_franco_arabe" value="1" id="est_franco_arabe">
+                                <label class="form-check-label" for="est_franco_arabe">{{ __('matieres.checkbox_franco_arabe') }}</label>
+                                <div class="form-text">{{ __('matieres.checkbox_franco_arabe_help') }}</div>
+                            </div>
+                        @endif
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-light" data-bs-dismiss="modal">{{ __('matieres.cancel') }}</button>
@@ -165,6 +216,12 @@
                                 @endforeach
                             </div>
                         </div>
+                        @if($estSupAdmin)
+                            <div class="form-check mt-3">
+                                <input class="form-check-input" type="checkbox" name="est_franco_arabe" value="1" id="edit_est_franco_arabe">
+                                <label class="form-check-label" for="edit_est_franco_arabe">{{ __('matieres.checkbox_franco_arabe') }}</label>
+                            </div>
+                        @endif
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-light" data-bs-dismiss="modal">{{ __('matieres.close') }}</button>
@@ -190,6 +247,8 @@
 
                     form.action = '{{ url('/pedagogie/matieres') }}/' + id;
                     nameInput.value = this.dataset.nom || '';
+                    const francoArabe = document.getElementById('edit_est_franco_arabe');
+                    if (francoArabe) francoArabe.checked = this.dataset.francoArabe === '1';
 
                     document.querySelectorAll('.edit-ordre').forEach(function (checkbox) {
                         checkbox.checked = ordres.includes(checkbox.value);

@@ -15,26 +15,51 @@ class MatiereController extends Controller
 {
     public function index(Request $request)
     {
-        $user = Auth::user();
-        $search = $request->get('search');
-        $ordresAutorises = $this->ordresAutorises();
-
-        $matieres = Matiere::query()
-            ->with('ordres')
-            ->when($search, function ($query) use ($search) {
-                $query->where('nom_matiere', 'like', "%{$search}%");
-            })
-            ->when($user->droit !== 'SupAdmin' && !empty($ordresAutorises), function ($query) use ($ordresAutorises) {
-                $query->whereHas('ordres', fn ($inner) => $inner->whereIn('ordre_enseignement', $ordresAutorises));
-            })
-            ->orderBy('nom_matiere')
-            ->paginate(20);
+        $matieres = $this->matieresFiltrees($request)->paginate(20)->withQueryString();
 
         return view('pedagogie.matieres', [
             'matieres' => $matieres,
             'allOrdres' => $this->allOrdres(),
-            'ordresAutorises' => $ordresAutorises,
+            'ordresAutorises' => $this->ordresAutorises(),
+            'filtres' => $request->only(['search', 'type', 'ordre']),
+            'ecoleFrancoArabe' => (bool) $this->currentEcole()?->franco_arabe,
         ]);
+    }
+
+    /**
+     * Liste des matières visibles par l'utilisateur, avec les filtres de
+     * l'écran : nom, type (classiques / franco-arabes) et ordre d'enseignement.
+     */
+    protected function matieresFiltrees(Request $request)
+    {
+        $user = Auth::user();
+        $ordresAutorises = $this->ordresAutorises();
+        $search = trim((string) $request->get('search'));
+        $type = $request->get('type');
+        $ordre = $request->get('ordre');
+
+        return Matiere::query()
+            ->with('ordres')
+            ->when($user->droit !== 'SupAdmin', fn ($query) => $query->visiblesPourEcole($this->currentEcole()))
+            ->when($search !== '', fn ($query) => $query->where('nom_matiere', 'like', "%{$search}%"))
+            ->when($type === 'franco_arabe', fn ($query) => $query->where('est_franco_arabe', true))
+            ->when($type === 'classique', fn ($query) => $query->where('est_franco_arabe', false))
+            ->when($ordre && array_key_exists($ordre, $this->allOrdres()), fn ($query) => $query->whereHas('ordres', fn ($inner) => $inner->where('ordre_enseignement', $ordre)))
+            ->when($user->droit !== 'SupAdmin' && !empty($ordresAutorises), function ($query) use ($ordresAutorises) {
+                $query->whereHas('ordres', fn ($inner) => $inner->whereIn('ordre_enseignement', $ordresAutorises));
+            })
+            ->orderBy('nom_matiere');
+    }
+
+    /**
+     * SupAdmin : case du formulaire. Admin : une matière créée par une école
+     * franco-arabe est franco-arabe.
+     */
+    protected function estFrancoArabe(Request $request): bool
+    {
+        return Auth::user()->droit === 'SupAdmin'
+            ? $request->boolean('est_franco_arabe')
+            : (bool) $this->currentEcole()?->franco_arabe;
     }
 
     public function store(Request $request)
@@ -46,6 +71,7 @@ class MatiereController extends Controller
             $matiere = Matiere::create([
                 'nom_matiere' => $data['nom_matiere'],
                 'id_ecole' => Auth::user()->droit === 'SupAdmin' ? null : session('idEcole'),
+                'est_franco_arabe' => $this->estFrancoArabe(request()),
             ]);
 
             $this->syncOrdres($matiere, $data['ordre_enseignement'] ?? []);
@@ -60,8 +86,11 @@ class MatiereController extends Controller
         $matiere = Matiere::findOrFail($id);
         $data = $this->validateMatiere($request);
 
-        DB::transaction(function () use ($matiere, $data) {
-            $matiere->update(['nom_matiere' => $data['nom_matiere']]);
+        DB::transaction(function () use ($matiere, $data, $request) {
+            $matiere->update(array_merge(
+                ['nom_matiere' => $data['nom_matiere']],
+                Auth::user()->droit === 'SupAdmin' ? ['est_franco_arabe' => $request->boolean('est_franco_arabe')] : []
+            ));
             $matiere->ordres()->delete();
             $this->syncOrdres($matiere, $data['ordre_enseignement'] ?? []);
         });

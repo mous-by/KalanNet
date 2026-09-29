@@ -359,4 +359,6 @@ return [
     'classe_off_empty' => 'No official class found.',
     'classe_off_modal_create_title' => 'New official class',
     'classe_off_modal_edit_title' => 'Edit the official class',
+    'eco_modal_franco_arabe' => 'Franco-Arabic school',
+    'eco_modal_franco_arabe_help' => 'Tick if the school teaches the franco-Arabic curriculum: only franco-Arabic subjects will be offered when setting up its classes.',
 ];
