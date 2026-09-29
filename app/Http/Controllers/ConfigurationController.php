@@ -688,18 +688,16 @@ class ConfigurationController extends Controller
         return $assigneur->droit === 'SupAdmin' ? null : $assigneur->permissionCanonicalNames();
     }
 
-    protected function groupedPermissionsAssignables(User $assigneur): array
+    protected function groupedPermissionsAssignables(User $assigneur, ?User $cible = null): array
     {
-        $grouped = Permission::groupedByModule();
         $autorisees = $this->permissionsAssignables($assigneur);
-        if ($autorisees === null) {
-            return $grouped;
-        }
+        $autorisees = $autorisees === null ? null : array_flip($autorisees);
 
-        $autorisees = array_flip($autorisees);
-
-        return collect($grouped)
-            ->map(fn ($items) => array_values(array_filter($items, fn ($permission) => isset($autorisees[$permission->name]))))
+        // On ne propose pas non plus ce que le rôle de la personne ne peut pas
+        // avoir (ex. classes officielles : réservé au SupAdmin).
+        return collect(Permission::groupedByModule())
+            ->map(fn ($items) => array_values(array_filter($items, fn ($permission) => ($autorisees === null || isset($autorisees[$permission->name]))
+                && (!$cible || Permission::accessiblePourRole($permission->name, $cible->droit)))))
             ->filter()
             ->all();
     }
@@ -711,7 +709,8 @@ class ConfigurationController extends Controller
      */
     protected function permissionsApresAssignation(User $assigneur, User $cible, array $idsSoumis): array
     {
-        $soumises = Permission::whereIn('id', $idsSoumis)->get(['id', 'name']);
+        $soumises = Permission::whereIn('id', $idsSoumis)->get(['id', 'name'])
+            ->filter(fn ($permission) => Permission::accessiblePourRole($permission->name, $cible->droit));
         $autorisees = $this->permissionsAssignables($assigneur);
         if ($autorisees === null) {
             return $soumises->pluck('id')->map(fn ($id) => (int) $id)->all();
@@ -741,7 +740,7 @@ class ConfigurationController extends Controller
 
         $this->authorizeTargetPermissionView($authUser, $utilisateur);
 
-        $groupedPermissions = $this->groupedPermissionsAssignables($authUser);
+        $groupedPermissions = $this->groupedPermissionsAssignables($authUser, $utilisateur);
         $permissionsReadOnly = !$this->canAssignPermissionsToTarget($authUser, $utilisateur);
         if ($utilisateur->droit === 'SupAdmin') {
             $allPermissions = collect($groupedPermissions)->flatten(1);
@@ -800,6 +799,7 @@ class ConfigurationController extends Controller
 
             $this->authorizeTargetPermissionView($authUser, $utilisateur);
             $permissionsReadOnly = !$this->canAssignPermissionsToTarget($authUser, $utilisateur);
+            $groupedPermissions = $this->groupedPermissionsAssignables($authUser, $utilisateur);
 
             if ($utilisateur->droit === 'SupAdmin') {
                 $allPermissions = collect($groupedPermissions)->flatten(1);
@@ -1385,6 +1385,8 @@ class ConfigurationController extends Controller
                     'dcap_apercu',
                     'academies_apercu',
                     'classes_officielles_apercu',
+                    'revendeur_apercu',
+                    'revendeur_tarifs',
                     'permissions_apercu',
                     'permission_voir',
                     'permission_apercu',

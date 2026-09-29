@@ -155,6 +155,7 @@ class User extends Authenticatable
         $this->permissionCanonicalCache = $permissions
             ->pluck('name')
             ->map(fn ($name) => Permission::canonicalName($name))
+            ->filter(fn ($name) => Permission::accessiblePourRole($name, $this->droit))
             ->unique()
             ->values()
             ->all();

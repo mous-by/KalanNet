@@ -211,6 +211,28 @@ class Permission extends Model
         return function_exists('mb_strtolower') ? mb_strtolower($name, 'UTF-8') : strtolower($name);
     }
 
+    /**
+     * Permissions réservées au SupAdmin (et, le cas échéant, à d'autres rôles
+     * listés). Détenues par un autre rôle, elles sont ignorées : le référentiel
+     * des classes officielles est commun à toutes les écoles, et le portail
+     * revendeur ne concerne que les revendeurs.
+     */
+    public const RESERVEES = [
+        'classes_officielles_apercu' => [],
+        'revendeur_apercu' => ['revendeur'],
+        'revendeur_tarifs' => ['revendeur'],
+    ];
+
+    public static function accessiblePourRole(string $name, ?string $droit): bool
+    {
+        $canonical = self::canonicalName($name);
+        if ($droit === 'SupAdmin' || !array_key_exists($canonical, self::RESERVEES)) {
+            return true;
+        }
+
+        return in_array($droit, self::RESERVEES[$canonical], true);
+    }
+
     public static function canonicalName(?string $name): string
     {
         $name = self::normalizeName($name);

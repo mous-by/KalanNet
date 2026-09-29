@@ -357,7 +357,7 @@ class ConfigurationController extends WebConfigurationController
 
         $this->authorizeTargetPermissionView($authUser, $utilisateur);
 
-        $groupedPermissions = $this->groupedPermissionsAssignables($authUser);
+        $groupedPermissions = $this->groupedPermissionsAssignables($authUser, $utilisateur);
         $readOnly = !$this->canAssignPermissionsToTarget($authUser, $utilisateur);
 
         if ($utilisateur->droit === 'SupAdmin') {
