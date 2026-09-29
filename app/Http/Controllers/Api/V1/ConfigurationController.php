@@ -357,7 +357,7 @@ class ConfigurationController extends WebConfigurationController
 
         $this->authorizeTargetPermissionView($authUser, $utilisateur);
 
-        $groupedPermissions = Permission::groupedByModule();
+        $groupedPermissions = $this->groupedPermissionsAssignables($authUser);
         $readOnly = !$this->canAssignPermissionsToTarget($authUser, $utilisateur);
 
         if ($utilisateur->droit === 'SupAdmin') {
@@ -393,8 +393,7 @@ class ConfigurationController extends WebConfigurationController
         }
 
         $permissionIds = collect($request->input('permissions', []))->map(fn ($v) => (int) $v)->filter()->unique()->values()->all();
-        $validPermissionIds = Permission::whereIn('id', $permissionIds)->pluck('id')->all();
-        $utilisateur->permissions()->sync($validPermissionIds);
+        $utilisateur->permissions()->sync($this->permissionsApresAssignation($authUser, $utilisateur, $permissionIds));
 
         $orders = SchoolOrderAccess::normalizeMany($request->input('managed_orders', []));
         if ($utilisateur->droit === 'Gestionnaire' && SchoolOrderAccess::isComplex($utilisateur->ecole)) {

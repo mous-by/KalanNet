@@ -678,6 +678,54 @@ class ConfigurationController extends Controller
         return redirect()->route('configuration.utilisateurs')->with('success', 'Compte utilisateur supprimé. Les fiches métier restent conservées.');
     }
 
+    /**
+     * Noms canoniques des permissions que $assigneur peut accorder : celles
+     * qu'il possède lui-même (null = toutes, pour le SupAdmin). On ne peut pas
+     * donner à quelqu'un un droit qu'on n'a pas.
+     */
+    protected function permissionsAssignables(User $assigneur): ?array
+    {
+        return $assigneur->droit === 'SupAdmin' ? null : $assigneur->permissionCanonicalNames();
+    }
+
+    protected function groupedPermissionsAssignables(User $assigneur): array
+    {
+        $grouped = Permission::groupedByModule();
+        $autorisees = $this->permissionsAssignables($assigneur);
+        if ($autorisees === null) {
+            return $grouped;
+        }
+
+        $autorisees = array_flip($autorisees);
+
+        return collect($grouped)
+            ->map(fn ($items) => array_values(array_filter($items, fn ($permission) => isset($autorisees[$permission->name]))))
+            ->filter()
+            ->all();
+    }
+
+    /**
+     * Permissions finales de $cible : celles cochées parmi ce que $assigneur
+     * peut accorder, plus celles que $cible avait déjà hors de ce périmètre
+     * (invisibles pour l'assigneur, donc jamais retirées par lui).
+     */
+    protected function permissionsApresAssignation(User $assigneur, User $cible, array $idsSoumis): array
+    {
+        $soumises = Permission::whereIn('id', $idsSoumis)->get(['id', 'name']);
+        $autorisees = $this->permissionsAssignables($assigneur);
+        if ($autorisees === null) {
+            return $soumises->pluck('id')->map(fn ($id) => (int) $id)->all();
+        }
+
+        $autorisees = array_flip($autorisees);
+        $dansPerimetre = fn ($permission) => isset($autorisees[Permission::canonicalName($permission->name)]);
+
+        $accordees = $soumises->filter($dansPerimetre)->pluck('id');
+        $conservees = $cible->permissions()->get(['permissions.id', 'permissions.name'])->reject($dansPerimetre)->pluck('id');
+
+        return $accordees->merge($conservees)->map(fn ($id) => (int) $id)->unique()->values()->all();
+    }
+
     public function editUserPermissions(int $id)
     {
         $authUser = Auth::user();
@@ -693,7 +741,7 @@ class ConfigurationController extends Controller
 
         $this->authorizeTargetPermissionView($authUser, $utilisateur);
 
-        $groupedPermissions = Permission::groupedByModule();
+        $groupedPermissions = $this->groupedPermissionsAssignables($authUser);
         $permissionsReadOnly = !$this->canAssignPermissionsToTarget($authUser, $utilisateur);
         if ($utilisateur->droit === 'SupAdmin') {
             $allPermissions = collect($groupedPermissions)->flatten(1);
@@ -736,7 +784,7 @@ class ConfigurationController extends Controller
         $availableUsers = $this->permissionAssignableUsers($authUser, $idEcole, $schoolFilter);
         $selectedUserId = (int) $request->query('user_id');
         $utilisateur = null;
-        $groupedPermissions = Permission::groupedByModule();
+        $groupedPermissions = $this->groupedPermissionsAssignables($authUser);
         $userPermissionIds = [];
         $userPermissionNames = [];
         $permissionsReadOnly = false;
@@ -805,8 +853,7 @@ class ConfigurationController extends Controller
             ->values()
             ->all();
 
-        $validPermissionIds = Permission::whereIn('id', $permissionIds)->pluck('id')->all();
-        $utilisateur->permissions()->sync($validPermissionIds);
+        $utilisateur->permissions()->sync($this->permissionsApresAssignation($authUser, $utilisateur, $permissionIds));
 
         $orders = SchoolOrderAccess::normalizeMany($request->input('managed_orders', []));
         if ($utilisateur->droit === 'Gestionnaire' && SchoolOrderAccess::isComplex($utilisateur->ecole)) {

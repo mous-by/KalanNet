@@ -32,6 +32,9 @@
         'autres' => 'bx-key',
     ];
     $totalPermissions = collect($groupedPermissions)->flatten(1)->count();
+    $checkedVisibles = collect($groupedPermissions)->flatten(1)
+        ->filter(fn ($permission) => in_array((int) $permission->id, $userPermissionIds ?? [], true) || in_array($permission->name, $userPermissionNames ?? [], true))
+        ->count();
 @endphp
 
 @section('content')
@@ -115,7 +118,7 @@
                                     @endif
                                 </div>
                                 <div class="text-end">
-                                    <span class="badge theme-icon-soft fs-6 px-3 py-2">{{ __('configuration.up_cochees_count', ['count' => count($userPermissionIds), 'total' => $totalPermissions]) }}</span>
+                                    <span class="badge theme-icon-soft fs-6 px-3 py-2">{{ __('configuration.up_cochees_count', ['count' => $checkedVisibles, 'total' => $totalPermissions]) }}</span>
                                 </div>
                             </div>
                         @endif
