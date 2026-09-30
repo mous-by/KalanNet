@@ -813,7 +813,8 @@ class DashboardController extends Controller
                 'p.id_planification',
                 'p.motif',
                 'p.date_fin',
-                'p.montant_planification',
+                // Cas social « Autre » : frais fixé par l'école à la place de la formule.
+                DB::raw('COALESCE(li.montant_cas_social, p.montant_planification) as montant_planification'),
             ])
             ->get();
     }

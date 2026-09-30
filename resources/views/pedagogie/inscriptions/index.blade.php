@@ -96,12 +96,13 @@
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_cas_social') }}</label>
-                                        <select name="cas_social" class="form-select rounded-3">
+                                        <select name="cas_social" class="form-select rounded-3" data-cas-social-select>
                                             @php
                                                 $casSocialMap = [
                                                     'normal' => __('eleves.cas_social_normal'),
                                                     'Dipenser' => __('eleves.cas_social_dispense'),
                                                     'Malade' => __('eleves.cas_social_malade'),
+                                                    \App\Support\CasSocial::AUTRE => __('eleves.cas_social_autre'),
                                                 ];
                                             @endphp
                                             @foreach($casSocialMap as $value => $label)
@@ -109,6 +110,17 @@
                                             @endforeach
                                         </select>
                                     </div>
+                                    <div class="col-md-4 d-none" data-cas-social-autre>
+                                        <label class="form-label small fw-bold text-uppercase">{{ __('eleves.cas_social_nature') }} <span class="text-danger">*</span></label>
+                                        <input type="text" name="cas_social_nature" class="form-control rounded-3" maxlength="255" value="{{ old('cas_social_nature') }}" placeholder="{{ __('eleves.cas_social_nature_placeholder') }}">
+                                    </div>
+                                    @if($planificationRequired)
+                                    <div class="col-md-4 d-none" data-cas-social-autre data-cas-social-frais>
+                                        <label class="form-label small fw-bold text-uppercase">{{ __('eleves.cas_social_montant') }} <span class="text-danger">*</span></label>
+                                        <input type="number" name="cas_social_montant" class="form-control rounded-3" min="0" step="1" value="{{ old('cas_social_montant') }}">
+                                        <div class="form-text">{{ __('eleves.cas_social_montant_help') }}</div>
+                                    </div>
+                                    @endif
                                     <div class="col-md-4">
                                         <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_classe') }} <span class="text-danger">*</span></label>
                                         <select name="id_classe" class="form-select rounded-3" required data-planification-classe>
@@ -624,6 +636,25 @@
         ];
     @endphp
     <script>
+        // Cas social « Autre » : nature + frais de l'élève (le frais ne vaut pas
+        // pour un élève subventionné, dont l'État paie tout).
+        document.querySelectorAll('[data-cas-social-select]').forEach((select) => {
+            const form = select.closest('form');
+            const blocs = form.querySelectorAll('[data-cas-social-autre]');
+            const subvention = form.querySelector('input[name="subventionne_etat"]');
+            const sync = () => {
+                const autre = select.value === 'autre';
+                blocs.forEach((bloc) => {
+                    const visible = autre && !(bloc.hasAttribute('data-cas-social-frais') && subvention?.checked);
+                    bloc.classList.toggle('d-none', !visible);
+                    bloc.querySelectorAll('input').forEach((input) => { input.required = visible; });
+                });
+            };
+            select.addEventListener('change', sync);
+            subvention?.addEventListener('change', sync);
+            sync();
+        });
+
         // « Subventionné par l'État » : seulement pour une classe du secondaire d'une école privée.
         document.querySelectorAll('[data-subvention-field]').forEach((field) => {
             const form = field.closest('form');

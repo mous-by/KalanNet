@@ -55,6 +55,7 @@ class FinanceController extends WebFinanceController
                 'reste_a_payer' => $row->reste_a_payer,
                 'a_payer_maintenant' => $row->a_payer_maintenant,
                 'pris_en_charge_etat' => $row->pris_en_charge_etat,
+                'cas_social' => $row->cas_social,
                 'tranche' => $row->tranche ? [
                     'soldees' => $row->tranche['soldees'],
                     'total' => $row->tranche['total'],

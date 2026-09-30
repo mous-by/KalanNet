@@ -88,12 +88,27 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_cas_social') }}</label>
-                        <select name="cas_social" class="form-select">
-                            @foreach(['normal' => __('eleves.cas_social_normal'), 'Dipenser' => __('eleves.cas_social_dispense'), 'Malade' => __('eleves.cas_social_malade')] as $value => $label)
-                                <option value="{{ $value }}" @selected(old('cas_social', $eleve->cas_social) === $value)>{{ $label }}</option>
+                        @php
+                            // Une nature saisie (hors liste) s'affiche comme « Autre ».
+                            $casSocialActuel = \App\Support\CasSocial::estAutre($eleve->cas_social) ? \App\Support\CasSocial::AUTRE : ($eleve->cas_social ?: 'normal');
+                        @endphp
+                        <select name="cas_social" class="form-select js-cas-social">
+                            @foreach(['normal' => __('eleves.cas_social_normal'), 'Dipenser' => __('eleves.cas_social_dispense'), 'Malade' => __('eleves.cas_social_malade'), \App\Support\CasSocial::AUTRE => __('eleves.cas_social_autre')] as $value => $label)
+                                <option value="{{ $value }}" @selected(old('cas_social', $casSocialActuel) === $value)>{{ $label }}</option>
                             @endforeach
                         </select>
                     </div>
+                    <div class="col-md-4 d-none js-cas-social-autre">
+                        <label class="form-label small fw-bold text-uppercase">{{ __('eleves.cas_social_nature') }} <span class="text-danger">*</span></label>
+                        <input type="text" name="cas_social_nature" class="form-control" maxlength="255" value="{{ old('cas_social_nature', \App\Support\CasSocial::estAutre($eleve->cas_social) ? $eleve->cas_social : '') }}" placeholder="{{ __('eleves.cas_social_nature_placeholder') }}">
+                    </div>
+                    @if(!($ecolePublique ?? false) && ($casSocialLigne->id_planification ?? null))
+                    <div class="col-md-4 d-none js-cas-social-autre js-cas-social-frais">
+                        <label class="form-label small fw-bold text-uppercase">{{ __('eleves.cas_social_montant') }} <span class="text-danger">*</span></label>
+                        <input type="number" name="cas_social_montant" class="form-control" min="0" step="1" value="{{ old('cas_social_montant', isset($casSocialLigne->montant_cas_social) ? (int) $casSocialLigne->montant_cas_social : '') }}">
+                        <div class="form-text">{{ __('eleves.cas_social_montant_help') }}</div>
+                    </div>
+                    @endif
                     <input type="hidden" name="mode_paiement" value="{{ $eleve->mode_paiement }}">
                     @unless($ecolePublique ?? false)
                     <div class="col-md-4">
@@ -127,6 +142,24 @@
 
 @push('scripts')
 <script>
+    // Cas social « Autre » : nature + frais (pas de frais pour un élève subventionné).
+    document.addEventListener('DOMContentLoaded', function () {
+        const select = document.querySelector('.js-cas-social');
+        const statut = document.querySelector('.js-statut-paiement');
+        if (!select) return;
+        function sync() {
+            const autre = select.value === 'autre';
+            document.querySelectorAll('.js-cas-social-autre').forEach(function (bloc) {
+                const visible = autre && !(bloc.classList.contains('js-cas-social-frais') && statut?.value === 'subventionne');
+                bloc.classList.toggle('d-none', !visible);
+                bloc.querySelectorAll('input').forEach(function (input) { input.required = visible; });
+            });
+        }
+        select.addEventListener('change', sync);
+        statut?.addEventListener('change', sync);
+        sync();
+    });
+
     // « Subventionné » n'existe que pour une classe du secondaire d'une école privée.
     document.addEventListener('DOMContentLoaded', function () {
         const classeSelect = document.querySelector('.js-eleve-classe');

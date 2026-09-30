@@ -338,6 +338,11 @@ class EleveController extends WebEleveController
         ]);
 
         \App\Support\SubventionEtat::synchroniser($eleve->fresh());
+        // Le frais d'un cas social « Autre » se règle sur le web ; revenir à
+        // un cas prédéfini (ou subventionné) le retire.
+        if (!\App\Support\CasSocial::estAutre($eleve->cas_social) || $statutPaiement === 'subventionne') {
+            \App\Support\CasSocial::enregistrer((int) $eleve->id_eleve, (int) $data['id_annee'], null, null);
+        }
 
         return response()->json($eleve->fresh('classe'));
     }

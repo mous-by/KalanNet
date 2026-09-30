@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php -l app/Http/Controllers/AnnouncementController.php)",
+      "Bash(php -l app/Http/Controllers/Api/V1/AnnouncementController.php)",
+      "Bash(php -l database/migrations/2026_09_10_150100_make_id_ecole_nullable_on_annonces.php)"
+    ]
+  }
+}

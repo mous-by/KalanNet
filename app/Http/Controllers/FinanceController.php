@@ -1573,14 +1573,17 @@ class FinanceController extends Controller
                 return null;
             }
 
-            $total = (float) $planification->montant_planification;
+            // Cas social « Autre » : le frais fixé par l'école remplace la formule.
+            $casSocial = \App\Support\CasSocial::aUnFrais($inscription);
+            $total = \App\Support\CasSocial::montantPourLigne($planification, $inscription);
             $paid = $this->legacyPaidForPlan((int) $student->id_eleve, $planification, $anneeId);
             $remaining = max(0, $total - $paid);
             if ($remaining <= 0) {
                 return null;
             }
 
-            $tranche = $trancheService->summarize($planification, $paid);
+            // Les tranches de la formule ne valent plus pour un montant réduit.
+            $tranche = $casSocial ? null : $trancheService->summarize($planification, $paid);
 
             return (object) [
                 'eleve' => $student,
@@ -1595,6 +1598,7 @@ class FinanceController extends Controller
                 'a_payer_maintenant' => min($remaining, (float) ($tranche['courante']['reste'] ?? $remaining)),
                 // Frais payés en totalité par l'État : pas de paiement parent.
                 'pris_en_charge_etat' => isset($subventionnes[(int) $student->id_eleve]),
+                'cas_social' => $casSocial ? $inscription->cas_social_nature : null,
                 'row_class' => $tranche
                     ? $trancheService->delayClass($tranche)
                     : $this->legacyPaymentDelayClass($planification),
@@ -1606,7 +1610,7 @@ class FinanceController extends Controller
     {
         $paid = $this->legacyPaidForPlan($eleveId, $planification, $anneeId, $date);
 
-        return max(0, (float) $planification->montant_planification - $paid);
+        return max(0, \App\Support\CasSocial::montantDu($planification, $eleveId, $anneeId) - $paid);
     }
 
     private function legacyPaidForPlan(int $eleveId, Planification $planification, int $anneeId, ?string $date = null): float

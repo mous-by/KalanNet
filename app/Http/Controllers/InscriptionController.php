@@ -297,7 +297,7 @@ class InscriptionController extends Controller
             'date_naissance' => ['nullable', 'date_format:Y-m-d'],
             'lieu_naiss' => 'nullable',
             'adresse_eleve' => 'nullable',
-            'cas_social' => 'nullable',
+            ...\App\Support\CasSocial::regles(),
             'mode_paiement' => 'nullable',
             'date_inscription' => ['nullable', 'date_format:Y-m-d'],
             'matricule' => 'nullable|string|max:50',
@@ -310,11 +310,18 @@ class InscriptionController extends Controller
             'subventionne_etat' => 'nullable|boolean',
         ], [
             'id_planification.required_unless' => __('inscriptions.formule_obligatoire'),
+            ...\App\Support\CasSocial::messages(),
         ]);
 
         $classe = Classe::where('idEcole', session('idEcole'))->findOrFail($data['id_classe']);
 
         $subventionne = !empty($data['subventionne_etat']);
+        // Cas social « Autre » : frais propre à l'élève, sauf s'il est
+        // subventionné (l'État paie tout) ou si l'école n'a pas de formule.
+        [$casSocial, $casSocialNature, $casSocialMontant] = \App\Support\CasSocial::depuisFormulaire(
+            $data,
+            $this->schoolRequiresPlanification() && !$subventionne
+        );
         $planificationId = $subventionne
             ? $this->formuleSubventionneOuErreur($classe, (int) $data['id_annee'])
             : ($data['id_planification'] ?? null);
@@ -324,11 +331,13 @@ class InscriptionController extends Controller
                 ->findOrFail($planificationId);
         }
 
+        \App\Support\CasSocial::verifierMontant($casSocialMontant, $planificationId ? (int) $planificationId : null, null, (int) $data['id_annee']);
+
         if (!empty($data['id_matiere_lv2'])) {
             $this->ensureMatiereLv2CompatibleWithClasse((int) $data['id_matiere_lv2'], $classe);
         }
 
-        DB::transaction(function () use ($request, $data, $planificationId, $subventionne) {
+        DB::transaction(function () use ($request, $data, $planificationId, $subventionne, $casSocial, $casSocialNature, $casSocialMontant) {
             $eleve = new Eleve();
             $eleve->prenom_eleve = $data['prenom_eleve'];
             $eleve->nom_eleve = $data['nom_eleve'];
@@ -341,7 +350,7 @@ class InscriptionController extends Controller
             $eleve->matricule = $this->normalizeMatricule($data['matricule'] ?? null) ?: $this->generateMatricule($data);
             $eleve->date_inscription = $data['date_inscription'] ?? now()->toDateString();
             $eleve->image = $this->storeImage($request);
-            $eleve->cas_social = $data['cas_social'] ?: 'normal';
+            $eleve->cas_social = $casSocial;
             $eleve->mode_paiement = $data['mode_paiement'] ?? null;
             $eleve->id_matiere_lv2 = $data['id_matiere_lv2'] ?? null;
             $eleve->id_ecole = session('idEcole');
@@ -363,6 +372,8 @@ class InscriptionController extends Controller
                 'id_annee' => $data['id_annee'],
                 'id_planification' => $planificationId,
                 'date_inscription' => $eleve->date_inscription,
+                'cas_social_nature' => $casSocialNature,
+                'montant_cas_social' => $casSocialMontant,
             ]);
 
             \App\Support\SubventionEtat::synchroniser($eleve);

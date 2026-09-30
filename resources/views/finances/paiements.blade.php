@@ -226,6 +226,9 @@
                                 </td>
                                 <td>
                                     <input type="text" name="motif[]" value="{{ $isPublicSchool ? __('finances.th_cooperative') : $row->planification->motif }}" class="form-control form-control-sm">
+                                    @if($row->cas_social)
+                                        <div class="small mt-1"><span class="badge bg-warning text-dark">{{ __('eleves.cas_social_badge', ['nature' => $row->cas_social]) }}</span></div>
+                                    @endif
                                     @if($row->tranche)
                                         @php
                                             $courante = $row->tranche['courante'];

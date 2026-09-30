@@ -165,8 +165,9 @@ class EleveController extends Controller
         $annees = AnneeScolaire::orderByDesc('id_anneeScolaire')->get();
         $matieresLv2 = \App\Models\Matiere::lv2()->with('ordres')->orderBy('nom_matiere')->get();
         $ecolePublique = (bool) \App\Models\Ecole::find(session('idEcole'))?->estPublique();
+        $casSocialLigne = $eleve->id_annee ? \App\Support\CasSocial::ligne((int) $eleve->id_eleve, (int) $eleve->id_annee) : null;
 
-        return view('eleves.form', compact('eleve', 'classes', 'annees', 'matieresLv2', 'ecolePublique'));
+        return view('eleves.form', compact('eleve', 'classes', 'annees', 'matieresLv2', 'ecolePublique', 'casSocialLigne'));
     }
 
     public function update(Request $request, $id)
@@ -181,14 +182,14 @@ class EleveController extends Controller
             'date_naissance' => 'nullable|date',
             'lieu_naiss' => 'nullable|string|max:255',
             'adresse_eleve' => 'nullable|string|max:255',
-            'cas_social' => 'nullable|string|max:255',
+            ...\App\Support\CasSocial::regles(),
             'mode_paiement' => 'nullable|string|max:255',
             'statut_paiement' => 'nullable|string|in:normal,subventionne,boursier,gratuit',
             'id_classe' => 'required|integer|exists:classe,id_classe',
             'id_annee' => 'required|integer|exists:anneescolaire,id_anneeScolaire',
             'date_inscription' => 'nullable|date',
             'id_matiere_lv2' => ['nullable', 'integer', Rule::exists('matiere', 'id_matiere')->where('est_lv2', true)],
-        ]);
+        ], \App\Support\CasSocial::messages());
 
         $classe = Classe::where('idEcole', session('idEcole'))->findOrFail($data['id_classe']);
 
@@ -205,6 +206,15 @@ class EleveController extends Controller
             ]);
         }
 
+        // Cas social « Autre » : frais de l'année à la place de la formule
+        // (pas pour un élève subventionné ni pour une école publique).
+        $ligneAnnee = \App\Support\CasSocial::ligne((int) $eleve->id_eleve, (int) $data['id_annee']);
+        [$casSocial, $casSocialNature, $casSocialMontant] = \App\Support\CasSocial::depuisFormulaire(
+            $data,
+            $statutPaiement !== 'subventionne' && !\App\Models\Ecole::find(session('idEcole'))?->estPublique() && $ligneAnnee?->id_planification
+        );
+        \App\Support\CasSocial::verifierMontant($casSocialMontant, $ligneAnnee?->id_planification ? (int) $ligneAnnee->id_planification : null, (int) $eleve->id_eleve, (int) $data['id_annee']);
+
         $eleve->update([
             'prenom_eleve' => $data['prenom_eleve'],
             'nom_eleve' => $data['nom_eleve'],
@@ -213,7 +223,7 @@ class EleveController extends Controller
             'date_naissance' => $data['date_naissance'] ?? null,
             'lieu_naiss' => $data['lieu_naiss'] ?: 'Non renseigné',
             'adresse_eleve' => $data['adresse_eleve'] ?? null,
-            'cas_social' => $data['cas_social'] ?: 'normal',
+            'cas_social' => $casSocial,
             'mode_paiement' => $data['mode_paiement'] ?? null,
             'statut_paiement' => $statutPaiement,
             'id_classe' => $data['id_classe'],
@@ -223,6 +233,7 @@ class EleveController extends Controller
         ]);
 
         \App\Support\SubventionEtat::synchroniser($eleve->fresh());
+        \App\Support\CasSocial::enregistrer((int) $eleve->id_eleve, (int) $data['id_annee'], $casSocialNature, $casSocialMontant);
 
         return redirect()->route('eleves.index')->with('success', 'Élève modifié avec succès.');
     }
@@ -826,7 +837,8 @@ class EleveController extends Controller
                 'p.motif',
                 'p.date_debut',
                 'p.date_fin',
-                'p.montant_planification',
+                // Cas social « Autre » : frais fixé par l'école à la place de la formule.
+                DB::raw('COALESCE(li.montant_cas_social, p.montant_planification) as montant_planification'),
             ])
             ->get();
     }
