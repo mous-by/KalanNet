@@ -39,7 +39,10 @@
                     <thead class="bg-light">
                         <tr>
                             <th>{{ __('classes.th_nom') }}</th>
-                            <th>{{ __('classes.th_classe_officielle') }}</th>
+                            {{-- Rattachement au référentiel officiel : information réservée au SupAdmin. --}}
+                            @if(Auth::user()->droit === 'SupAdmin')
+                                <th>{{ __('classes.th_classe_officielle') }}</th>
+                            @endif
                             <th>{{ __('classes.th_ordre') }}</th>
                             <th>{{ __('classes.th_effectif') }}</th>
                             <th class="text-center dt-no-sorting">{{ __('classes.th_action') }}</th>
@@ -49,7 +52,9 @@
                         @forelse($classes as $classe)
                             <tr>
                                 <td class="fw-bold">{{ $classe->nom_classe }}</td>
-                                <td>{{ $classe->classeOfficielle->nom_classe_officielle ?? __('classes.non_associee') }}</td>
+                                @if(Auth::user()->droit === 'SupAdmin')
+                                    <td>{{ $classe->classeOfficielle->nom_classe_officielle ?? __('classes.non_associee') }}</td>
+                                @endif
                                 <td>
                                     @if($classe->id_filiere)
                                         {{ $classe->filiere->nom_filiere ?? __('classes.filiere_supprimee') }}
@@ -106,7 +111,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="text-center py-4 text-muted">{{ __('classes.empty') }}</td>
+                                <td colspan="{{ Auth::user()->droit === 'SupAdmin' ? 5 : 4 }}" class="text-center py-4 text-muted">{{ __('classes.empty') }}</td>
                             </tr>
                         @endforelse
                     </tbody>
