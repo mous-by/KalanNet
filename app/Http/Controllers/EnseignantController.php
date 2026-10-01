@@ -217,9 +217,9 @@ class EnseignantController extends Controller
 
         return $request->validate([
             'nom_prenom' => 'required|string|max:200',
-            'genre' => 'required|string|in:Feminin,Masculin,Féminin',
+            'genre' => 'nullable|string|in:Feminin,Masculin,Féminin',
             'email' => [
-                'required',
+                'nullable',
                 'email',
                 'max:255',
                 Rule::unique('enseignants', 'email_enseignant')
@@ -233,10 +233,10 @@ class EnseignantController extends Controller
                     ->where(fn ($query) => $query->where('id_ecole', $schoolId))
                     ->ignore($ignoreId, 'id_enseignant'),
             ],
-            'date_naissance' => 'required|date',
-            'lieu_naissance' => 'required|string|max:100',
-            'diplome' => 'required|string|max:100',
-            'type_contrat' => 'required|string|in:' . $contratsAutorises,
+            'date_naissance' => 'nullable|date',
+            'lieu_naissance' => 'nullable|string|max:100',
+            'diplome' => 'nullable|string|max:100',
+            'type_contrat' => 'nullable|string|in:' . $contratsAutorises,
             'salaire' => 'nullable|numeric|min:0',
             'salaire_mois_mode' => 'nullable|integer|in:9,12',
             'duree_contrat' => 'nullable|string|max:100',
@@ -433,17 +433,19 @@ class EnseignantController extends Controller
 
     protected function mapFields(array $data): array
     {
+        // Seuls le nom et le téléphone sont obligatoires : le reste peut manquer.
+        $data['type_contrat'] = ($data['type_contrat'] ?? null) ?: null;
         $isPublic = $data['type_contrat'] === 'FONCTIONNAIRE';
         $isSalariedPrivateContract = in_array($data['type_contrat'], ['CDI', 'CDD'], true);
 
         $mapped = [
             'nom_prenom_enseignant' => $data['nom_prenom'],
-            'genre_enseignant' => $data['genre'] === 'Féminin' ? 'Feminin' : $data['genre'],
-            'email_enseignant' => $data['email'] ?? null,
+            'genre_enseignant' => ($data['genre'] ?? null) === 'Féminin' ? 'Feminin' : (($data['genre'] ?? null) ?: null),
+            'email_enseignant' => ($data['email'] ?? null) ?: null,
             'telephone_enseignant' => $data['telephone'],
-            'date_naissance_enseignant' => $data['date_naissance'],
-            'lieu_naissance_enseignant' => $data['lieu_naissance'],
-            'diplome_enseignant' => $data['diplome'],
+            'date_naissance_enseignant' => ($data['date_naissance'] ?? null) ?: null,
+            'lieu_naissance_enseignant' => ($data['lieu_naissance'] ?? null) ?: null,
+            'diplome_enseignant' => ($data['diplome'] ?? null) ?: null,
             'type_contrat_enseignant' => $data['type_contrat'],
             'matricule' => $data['matricule'],
             'salaire_enseignant' => $isSalariedPrivateContract ? ($data['salaire'] ?? null) : null,
@@ -473,12 +475,20 @@ class EnseignantController extends Controller
 
     protected function generateMatricule(array $data): string
     {
-        $age = (int) now()->diffInYears(\Carbon\Carbon::parse($data['date_naissance']));
-        $genre = strtoupper(substr($data['genre'], 0, 1));
-        $lieu = strtoupper(substr(preg_replace('/\s+/', '', $data['lieu_naissance']), 0, 3));
-        $contrat = strtoupper(substr($data['type_contrat'], 0, 3));
+        // Date, genre, lieu et contrat sont facultatifs : on complète ce qui manque.
+        $age = !empty($data['date_naissance']) ? (int) now()->diffInYears(\Carbon\Carbon::parse($data['date_naissance'])) : '';
+        $genre = strtoupper(substr((string) ($data['genre'] ?? ''), 0, 1)) ?: 'X';
+        $lieu = strtoupper(substr(preg_replace('/\s+/', '', (string) ($data['lieu_naissance'] ?? '')), 0, 3)) ?: 'XXX';
+        $contrat = strtoupper(substr((string) ($data['type_contrat'] ?? ''), 0, 3)) ?: 'ENS';
+        $matricule = 'Mle' . $age . $genre . '-' . $lieu . '-' . $contrat;
 
-        return 'Mle' . $age . $genre . '-' . $lieu . '-' . $contrat;
+        // Le matricule est unique : suffixe si déjà pris.
+        $base = $matricule;
+        for ($i = 2; Enseignant::withoutGlobalScopes()->where('matricule', $matricule)->exists(); $i++) {
+            $matricule = $base . '-' . $i;
+        }
+
+        return $matricule;
     }
 
     protected function storeAvatar(Request $request, ?string $currentAvatar = null): ?string

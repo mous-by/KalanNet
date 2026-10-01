@@ -84,8 +84,8 @@ export default function EnseignantForm({ enseignant, onSaved }: Props) {
   const isVct = typeContrat === 'VCT';
   const isFonctionnaire = typeContrat === 'FONCTIONNAIRE';
 
-  const isValid =
-    nomPrenom.trim() && genre && email.trim() && telephone.trim() && dateNaissance && lieuNaissance.trim() && diplome.trim() && typeContrat;
+  // Seuls le nom et le téléphone sont obligatoires ; le reste peut être complété plus tard.
+  const isValid = nomPrenom.trim() && telephone.trim();
 
   async function pickAvatar() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -111,14 +111,14 @@ export default function EnseignantForm({ enseignant, onSaved }: Props) {
       if (!isOnline) {
         const jsonPayload: Record<string, unknown> = {
           nom_prenom: nomPrenom.trim(),
-          genre,
-          email: email.trim(),
+          genre: genre || undefined,
+          email: email.trim() || undefined,
           telephone: telephone.trim(),
-          date_naissance: dateNaissance,
-          lieu_naissance: lieuNaissance.trim(),
-          diplome: diplome.trim(),
+          date_naissance: dateNaissance || undefined,
+          lieu_naissance: lieuNaissance.trim() || undefined,
+          diplome: diplome.trim() || undefined,
           specialite: specialite || undefined,
-          type_contrat: typeContrat,
+          type_contrat: typeContrat || undefined,
           ...(isCdiOrCdd ? { salaire: salaire || undefined, salaire_mois_mode: salaireMoisMode } : {}),
           ...(isCdd && dureeContrat ? { duree_contrat: dureeContrat } : {}),
           ...(isVct ? { nombre_heure: nombreHeure || undefined, prix_heure: prixHeure || undefined } : {}),
@@ -149,14 +149,14 @@ export default function EnseignantForm({ enseignant, onSaved }: Props) {
 
       const form = new FormData();
       form.append('nom_prenom', nomPrenom.trim());
-      form.append('genre', genre as string);
+      if (genre) form.append('genre', genre as string);
       form.append('email', email.trim());
       form.append('telephone', telephone.trim());
-      form.append('date_naissance', dateNaissance as string);
+      if (dateNaissance) form.append('date_naissance', dateNaissance as string);
       form.append('lieu_naissance', lieuNaissance.trim());
       form.append('diplome', diplome.trim());
       if (specialite) form.append('specialite', specialite);
-      form.append('type_contrat', typeContrat as string);
+      if (typeContrat) form.append('type_contrat', typeContrat as string);
       if (isCdiOrCdd) {
         if (salaire) form.append('salaire', salaire);
         form.append('salaire_mois_mode', String(salaireMoisMode));
@@ -212,14 +212,14 @@ export default function EnseignantForm({ enseignant, onSaved }: Props) {
 
       <Text style={styles.sectionTitle}>Informations personnelles</Text>
       <TextInput mode="outlined" label={requiredLabel('Nom et prénom')} value={nomPrenom} onChangeText={setNomPrenom} style={styles.input} />
-      <SelectField label={requiredLabel('Genre')} value={genre} options={GENRE_OPTIONS} onChange={(v) => setGenre(v as string)} />
-      <TextInput mode="outlined" label={requiredLabel('Email')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" style={styles.input} />
+      <SelectField label="Genre (optionnel)" value={genre} options={GENRE_OPTIONS} onChange={(v) => setGenre(v as string)} />
+      <TextInput mode="outlined" label="Email (optionnel)" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" style={styles.input} />
       <TextInput mode="outlined" label={requiredLabel('Téléphone')} value={telephone} onChangeText={setTelephone} keyboardType="phone-pad" style={styles.input} />
-      <DateField label={requiredLabel('Date de naissance')} value={dateNaissance} onChange={setDateNaissance} />
-      <TextInput mode="outlined" label={requiredLabel('Lieu de naissance')} value={lieuNaissance} onChangeText={setLieuNaissance} style={styles.input} />
+      <DateField label="Date de naissance (optionnel)" value={dateNaissance} onChange={setDateNaissance} />
+      <TextInput mode="outlined" label="Lieu de naissance (optionnel)" value={lieuNaissance} onChangeText={setLieuNaissance} style={styles.input} />
 
       <Text style={styles.sectionTitle}>Informations professionnelles</Text>
-      <TextInput mode="outlined" label={requiredLabel('Diplôme')} value={diplome} onChangeText={setDiplome} style={styles.input} />
+      <TextInput mode="outlined" label="Diplôme (optionnel)" value={diplome} onChangeText={setDiplome} style={styles.input} />
       <TextInput
         mode="outlined"
         label="Spécialité (optionnel)"
@@ -228,7 +228,7 @@ export default function EnseignantForm({ enseignant, onSaved }: Props) {
         placeholder="Ex: Mathématiques, Français..."
         style={styles.input}
       />
-      <SelectField label={requiredLabel('Type de contrat')} value={typeContrat} options={CONTRAT_OPTIONS} onChange={(v) => setTypeContrat(v as string)} />
+      <SelectField label="Type de contrat (optionnel)" value={typeContrat} options={CONTRAT_OPTIONS} onChange={(v) => setTypeContrat(v as string)} />
 
       {isCdiOrCdd ? (
         <>

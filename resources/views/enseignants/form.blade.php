@@ -48,44 +48,44 @@
                                 <input name="nom_prenom" type="text" class="form-control" value="{{ old('nom_prenom', $enseignant->nom_prenom_enseignant) }}" required>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">Genre <span class="text-danger">*</span></label>
-                                <select name="genre" class="form-select" required>
+                                <label class="form-label">Genre</label>
+                                <select name="genre" class="form-select">
                                     <option value="">Choisir...</option>
                                     <option value="Feminin" @selected(old('genre', $enseignant->genre_enseignant) === 'Feminin')>Feminin</option>
                                     <option value="Masculin" @selected(old('genre', $enseignant->genre_enseignant) === 'Masculin')>Masculin</option>
                                 </select>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">Email <span class="text-danger">*</span></label>
-                                <input name="email" type="email" class="form-control" value="{{ old('email', $enseignant->email_enseignant) }}" required>
+                                <label class="form-label">Email</label>
+                                <input name="email" type="email" class="form-control" value="{{ old('email', $enseignant->email_enseignant) }}">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Téléphone <span class="text-danger">*</span></label>
                                 <input name="telephone" type="tel" class="form-control" maxlength="20" inputmode="tel" placeholder="76 12 34 56" value="{{ old('telephone', $enseignant->telephone_enseignant) }}" required>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">Date de naissance <span class="text-danger">*</span></label>
-                                <input name="date_naissance" type="date" class="form-control" value="{{ old('date_naissance', $enseignant->date_naissance_enseignant) }}" required>
+                                <label class="form-label">Date de naissance</label>
+                                <input name="date_naissance" type="date" class="form-control" value="{{ old('date_naissance', $enseignant->date_naissance_enseignant) }}">
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">Lieu de naissance <span class="text-danger">*</span></label>
-                                <input name="lieu_naissance" type="text" class="form-control" value="{{ old('lieu_naissance', $enseignant->lieu_naissance_enseignant) }}" required>
+                                <label class="form-label">Lieu de naissance</label>
+                                <input name="lieu_naissance" type="text" class="form-control" value="{{ old('lieu_naissance', $enseignant->lieu_naissance_enseignant) }}">
                             </div>
                         </div>
 
                         <h6 class="fw-bold mb-3 mt-4">Informations professionnelles</h6>
                         <div class="row g-3">
                             <div class="col-md-4">
-                                <label class="form-label">Diplôme <span class="text-danger">*</span></label>
-                                <input name="diplome" type="text" class="form-control" value="{{ old('diplome', $enseignant->diplome_enseignant) }}" required>
+                                <label class="form-label">Diplôme</label>
+                                <input name="diplome" type="text" class="form-control" value="{{ old('diplome', $enseignant->diplome_enseignant) }}">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Spécialité</label>
                                 <input name="specialite" type="text" class="form-control" value="{{ old('specialite', $enseignant->specialite) }}" placeholder="Ex: Mathématiques, Français, Sciences...">
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">Type de contrat <span class="text-danger">*</span></label>
-                                <select name="type_contrat" id="type_contrat" class="form-select" required>
+                                <label class="form-label">Type de contrat</label>
+                                <select name="type_contrat" id="type_contrat" class="form-select">
                                     @foreach($contratsAutorises as $value => $label)
                                         <option value="{{ $value }}" @selected(old('type_contrat', $enseignant->type_contrat_enseignant ?: array_key_first($contratsAutorises)) === $value)>{{ $label }}</option>
                                     @endforeach
