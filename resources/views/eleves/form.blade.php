@@ -62,7 +62,7 @@
                         <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_classe') }} <span class="text-danger">*</span></label>
                         <select name="id_classe" class="form-select js-eleve-classe" required>
                             @foreach($classes as $classe)
-                                <option value="{{ $classe->id_classe }}" data-subvention="{{ \App\Support\SubventionEtat::classeEligible($classe) ? '1' : '0' }}" @selected(old('id_classe', $eleve->id_classe) == $classe->id_classe)>{{ $classe->nom_classe }}</option>
+                                <option value="{{ $classe->id_classe }}" data-subvention="{{ \App\Support\SubventionEtat::classeEligible($classe) ? '1' : '0' }}" data-lv2="{{ \App\Support\Lv2::classeConcernee($classe) ? '1' : '0' }}" @selected(old('id_classe', $eleve->id_classe) == $classe->id_classe)>{{ $classe->nom_classe }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -74,7 +74,7 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-4 js-lv2-field">
                         <label class="form-label small fw-bold text-uppercase">{{ __('eleves.lv2_label') }}</label>
                         <select name="id_matiere_lv2" class="form-select">
                             <option value="">{{ __('eleves.lv2_none') }}</option>
@@ -111,14 +111,13 @@
                     @endif
                     <input type="hidden" name="mode_paiement" value="{{ $eleve->mode_paiement }}">
                     @unless($ecolePublique ?? false)
-                    <div class="col-md-4">
+                    {{-- Seul choix utile : normal ou subventionné (classe du secondaire d'une école privée). --}}
+                    <div class="col-md-4 js-statut-field">
                         <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_statut_paiement') }}</label>
                         <select name="statut_paiement" class="form-select js-statut-paiement">
                             @foreach([
                                 'normal' => __('eleves.statut_normal'),
                                 'subventionne' => __('eleves.statut_subventionne'),
-                                'boursier' => __('eleves.statut_boursier'),
-                                'gratuit' => __('eleves.statut_gratuit'),
                             ] as $value => $label)
                                 <option value="{{ $value }}" @if($value === 'subventionne') data-subvention-only="1" @endif @selected(old('statut_paiement', $eleve->statut_paiement ?? 'normal') === $value)>{{ $label }}</option>
                             @endforeach
@@ -142,6 +141,20 @@
 
 @push('scripts')
 <script>
+    // LV2 : seulement pour une classe du secondaire (pas au fondamental ni en École de Santé).
+    document.addEventListener('DOMContentLoaded', function () {
+        const classeSelect = document.querySelector('.js-eleve-classe');
+        const bloc = document.querySelector('.js-lv2-field');
+        if (!classeSelect || !bloc) return;
+        function sync() {
+            const concernee = classeSelect.selectedOptions[0]?.dataset.lv2 === '1';
+            bloc.classList.toggle('d-none', !concernee);
+            if (!concernee) bloc.querySelector('select').value = '';
+        }
+        classeSelect.addEventListener('change', sync);
+        sync();
+    });
+
     // Cas social « Autre » : nature + frais (pas de frais pour un élève subventionné).
     document.addEventListener('DOMContentLoaded', function () {
         const select = document.querySelector('.js-cas-social');
@@ -172,6 +185,9 @@
             option.hidden = !eligible;
             option.disabled = !eligible;
             if (!eligible && statutSelect.value === 'subventionne') statutSelect.value = 'normal';
+            // Sans subvention possible, le seul statut est « normal » : rien à choisir.
+            statutSelect.closest('.js-statut-field')?.classList.toggle('d-none', !eligible);
+            statutSelect.dispatchEvent(new Event('change'));
         }
 
         classeSelect.addEventListener('change', sync);

@@ -193,6 +193,10 @@ class EleveController extends Controller
 
         $classe = Classe::where('idEcole', session('idEcole'))->findOrFail($data['id_classe']);
 
+        // La LV2 ne concerne que le secondaire (champ masqué sinon).
+        if (!\App\Support\Lv2::classeConcernee($classe)) {
+            $data['id_matiere_lv2'] = null;
+        }
         if (!empty($data['id_matiere_lv2'])) {
             $this->ensureMatiereLv2CompatibleWithClasse((int) $data['id_matiere_lv2'], $classe);
         }

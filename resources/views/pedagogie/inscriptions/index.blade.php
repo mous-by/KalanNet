@@ -126,11 +126,11 @@
                                         <select name="id_classe" class="form-select rounded-3" required data-planification-classe>
                                             <option value="">{{ __('inscriptions.select_classe') }}</option>
                                             @foreach($classes as $classe)
-                                                <option value="{{ $classe->id_classe }}" data-subvention="{{ \App\Support\SubventionEtat::classeEligible($classe) ? '1' : '0' }}" @selected(old('id_classe') == $classe->id_classe)>{{ $classe->nom_classe }} - {{ $classe->ordreEnseignement }}</option>
+                                                <option value="{{ $classe->id_classe }}" data-subvention="{{ \App\Support\SubventionEtat::classeEligible($classe) ? '1' : '0' }}" data-lv2="{{ \App\Support\Lv2::classeConcernee($classe) ? '1' : '0' }}" @selected(old('id_classe') == $classe->id_classe)>{{ $classe->nom_classe }}@if($classe->ordreEnseignement) - {{ $classe->ordreEnseignement }}@endif</option>
                                             @endforeach
                                         </select>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-4 d-none" data-lv2-field>
                                         <label class="form-label small fw-bold text-uppercase">{{ __('eleves.lv2_label') }}</label>
                                         <select name="id_matiere_lv2" class="form-select rounded-3">
                                             <option value="">{{ __('eleves.lv2_none') }}</option>
@@ -387,7 +387,7 @@
                                                     preg_match('/\d+/', \Illuminate\Support\Str::ascii((string) $classe->nom_classe), $classeLevelMatch);
                                                     $classeLevel = $classeLevelMatch[0] ?? '';
                                                 @endphp
-                                                <option value="{{ $classe->id_classe }}" data-level="{{ $classeLevel }}" @selected(($reinscriptionFilters['source_classe_id'] ?? old('source_classe_id')) == $classe->id_classe)>{{ $classe->nom_classe }} - {{ $classe->ordreEnseignement }}</option>
+                                                <option value="{{ $classe->id_classe }}" data-level="{{ $classeLevel }}" @selected(($reinscriptionFilters['source_classe_id'] ?? old('source_classe_id')) == $classe->id_classe)>{{ $classe->nom_classe }}@if($classe->ordreEnseignement) - {{ $classe->ordreEnseignement }}@endif</option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -655,6 +655,19 @@
             sync();
         });
 
+        // LV2 : seulement pour une classe du secondaire (pas au fondamental ni en École de Santé).
+        document.querySelectorAll('[data-lv2-field]').forEach((bloc) => {
+            const classeSelect = bloc.closest('form')?.querySelector('[data-planification-classe]');
+            if (!classeSelect) return;
+            const sync = () => {
+                const concernee = classeSelect.selectedOptions[0]?.dataset.lv2 === '1';
+                bloc.classList.toggle('d-none', !concernee);
+                if (!concernee) bloc.querySelector('select').value = '';
+            };
+            classeSelect.addEventListener('change', sync);
+            sync();
+        });
+
         // « Subventionné par l'État » : seulement pour une classe du secondaire d'une école privée.
         document.querySelectorAll('[data-subvention-field]').forEach((field) => {
             const form = field.closest('form');
@@ -666,18 +679,24 @@
             const planificationSelect = form.querySelector('[data-planification-select]');
             const planificationBlock = planificationSelect?.closest('.col-md-4');
             const planificationRequired = planificationSelect?.required ?? false;
+            // Cas social « Autre » avec frais (école privée) : la formule
+            // annuelle est aussi appliquée d'office, son montant étant remplacé.
+            const casSocialSelect = form.querySelector('[data-cas-social-select]');
+            const casSocialAvecFrais = !!form.querySelector('[data-cas-social-frais]');
             const sync = () => {
                 const eligible = classeSelect.selectedOptions[0]?.dataset.subvention === '1';
                 field.classList.toggle('d-none', !eligible);
                 if (!eligible) checkbox.checked = false;
+                const formuleAuto = checkbox.checked || (casSocialAvecFrais && casSocialSelect?.value === 'autre');
                 if (planificationSelect && planificationBlock) {
-                    planificationBlock.classList.toggle('d-none', checkbox.checked);
-                    planificationSelect.required = planificationRequired && !checkbox.checked;
-                    if (checkbox.checked) planificationSelect.value = '';
+                    planificationBlock.classList.toggle('d-none', formuleAuto);
+                    planificationSelect.required = planificationRequired && !formuleAuto;
+                    if (formuleAuto) planificationSelect.value = '';
                 }
             };
             classeSelect.addEventListener('change', sync);
             checkbox.addEventListener('change', sync);
+            casSocialSelect?.addEventListener('change', sync);
             sync();
         });
 

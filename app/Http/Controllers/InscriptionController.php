@@ -305,11 +305,18 @@ class InscriptionController extends Controller
             'parent_id' => 'nullable|exists:parents,id_parent',
             'lien_parent' => 'nullable|string|max:100',
             'informer' => 'nullable|string|in:Oui,Non',
-            'id_planification' => [$this->schoolRequiresPlanification() ? 'required_unless:subventionne_etat,1' : 'nullable', 'integer', 'exists:planification,id_planification'],
+            // Pas de formule à choisir pour un subventionné ni pour un cas
+            // social « Autre » : elle est appliquée d'office (voir plus bas).
+            'id_planification' => [
+                Rule::requiredIf(fn () => $this->schoolRequiresPlanification()
+                    && !$request->boolean('subventionne_etat')
+                    && $request->input('cas_social') !== \App\Support\CasSocial::AUTRE),
+                'nullable', 'integer', 'exists:planification,id_planification',
+            ],
             'id_matiere_lv2' => ['nullable', 'integer', Rule::exists('matiere', 'id_matiere')->where('est_lv2', true)],
             'subventionne_etat' => 'nullable|boolean',
         ], [
-            'id_planification.required_unless' => __('inscriptions.formule_obligatoire'),
+            'id_planification.required' => __('inscriptions.formule_obligatoire'),
             ...\App\Support\CasSocial::messages(),
         ]);
 
@@ -324,7 +331,9 @@ class InscriptionController extends Controller
         );
         $planificationId = $subventionne
             ? $this->formuleSubventionneOuErreur($classe, (int) $data['id_annee'])
-            : ($data['id_planification'] ?? null);
+            : ($casSocialMontant !== null
+                ? $this->formuleCasSocialOuErreur($classe, (int) $data['id_annee'])
+                : ($data['id_planification'] ?? null));
         if ($planificationId) {
             Planification::where('id_classe', $data['id_classe'])
                 ->where('id_annee', $data['id_annee'])
@@ -333,6 +342,10 @@ class InscriptionController extends Controller
 
         \App\Support\CasSocial::verifierMontant($casSocialMontant, $planificationId ? (int) $planificationId : null, null, (int) $data['id_annee']);
 
+        // La LV2 ne concerne que le secondaire (champ masqué sinon).
+        if (!\App\Support\Lv2::classeConcernee($classe)) {
+            $data['id_matiere_lv2'] = null;
+        }
         if (!empty($data['id_matiere_lv2'])) {
             $this->ensureMatiereLv2CompatibleWithClasse((int) $data['id_matiere_lv2'], $classe);
         }
@@ -888,6 +901,23 @@ class InscriptionController extends Controller
         if (!$formule) {
             throw ValidationException::withMessages([
                 $champ => __('inscriptions.subvention_formule_annuelle_manquante', ['classe' => $classe->nom_classe]),
+            ]);
+        }
+
+        return $formule;
+    }
+
+    /**
+     * Cas social « Autre » : comme pour un subventionné, la formule annuelle de
+     * la classe (ou sa seule formule) est appliquée d'office ; le frais du cas
+     * social en remplace le montant.
+     */
+    protected function formuleCasSocialOuErreur(Classe $classe, int $anneeId): int
+    {
+        $formule = \App\Support\SubventionEtat::formulePourSubventionne((int) $classe->id_classe, $anneeId);
+        if (!$formule) {
+            throw ValidationException::withMessages([
+                'cas_social' => __('eleves.cas_social_formule_manquante', ['classe' => $classe->nom_classe]),
             ]);
         }
 

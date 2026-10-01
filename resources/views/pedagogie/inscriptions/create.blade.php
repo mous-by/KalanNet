@@ -85,7 +85,7 @@
                                     <option value="">{{ __('inscriptions.select_classe') }}</option>
                                     @foreach($classes as $classe)
                                         <option value="{{ $classe->id_classe }}" @selected(old('id_classe') == $classe->id_classe)>
-                                            {{ $classe->nom_classe }} - {{ $classe->ordreEnseignement }}
+                                            {{ $classe->nom_classe }}@if($classe->ordreEnseignement) - {{ $classe->ordreEnseignement }}@endif
                                         </option>
                                     @endforeach
                                 </select>
