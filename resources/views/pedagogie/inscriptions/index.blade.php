@@ -310,21 +310,21 @@
                                         <table class="table table-bordered table-sm mb-0 border-primary">
                                             <thead class="table-light bg-light-primary">
                                             <tr>
-                                                <th>prenom_eleve</th>
-                                                <th>nom_eleve</th>
-                                                <th>date_naissance</th>
-                                                <th>lieu_naissance</th>
-                                                <th>adresse_eleve</th>
-                                                <th>genre_eleve</th>
-                                                <th>cas_social</th>
-                                                <th>matricule</th>
+                                                <th>Prénom *</th>
+                                                <th>Nom *</th>
+                                                <th>Date de naissance</th>
+                                                <th>Lieu de naissance</th>
+                                                <th>Adresse</th>
+                                                <th>Genre *</th>
+                                                <th>Cas social</th>
+                                                <th>Matricule</th>
                                             </tr>
                                             </thead>
                                             <tbody>
                                             <tr>
                                                 <td>Issa</td>
                                                 <td>Diallo</td>
-                                                <td>2009-04-22</td>
+                                                <td>22/04/2009</td>
                                                 <td>Ségou</td>
                                                 <td>Banankabougou</td>
                                                 <td>Masculin</td>

@@ -118,6 +118,6 @@ return [
     'subvention_formule_annuelle_manquante' => 'لا توجد صيغة سنوية للقسم :classe لهذه السنة: أنشئها أولًا في المالية > التخطيط. فهي التي تحدد المبلغ الذي تدفعه الدولة.',
     'ligne_prefix' => 'السطر :ligne:',
     'import_dont_subventionnes' => 'منهم :count تلميذ مدعوم من الدولة.',
-    'excel_subvention_help' => 'التلاميذ المدعومون من الدولة: اكتب «Oui» في العمود J (subventionne_etat) من نموذج Excel. تُطبَّق عليهم الصيغة السنوية تلقائيًا.',
+    'excel_subvention_help' => 'التلاميذ المدعومون من الدولة: اختر «Oui» في عمود «Subventionné par l\'État» من نموذج Excel. تُطبَّق عليهم الصيغة السنوية تلقائيًا.',
     'formule_obligatoire' => 'اختر صيغة الدفع للتلميذ (أو حدّد «مدعوم من الدولة» إن كان كذلك).',
 ];

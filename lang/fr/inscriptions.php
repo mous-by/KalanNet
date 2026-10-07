@@ -118,6 +118,6 @@ return [
     'subvention_formule_annuelle_manquante' => 'La classe :classe n\'a pas de formule annuelle pour cette année : créez-la d\'abord dans Finances > Planifications. C\'est elle qui fixe le montant payé par l\'État.',
     'ligne_prefix' => 'Ligne :ligne :',
     'import_dont_subventionnes' => 'Dont :count élève(s) subventionné(s) par l\'État.',
-    'excel_subvention_help' => 'Élèves subventionnés par l\'État : écrivez « Oui » dans la colonne J (subventionne_etat) du modèle Excel. La formule annuelle leur est appliquée automatiquement.',
+    'excel_subvention_help' => 'Élèves subventionnés par l\'État : choisissez « Oui » dans la colonne « Subventionné par l\'État » du modèle Excel. La formule annuelle leur est appliquée automatiquement.',
     'formule_obligatoire' => 'Choisissez la formule de paiement de l\'élève (ou cochez « Subventionné par l\'État » si c\'est le cas).',
 ];

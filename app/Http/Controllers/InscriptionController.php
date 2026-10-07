@@ -103,7 +103,9 @@ class InscriptionController extends Controller
         }
 
         $spreadsheet = IOFactory::load($request->file('fichier_excel')->getRealPath());
-        $worksheet = $spreadsheet->getActiveSheet();
+        // Première feuille (« Élèves » dans le modèle), même si le fichier a été
+        // enregistré avec une autre feuille ouverte.
+        $worksheet = $spreadsheet->getSheet(0);
         $highestRow = $worksheet->getHighestDataRow();
         $createdCount = 0;
         $subventionnesCount = 0;
@@ -125,18 +127,16 @@ class InscriptionController extends Controller
                     $dateNaissance = $this->normalizeExcelDate($worksheet->getCell('C' . $row)->getValue());
                 } catch (ValidationException $e) {
                     throw ValidationException::withMessages([
-                        'fichier_excel' => "Date de naissance invalide a la ligne {$row}. Utilisez le format AAAA-MM-JJ, par exemple 2009-04-22.",
+                        'fichier_excel' => "Date de naissance invalide à la ligne {$row}. Utilisez le format JJ/MM/AAAA, par exemple 22/04/2009.",
                     ]);
                 }
                 $lieuNaiss = trim((string) $worksheet->getCell('D' . $row)->getValue()) ?: 'Non renseigné';
                 $adresse = trim((string) $worksheet->getCell('E' . $row)->getValue()) ?: null;
-                $genre = ucfirst(strtolower(trim((string) $worksheet->getCell('F' . $row)->getValue())));
-                if (!in_array($genre, ['Masculin', 'Féminin'], true)) {
-                    $genre = 'Masculin';
-                }
+                $genreSaisi = Str::lower(Str::ascii(trim((string) $worksheet->getCell('F' . $row)->getValue())));
+                $genre = in_array($genreSaisi, ['feminin', 'f', 'fille'], true) ? 'Féminin' : 'Masculin';
                 $casSocial = trim((string) $worksheet->getCell('G' . $row)->getValue());
-                $casSocialNormalized = strtolower($casSocial);
-                if ($casSocialNormalized === 'dispensé' || $casSocialNormalized === 'dispenser') {
+                $casSocialNormalized = Str::lower(Str::ascii($casSocial));
+                if ($casSocialNormalized === 'dispense' || $casSocialNormalized === 'dispenser') {
                     $casSocial = 'Dipenser';
                 } elseif ($casSocialNormalized === 'malade') {
                     $casSocial = 'Malade';
@@ -222,27 +222,8 @@ class InscriptionController extends Controller
             return back()->with('error', 'La bibliothèque PhpSpreadsheet n’est pas disponible.');
         }
 
-        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setCellValue('A1', 'prenom_eleve');
-        $sheet->setCellValue('B1', 'nom_eleve');
-        $sheet->setCellValue('C1', 'date_naissance');
-        $sheet->setCellValue('D1', 'lieu_naissance');
-        $sheet->setCellValue('E1', 'adresse_eleve');
-        $sheet->setCellValue('F1', 'genre_eleve');
-        $sheet->setCellValue('G1', 'cas_social');
-        $sheet->setCellValue('H1', 'matricule');
-        $sheet->setCellValue('I1', 'langue_lv2 (optionnel — Secondaire uniquement : Arabe, Allemand, Chinois, Russe...)');
-        $sheet->setCellValue('J1', 'subventionne_etat (Oui/Non — secondaire des écoles privées)');
-        $sheet->setCellValue('A2', 'Issa');
-        $sheet->setCellValue('B2', 'Diallo');
-        $sheet->setCellValue('C2', '2009-04-22');
-        $sheet->setCellValue('D2', 'Ségou');
-        $sheet->setCellValue('E2', 'Banankabougou');
-        $sheet->setCellValue('F2', 'Masculin');
-        $sheet->setCellValue('G2', 'normal');
-        $sheet->setCellValue('I2', 'Arabe');
-        $sheet->setCellValue('J2', 'Non');
+        $spreadsheet = app(\App\Services\Inscriptions\ModeleInscriptionGroupe::class)
+            ->creer(Ecole::withoutGlobalScopes()->find(session('idEcole')));
 
         $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
 
@@ -272,6 +253,10 @@ class InscriptionController extends Controller
         }
 
         $normalized = trim((string) $value);
+        // JJ/MM/AAAA (saisie courante) ramené à AAAA-MM-JJ.
+        if (preg_match('#^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$#', $normalized, $matches)) {
+            $normalized = sprintf('%04d-%02d-%02d', $matches[3], $matches[2], $matches[1]);
+        }
         if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $normalized, $matches)) {
             if (!checkdate((int) $matches[2], (int) $matches[3], (int) $matches[1])) {
                 throw ValidationException::withMessages([

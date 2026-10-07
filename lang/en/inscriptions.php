@@ -118,6 +118,6 @@ return [
     'subvention_formule_annuelle_manquante' => 'Class :classe has no annual plan for this year: create it first in Finances > Planning. It sets the amount paid by the State.',
     'ligne_prefix' => 'Line :ligne:',
     'import_dont_subventionnes' => 'Including :count student(s) subsidised by the State.',
-    'excel_subvention_help' => 'Students subsidised by the State: write “Yes” in column J (subventionne_etat) of the Excel template. The annual plan is applied to them automatically.',
+    'excel_subvention_help' => 'State-subsidised students: choose “Oui” in the “Subventionné par l\'État” column of the Excel template. The annual plan is applied to them automatically.',
     'formule_obligatoire' => 'Choose the student\'s payment plan (or tick “Subsidised by the State” if applicable).',
 ];
