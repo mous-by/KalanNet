@@ -85,6 +85,7 @@ class TimetableController extends WebTimetableController
         ]);
 
         $this->authorizeClasseForTimetable((int) $data['id_classe']);
+        \App\Support\MatiereClasse::verifier((int) $data['id_classe'], $data['id_matiere']);
 
         $course = EmploiDuTemps::create($data);
 
@@ -107,6 +108,7 @@ class TimetableController extends WebTimetableController
 
         $course = $this->authorizeCourseForTimetable((int) $id);
         $this->authorizeClasseForTimetable((int) $data['id_classe']);
+        \App\Support\MatiereClasse::verifier((int) $data['id_classe'], $data['id_matiere']);
         $course->update($data);
 
         return response()->json($course->fresh(['matiere', 'enseignant']));

@@ -51,7 +51,12 @@ class TimetableController extends Controller
             ->orderBy('nom_classe')
             ->get();
         $annees = AnneeScolaire::orderByDesc('date_debut')->get();
-        $matieres = Matiere::orderBy('nom_matiere')->get();
+        // Seulement les matières des classes de l'école (catalogue franco-arabe,
+        // classique ou École de Santé selon l'école).
+        $matieres = Matiere::query()
+            ->when($user->droit !== 'SupAdmin', fn ($query) => $query->whereIn('id_matiere', LigneClasse::whereIn('id_classe', $classes->pluck('id_classe'))->pluck('id_matiere')))
+            ->orderBy('nom_matiere')
+            ->get();
         $enseignants = Enseignant::query()
             ->where('is_deleted', 0)
             ->when($user->droit !== 'SupAdmin', fn ($query) => $query->where('id_ecole', $idEcole))
@@ -145,6 +150,7 @@ class TimetableController extends Controller
         ]);
 
         $this->authorizeClasseForTimetable((int) $data['id_classe']);
+        \App\Support\MatiereClasse::verifier((int) $data['id_classe'], $data['id_matiere']);
 
         $course = EmploiDuTemps::create($data);
 
@@ -175,6 +181,7 @@ class TimetableController extends Controller
 
         $course = $this->authorizeCourseForTimetable((int) $id);
         $this->authorizeClasseForTimetable((int) $data['id_classe']);
+        \App\Support\MatiereClasse::verifier((int) $data['id_classe'], $data['id_matiere']);
         $course->update($data);
 
         if ($request->ajax()) {

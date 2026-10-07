@@ -124,6 +124,7 @@ class AppelEpreuveController extends Controller
         ]);
 
         $this->authorizeClass((int) $data['id_classe'], $schoolId, $user);
+        \App\Support\MatiereClasse::verifier((int) $data['id_classe'], $data['id_matiere']);
         $notifier = $request->boolean('notifier_parent');
 
         DB::transaction(function () use ($data, $schoolId, $notifier) {
@@ -171,6 +172,8 @@ class AppelEpreuveController extends Controller
             ->when($user->droit === 'enseignant', function ($query) use ($user) {
                 $query->whereIn('id_matiere', LigneClasse::where('id_enseignants', $user->id_enseignant)->pluck('id_matiere'));
             })
+            // Les autres : matières des classes de l'école seulement.
+            ->when($user->droit !== 'enseignant' && $user->droit !== 'SupAdmin', fn ($query) => $query->whereIn('id_matiere', LigneClasse::whereIn('id_classe', $classes->pluck('id_classe'))->pluck('id_matiere')))
             ->orderBy('nom_matiere')
             ->get();
 

@@ -112,6 +112,7 @@ class AppelEpreuveController extends WebAppelEpreuveController
         ]);
 
         $this->authorizeClass((int) $data['id_classe'], $schoolId, $user);
+        \App\Support\MatiereClasse::verifier((int) $data['id_classe'], $data['id_matiere']);
         $notifier = $request->boolean('notifier_parent');
 
         DB::transaction(function () use ($data, $schoolId, $notifier) {

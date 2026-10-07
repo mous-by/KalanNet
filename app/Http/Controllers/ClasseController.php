@@ -224,8 +224,9 @@ class ClasseController extends Controller
                 'id_filiere' => $estSante ? $data['id_filiere'] : null,
             ]);
 
+            $dejaPresentes = $classe->ligneClasses()->pluck('id_matiere')->all();
             $classe->ligneClasses()->delete();
-            $this->syncLignesClasse($classe, $data);
+            $this->syncLignesClasse($classe, $data, $dejaPresentes);
         });
 
         return redirect()->route('classes.edit', $classe->id_classe)->with('success', 'Classe modifiée avec succès.');
@@ -293,11 +294,25 @@ class ClasseController extends Controller
         return ($ecole->typeEcole ?? null) === 'École de Santé';
     }
 
-    protected function syncLignesClasse(Classe $classe, array $data): void
+    /**
+     * @param  int[]  $dejaPresentes  matières que la classe avait avant la modification :
+     *                                 toujours conservées, même hors du catalogue actuel.
+     */
+    protected function syncLignesClasse(Classe $classe, array $data, array $dejaPresentes = []): void
     {
         $expectedOrdre = $this->ordreMatiereMap()[$classe->ordreEnseignement] ?? null;
+        // Mêmes matières que celles proposées dans le formulaire : catalogue
+        // franco-arabe ou classique, École de Santé, matières de l'école.
+        $ecole = Ecole::withoutGlobalScopes()->find($classe->idEcole);
+        $autorisees = $this->matieresDisponibles(Auth::user(), (int) $classe->idEcole, $this->estSante($ecole))
+            ->pluck('id_matiere')->map(fn ($id) => (int) $id)->flip();
+        $dejaPresentes = array_flip(array_map('intval', $dejaPresentes));
         foreach ($data['id_matiere'] as $index => $idMatiere) {
-            if ($expectedOrdre) {
+            $conservee = isset($dejaPresentes[(int) $idMatiere]);
+            if (!$conservee && !$autorisees->has((int) $idMatiere)) {
+                continue;
+            }
+            if ($expectedOrdre && !$conservee) {
                 $valid = Matiere::whereKey($idMatiere)
                     ->whereHas('ordres', fn ($query) => $query->where('ordre_enseignement', $expectedOrdre))
                     ->exists();

@@ -101,8 +101,9 @@ class ClasseController extends WebClasseController
                 'id_filiere' => $estSante ? $data['id_filiere'] : null,
             ]);
 
+            $dejaPresentes = $classe->ligneClasses()->pluck('id_matiere')->all();
             $classe->ligneClasses()->delete();
-            $this->syncLignesClasse($classe, $data);
+            $this->syncLignesClasse($classe, $data, $dejaPresentes);
         });
 
         return response()->json($classe->fresh(['ligneClasses.matiere', 'ligneClasses.enseignant', 'filiere']));
