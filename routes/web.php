@@ -102,6 +102,7 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/enseignants/{id}', [EnseignantController::class, 'update'])->name('enseignants.update');
     Route::patch('/enseignants/{id}/archive', [EnseignantController::class, 'archive'])->name('enseignants.archive');
     Route::patch('/enseignants/{id}/reactivate', [EnseignantController::class, 'reactivate'])->name('enseignants.reactivate');
+    Route::delete('/enseignants/{id}', [EnseignantController::class, 'destroy'])->name('enseignants.destroy');
 
     // Classes
     Route::get('/classes', [ClasseController::class, 'index'])->name('classes.index');

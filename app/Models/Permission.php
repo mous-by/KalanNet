@@ -60,6 +60,7 @@ class Permission extends Model
                 'enseignants_creation' => 'Créer un enseignant',
                 'enseignants_modification' => 'Modifier les enseignants',
                 'enseignants_archiver_ou_reactiver' => 'Archiver ou réactiver',
+                'enseignants_supprimer' => 'Supprimer un enseignant sans activité',
                 'enseignants_emploi' => 'Voir emploi enseignant',
                 'emargement_apercu' => 'Voir les émargements',
                 'emargement_faire' => 'Faire un émargement',

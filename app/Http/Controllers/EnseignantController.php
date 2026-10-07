@@ -45,8 +45,10 @@ class EnseignantController extends Controller
         }
 
         $enseignants = $query->orderBy('nom_prenom_enseignant')->paginate(20)->withQueryString();
+        // Seuls les enseignants sans aucune activité peuvent être supprimés.
+        $supprimables = array_flip($this->enseignantsSansActivite($enseignants->pluck('id_enseignant')->all()));
 
-        return view('enseignants.index', compact('enseignants'));
+        return view('enseignants.index', compact('enseignants', 'supprimables'));
     }
 
     public function create()
@@ -202,6 +204,56 @@ class EnseignantController extends Controller
         ]);
 
         return redirect()->route('enseignants.index')->with('success', 'Enseignant réactivé avec succès.');
+    }
+
+    /**
+     * Suppression définitive, seulement pour un enseignant qui n'a encore rien
+     * fait (aucun émargement, présence, note, salaire ni évaluation) : par
+     * exemple saisi par erreur. Sinon, il faut l'archiver. Ses affectations
+     * (classes, emploi du temps) et son compte de connexion sont retirés.
+     */
+    public function destroy($id)
+    {
+        $this->authorizeTeacherManagement('delete');
+        $enseignant = Enseignant::findOrFail($id);
+        $this->authorizeEnseignant($enseignant);
+
+        if (!in_array((int) $enseignant->id_enseignant, $this->enseignantsSansActivite([(int) $enseignant->id_enseignant]), true)) {
+            return back()->with('error', "Impossible de supprimer {$enseignant->nom_prenom_enseignant} : il a déjà une activité (émargements, présences, notes ou salaires). Archivez-le plutôt.");
+        }
+
+        DB::transaction(function () use ($enseignant) {
+            $id = (int) $enseignant->id_enseignant;
+            LigneClasse::where('id_enseignants', $id)->update(['id_enseignants' => null]);
+            DB::table('emploi_du_temps')->where('id_enseignant', $id)->delete();
+            $comptes = DB::table('utilisateurs')->where('id_enseignant', $id)->pluck('idUtilisateur');
+            DB::table('user_permission')->whereIn('user_id', $comptes)->delete();
+            DB::table('utilisateurs')->whereIn('idUtilisateur', $comptes)->delete();
+            $enseignant->delete();
+        });
+
+        return redirect()->route('enseignants.index')->with('success', "Enseignant {$enseignant->nom_prenom_enseignant} supprimé.");
+    }
+
+    /**
+     * Parmi $ids, les enseignants sans aucune activité enregistrée.
+     *
+     * @param  int[]  $ids
+     * @return int[]
+     */
+    protected function enseignantsSansActivite(array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+
+        $actifs = collect(['emargement', 'presences', 'ligne_evaluation', 'salaire', 'evaluationprof'])
+            ->flatMap(fn ($table) => DB::table($table)->whereIn('id_enseignant', $ids)->distinct()->pluck('id_enseignant'))
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->all();
+
+        return array_values(array_diff(array_map('intval', $ids), $actifs));
     }
 
     protected function validateEnseignant(Request $request, ?int $ignoreId = null): array
@@ -553,6 +605,7 @@ class EnseignantController extends Controller
             'create' => ['enseignants_creation', 'enseignants_création'],
             'update' => ['enseignants_modification'],
             'archive' => ['enseignants_archiver_ou_reactiver', 'enseignants_archiver ou réactiver'],
+            'delete' => ['enseignants_supprimer'],
         ][$action] ?? [];
 
         if ($user->userHasAnyPermission($permissions)) {

@@ -6,6 +6,7 @@
         $canCreateTeacher = $user->droit === 'SupAdmin' || $user->userHasAnyPermission(['enseignants_creation', 'enseignants_création']);
         $canUpdateTeacher = $user->droit === 'SupAdmin' || $user->userHasPermission('enseignants_modification');
         $canArchiveTeacher = $user->droit === 'SupAdmin' || $user->userHasAnyPermission(['enseignants_archiver_ou_reactiver', 'enseignants_archiver ou réactiver']);
+        $canDeleteTeacher = $user->droit === 'SupAdmin' || $user->userHasPermission('enseignants_supprimer');
     @endphp
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
         <div class="breadcrumb-title pe-3">Enseignants</div>
@@ -163,6 +164,19 @@
                                                         <i class="bi bi-arrow-clockwise text-success"></i>Réactiver
                                                     </button>
                                                 </form>
+                                                </li>
+                                            @endif
+                                            {{-- Suppression définitive : seulement un enseignant qui n'a encore rien fait. --}}
+                                            @if($canDeleteTeacher && isset($supprimables[$enseignant->id_enseignant]))
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li>
+                                                    <form action="{{ route('enseignants.destroy', $enseignant->id_enseignant) }}" method="POST" onsubmit="return confirm('Supprimer définitivement cet enseignant ? Il n’a aucune activité enregistrée. Son compte de connexion et ses affectations seront retirés.');">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="dropdown-item text-danger">
+                                                            <i class="bi bi-trash"></i>Supprimer
+                                                        </button>
+                                                    </form>
                                                 </li>
                                             @endif
                                         </ul>

@@ -1396,6 +1396,8 @@ class ConfigurationController extends Controller
         if (in_array($user->droit, ['Admin', 'Gestionnaire'], true)) {
             return Permission::query()
                 ->whereNotIn('name', [
+                    // Accordée au cas par cas par le SupAdmin, sur demande de l'école.
+                    'enseignants_supprimer',
                     'matieres_creation',
                     'matieres_action',
                     'dae_voiraction',
