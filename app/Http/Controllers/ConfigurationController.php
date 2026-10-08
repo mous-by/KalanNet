@@ -1462,6 +1462,7 @@ class ConfigurationController extends Controller
         return match ($user->droit) {
             'enseignant' => [
                 'profiles_apercu',
+                'profiles_modification',
                 'enseignants_apercu',
                 'enseignants_modification',
                 'evaluation_apercu',
@@ -1477,6 +1478,7 @@ class ConfigurationController extends Controller
             ],
             'parent' => [
                 'profiles_apercu',
+                'profiles_modification',
                 'eleves_dossier',
             ],
             'DAE' => [

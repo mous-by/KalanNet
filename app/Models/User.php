@@ -128,11 +128,14 @@ class User extends Authenticatable
         return $this->droit === 'SupAdmin' || $this->userHasPermission('profiles_apercu');
     }
 
-    /** Modifier ses propres informations et son mot de passe : il faut aussi « Modifier utilisateurs ». */
+    /**
+     * Modifier ses propres informations et son mot de passe : « Modifier son
+     * propre profil » (ne donne aucun droit sur les autres utilisateurs).
+     */
     public function peutModifierProfil(): bool
     {
         return $this->peutVoirProfil()
-            && ($this->droit === 'SupAdmin' || $this->userHasPermission('utilisateurs_modification'));
+            && ($this->droit === 'SupAdmin' || $this->userHasPermission('profiles_modification'));
     }
 
     public function userHasAnyPermission(array $permissionNames): bool

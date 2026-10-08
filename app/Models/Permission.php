@@ -174,6 +174,7 @@ class Permission extends Model
                 'permissions_assigner' => 'Assigner permissions',
                 'permission_assigner' => 'Assigner permissions',
                 'profiles_apercu' => 'Voir profils',
+                'profiles_modification' => 'Modifier son propre profil',
                 'ecoles_apercu' => 'Voir écoles',
                 'academies_apercu' => 'Voir académies',
                 'dcap_apercu' => 'Voir DCAP',

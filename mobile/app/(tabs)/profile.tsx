@@ -29,8 +29,8 @@ function PasswordInput({ label, value, onChangeText }: { label: React.ReactNode;
 
 function InfoForm() {
   const { user, refreshUser } = useAuth();
-  // Sans « Modifier utilisateurs » : informations en lecture seule.
-  const modifiable = hasPermission(user, 'utilisateurs_modification');
+  // Sans « Modifier son propre profil » : informations en lecture seule.
+  const modifiable = hasPermission(user, 'profiles_modification');
   const [nomPrenom, setNomPrenom] = useState(user?.nom_prenom ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
   const [telephone, setTelephone] = useState(user?.telephone ?? '');
@@ -143,7 +143,7 @@ function PasswordForm() {
 export default function ProfileScreen() {
   const { user } = useAuth();
   const voirProfil = hasPermission(user, 'profiles_apercu');
-  const modifiable = hasPermission(user, 'utilisateurs_modification');
+  const modifiable = hasPermission(user, 'profiles_modification');
   const [tab, setTab] = useState('info');
 
   // Sans « Voir profils » : aucun accès au profil (l'entrée du menu est aussi masquée).
@@ -161,7 +161,7 @@ export default function ProfileScreen() {
       <Text style={styles.name}>{user?.nom_prenom}</Text>
       <Text style={styles.role}>{user?.droit}</Text>
 
-      {/* Sans « Modifier utilisateurs » : ni modification des informations, ni du mot de passe. */}
+      {/* Sans « Modifier son propre profil » : ni modification des informations, ni du mot de passe. */}
       {modifiable ? (
         <SegmentedButtons
           value={tab}
