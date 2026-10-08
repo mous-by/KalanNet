@@ -1395,7 +1395,8 @@ class ConfigurationController extends Controller
         }
     }
 
-    protected function syncDefaultPermissions(User $user, int $type): void
+    /** Public : aussi utilisée par la commande kalannet:ecole-demo. */
+    public function syncDefaultPermissions(User $user, int $type): void
     {
         $names = $this->defaultPermissionNames($user, $type);
 
