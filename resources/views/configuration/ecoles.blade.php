@@ -86,10 +86,15 @@
                                                 <button class="btn btn-light btn-sm p-2" data-bs-toggle="modal" data-bs-target="#ecoleEditModal{{ $ecole->idEcole }}" title="{{ __('configuration.modifier') }}">
                                                     <i class="bx bx-edit text-warning fs-5"></i>
                                                 </button>
-                                                {{-- Suppression définitive : page de confirmation (inventaire + nom à retaper). --}}
-                                                <a href="{{ route('configuration.ecoles.suppression', $ecole->idEcole) }}" class="btn btn-light btn-sm p-2" title="{{ __('configuration.supprimer') }}">
-                                                    <i class="bx bx-trash text-danger fs-5"></i>
-                                                </a>
+                                                {{-- Suppression définitive : fenêtre de confirmation (inventaire + nom à retaper). --}}
+                                                <form action="{{ route('configuration.ecoles.destroy', $ecole->idEcole) }}" method="POST" class="d-inline js-supprimer-ecole" data-inventaire="{{ route('configuration.ecoles.suppression', $ecole->idEcole) }}">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <input type="hidden" name="confirmation" value="">
+                                                    <button type="submit" class="btn btn-light btn-sm p-2" title="{{ __('configuration.supprimer') }}">
+                                                        <i class="bx bx-trash text-danger fs-5"></i>
+                                                    </button>
+                                                </form>
                                             @else
                                                 <span class="text-muted small">{{ __('configuration.eco_lecture_seule') }}</span>
                                             @endif
@@ -130,3 +135,87 @@
         @endforeach
     @endif
 @endsection
+
+@push('scripts')
+    @php
+        $i18nSuppressionEcole = [
+                    'titre' => __('configuration.eco_suppression_titre'),
+                    'irreversible' => __('configuration.eco_suppression_irreversible'),
+                    'intro' => __('configuration.eco_suppression_intro'),
+                    'vide' => __('configuration.eco_suppression_vide'),
+                    'conserve' => __('configuration.eco_suppression_conserve'),
+                    'retaper' => __('configuration.eco_suppression_retaper', ['nom' => '__NOM__']),
+                    'bouton' => __('configuration.eco_suppression_bouton'),
+                    'annuler' => __('configuration.annuler'),
+                    'incorrect' => __('configuration.eco_suppression_nom_incorrect'),
+                    'chargement' => __('configuration.eco_suppression_chargement'),
+        ];
+    @endphp
+    <script>
+        // Suppression d'une école : fenêtre SweetAlert avec l'inventaire de ce qui
+        // disparaît et le nom de l'école à retaper (vérifié aussi par le serveur).
+        document.querySelectorAll('.js-supprimer-ecole').forEach(function (formulaire) {
+            formulaire.addEventListener('submit', function (event) {
+                if (formulaire.dataset.confirme === '1') return;
+                event.preventDefault();
+                const i18n = @json($i18nSuppressionEcole);
+                const echapper = (texte) => String(texte).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+                fetch(formulaire.dataset.inventaire, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then((reponse) => { if (!reponse.ok) throw new Error(reponse.status); return reponse.json(); })
+                    .then(function (donnees) {
+                        const lignes = Object.entries(donnees.inventaire || {})
+                            .map(([libelle, nombre]) => '<tr><td class="text-start">' + echapper(libelle) + '</td><td class="text-end fw-bold">' + Number(nombre).toLocaleString('fr-FR') + '</td></tr>')
+                            .join('');
+                        const html =
+                            '<p class="text-danger fw-semibold mb-2">' + echapper(i18n.irreversible) + '</p>' +
+                            (lignes
+                                ? '<p class="text-start mb-1">' + echapper(i18n.intro) + '</p><table class="table table-sm table-bordered mb-2">' + lignes + '</table>'
+                                : '<p class="text-muted">' + echapper(i18n.vide) + '</p>') +
+                            '<p class="small text-muted text-start mb-2">' + echapper(i18n.conserve) + '</p>' +
+                            '<p class="text-start mb-0">' + echapper(i18n.retaper).replace('__NOM__', '<strong>' + echapper(donnees.nom) + '</strong>') + '</p>';
+
+                        if (!window.Swal) {
+                            const saisi = prompt(i18n.retaper.replace('__NOM__', donnees.nom));
+                            if (saisi === null) return;
+                            formulaire.querySelector('[name="confirmation"]').value = saisi;
+                            formulaire.dataset.confirme = '1';
+                            formulaire.submit();
+                            return;
+                        }
+
+                        Swal.fire({
+                            title: i18n.titre + ' : ' + donnees.nom,
+                            icon: 'warning',
+                            html: html,
+                            input: 'text',
+                            inputAttributes: { autocomplete: 'off', autocapitalize: 'off' },
+                            showCancelButton: true,
+                            confirmButtonText: i18n.bouton,
+                            cancelButtonText: i18n.annuler,
+                            confirmButtonColor: '#dc3545',
+                            cancelButtonColor: '#6c757d',
+                            reverseButtons: true,
+                            focusCancel: true,
+                            preConfirm: function (saisi) {
+                                if ((saisi || '').trim().toLowerCase() !== String(donnees.nom).trim().toLowerCase()) {
+                                    Swal.showValidationMessage(i18n.incorrect);
+                                    return false;
+                                }
+                                return saisi;
+                            },
+                        }).then(function (resultat) {
+                            if (!resultat.isConfirmed) return;
+                            formulaire.querySelector('[name="confirmation"]').value = resultat.value;
+                            formulaire.dataset.confirme = '1';
+                            formulaire.submit();
+                        });
+                    })
+                    .catch(function () {
+                        if (window.Swal) Swal.fire({ icon: 'error', title: i18n.titre, text: i18n.chargement });
+                        else alert(i18n.chargement);
+                    });
+            });
+        });
+    </script>
+@endpush

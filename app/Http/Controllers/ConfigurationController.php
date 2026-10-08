@@ -133,16 +133,17 @@ class ConfigurationController extends Controller
         return redirect()->route('configuration.ecoles')->with('success', 'École modifiée avec succès.');
     }
 
-    /** Page de confirmation : ce qui disparaîtra avec l'école. */
+    /** Pour la fenêtre de confirmation : ce qui disparaîtra avec l'école (JSON). */
     public function confirmerSuppressionEcole(int $id)
     {
         $this->authorizeSupAdminOnly();
         $ecole = Ecole::withoutGlobalScopes()->findOrFail($id);
         $this->authorizeEcoleMutation($ecole);
 
-        $inventaire = app(\App\Services\Ecoles\SuppressionEcole::class)->inventaire($ecole);
-
-        return view('configuration.ecole-suppression', compact('ecole', 'inventaire'));
+        return response()->json([
+            'nom' => $ecole->nomEcole,
+            'inventaire' => app(\App\Services\Ecoles\SuppressionEcole::class)->inventaire($ecole),
+        ]);
     }
 
     /**
@@ -157,7 +158,7 @@ class ConfigurationController extends Controller
 
         $saisi = Str::lower(trim((string) $request->input('confirmation')));
         if ($saisi === '' || $saisi !== Str::lower(trim((string) $ecole->nomEcole))) {
-            return redirect()->route('configuration.ecoles.suppression', $ecole->idEcole)
+            return redirect()->route('configuration.ecoles')
                 ->with('error', __('configuration.eco_suppression_nom_incorrect'));
         }
 

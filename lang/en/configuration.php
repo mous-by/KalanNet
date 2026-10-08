@@ -373,4 +373,5 @@ return [
     'eco_suppression_nom_incorrect' => 'The name entered does not match: the school was not deleted.',
     'eco_suppression_faite' => 'The school “:nom” and all its data have been deleted.',
     'eco_suppression_web_seulement' => 'Deleting a school is done from the website, where a confirmation is required.',
+    'eco_suppression_chargement' => 'Could not load the school information. Please try again.',
 ];

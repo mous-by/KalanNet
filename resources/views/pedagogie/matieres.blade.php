@@ -116,7 +116,7 @@
                                                 @endif
                                                 @if($canDeleteMatiere)
                                                     <li>
-                                                        <form action="{{ route('pedagogie.matieres.destroy', $matiere->id_matiere) }}" method="POST" onsubmit="return confirm('{{ __('matieres.confirm_delete') }}');">
+                                                        <form action="{{ route('pedagogie.matieres.destroy', $matiere->id_matiere) }}" method="POST" class="js-supprimer-matiere" data-nom="{{ $matiere->nom_matiere }}">
                                                             @csrf
                                                             @method('DELETE')
                                                             <button type="submit" class="dropdown-item py-2 text-danger">
@@ -239,6 +239,32 @@
 
 @push('scripts')
     <script>
+        // Suppression d'une matière : confirmation SweetAlert.
+        document.querySelectorAll('.js-supprimer-matiere').forEach(function (formulaire) {
+            formulaire.addEventListener('submit', function (event) {
+                event.preventDefault();
+                const texte = @json(__('matieres.confirm_delete_text', ['nom' => '__NOM__'])).replace('__NOM__', formulaire.dataset.nom || '');
+                if (!window.Swal) {
+                    if (confirm(@json(__('matieres.confirm_delete')))) formulaire.submit();
+                    return;
+                }
+                Swal.fire({
+                    title: @json(__('matieres.confirm_delete')),
+                    text: texte,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: @json(__('matieres.delete')),
+                    cancelButtonText: @json(__('matieres.cancel')),
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    reverseButtons: true,
+                    focusCancel: true,
+                }).then(function (resultat) {
+                    if (resultat.isConfirmed) formulaire.submit();
+                });
+            });
+        });
+
         document.addEventListener('DOMContentLoaded', function () {
             const form = document.getElementById('edit-matiere-form');
             const nameInput = document.getElementById('edit_nom_matiere');

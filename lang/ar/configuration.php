@@ -373,4 +373,5 @@ return [
     'eco_suppression_nom_incorrect' => 'الاسم المُدخل غير مطابق: لم يتم حذف المدرسة.',
     'eco_suppression_faite' => 'تم حذف المدرسة «:nom» وجميع بياناتها.',
     'eco_suppression_web_seulement' => 'يتم حذف المدرسة من الموقع الإلكتروني، حيث يُطلب التأكيد.',
+    'eco_suppression_chargement' => 'تعذر تحميل معلومات المدرسة. حاول مرة أخرى.',
 ];

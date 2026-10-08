@@ -10,6 +10,7 @@ return [
     'edit' => 'Modifier',
     'delete' => 'Supprimer',
     'confirm_delete' => 'Supprimer cette matière ?',
+    'confirm_delete_text' => 'La matière « :nom » sera supprimée. Cette action est définitive.',
     'empty' => "Aucune matière n'a encore été créée.",
     'create_title' => 'Enregistrement de matière',
     'edit_title' => 'Modifier matière',

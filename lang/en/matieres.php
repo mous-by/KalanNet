@@ -10,6 +10,7 @@ return [
     'edit' => 'Edit',
     'delete' => 'Delete',
     'confirm_delete' => 'Delete this subject?',
+    'confirm_delete_text' => 'The subject “:nom” will be deleted. This cannot be undone.',
     'empty' => 'No subject has been created yet.',
     'create_title' => 'New subject',
     'edit_title' => 'Edit subject',

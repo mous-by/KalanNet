@@ -10,6 +10,7 @@ return [
     'edit' => 'تعديل',
     'delete' => 'حذف',
     'confirm_delete' => 'هل تريد حذف هذه المادة؟',
+    'confirm_delete_text' => 'سيتم حذف المادة «:nom». هذا الإجراء نهائي.',
     'empty' => 'لم يتم إنشاء أي مادة بعد.',
     'create_title' => 'تسجيل مادة',
     'edit_title' => 'تعديل المادة',

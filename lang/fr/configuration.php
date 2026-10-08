@@ -373,4 +373,5 @@ return [
     'eco_suppression_nom_incorrect' => 'Le nom saisi ne correspond pas : l\'école n\'a pas été supprimée.',
     'eco_suppression_faite' => 'L\'école « :nom » et toutes ses données ont été supprimées.',
     'eco_suppression_web_seulement' => 'La suppression d\'une école se fait depuis le site web, où une confirmation est demandée.',
+    'eco_suppression_chargement' => 'Impossible de charger les informations de l\'école. Réessayez.',
 ];
