@@ -17,7 +17,9 @@ use Illuminate\Support\Facades\Hash;
  */
 class CreerEcoleDemo extends Command
 {
-    protected $signature = 'kalannet:ecole-demo {--password= : Mot de passe du compte démo (demandé si absent)}';
+    protected $signature = 'kalannet:ecole-demo
+        {--password= : Mot de passe du compte démo (demandé si absent)}
+        {--fin=2026-10-31 : Date de fin de l\'abonnement (AAAA-MM-JJ)}';
 
     protected $description = "Crée l'école de démonstration KalanNet et le compte Google Play (playstore.demo@kalannet.com)";
 
@@ -25,10 +27,20 @@ class CreerEcoleDemo extends Command
 
     private const EMAIL_COMPTE = 'playstore.demo@kalannet.com';
 
+    /** Classes : nom => [ordre d'enseignement, classe officielle]. */
+    private const CLASSES = [
+        '6eme annee A' => ['fondamentale1', '6eme année'],
+        '7eme annee A' => ['fondamentale2', '7eme année'],
+    ];
+
+    /** Élèves : [prénom, nom, genre, matricule, classe]. */
     private const ELEVES = [
-        ['Aminata', 'Konate', 'Feminin', 'DEMO-KON781'],
-        ['Moussa', 'Sangare', 'Masculin', 'DEMO-SAN785'],
-        ['Fatoumata', 'Coulibaly', 'Feminin', 'DEMO-COU398'],
+        ['Aminata', 'Konate', 'Feminin', 'DEMO-KON781', '6eme annee A'],
+        ['Moussa', 'Sangare', 'Masculin', 'DEMO-SAN785', '6eme annee A'],
+        ['Fatoumata', 'Coulibaly', 'Feminin', 'DEMO-COU398', '6eme annee A'],
+        ['Ibrahim', 'Traore', 'Masculin', 'DEMO-TRA701', '7eme annee A'],
+        ['Mariam', 'Diarra', 'Feminin', 'DEMO-DIA702', '7eme annee A'],
+        ['Oumar', 'Keita', 'Masculin', 'DEMO-KEI703', '7eme annee A'],
     ];
 
     public function handle(): int
@@ -46,13 +58,22 @@ class CreerEcoleDemo extends Command
         $paysId = DB::table('pays')->where('code_iso', 'ML')->value('id');
         $academie = DB::table('academie')->where('nom_academie', 'AE de Kayes')->first();
         $cap = DB::table('cap')->where('nom_cap', 'CAP de Kayes Rives-Droite')->first();
-        $classeOfficielle = DB::table('classes_officielles')->where('nom_classe_officielle', '6eme année')
-            ->where('ordre_enseignement', 'fondamentale1')->where('id_pays', $paysId)->value('id_classe_officielle');
+        try {
+            $fin = \Illuminate\Support\Carbon::createFromFormat('Y-m-d', (string) $this->option('fin'))->endOfDay();
+        } catch (\Throwable) {
+            $this->error('Date de fin invalide : utilisez le format AAAA-MM-JJ, par exemple 2026-10-31.');
+
+            return self::FAILURE;
+        }
         $anneeId = DB::table('anneescolaire')->whereNull('id_ecole')->where('annee', '2026-2027')->value('id_anneeScolaire')
             ?? DB::table('anneescolaire')->whereNull('id_ecole')->orderByDesc('id_anneeScolaire')->value('id_anneeScolaire');
-        $offreId = DB::table('abonnement_offres')->where('code', 'achat')->value('id');
+        // Abonnement mensuel (à défaut, une autre formule active à durée limitée).
+        $offreId = DB::table('abonnement_offres')->where('code', 'mensuel')->value('id')
+            ?? DB::table('abonnement_offres')->where('actif', 1)->where('duree_jours', '>', 0)
+                ->where(fn ($q) => $q->whereNull('type_ecole_cible')->orWhere('type_ecole_cible', 'public'))->value('id')
+            ?? DB::table('abonnement_offres')->where('actif', 1)->value('id');
 
-        DB::transaction(function () use ($paysId, $academie, $cap, $classeOfficielle, $anneeId, $offreId, $compteExistant, $motDePasse) {
+        DB::transaction(function () use ($paysId, $academie, $cap, $anneeId, $offreId, $fin, $compteExistant, $motDePasse) {
             // 1. École.
             $ecoleId = DB::table('ecole')->where('nomEcole', self::NOM_ECOLE)->value('idEcole');
             if (!$ecoleId) {
@@ -79,20 +100,27 @@ class CreerEcoleDemo extends Command
                 $this->line("École déjà présente (#{$ecoleId}).");
             }
 
-            // 2. Classe.
-            $classeId = DB::table('classe')->where('idEcole', $ecoleId)->where('nom_classe', '6eme annee A')->value('id_classe')
-                ?: DB::table('classe')->insertGetId([
-                    'nom_classe' => '6eme annee A',
-                    'ordreEnseignement' => 'fondamentale1',
-                    'idEcole' => $ecoleId,
-                    'id_classe_officielle' => $classeOfficielle,
-                ]);
+            // 2. Classes (une classe manquante est ajoutée à une école déjà présente).
+            $classes = [];
+            foreach (self::CLASSES as $nomClasse => [$ordre, $officielle]) {
+                $classes[$nomClasse] = DB::table('classe')->where('idEcole', $ecoleId)->where('nom_classe', $nomClasse)->value('id_classe')
+                    ?: DB::table('classe')->insertGetId([
+                        'nom_classe' => $nomClasse,
+                        'ordreEnseignement' => $ordre,
+                        'idEcole' => $ecoleId,
+                        // Nom officiel parfois saisi avec une espace en trop.
+                        'id_classe_officielle' => DB::table('classes_officielles')->where('id_pays', $paysId)
+                            ->where('ordre_enseignement', $ordre)->whereRaw('TRIM(nom_classe_officielle) = ?', [$officielle])
+                            ->value('id_classe_officielle'),
+                    ]);
+            }
 
             // 3. Élèves.
-            foreach (self::ELEVES as [$prenom, $nom, $genre, $matricule]) {
+            foreach (self::ELEVES as [$prenom, $nom, $genre, $matricule, $nomClasse]) {
                 if (DB::table('eleve')->where('matricule', $matricule)->exists()) {
                     continue;
                 }
+                $classeId = $classes[$nomClasse];
                 $eleveId = DB::table('eleve')->insertGetId([
                     'prenom_eleve' => $prenom,
                     'nom_eleve' => $nom,
@@ -143,18 +171,22 @@ class CreerEcoleDemo extends Command
             }
             app(ConfigurationController::class)->syncDefaultPermissions($compte->fresh() ?? $compte, 1);
 
-            // 5. Abonnement : licence à vie, pour que l'app reste utilisable par les examinateurs.
-            if ($offreId && !DB::table('abonnements')->where('ecole_id', $ecoleId)->where('statut', 'actif')->exists()) {
+            // 5. Abonnement actif jusqu'à la date de fin demandée (créé, ou fin remise à cette date).
+            $abonnement = DB::table('abonnements')->where('ecole_id', $ecoleId)->where('statut', 'actif')->orderByDesc('id')->first();
+            if ($abonnement) {
+                DB::table('abonnements')->where('id', $abonnement->id)->update(['offre_id' => $offreId ?? $abonnement->offre_id, 'fin_at' => $fin, 'updated_at' => now()]);
+            } elseif ($offreId) {
                 DB::table('abonnements')->insert([
                     'ecole_id' => $ecoleId,
                     'offre_id' => $offreId,
                     'statut' => 'actif',
                     'debut_at' => now(),
-                    'fin_at' => now()->addYears(10),
+                    'fin_at' => $fin,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
             }
+            $this->line('Abonnement actif jusqu\'au '.$fin->format('d/m/Y').'.');
         });
 
         $this->info('École de démonstration prête.');
