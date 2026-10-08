@@ -5,6 +5,7 @@ import { Menu } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { useAuth } from '@/context/AuthContext';
+import { hasPermission } from '@/lib/permissions';
 
 // Tapping the avatar opens a dropdown (Profil / Déconnexion) matching the
 // web navbar's user menu, instead of navigating straight to the profile screen.
@@ -28,9 +29,10 @@ export default function UserAvatar() {
           <View style={styles.onlineDot} />
         </Pressable>
       }>
+      {/* Sans « Voir profils » : seulement le changement de mot de passe. */}
       <Menu.Item
-        leadingIcon="account-outline"
-        title="Profil"
+        leadingIcon={hasPermission(user, 'profiles_apercu') ? 'account-outline' : 'lock-outline'}
+        title={hasPermission(user, 'profiles_apercu') ? 'Profil' : 'Mot de passe'}
         onPress={() => {
           setVisible(false);
           router.push('/profile');
