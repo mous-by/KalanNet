@@ -15,12 +15,15 @@ class ProfileController extends Controller
 {
     public function edit()
     {
-        return view('profile.edit', ['user' => Auth::user()]);
+        $user = Auth::user();
+
+        return view('profile.edit', ['user' => $user, 'voirProfil' => $user->peutVoirProfil()]);
     }
 
     public function updateInfo(Request $request)
     {
         $user = Auth::user();
+        abort_unless($user->peutVoirProfil(), 403);
 
         if ($request->filled('telephone')) {
             $request->merge(['telephone' => Telephone::normalize($request->input('telephone'), $user->idEcole)]);

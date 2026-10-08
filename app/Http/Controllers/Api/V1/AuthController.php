@@ -158,6 +158,9 @@ class AuthController extends Controller
     public function updateProfile(Request $request)
     {
         $user = $request->user();
+        if (!$user->peutVoirProfil()) {
+            return response()->json(['message' => 'Vous n\'avez pas accès aux informations de votre profil. Le mot de passe reste modifiable.'], 403);
+        }
 
         if ($request->filled('telephone')) {
             $request->merge(['telephone' => Telephone::normalize($request->input('telephone'), $user->idEcole)]);

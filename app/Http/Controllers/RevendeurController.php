@@ -24,7 +24,7 @@ class RevendeurController extends Controller
      * strictement le périmètre abonnement de ses propres écoles, jamais leurs
      * données pédagogiques ou financières internes.
      */
-    protected const DEFAULT_PERMISSIONS = ['revendeur_apercu', 'revendeur_tarifs'];
+    protected const DEFAULT_PERMISSIONS = ['revendeur_apercu', 'revendeur_tarifs', 'profiles_apercu'];
 
     /*
     |--------------------------------------------------------------------

@@ -52,6 +52,7 @@ return [
         'no_notifications' => 'No notifications',
         'mark_as_read' => 'Mark as read',
         'profile' => 'Profile',
+        'password' => 'Password',
         'logout' => 'Logout',
         'subscription_warning' => 'Subscription warning',
         'later' => 'Later',

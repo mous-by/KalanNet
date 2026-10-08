@@ -7,7 +7,25 @@ import requiredLabel from '@/components/RequiredLabel';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
 import { api, apiErrorMessage } from '@/lib/api';
+import { hasPermission } from '@/lib/permissions';
 import { SURFACE } from '@/lib/themes';
+
+// Champ mot de passe avec un œil pour afficher / masquer la saisie.
+function PasswordInput({ label, value, onChangeText }: { label: React.ReactNode; value: string; onChangeText: (v: string) => void }) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <TextInput
+      mode="outlined"
+      label={label as string}
+      secureTextEntry={!visible}
+      value={value}
+      onChangeText={onChangeText}
+      autoCapitalize="none"
+      style={styles.input}
+      right={<TextInput.Icon icon={visible ? 'eye-off' : 'eye'} onPress={() => setVisible((v) => !v)} accessibilityLabel={visible ? 'Masquer le mot de passe' : 'Afficher le mot de passe'} />}
+    />
+  );
+}
 
 function InfoForm() {
   const { user, refreshUser } = useAuth();
@@ -105,16 +123,9 @@ function PasswordForm() {
 
   return (
     <View style={styles.form}>
-      <TextInput mode="outlined" label={requiredLabel('Mot de passe actuel')} secureTextEntry value={currentPassword} onChangeText={setCurrentPassword} style={styles.input} />
-      <TextInput mode="outlined" label={requiredLabel('Nouveau mot de passe')} secureTextEntry value={password} onChangeText={setPassword} style={styles.input} />
-      <TextInput
-        mode="outlined"
-        label={requiredLabel('Confirmer le nouveau mot de passe')}
-        secureTextEntry
-        value={passwordConfirmation}
-        onChangeText={setPasswordConfirmation}
-        style={styles.input}
-      />
+      <PasswordInput label={requiredLabel('Mot de passe actuel')} value={currentPassword} onChangeText={setCurrentPassword} />
+      <PasswordInput label={requiredLabel('Nouveau mot de passe')} value={password} onChangeText={setPassword} />
+      <PasswordInput label={requiredLabel('Confirmer le nouveau mot de passe')} value={passwordConfirmation} onChangeText={setPasswordConfirmation} />
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <Button mode="contained" onPress={handleSubmit} loading={isSubmitting} style={styles.submitButton}>
         Mettre à jour le mot de passe
@@ -126,7 +137,9 @@ function PasswordForm() {
 
 export default function ProfileScreen() {
   const { user } = useAuth();
-  const [tab, setTab] = useState('info');
+  // Sans « Voir profils » : seulement le changement de mot de passe.
+  const voirProfil = hasPermission(user, 'profiles_apercu');
+  const [tab, setTab] = useState(voirProfil ? 'info' : 'password');
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -134,17 +147,19 @@ export default function ProfileScreen() {
       <Text style={styles.name}>{user?.nom_prenom}</Text>
       <Text style={styles.role}>{user?.droit}</Text>
 
-      <SegmentedButtons
-        value={tab}
-        onValueChange={setTab}
-        style={styles.segmented}
-        buttons={[
-          { value: 'info', label: 'Informations', icon: 'account-outline' },
-          { value: 'password', label: 'Mot de passe', icon: 'lock-outline' },
-        ]}
-      />
+      {voirProfil ? (
+        <SegmentedButtons
+          value={tab}
+          onValueChange={setTab}
+          style={styles.segmented}
+          buttons={[
+            { value: 'info', label: 'Informations', icon: 'account-outline' },
+            { value: 'password', label: 'Mot de passe', icon: 'lock-outline' },
+          ]}
+        />
+      ) : null}
 
-      {tab === 'info' ? <InfoForm /> : <PasswordForm />}
+      {voirProfil && tab === 'info' ? <InfoForm /> : <PasswordForm />}
     </ScrollView>
   );
 }

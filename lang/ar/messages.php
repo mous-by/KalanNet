@@ -52,6 +52,7 @@ return [
         'no_notifications' => 'لا توجد إشعارات',
         'mark_as_read' => 'تحديد كمقروء',
         'profile' => 'الملف الشخصي',
+        'password' => 'كلمة المرور',
         'logout' => 'تسجيل الخروج',
         'subscription_warning' => 'تنبيه الاشتراك',
         'later' => 'لاحقا',

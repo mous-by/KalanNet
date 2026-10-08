@@ -7,7 +7,7 @@
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0 p-0">
                     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bi bi-house-door"></i></a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Mon profil</li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ $voirProfil ? 'Mon profil' : 'Mot de passe' }}</li>
                 </ol>
             </nav>
         </div>
@@ -25,6 +25,8 @@
             <h5 class="mb-0 fw-bold"><i class="bi bi-person-circle me-2"></i>{{ $user->nomPrenom }}</h5>
         </div>
         <div class="card-body p-4">
+            {{-- Sans « Voir profils » : seulement le changement de mot de passe. --}}
+            @if($voirProfil)
             <ul class="nav nav-tabs" id="profileTabs" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info-pane" type="button" role="tab" aria-controls="info-pane" aria-selected="true">
@@ -37,8 +39,10 @@
                     </button>
                 </li>
             </ul>
+            @endif
 
-            <div class="tab-content pt-4" id="profileTabsContent">
+            <div class="tab-content {{ $voirProfil ? 'pt-4' : '' }}" id="profileTabsContent">
+                @if($voirProfil)
                 <div class="tab-pane fade show active" id="info-pane" role="tabpanel" aria-labelledby="info-tab">
                     <form action="{{ route('profile.update') }}" method="POST" enctype="multipart/form-data" class="col-12 col-lg-6">
                         @csrf
@@ -65,22 +69,32 @@
                         </button>
                     </form>
                 </div>
+                @endif
 
-                <div class="tab-pane fade" id="password-pane" role="tabpanel" aria-labelledby="password-tab">
+                <div class="tab-pane fade {{ $voirProfil ? '' : 'show active' }}" id="password-pane" role="tabpanel" aria-labelledby="password-tab">
                     <form action="{{ route('profile.password.update') }}" method="POST" class="col-12 col-lg-6">
                         @csrf
                         @method('PUT')
                         <div class="mb-3">
                             <label for="current_password" class="form-label fw-semibold">Mot de passe actuel</label>
-                            <input type="password" class="form-control" id="current_password" name="current_password" required>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="current_password" name="current_password" required>
+                                <button type="button" class="btn btn-outline-secondary js-voir-mdp" data-cible="current_password" title="Afficher le mot de passe" aria-label="Afficher le mot de passe"><i class="bi bi-eye"></i></button>
+                            </div>
                         </div>
                         <div class="mb-3">
                             <label for="password" class="form-label fw-semibold">Nouveau mot de passe</label>
-                            <input type="password" class="form-control" id="password" name="password" required minlength="4">
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="password" name="password" required minlength="4">
+                                <button type="button" class="btn btn-outline-secondary js-voir-mdp" data-cible="password" title="Afficher le mot de passe" aria-label="Afficher le mot de passe"><i class="bi bi-eye"></i></button>
+                            </div>
                         </div>
                         <div class="mb-3">
                             <label for="password_confirmation" class="form-label fw-semibold">Confirmer le nouveau mot de passe</label>
-                            <input type="password" class="form-control" id="password_confirmation" name="password_confirmation" required minlength="4">
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="password_confirmation" name="password_confirmation" required minlength="4">
+                                <button type="button" class="btn btn-outline-secondary js-voir-mdp" data-cible="password_confirmation" title="Afficher le mot de passe" aria-label="Afficher le mot de passe"><i class="bi bi-eye"></i></button>
+                            </div>
                         </div>
                         <button type="submit" class="btn text-white fw-semibold px-4" style="background-color: var(--theme-accent) !important;">
                             Mettre à jour le mot de passe
@@ -94,8 +108,21 @@
     @push('scripts')
         <script>
             document.addEventListener('DOMContentLoaded', function () {
+                // Œil : afficher / masquer le mot de passe saisi.
+                document.querySelectorAll('.js-voir-mdp').forEach(function (bouton) {
+                    bouton.addEventListener('click', function () {
+                        const champ = document.getElementById(bouton.dataset.cible);
+                        const visible = champ.type === 'password';
+                        champ.type = visible ? 'text' : 'password';
+                        bouton.querySelector('i').className = visible ? 'bi bi-eye-slash' : 'bi bi-eye';
+                        bouton.title = visible ? 'Masquer le mot de passe' : 'Afficher le mot de passe';
+                        bouton.setAttribute('aria-label', bouton.title);
+                    });
+                });
+
                 const photoInput = document.getElementById('photoInput');
                 const photoPreview = document.getElementById('photoPreview');
+                if (!photoInput) return;
 
                 photoInput.addEventListener('change', function (event) {
                     const file = event.target.files[0];

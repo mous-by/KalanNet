@@ -201,8 +201,13 @@
                         <li>
                             <a class="dropdown-item" href="{{ route('profile.edit') }}">
                                 <div class="d-flex align-items-center">
-                                    <div class=""><i class="bi bi-person-fill"></i></div>
-                                    <div class="ms-3"><span>{{ __('messages.navbar.profile') }}</span></div>
+                                    @if($user->peutVoirProfil())
+                                        <div class=""><i class="bi bi-person-fill"></i></div>
+                                        <div class="ms-3"><span>{{ __('messages.navbar.profile') }}</span></div>
+                                    @else
+                                        <div class=""><i class="bi bi-lock-fill"></i></div>
+                                        <div class="ms-3"><span>{{ __('messages.navbar.password') }}</span></div>
+                                    @endif
                                 </div>
                             </a>
                         </li>

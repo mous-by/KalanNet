@@ -52,6 +52,7 @@ return [
         'no_notifications' => 'Aucune notification',
         'mark_as_read' => 'Marquer comme lu',
         'profile' => 'Profil',
+        'password' => 'Mot de passe',
         'logout' => 'Déconnexion',
         'subscription_warning' => 'Avertissement abonnement',
         'later' => 'Plus tard',
