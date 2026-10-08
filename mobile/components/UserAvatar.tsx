@@ -29,15 +29,17 @@ export default function UserAvatar() {
           <View style={styles.onlineDot} />
         </Pressable>
       }>
-      {/* Sans « Voir profils » : seulement le changement de mot de passe. */}
-      <Menu.Item
-        leadingIcon={hasPermission(user, 'profiles_apercu') ? 'account-outline' : 'lock-outline'}
-        title={hasPermission(user, 'profiles_apercu') ? 'Profil' : 'Mot de passe'}
-        onPress={() => {
-          setVisible(false);
-          router.push('/profile');
-        }}
-      />
+      {/* « Profil » : seulement avec la permission « Voir profils ». */}
+      {hasPermission(user, 'profiles_apercu') ? (
+        <Menu.Item
+          leadingIcon="account-outline"
+          title="Profil"
+          onPress={() => {
+            setVisible(false);
+            router.push('/profile');
+          }}
+        />
+      ) : null}
       <Menu.Item
         leadingIcon="logout"
         title="Déconnexion"

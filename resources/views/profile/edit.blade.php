@@ -7,7 +7,7 @@
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0 p-0">
                     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bi bi-house-door"></i></a></li>
-                    <li class="breadcrumb-item active" aria-current="page">{{ $voirProfil ? 'Mon profil' : 'Mot de passe' }}</li>
+                    <li class="breadcrumb-item active" aria-current="page">Mon profil</li>
                 </ol>
             </nav>
         </div>
@@ -25,32 +25,36 @@
             <h5 class="mb-0 fw-bold"><i class="bi bi-person-circle me-2"></i>{{ $user->nomPrenom }}</h5>
         </div>
         <div class="card-body p-4">
-            {{-- Sans « Voir profils » : seulement le changement de mot de passe. --}}
-            @if($voirProfil)
             <ul class="nav nav-tabs" id="profileTabs" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info-pane" type="button" role="tab" aria-controls="info-pane" aria-selected="true">
                         <i class="bi bi-person me-1"></i> Informations
                     </button>
                 </li>
+                @if($modifierProfil)
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="password-tab" data-bs-toggle="tab" data-bs-target="#password-pane" type="button" role="tab" aria-controls="password-pane" aria-selected="false">
                         <i class="bi bi-lock me-1"></i> Mot de passe
                     </button>
                 </li>
+                @endif
             </ul>
-            @endif
 
-            <div class="tab-content {{ $voirProfil ? 'pt-4' : '' }}" id="profileTabsContent">
-                @if($voirProfil)
+            <div class="tab-content pt-4" id="profileTabsContent">
                 <div class="tab-pane fade show active" id="info-pane" role="tabpanel" aria-labelledby="info-tab">
+                    @unless($modifierProfil)
+                        <div class="alert alert-info py-2 small col-12 col-lg-6">Vous pouvez consulter vos informations, mais pas les modifier.</div>
+                    @endunless
                     <form action="{{ route('profile.update') }}" method="POST" enctype="multipart/form-data" class="col-12 col-lg-6">
                         @csrf
                         @method('PUT')
+                        <fieldset @disabled(!$modifierProfil)>
                         <div class="mb-4 text-center">
                             <input type="file" name="image" class="form-control d-none" id="photoInput" accept="image/*">
-                            <img id="photoPreview" src="{{ asset($user->photo_path) }}" alt="Photo de profil" class="rounded-circle" style="width:96px; height:96px; object-fit:cover; cursor:pointer; border:2px solid var(--theme-accent);" onclick="document.getElementById('photoInput').click();">
-                            <div class="small text-secondary mt-2">Cliquez sur la photo pour la changer</div>
+                            <img id="photoPreview" src="{{ asset($user->photo_path) }}" alt="Photo de profil" class="rounded-circle" style="width:96px; height:96px; object-fit:cover; cursor:{{ $modifierProfil ? 'pointer' : 'default' }}; border:2px solid var(--theme-accent);" @if($modifierProfil) onclick="document.getElementById('photoInput').click();" @endif>
+                            @if($modifierProfil)
+                                <div class="small text-secondary mt-2">Cliquez sur la photo pour la changer</div>
+                            @endif
                         </div>
                         <div class="mb-3">
                             <label for="nomPrenom" class="form-label fw-semibold">Nom et prénom</label>
@@ -64,14 +68,17 @@
                             <label for="telephone" class="form-label fw-semibold">Téléphone</label>
                             <input type="text" class="form-control" id="telephone" name="telephone" value="{{ old('telephone', $user->telephone) }}">
                         </div>
-                        <button type="submit" class="btn text-white fw-semibold px-4" style="background-color: var(--theme-accent) !important;">
-                            Enregistrer
-                        </button>
+                        @if($modifierProfil)
+                            <button type="submit" class="btn text-white fw-semibold px-4" style="background-color: var(--theme-accent) !important;">
+                                Enregistrer
+                            </button>
+                        @endif
+                        </fieldset>
                     </form>
                 </div>
-                @endif
 
-                <div class="tab-pane fade {{ $voirProfil ? '' : 'show active' }}" id="password-pane" role="tabpanel" aria-labelledby="password-tab">
+                @if($modifierProfil)
+                <div class="tab-pane fade" id="password-pane" role="tabpanel" aria-labelledby="password-tab">
                     <form action="{{ route('profile.password.update') }}" method="POST" class="col-12 col-lg-6">
                         @csrf
                         @method('PUT')
@@ -101,6 +108,7 @@
                         </button>
                     </form>
                 </div>
+                @endif
             </div>
         </div>
     </div>

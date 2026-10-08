@@ -19,7 +19,6 @@ return [
         'subtitle' => 'SCHOOL MANAGEMENT SYSTEM',
         'identifier' => 'Email or phone',
         'identifier_placeholder' => 'school@example.com or 70000000',
-        'password' => 'Password',
         'password_placeholder' => 'Your password',
         'login' => 'Sign in',
         'show_password' => 'Show password',

@@ -198,20 +198,18 @@
                             </a>
                         </li>
                         <li><hr class="dropdown-divider"></li>
+                        {{-- « Profil » : seulement avec la permission « Voir profils ». --}}
+                        @if($user->peutVoirProfil())
                         <li>
                             <a class="dropdown-item" href="{{ route('profile.edit') }}">
                                 <div class="d-flex align-items-center">
-                                    @if($user->peutVoirProfil())
-                                        <div class=""><i class="bi bi-person-fill"></i></div>
-                                        <div class="ms-3"><span>{{ __('messages.navbar.profile') }}</span></div>
-                                    @else
-                                        <div class=""><i class="bi bi-lock-fill"></i></div>
-                                        <div class="ms-3"><span>{{ __('messages.navbar.password') }}</span></div>
-                                    @endif
+                                    <div class=""><i class="bi bi-person-fill"></i></div>
+                                    <div class="ms-3"><span>{{ __('messages.navbar.profile') }}</span></div>
                                 </div>
                             </a>
                         </li>
                         <li><hr class="dropdown-divider"></li>
+                        @endif
                         <li>
                             <form action="{{ route('logout') }}" method="POST" class="px-3 py-1">
                                 @csrf

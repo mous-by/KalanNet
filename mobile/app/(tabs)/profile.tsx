@@ -29,6 +29,8 @@ function PasswordInput({ label, value, onChangeText }: { label: React.ReactNode;
 
 function InfoForm() {
   const { user, refreshUser } = useAuth();
+  // Sans « Modifier utilisateurs » : informations en lecture seule.
+  const modifiable = hasPermission(user, 'utilisateurs_modification');
   const [nomPrenom, setNomPrenom] = useState(user?.nom_prenom ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
   const [telephone, setTelephone] = useState(user?.telephone ?? '');
@@ -71,19 +73,22 @@ function InfoForm() {
 
   return (
     <View style={styles.form}>
+      {!modifiable ? <Text style={styles.photoHint}>Vous pouvez consulter vos informations, mais pas les modifier.</Text> : null}
       <View style={styles.photoRow}>
-        <Pressable onPress={pickPhoto}>
+        <Pressable onPress={modifiable ? pickPhoto : undefined} disabled={!modifiable}>
           <Image source={{ uri: photoUri ?? user?.photo_url }} style={styles.photo} />
         </Pressable>
-        <Text style={styles.photoHint}>Touchez pour changer la photo</Text>
+        {modifiable ? <Text style={styles.photoHint}>Touchez pour changer la photo</Text> : null}
       </View>
-      <TextInput mode="outlined" label={requiredLabel('Nom et prénom')} value={nomPrenom} onChangeText={setNomPrenom} style={styles.input} />
-      <TextInput mode="outlined" label={requiredLabel('Email')} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" style={styles.input} />
-      <TextInput mode="outlined" label="Téléphone (optionnel)" value={telephone ?? ''} onChangeText={setTelephone} keyboardType="phone-pad" style={styles.input} />
+      <TextInput mode="outlined" label={requiredLabel('Nom et prénom')} value={nomPrenom} onChangeText={setNomPrenom} editable={modifiable} disabled={!modifiable} style={styles.input} />
+      <TextInput mode="outlined" label={requiredLabel('Email')} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" editable={modifiable} disabled={!modifiable} style={styles.input} />
+      <TextInput mode="outlined" label="Téléphone (optionnel)" value={telephone ?? ''} onChangeText={setTelephone} keyboardType="phone-pad" editable={modifiable} disabled={!modifiable} style={styles.input} />
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <Button mode="contained" onPress={handleSubmit} loading={isSubmitting} style={styles.submitButton}>
-        Enregistrer
-      </Button>
+      {modifiable ? (
+        <Button mode="contained" onPress={handleSubmit} loading={isSubmitting} style={styles.submitButton}>
+          Enregistrer
+        </Button>
+      ) : null}
       <SuccessSnackbar visible={successVisible} message="Vos informations ont été mises à jour." onDismiss={() => setSuccessVisible(false)} />
     </View>
   );
@@ -137,9 +142,18 @@ function PasswordForm() {
 
 export default function ProfileScreen() {
   const { user } = useAuth();
-  // Sans « Voir profils » : seulement le changement de mot de passe.
   const voirProfil = hasPermission(user, 'profiles_apercu');
-  const [tab, setTab] = useState(voirProfil ? 'info' : 'password');
+  const modifiable = hasPermission(user, 'utilisateurs_modification');
+  const [tab, setTab] = useState('info');
+
+  // Sans « Voir profils » : aucun accès au profil (l'entrée du menu est aussi masquée).
+  if (!voirProfil) {
+    return (
+      <View style={[styles.container, styles.content]}>
+        <Text style={styles.role}>Vous n'avez pas accès à votre profil.</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -147,7 +161,8 @@ export default function ProfileScreen() {
       <Text style={styles.name}>{user?.nom_prenom}</Text>
       <Text style={styles.role}>{user?.droit}</Text>
 
-      {voirProfil ? (
+      {/* Sans « Modifier utilisateurs » : ni modification des informations, ni du mot de passe. */}
+      {modifiable ? (
         <SegmentedButtons
           value={tab}
           onValueChange={setTab}
@@ -159,7 +174,7 @@ export default function ProfileScreen() {
         />
       ) : null}
 
-      {voirProfil && tab === 'info' ? <InfoForm /> : <PasswordForm />}
+      {tab === 'info' || !modifiable ? <InfoForm /> : <PasswordForm />}
     </ScrollView>
   );
 }

@@ -16,14 +16,15 @@ class ProfileController extends Controller
     public function edit()
     {
         $user = Auth::user();
+        abort_unless($user->peutVoirProfil(), 403);
 
-        return view('profile.edit', ['user' => $user, 'voirProfil' => $user->peutVoirProfil()]);
+        return view('profile.edit', ['user' => $user, 'modifierProfil' => $user->peutModifierProfil()]);
     }
 
     public function updateInfo(Request $request)
     {
         $user = Auth::user();
-        abort_unless($user->peutVoirProfil(), 403);
+        abort_unless($user->peutModifierProfil(), 403);
 
         if ($request->filled('telephone')) {
             $request->merge(['telephone' => Telephone::normalize($request->input('telephone'), $user->idEcole)]);
@@ -64,6 +65,7 @@ class ProfileController extends Controller
     public function updatePassword(Request $request)
     {
         $user = Auth::user();
+        abort_unless($user->peutModifierProfil(), 403);
 
         $data = $request->validate([
             'current_password' => ['required'],

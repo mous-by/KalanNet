@@ -122,13 +122,17 @@ class User extends Authenticatable
         return in_array($canonical, $this->permissionCanonicalNames(), true);
     }
 
-    /**
-     * Informations de son profil (nom, email, téléphone, photo) : permission
-     * « Voir profils ». Le changement de mot de passe reste toujours permis.
-     */
+    /** Accès à son profil (informations et mot de passe) : permission « Voir profils ». */
     public function peutVoirProfil(): bool
     {
         return $this->droit === 'SupAdmin' || $this->userHasPermission('profiles_apercu');
+    }
+
+    /** Modifier ses propres informations et son mot de passe : il faut aussi « Modifier utilisateurs ». */
+    public function peutModifierProfil(): bool
+    {
+        return $this->peutVoirProfil()
+            && ($this->droit === 'SupAdmin' || $this->userHasPermission('utilisateurs_modification'));
     }
 
     public function userHasAnyPermission(array $permissionNames): bool

@@ -158,8 +158,8 @@ class AuthController extends Controller
     public function updateProfile(Request $request)
     {
         $user = $request->user();
-        if (!$user->peutVoirProfil()) {
-            return response()->json(['message' => 'Vous n\'avez pas accès aux informations de votre profil. Le mot de passe reste modifiable.'], 403);
+        if (!$user->peutModifierProfil()) {
+            return response()->json(['message' => 'Vous n\'avez pas la permission de modifier vos informations.'], 403);
         }
 
         if ($request->filled('telephone')) {
@@ -201,6 +201,9 @@ class AuthController extends Controller
     public function updatePassword(Request $request)
     {
         $user = $request->user();
+        if (!$user->peutModifierProfil()) {
+            return response()->json(['message' => 'Vous n\'avez pas la permission de modifier vos informations.'], 403);
+        }
 
         $data = $request->validate([
             'current_password' => ['required'],

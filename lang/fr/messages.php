@@ -19,7 +19,6 @@ return [
         'subtitle' => 'SYSTEME DE GESTION SCOLAIRE',
         'identifier' => 'Email ou téléphone',
         'identifier_placeholder' => 'exemple@ecole.com ou 70000000',
-        'password' => 'Mot de passe',
         'password_placeholder' => 'Votre mot de passe',
         'login' => 'Connexion',
         'show_password' => 'Afficher le mot de passe',

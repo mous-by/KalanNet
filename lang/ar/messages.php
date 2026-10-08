@@ -19,7 +19,6 @@ return [
         'subtitle' => 'نظام إدارة المدارس',
         'identifier' => 'البريد الإلكتروني أو الهاتف',
         'identifier_placeholder' => 'school@example.com أو 70000000',
-        'password' => 'كلمة المرور',
         'password_placeholder' => 'كلمة المرور الخاصة بك',
         'login' => 'تسجيل الدخول',
         'show_password' => 'إظهار كلمة المرور',
