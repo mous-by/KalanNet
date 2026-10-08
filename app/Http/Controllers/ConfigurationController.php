@@ -133,20 +133,42 @@ class ConfigurationController extends Controller
         return redirect()->route('configuration.ecoles')->with('success', 'École modifiée avec succès.');
     }
 
-    public function destroyEcole(int $id)
+    /** Page de confirmation : ce qui disparaîtra avec l'école. */
+    public function confirmerSuppressionEcole(int $id)
     {
         $this->authorizeSupAdminOnly();
-
-        $ecole = Ecole::withCount(['utilisateurs'])->findOrFail($id);
+        $ecole = Ecole::withoutGlobalScopes()->findOrFail($id);
         $this->authorizeEcoleMutation($ecole);
 
-        if ($ecole->utilisateurs_count > 0) {
-            return redirect()->route('configuration.ecoles')->with('error', 'Impossible de supprimer une école liée à des utilisateurs.');
+        $inventaire = app(\App\Services\Ecoles\SuppressionEcole::class)->inventaire($ecole);
+
+        return view('configuration.ecole-suppression', compact('ecole', 'inventaire'));
+    }
+
+    /**
+     * Suppression définitive de l'école et de tout ce qui s'y rattache. Il faut
+     * retaper le nom exact de l'école : l'opération est irréversible.
+     */
+    public function destroyEcole(Request $request, int $id)
+    {
+        $this->authorizeSupAdminOnly();
+        $ecole = Ecole::withoutGlobalScopes()->findOrFail($id);
+        $this->authorizeEcoleMutation($ecole);
+
+        $saisi = Str::lower(trim((string) $request->input('confirmation')));
+        if ($saisi === '' || $saisi !== Str::lower(trim((string) $ecole->nomEcole))) {
+            return redirect()->route('configuration.ecoles.suppression', $ecole->idEcole)
+                ->with('error', __('configuration.eco_suppression_nom_incorrect'));
         }
 
-        $ecole->delete();
+        $nom = $ecole->nomEcole;
+        app(\App\Services\Ecoles\SuppressionEcole::class)->supprimer($ecole);
 
-        return redirect()->route('configuration.ecoles')->with('success', 'École supprimée avec succès.');
+        if ((int) session('idEcole') === (int) $id) {
+            session()->forget('idEcole');
+        }
+
+        return redirect()->route('configuration.ecoles')->with('success', __('configuration.eco_suppression_faite', ['nom' => $nom]));
     }
 
     /**

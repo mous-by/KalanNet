@@ -93,20 +93,15 @@ class ConfigurationController extends WebConfigurationController
         return response()->json($ecole->fresh());
     }
 
-    public function destroyEcole(int $id)
+    /**
+     * Supprimer une école efface tout ce qui s'y rattache : l'opération exige
+     * la page de confirmation du site web (inventaire + nom à retaper).
+     */
+    public function destroyEcole(Request $request, int $id)
     {
         $this->authorizeSupAdminOnly();
 
-        $ecole = Ecole::withCount(['utilisateurs'])->findOrFail($id);
-        $this->authorizeEcoleMutation($ecole);
-
-        if ($ecole->utilisateurs_count > 0) {
-            return response()->json(['message' => 'Impossible de supprimer une école liée à des utilisateurs.'], 422);
-        }
-
-        $ecole->delete();
-
-        return response()->json(['success' => true]);
+        return response()->json(['message' => __('configuration.eco_suppression_web_seulement')], 422);
     }
 
     public function annees(Request $request)

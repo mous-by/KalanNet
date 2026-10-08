@@ -86,13 +86,10 @@
                                                 <button class="btn btn-light btn-sm p-2" data-bs-toggle="modal" data-bs-target="#ecoleEditModal{{ $ecole->idEcole }}" title="{{ __('configuration.modifier') }}">
                                                     <i class="bx bx-edit text-warning fs-5"></i>
                                                 </button>
-                                                <form action="{{ route('configuration.ecoles.destroy', $ecole->idEcole) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('configuration.eco_confirm_delete') }}');">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button class="btn btn-light btn-sm p-2" title="{{ __('configuration.supprimer') }}">
-                                                        <i class="bx bx-trash text-danger fs-5"></i>
-                                                    </button>
-                                                </form>
+                                                {{-- Suppression définitive : page de confirmation (inventaire + nom à retaper). --}}
+                                                <a href="{{ route('configuration.ecoles.suppression', $ecole->idEcole) }}" class="btn btn-light btn-sm p-2" title="{{ __('configuration.supprimer') }}">
+                                                    <i class="bx bx-trash text-danger fs-5"></i>
+                                                </a>
                                             @else
                                                 <span class="text-muted small">{{ __('configuration.eco_lecture_seule') }}</span>
                                             @endif

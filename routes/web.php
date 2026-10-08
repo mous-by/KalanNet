@@ -244,6 +244,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/configuration/ecoles', [ConfigurationController::class, 'ecoles'])->name('configuration.ecoles');
     Route::post('/configuration/ecoles', [ConfigurationController::class, 'storeEcole'])->name('configuration.ecoles.store');
     Route::put('/configuration/ecoles/{id}', [ConfigurationController::class, 'updateEcole'])->name('configuration.ecoles.update');
+    Route::get('/configuration/ecoles/{id}/suppression', [ConfigurationController::class, 'confirmerSuppressionEcole'])->name('configuration.ecoles.suppression');
     Route::delete('/configuration/ecoles/{id}', [ConfigurationController::class, 'destroyEcole'])->name('configuration.ecoles.destroy');
 
     // Config pays (examens nationaux) — Admin limité à son propre pays, SupAdmin à tous
