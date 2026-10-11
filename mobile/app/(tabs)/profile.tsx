@@ -4,6 +4,7 @@ import { Button, SegmentedButtons, Text, TextInput } from 'react-native-paper';
 import * as ImagePicker from 'expo-image-picker';
 
 import requiredLabel from '@/components/RequiredLabel';
+import ForceMotDePasse from '@/components/ForceMotDePasse';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
 import { api, apiErrorMessage } from '@/lib/api';
@@ -130,6 +131,7 @@ function PasswordForm() {
     <View style={styles.form}>
       <PasswordInput label={requiredLabel('Mot de passe actuel')} value={currentPassword} onChangeText={setCurrentPassword} />
       <PasswordInput label={requiredLabel('Nouveau mot de passe')} value={password} onChangeText={setPassword} />
+      <ForceMotDePasse motDePasse={password} />
       <PasswordInput label={requiredLabel('Confirmer le nouveau mot de passe')} value={passwordConfirmation} onChangeText={setPasswordConfirmation} />
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <Button mode="contained" onPress={handleSubmit} loading={isSubmitting} style={styles.submitButton}>

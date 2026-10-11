@@ -92,7 +92,7 @@
                         <div class="mb-3">
                             <label for="password" class="form-label fw-semibold">Nouveau mot de passe</label>
                             <div class="input-group">
-                                <input type="password" class="form-control" id="password" name="password" required minlength="8">
+                                <input type="password" class="form-control" id="password" name="password" required minlength="8" data-force-mdp autocomplete="new-password">
                                 <button type="button" class="btn btn-outline-secondary js-voir-mdp" data-cible="password" title="Afficher le mot de passe" aria-label="Afficher le mot de passe"><i class="bi bi-eye"></i></button>
                             </div>
                         </div>
@@ -114,6 +114,7 @@
     </div>
 
     @push('scripts')
+        @include('partials.force-mot-de-passe')
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 // Œil : afficher / masquer le mot de passe saisi.

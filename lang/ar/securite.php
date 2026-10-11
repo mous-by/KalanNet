@@ -28,4 +28,12 @@ return [
     'copie' => 'تم النسخ.',
     'note' => 'لقد دوّنت كلمة المرور',
     'actuel_court' => 'كلمة المرور الحالية',
+    'force_titre' => 'قوة كلمة المرور',
+    'force_tres_faible' => 'ضعيفة جدًا',
+    'force_faible' => 'ضعيفة',
+    'force_moyen' => 'متوسطة',
+    'force_fort' => 'قوية',
+    'regle_longueur' => '8 أحرف على الأقل',
+    'regle_lettres' => 'حروف',
+    'regle_chiffres' => 'أرقام',
 ];

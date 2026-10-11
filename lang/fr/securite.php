@@ -28,4 +28,12 @@ return [
     'copie' => 'Copié.',
     'note' => 'J\'ai noté le mot de passe',
     'actuel_court' => 'Mot de passe actuel',
+    'force_titre' => 'Force du mot de passe',
+    'force_tres_faible' => 'Très faible',
+    'force_faible' => 'Faible',
+    'force_moyen' => 'Moyen',
+    'force_fort' => 'Fort',
+    'regle_longueur' => '8 caractères au moins',
+    'regle_lettres' => 'Des lettres',
+    'regle_chiffres' => 'Des chiffres',
 ];

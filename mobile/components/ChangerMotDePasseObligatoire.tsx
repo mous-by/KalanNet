@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Text, TextInput } from 'react-native-paper';
 
+import ForceMotDePasse from '@/components/ForceMotDePasse';
 import { useAuth } from '@/context/AuthContext';
 import { api, apiErrorMessage } from '@/lib/api';
 import { SURFACE } from '@/lib/themes';
@@ -59,7 +60,7 @@ export default function ChangerMotDePasseObligatoire() {
       </View>
       <ChampMotDePasse label="Mot de passe actuel (celui qui vous a été donné)" value={actuel} onChangeText={setActuel} />
       <ChampMotDePasse label="Nouveau mot de passe" value={nouveau} onChangeText={setNouveau} />
-      <Text style={styles.regle}>8 caractères au moins, avec des lettres et des chiffres.</Text>
+      <ForceMotDePasse motDePasse={nouveau} />
       <ChampMotDePasse label="Confirmer le nouveau mot de passe" value={confirmation} onChangeText={setConfirmation} />
       {erreur ? <Text style={styles.erreur}>{erreur}</Text> : null}
       <Button mode="contained" onPress={enregistrer} loading={envoi} disabled={!actuel || !nouveau || !confirmation} style={styles.bouton}>
@@ -79,7 +80,6 @@ const styles = StyleSheet.create({
   alerte: { backgroundColor: '#fff4e5', borderRadius: 8, padding: 12, marginBottom: 16 },
   gras: { fontWeight: '700' },
   champ: { marginBottom: 12 },
-  regle: { fontSize: 12, opacity: 0.7, marginTop: -6, marginBottom: 12 },
   erreur: { color: '#b3261e', marginBottom: 12 },
   bouton: { marginTop: 8 },
   deconnexion: { marginTop: 12 },

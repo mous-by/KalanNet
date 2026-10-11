@@ -30,12 +30,9 @@
                 <label for="{{ $champ }}" class="form-label">{{ $libelle }}</label>
                 <div class="input-group">
                     <input type="password" id="{{ $champ }}" name="{{ $champ }}" class="form-control @error($champ) is-invalid @enderror" required
-                           autocomplete="{{ $champ === 'current_password' ? 'current-password' : 'new-password' }}" @if($loop->first) autofocus @endif>
+                           autocomplete="{{ $champ === 'current_password' ? 'current-password' : 'new-password' }}" @if($loop->first) autofocus @endif @if($champ === 'password') data-force-mdp @endif>
                     <button type="button" class="btn btn-outline-secondary js-voir-mdp" data-cible="{{ $champ }}" title="{{ __('securite.afficher') }}" aria-label="{{ __('securite.afficher') }}"><i class="bi bi-eye"></i></button>
                 </div>
-                @if($champ === 'password')
-                    <div class="form-text">{{ __('securite.regle') }}</div>
-                @endif
             </div>
         @endforeach
 
@@ -51,6 +48,7 @@
 @endsection
 
 @push('scripts')
+    @include('partials.force-mot-de-passe')
     <script>
         document.querySelectorAll('.js-voir-mdp').forEach(function (bouton) {
             bouton.addEventListener('click', function () {

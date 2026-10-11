@@ -28,4 +28,12 @@ return [
     'copie' => 'Copied.',
     'note' => 'I have noted the password',
     'actuel_court' => 'Current password',
+    'force_titre' => 'Password strength',
+    'force_tres_faible' => 'Very weak',
+    'force_faible' => 'Weak',
+    'force_moyen' => 'Medium',
+    'force_fort' => 'Strong',
+    'regle_longueur' => 'At least 8 characters',
+    'regle_lettres' => 'Letters',
+    'regle_chiffres' => 'Numbers',
 ];
