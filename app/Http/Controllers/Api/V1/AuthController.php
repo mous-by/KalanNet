@@ -201,25 +201,14 @@ class AuthController extends Controller
     public function updatePassword(Request $request)
     {
         $user = $request->user();
-        if (!$user->peutModifierProfil()) {
+        // Changement obligatoire (mot de passe donné par un Admin) : toujours permis.
+        if (!$user->doit_changer_mdp && !$user->peutModifierProfil()) {
             return response()->json(['message' => 'Vous n\'avez pas la permission de modifier vos informations.'], 403);
         }
 
-        $data = $request->validate([
-            'current_password' => ['required'],
-            'password' => ['required', 'string', 'min:4', 'confirmed'],
-        ]);
+        \App\Http\Controllers\ProfileController::changerMotDePasse($request, $user);
 
-        if (!Hash::check($data['current_password'], $user->pwd)) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
-                'current_password' => 'Le mot de passe actuel est incorrect.',
-            ]);
-        }
-
-        $user->pwd = Hash::make($data['password']);
-        $user->save();
-
-        return response()->json(['message' => 'Mot de passe mis à jour.']);
+        return response()->json(['message' => __('securite.change'), 'user' => new UserResource($user->fresh())]);
     }
 
     private function issueToken(User $user, Request $request)

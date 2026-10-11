@@ -136,6 +136,7 @@
     
     @include('partials.localized-inputs-script')
     @include('partials.ui-translator-script')
+    @include('partials.mot-de-passe-temporaire')
     @stack('scripts')
     <script src="{{ asset('assets/mon_js/save-button-spinner.js') }}?v={{ filemtime(public_path('assets/mon_js/save-button-spinner.js')) }}"></script>
     <script>

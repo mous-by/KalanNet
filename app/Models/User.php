@@ -35,6 +35,7 @@ class User extends Authenticatable
         'nomPrenom',
         'email',
         'pwd',
+        'doit_changer_mdp',
         'fonction',
         'telephone',
         'genre',
@@ -102,6 +103,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'pwd' => 'hashed',
+            'doit_changer_mdp' => 'boolean',
             'managed_orders' => 'array',
             'last_login_at' => 'datetime',
             'last_activity' => 'datetime',

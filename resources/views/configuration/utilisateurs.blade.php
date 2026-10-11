@@ -202,6 +202,29 @@
                 });
             });
 
+            // Réinitialisation du mot de passe : confirmation SweetAlert.
+            document.querySelectorAll('[data-confirm-reset]').forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    event.preventDefault();
+                    if (!window.Swal) {
+                        if (confirm(form.dataset.confirmTitle)) form.submit();
+                        return;
+                    }
+                    Swal.fire({
+                        title: form.dataset.confirmTitle,
+                        text: form.dataset.confirmText,
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: @json(__('securite.reinitialiser_bouton')),
+                        cancelButtonText: i18nAnnuler,
+                        confirmButtonColor: '#0d6efd',
+                        cancelButtonColor: '#6c757d',
+                    }).then(result => {
+                        if (result.isConfirmed) form.submit();
+                    });
+                });
+            });
+
             document.querySelectorAll('[data-confirm-delete]').forEach(function (form) {
                 form.addEventListener('submit', function (event) {
                     event.preventDefault();

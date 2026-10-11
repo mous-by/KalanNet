@@ -177,9 +177,10 @@ class ConfigurationController extends WebConfigurationController
         $this->authorizeUserCreation($authUser, $type, $data);
         $this->validateManagedOrdersForUser($authUser, $type, $data, $idEcole);
 
-        $createdUser = DB::transaction(function () use ($type, $data, $authUser, $idEcole) {
-            $password = $data['pwd'] ?? $this->generatePassword();
-            $payload = ['pwd' => Hash::make($password), 'statut' => 1, 'image' => 'default.png'];
+        // Mot de passe temporaire, renvoyé une seule fois, à changer à la 1re connexion.
+        $motDePasseTemporaire = \App\Support\MotDePasse::temporaire();
+        $createdUser = DB::transaction(function () use ($type, $data, $authUser, $idEcole, $motDePasseTemporaire) {
+            $payload = ['pwd' => Hash::make($motDePasseTemporaire), 'doit_changer_mdp' => true, 'statut' => 1, 'image' => 'default.png'];
 
             if ($type === 0) {
                 $enseignant = $this->enseignantsScope(Enseignant::query(), $authUser, $idEcole)
@@ -242,7 +243,26 @@ class ConfigurationController extends WebConfigurationController
             return $user;
         });
 
-        return response()->json($createdUser, 201);
+        // Renvoyé une seule fois, pour que l'auteur le transmette en main propre.
+        return response()->json(array_merge($createdUser->toArray(), ['mot_de_passe_temporaire' => $motDePasseTemporaire]), 201);
+    }
+
+    /** Réinitialisation par un supérieur : mot de passe temporaire renvoyé une seule fois. */
+    public function reinitialiserMotDePasse(int $id)
+    {
+        $authUser = request()->user();
+        $utilisateur = $this->userScope(User::query(), $authUser, session('idEcole'))->where('idUtilisateur', $id)->firstOrFail();
+        $this->authorizeTargetUserEdit($authUser, $utilisateur);
+
+        $motDePasseTemporaire = \App\Support\MotDePasse::temporaire();
+        DB::table('utilisateurs')->where('idUtilisateur', $utilisateur->idUtilisateur)
+            ->update(['pwd' => Hash::make($motDePasseTemporaire), 'doit_changer_mdp' => true]);
+        \App\Support\MotDePasse::revoquerAcces($utilisateur);
+
+        return response()->json([
+            'message' => __('securite.reinitialise', ['nom' => $utilisateur->nomPrenom]),
+            'mot_de_passe_temporaire' => $motDePasseTemporaire,
+        ]);
     }
 
     public function updateUtilisateur(Request $request, int $id)
@@ -263,9 +283,6 @@ class ConfigurationController extends WebConfigurationController
 
         $payload = ['telephone' => $data['telephone'] ?? $utilisateur->telephone];
 
-        if (!empty($data['pwd'])) {
-            $payload['pwd'] = Hash::make($data['pwd']);
-        }
 
         if ($type === 3 || $type === 4) {
             $payload += [

@@ -17,6 +17,8 @@ class UserResource extends JsonResource
             'fonction' => $this->fonction,
             'genre' => $this->genre,
             'droit' => $this->droit,
+            // Mot de passe donné par un Admin : l'app doit faire changer le mot de passe.
+            'doit_changer_mdp' => (bool) $this->doit_changer_mdp,
             'statut' => $this->statut,
             'photo_url' => rtrim($request->root(), '/') . '/' . $this->photo_path,
             'permissions' => $this->droit === 'SupAdmin' ? [] : $this->permissionCanonicalNames(),

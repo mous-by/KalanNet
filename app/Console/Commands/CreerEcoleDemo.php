@@ -208,11 +208,13 @@ class CreerEcoleDemo extends Command
                     'statut' => 1,
                     'image' => 'default.png',
                     'pwd' => Hash::make($motDePasse),
+                    // Examinateurs Google Play : jamais bloqués par un changement obligatoire.
+                    'doit_changer_mdp' => false,
                 ]);
                 $this->info("Compte {$email} créé.");
             } else {
                 $compte = $compteExistant;
-                $maj = ['idEcole' => $ecoleId, 'statut' => 1];
+                $maj = ['idEcole' => $ecoleId, 'statut' => 1, 'doit_changer_mdp' => false];
                 if ($motDePasse) {
                     $maj['pwd'] = Hash::make($motDePasse);
                 }

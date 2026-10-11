@@ -118,11 +118,11 @@
                                 <label class="form-label">{{ __('configuration.th_fonction') }}</label>
                                 <input type="text" name="fonction" id="fonction" class="form-control" value="{{ old('fonction', $utilisateur->fonction ?? '') }}" placeholder="{{ __('configuration.th_fonction') }}">
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label">{{ __('configuration.uf_mot_de_passe_label') }}</label>
-                                <input type="password" name="pwd" class="form-control" minlength="4" placeholder="{{ __('configuration.uf_mot_de_passe_placeholder') }}">
-                                <small class="text-muted">{{ $isEdit ? __('configuration.uf_mot_de_passe_help_edit') : __('configuration.uf_mot_de_passe_help_create') }}</small>
-                            </div>
+                            @unless($isEdit)
+                                <div class="col-12">
+                                    <div class="alert alert-info py-2 small mb-0"><i class="bx bx-key me-1"></i>{{ __('securite.info_creation') }}</div>
+                                </div>
+                            @endunless
 
                             <div class="col-md-6 js-field js-dae d-none">
                                 <label class="form-label">{{ __('configuration.menu_academies') }} <span class="text-danger">*</span></label>

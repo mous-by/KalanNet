@@ -71,6 +71,13 @@
                                     <a href="{{ $utilisateur->droit === 'revendeur' ? route('configuration.revendeurs') : route('configuration.utilisateurs.edit', $utilisateur->idUtilisateur) }}" class="btn btn-light btn-sm p-2" title="{{ __('configuration.ut_modifier_utilisateur') }}">
                                         <i class="bx bx-edit text-warning fs-5"></i>
                                     </a>
+                                    {{-- Nouveau mot de passe temporaire, à changer à la prochaine connexion. --}}
+                                    <form action="{{ route('configuration.utilisateurs.mot-de-passe', $utilisateur->idUtilisateur) }}" method="POST" class="d-inline" data-confirm-reset data-confirm-title="{{ __('securite.reinitialiser_titre') }}" data-confirm-text="{{ __('securite.reinitialiser_texte', ['nom' => $utilisateur->nomPrenom]) }}">
+                                        @csrf
+                                        <button type="submit" class="btn btn-light btn-sm p-2" title="{{ __('securite.reinitialiser_titre') }}">
+                                            <i class="bx bx-key text-info fs-5"></i>
+                                        </button>
+                                    </form>
                                 @endif
                                 @if(($permissionAllowed ?? false) && !$isCurrentUser && !$isSuperAdminTarget && ($connectedUser->droit === 'SupAdmin' || !$isAdminTarget))
                                     <a href="{{ route('configuration.utilisateurs.permissions.assigner', ['user_id' => $utilisateur->idUtilisateur]) }}" class="btn btn-light btn-sm p-2" title="{{ __('configuration.ut_assigner_permissions_title') }}">

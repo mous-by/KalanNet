@@ -67,20 +67,64 @@ class ProfileController extends Controller
         $user = Auth::user();
         abort_unless($user->peutModifierProfil(), 403);
 
+        $this->changerMotDePasse($request, $user);
+
+        return back()->with('success', 'Votre mot de passe a été mis à jour.');
+    }
+
+    /** Mot de passe donné par un Admin : page obligatoire avant tout le reste. */
+    public function forcePassword()
+    {
+        $user = Auth::user();
+        if (!$user->doit_changer_mdp) {
+            return redirect()->route('dashboard');
+        }
+
+        return view('auth.changer-mot-de-passe');
+    }
+
+    public function forcePasswordUpdate(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user->doit_changer_mdp) {
+            return redirect()->route('dashboard');
+        }
+
+        $this->changerMotDePasse($request, $user);
+
+        return redirect()->route('dashboard')->with('success', __('securite.change'));
+    }
+
+    /**
+     * Règles communes (profil, changement obligatoire, app mobile) : 8
+     * caractères au moins avec lettres et chiffres, mot de passe actuel exact,
+     * nouveau différent de l'actuel. Les autres accès du compte sont coupés.
+     */
+    public static function changerMotDePasse(Request $request, $user): void
+    {
         $data = $request->validate([
-            'current_password' => ['required'],
-            'password' => ['required', 'string', 'min:4', 'confirmed'],
+            'current_password' => ['required', 'string'],
+            'password' => ['required', 'string', 'confirmed', 'different:current_password', \App\Support\MotDePasse::regle()],
+        ], [
+            'password.different' => __('securite.identique'),
+        ], [
+            'current_password' => mb_strtolower(__('securite.actuel_court')),
+            'password' => mb_strtolower(__('securite.nouveau')),
         ]);
 
         if (!Hash::check($data['current_password'], $user->pwd)) {
-            throw ValidationException::withMessages([
-                'current_password' => 'Le mot de passe actuel est incorrect.',
-            ]);
+            throw ValidationException::withMessages(['current_password' => __('securite.actuel_incorrect')]);
         }
 
         $user->pwd = Hash::make($data['password']);
+        $user->doit_changer_mdp = false;
         $user->save();
 
-        return back()->with('success', 'Votre mot de passe a été mis à jour.');
+        $jeton = method_exists($user, 'currentAccessToken') ? $user->currentAccessToken() : null;
+        \App\Support\MotDePasse::revoquerAcces(
+            $user,
+            $request->hasSession() ? $request->session()->getId() : null,
+            $jeton instanceof \Laravel\Sanctum\PersonalAccessToken ? (int) $jeton->id : null,
+        );
     }
 }

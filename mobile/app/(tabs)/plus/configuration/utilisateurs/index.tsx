@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { router } from 'expo-router';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { Alert, FlatList, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Button, FAB, Searchbar, Text } from 'react-native-paper';
 
+import MotDePasseTemporaireDialog from '@/components/MotDePasseTemporaireDialog';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
 import { useLocale } from '@/context/LocaleContext';
@@ -59,6 +60,33 @@ export default function UtilisateursScreen() {
     }
   }
 
+  // Même règle que le serveur : ni soi-même, ni un SupAdmin ; un Admin ne vise pas un autre Admin.
+  const peutReinitialiser = (cible: ConfigUser) =>
+    (user?.droit === 'SupAdmin' || user?.droit === 'Admin' || hasPermission(user, 'utilisateurs_modification')) &&
+    cible.idUtilisateur !== user?.id &&
+    cible.droit !== 'SupAdmin' &&
+    (user?.droit === 'SupAdmin' || cible.droit !== 'Admin');
+
+  const [temporaire, setTemporaire] = useState<{ motDePasse: string; pour: string } | null>(null);
+
+  function reinitialiserMotDePasse(cible: ConfigUser) {
+    Alert.alert('Réinitialiser le mot de passe', `${cible.nomPrenom} devra changer son mot de passe à la prochaine connexion.`, [
+      { text: 'Annuler', style: 'cancel' },
+      {
+        text: 'Réinitialiser',
+        onPress: async () => {
+          setActionError(null);
+          try {
+            const { data: reponse } = await api.post<{ mot_de_passe_temporaire: string }>(`/configuration/utilisateurs/${cible.idUtilisateur}/mot-de-passe`);
+            setTemporaire({ motDePasse: reponse.mot_de_passe_temporaire, pour: cible.nomPrenom });
+          } catch (err) {
+            setActionError(apiErrorMessage(err));
+          }
+        },
+      },
+    ]);
+  }
+
   async function handleDelete(target: ConfigUser) {
     setActionError(null);
     try {
@@ -98,6 +126,11 @@ export default function UtilisateursScreen() {
                     {t('configuration.menu_permissions')}
                   </Button>
                 ) : null}
+                {peutReinitialiser(item) ? (
+                  <Button compact icon="key-variant" onPress={() => reinitialiserMotDePasse(item)}>
+                    Mot de passe
+                  </Button>
+                ) : null}
                 {item.idUtilisateur !== user?.id ? (
                   <>
                     {canEditStatus ? (
@@ -121,6 +154,7 @@ export default function UtilisateursScreen() {
       {canCreate ? <FAB icon="plus" style={styles.fab} onPress={() => router.push('/plus/configuration/utilisateurs/new')} /> : null}
 
       <SuccessSnackbar visible={successVisible} message={successMessage} onDismiss={() => setSuccessVisible(false)} />
+      <MotDePasseTemporaireDialog motDePasse={temporaire?.motDePasse ?? null} pour={temporaire?.pour ?? ''} onFermer={() => setTemporaire(null)} />
     </View>
   );
 }

@@ -28,6 +28,8 @@ export interface User {
   theme_preference: string | null;
   locale_preference: string | null;
   permissions: string[];
+  // Mot de passe temporaire donné par un Admin : à changer avant tout le reste.
+  doit_changer_mdp?: boolean;
   ecole: Ecole | null;
 }
 

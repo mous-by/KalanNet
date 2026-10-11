@@ -490,10 +490,12 @@ class ConfigurationController extends Controller
         $this->authorizeUserCreation($authUser, $type, $data);
         $this->validateManagedOrdersForUser($authUser, $type, $data, $idEcole);
 
-        $createdUser = DB::transaction(function () use ($type, $data, $authUser, $idEcole) {
-            $password = $data['pwd'] ?? $this->generatePassword();
+        // Mot de passe temporaire, affiché une seule fois à l'auteur, à changer à la 1re connexion.
+        $motDePasseTemporaire = \App\Support\MotDePasse::temporaire();
+        $createdUser = DB::transaction(function () use ($type, $data, $authUser, $idEcole, $motDePasseTemporaire) {
             $payload = [
-                'pwd' => Hash::make($password),
+                'pwd' => Hash::make($motDePasseTemporaire),
+                'doit_changer_mdp' => true,
                 'statut' => 1,
                 'image' => 'default.png',
             ];
@@ -568,7 +570,33 @@ class ConfigurationController extends Controller
 
         return redirect()
             ->route($redirectRoute, $redirectParameters)
-            ->with('success', 'Utilisateur créé. Les permissions de base ont été attribuées.');
+            ->with('success', 'Utilisateur créé. Les permissions de base ont été attribuées.')
+            ->with('mot_de_passe_temporaire', $motDePasseTemporaire)
+            ->with('mot_de_passe_temporaire_pour', $createdUser->nomPrenom);
+    }
+
+    /**
+     * Réinitialisation par un supérieur : nouveau mot de passe temporaire, à
+     * changer à la prochaine connexion ; les accès en cours sont coupés.
+     */
+    public function reinitialiserMotDePasse(int $id)
+    {
+        $authUser = Auth::user();
+        $utilisateur = $this->userScope(User::query(), $authUser, session('idEcole'))
+            ->where('idUtilisateur', $id)
+            ->firstOrFail();
+        $this->authorizeTargetUserEdit($authUser, $utilisateur);
+        abort_if((int) $utilisateur->idUtilisateur === (int) $authUser->idUtilisateur, 403);
+
+        $motDePasseTemporaire = \App\Support\MotDePasse::temporaire();
+        DB::table('utilisateurs')->where('idUtilisateur', $utilisateur->idUtilisateur)
+            ->update(['pwd' => Hash::make($motDePasseTemporaire), 'doit_changer_mdp' => true]);
+        \App\Support\MotDePasse::revoquerAcces($utilisateur);
+
+        return back()
+            ->with('success', __('securite.reinitialise', ['nom' => $utilisateur->nomPrenom]))
+            ->with('mot_de_passe_temporaire', $motDePasseTemporaire)
+            ->with('mot_de_passe_temporaire_pour', $utilisateur->nomPrenom);
     }
 
     public function editUtilisateur(int $id)
@@ -623,9 +651,6 @@ class ConfigurationController extends Controller
             'telephone' => $data['telephone'] ?? $utilisateur->telephone,
         ];
 
-        if (!empty($data['pwd'])) {
-            $payload['pwd'] = Hash::make($data['pwd']);
-        }
 
         if ($type === 3 || $type === 4) {
             $payload += [
@@ -1311,7 +1336,6 @@ class ConfigurationController extends Controller
 
         $base = [
             'type_utilisateur' => 'required|integer|in:0,1,2,3,4',
-            'pwd' => 'nullable|string|min:4',
         ];
 
         $emailRule = Rule::unique('utilisateurs', 'email');
@@ -1516,15 +1540,9 @@ class ConfigurationController extends Controller
         };
     }
 
-    protected function generatePassword(int $length = 10): string
+    protected function generatePassword(): string
     {
-        $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*';
-        $password = '';
-        for ($i = 0; $i < $length; $i++) {
-            $password .= $chars[random_int(0, strlen($chars) - 1)];
-        }
-
-        return $password;
+        return \App\Support\MotDePasse::temporaire();
     }
 
     protected function validateAcademie(Request $request, ?int $ignoreId = null): array

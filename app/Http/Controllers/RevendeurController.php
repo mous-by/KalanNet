@@ -86,7 +86,7 @@ class RevendeurController extends Controller
             'nomPrenom' => 'required|string|max:150',
             'email' => ['required', 'email', 'max:150', Rule::unique('utilisateurs', 'email')],
             'telephone' => ['required', 'string', 'max:20', new PaysPhone()],
-            'pwd' => 'required|string|min:4',
+            'pwd' => 'required|string|min:8',
             'numero_orange_wave' => 'nullable|string|max:30',
             'numero_mobicash' => 'nullable|string|max:30',
         ]);
@@ -103,6 +103,8 @@ class RevendeurController extends Controller
             'email' => $data['email'],
             'telephone' => Telephone::normalize($data['telephone']),
             'pwd' => Hash::make($data['pwd']),
+            // Mot de passe choisi par le SupAdmin : à remplacer à la 1re connexion.
+            'doit_changer_mdp' => true,
             'droit' => 'revendeur',
             'id_revendeur' => $revendeur->id,
             'statut' => 1,
@@ -126,7 +128,7 @@ class RevendeurController extends Controller
             'nomPrenom' => 'required|string|max:150',
             'email' => ['required', 'email', 'max:150', Rule::unique('utilisateurs', 'email')->ignore($revendeur->utilisateur?->idUtilisateur, 'idUtilisateur')],
             'telephone' => ['required', 'string', 'max:20', new PaysPhone()],
-            'pwd' => 'nullable|string|min:4',
+            'pwd' => 'nullable|string|min:8',
         ]);
 
         $revendeur->update([
@@ -143,6 +145,7 @@ class RevendeurController extends Controller
             ];
             if (!empty($data['pwd'])) {
                 $userPayload['pwd'] = Hash::make($data['pwd']);
+                $userPayload['doit_changer_mdp'] = true;
             }
             $revendeur->utilisateur->update($userPayload);
         }

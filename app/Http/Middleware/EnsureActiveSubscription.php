@@ -55,6 +55,8 @@ class EnsureActiveSubscription
             'login.post',
             'login.select-school',
             'logout',
+            'password.force',
+            'password.force.update',
             'dashboard',
             'abonnements.index',
             'abonnements.paiements.manual',

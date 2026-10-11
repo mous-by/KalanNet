@@ -29,6 +29,8 @@ return Application::configure(basePath: dirname(__DIR__))
             // et le SupAdmin serait lui aussi bloqué, empêchant toute désactivation.
             \App\Http\Middleware\CheckMaintenanceMode::class,
             \App\Http\Middleware\SetLocale::class,
+            // Mot de passe donné par un Admin : à remplacer avant tout le reste.
+            \App\Http\Middleware\EnsurePasswordChanged::class,
             \App\Http\Middleware\EnsureSchoolSelected::class,
             \App\Http\Middleware\EnsureActiveSubscription::class,
             \App\Http\Middleware\UpdateLastActivity::class,

@@ -8,6 +8,7 @@ import LanguageMenuButton from '@/components/LanguageMenuButton';
 import MenuDrawer from '@/components/MenuDrawer';
 import NotificationBell from '@/components/NotificationBell';
 import ThemeMenuButton from '@/components/ThemeMenuButton';
+import ChangerMotDePasseObligatoire from '@/components/ChangerMotDePasseObligatoire';
 import UserAvatar from '@/components/UserAvatar';
 import { useAuth } from '@/context/AuthContext';
 import { useLocale } from '@/context/LocaleContext';
@@ -24,6 +25,11 @@ export default function TabLayout() {
   // though some parent accounts carry stray eleves_dossier/parents_apercu
   // permissions — a raw, unfiltered classes or students list has no use for them.
   const hideForParent = user?.droit === 'parent';
+
+  // Mot de passe temporaire : rien d'autre tant qu'il n'est pas remplacé.
+  if (user?.doit_changer_mdp) {
+    return <ChangerMotDePasseObligatoire />;
+  }
 
   return (
     <View style={{ flex: 1 }}>

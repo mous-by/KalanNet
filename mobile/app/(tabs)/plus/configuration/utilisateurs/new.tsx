@@ -6,6 +6,7 @@ import { Text, TextInput } from 'react-native-paper';
 import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
+import MotDePasseTemporaireDialog from '@/components/MotDePasseTemporaireDialog';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
 import { useLocale } from '@/context/LocaleContext';
@@ -18,6 +19,9 @@ export default function NewUtilisateurScreen() {
   const [email, setEmail] = useState('');
   const [telephone, setTelephone] = useState('');
   const [genre, setGenre] = useState<string | null>(null);
+  // Affiché une seule fois après la création, puis on poursuit vers `apres`.
+  const [motDePasseTemporaire, setMotDePasseTemporaire] = useState<string | null>(null);
+  const [apres, setApres] = useState<(() => void) | null>(null);
   const [fonction, setFonction] = useState('');
   const [droit, setDroit] = useState<string | null>(user?.droit === 'SupAdmin' ? null : 'Gestionnaire');
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +52,7 @@ export default function NewUtilisateurScreen() {
     setError(null);
     setIsSubmitting(true);
     try {
-      const { data: created } = await api.post<{ idUtilisateur: number; droit: string }>('/configuration/utilisateurs', {
+      const { data: created } = await api.post<{ idUtilisateur: number; droit: string; mot_de_passe_temporaire?: string }>('/configuration/utilisateurs', {
         type_utilisateur: 1,
         nomPrenom: nomPrenom.trim(),
         email: email.trim(),
@@ -59,13 +63,19 @@ export default function NewUtilisateurScreen() {
       });
       setSuccessVisible(true);
       const canAssign = created.droit !== 'SupAdmin' && (user?.droit === 'SupAdmin' || created.droit !== 'Admin');
-      setTimeout(() => {
+      const suite = () => {
         if (canAssign) {
           router.replace(`/plus/configuration/utilisateurs/${created.idUtilisateur}/permissions`);
         } else {
           router.back();
         }
-      }, 900);
+      };
+      if (created.mot_de_passe_temporaire) {
+        setApres(() => suite);
+        setMotDePasseTemporaire(created.mot_de_passe_temporaire);
+      } else {
+        setTimeout(suite, 900);
+      }
     } catch (err) {
       setError(apiErrorMessage(err, t('configuration.uf_create_error_mobile')));
     } finally {
@@ -88,6 +98,14 @@ export default function NewUtilisateurScreen() {
       <SubmitButton label={t('configuration.uf_creer_utilisateur')} onPress={handleSubmit} loading={isSubmitting} />
 
       <SuccessSnackbar visible={successVisible} message={t('configuration.uf_create_success_mobile')} onDismiss={() => setSuccessVisible(false)} />
+      <MotDePasseTemporaireDialog
+        motDePasse={motDePasseTemporaire}
+        pour={nomPrenom.trim()}
+        onFermer={() => {
+          setMotDePasseTemporaire(null);
+          apres?.();
+        }}
+      />
     </ScrollView>
   );
 }

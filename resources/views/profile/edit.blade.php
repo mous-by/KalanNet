@@ -92,14 +92,14 @@
                         <div class="mb-3">
                             <label for="password" class="form-label fw-semibold">Nouveau mot de passe</label>
                             <div class="input-group">
-                                <input type="password" class="form-control" id="password" name="password" required minlength="4">
+                                <input type="password" class="form-control" id="password" name="password" required minlength="8">
                                 <button type="button" class="btn btn-outline-secondary js-voir-mdp" data-cible="password" title="Afficher le mot de passe" aria-label="Afficher le mot de passe"><i class="bi bi-eye"></i></button>
                             </div>
                         </div>
                         <div class="mb-3">
                             <label for="password_confirmation" class="form-label fw-semibold">Confirmer le nouveau mot de passe</label>
                             <div class="input-group">
-                                <input type="password" class="form-control" id="password_confirmation" name="password_confirmation" required minlength="4">
+                                <input type="password" class="form-control" id="password_confirmation" name="password_confirmation" required minlength="8">
                                 <button type="button" class="btn btn-outline-secondary js-voir-mdp" data-cible="password_confirmation" title="Afficher le mot de passe" aria-label="Afficher le mot de passe"><i class="bi bi-eye"></i></button>
                             </div>
                         </div>

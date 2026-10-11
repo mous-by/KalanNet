@@ -43,7 +43,7 @@ class EnseignantController extends WebEnseignantController
         $this->authorizeTeacherManagement('create');
         $data = $this->validateEnseignant($request);
         $data['avatar_enseignant'] = $this->storeAvatar($request);
-        $data['pwd'] = Hash::make('123456');
+        $data['pwd'] = Hash::make(\Illuminate\Support\Str::random(40));
         $data['id_ecole'] = session('idEcole') ?: request()->user()->idEcole;
         $data['matricule'] = ($data['matricule'] ?? null) ?: $this->generateMatricule($data);
 

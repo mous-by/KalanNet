@@ -55,7 +55,7 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label small fw-bold">{{ __('configuration.rv_mot_de_passe_initial') }}</label>
-                            <input name="pwd" type="password" class="form-control" minlength="4" required>
+                            <input name="pwd" type="password" class="form-control" minlength="8" required>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label small fw-bold">{{ __('configuration.rv_numero_orange_wave') }}</label>
@@ -244,7 +244,7 @@
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label small fw-bold">{{ __('configuration.rv_nouveau_mot_de_passe') }}</label>
-                                            <input name="pwd" type="password" class="form-control" minlength="4" placeholder="{{ __('configuration.rv_laisser_vide_ne_pas_changer') }}">
+                                            <input name="pwd" type="password" class="form-control" minlength="8" placeholder="{{ __('configuration.rv_laisser_vide_ne_pas_changer') }}">
                                         </div>
                                     </div>
                                 </div>

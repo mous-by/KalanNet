@@ -91,7 +91,7 @@ class ParentController extends WebParentController
                 'email_parent' => $data['email_parent'] ?? null,
                 'genre' => $data['genre'] ?? null,
                 'idEcole' => session('idEcole'),
-                'pwd' => Hash::make('123456'),
+                'pwd' => Hash::make(\Illuminate\Support\Str::random(40)),
             ]);
 
             $this->syncEleves($parent, $data);

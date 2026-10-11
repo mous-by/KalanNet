@@ -52,6 +52,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/profil', [\App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profil', [\App\Http\Controllers\ProfileController::class, 'updateInfo'])->name('profile.update');
     Route::put('/profil/mot-de-passe', [\App\Http\Controllers\ProfileController::class, 'updatePassword'])->name('profile.password.update');
+    Route::get('/mot-de-passe/changer', [\App\Http\Controllers\ProfileController::class, 'forcePassword'])->name('password.force');
+    Route::put('/mot-de-passe/changer', [\App\Http\Controllers\ProfileController::class, 'forcePasswordUpdate'])->name('password.force.update');
     Route::get('/documentation', function () {
         return view('documentation.index');
     })->name('documentation.index');
@@ -288,6 +290,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/configuration/utilisateurs', [ConfigurationController::class, 'storeUtilisateur'])->name('configuration.utilisateurs.store');
     Route::get('/configuration/utilisateurs/permissions/assigner', [ConfigurationController::class, 'assignUserPermissions'])->name('configuration.utilisateurs.permissions.assigner');
     Route::get('/configuration/utilisateurs/{id}/edit', [ConfigurationController::class, 'editUtilisateur'])->name('configuration.utilisateurs.edit');
+    Route::post('/configuration/utilisateurs/{id}/mot-de-passe', [ConfigurationController::class, 'reinitialiserMotDePasse'])->name('configuration.utilisateurs.mot-de-passe');
     Route::put('/configuration/utilisateurs/{id}', [ConfigurationController::class, 'updateUtilisateur'])->name('configuration.utilisateurs.update');
     Route::patch('/configuration/utilisateurs/{id}/status', [ConfigurationController::class, 'updateUserStatus'])->name('configuration.utilisateurs.status');
     Route::delete('/configuration/utilisateurs/{id}', [ConfigurationController::class, 'destroyUtilisateur'])->name('configuration.utilisateurs.destroy');
