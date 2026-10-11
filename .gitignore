@@ -25,3 +25,16 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Fichiers envoyés par les utilisateurs (photos, logos, reçus) : données
+# personnelles, jamais dans Git. Seuls les .gitkeep gardent les dossiers.
+/public/image_eleves/*
+/public/images_utilisateurs/*
+/public/images_enseignant/*
+/public/images_ecoles/*
+/public/uploads/*
+!/public/image_eleves/.gitkeep
+!/public/images_utilisateurs/.gitkeep
+!/public/images_enseignant/.gitkeep
+!/public/images_ecoles/.gitkeep
+!/public/uploads/.gitkeep
