@@ -43,6 +43,8 @@ export default function PlusLayout() {
       <Stack.Screen name="finances/new" options={{ title: t('finances.nouveau_paiement') }} />
       <Stack.Screen name="finances/classe" options={{ title: t('finances.paiement_par_classe') }} />
       <Stack.Screen name="finances/caisse" options={{ title: t('finances.caisse_title') }} />
+      <Stack.Screen name="finances/formules" options={{ title: 'Formules de paiement' }} />
+      <Stack.Screen name="finances/formule-nouvelle" options={{ title: 'Nouvelle formule' }} />
 
       <Stack.Screen name="salaires/index" options={{ title: 'Salaires' }} />
 

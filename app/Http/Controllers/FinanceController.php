@@ -222,7 +222,33 @@ class FinanceController extends Controller
     {
         $this->ensureAnyPermission(['finances_planifications_creation', 'paiements_faire']);
 
-        $data = $request->validate([
+        $data = $request->validate($this->reglesCreationPlanification());
+
+        $idEcole = (int) session('idEcole');
+        $isPublicSchool = $this->isPublicSchool(Ecole::find($idEcole));
+
+        try {
+            ['created' => $created, 'errors' => $errors] = $this->creerPlanifications($data, $idEcole);
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (\Throwable) {
+            return redirect()->route('finances.planifications.create')
+                ->withInput()
+                ->with('error', $isPublicSchool ? 'Impossible d’enregistrer la coopérative.' : 'Impossible d’enregistrer la planification du paiement.');
+        }
+
+        $message = $created > 0
+            ? ($isPublicSchool ? "{$created} coopérative(s) insérée(s) avec succès." : "{$created} planification(s) insérée(s) avec succès.")
+            : ($isPublicSchool ? 'Aucune coopérative insérée.' : 'Aucune planification insérée.');
+        return redirect()->route('finances.planifications.create')
+            ->with($created > 0 ? 'success' : 'error', $message)
+            ->with('planification_errors', $errors);
+    }
+
+    /** Règles de validation de la création des formules (web et mobile). */
+    protected function reglesCreationPlanification(): array
+    {
+        return [
             'id_classes' => 'required|array|min:1',
             'id_classes.*' => 'required|integer|exists:classe,id_classe',
             'id_annee' => 'required|exists:anneescolaire,id_anneeScolaire',
@@ -241,9 +267,16 @@ class FinanceController extends Controller
             'tranches.*.montant.*' => 'required|numeric|min:1',
             'tranches.*.date_limite' => 'nullable|array|max:' . PlanificationTranche::MAX_TRANCHES,
             'tranches.*.date_limite.*' => 'required|date',
-        ]);
+        ];
+    }
 
-        $idEcole = (int) session('idEcole');
+    /**
+     * Création des formules de paiement (web et mobile) : mêmes règles partout.
+     *
+     * @return array{created: int, errors: string[]}
+     */
+    protected function creerPlanifications(array $data, int $idEcole): array
+    {
         $isPublicSchool = $this->isPublicSchool(Ecole::find($idEcole));
         $classeIds = collect($data['id_classes'])->map(fn ($id) => (int) $id)->unique()->values();
         $allowedClasseIds = Classe::where('idEcole', $idEcole)
@@ -280,97 +313,84 @@ class FinanceController extends Controller
             }
         }
 
-        try {
-            DB::transaction(function () use ($data, $allowedClasseIds, $isPublicSchool, $tranchesByRow, $invalidRows, &$errors, &$created) {
-                $classNames = Classe::whereIn('id_classe', $allowedClasseIds)
-                    ->pluck('nom_classe', 'id_classe');
+        DB::transaction(function () use ($data, $allowedClasseIds, $isPublicSchool, $tranchesByRow, $invalidRows, &$errors, &$created) {
+            $classNames = Classe::whereIn('id_classe', $allowedClasseIds)
+                ->pluck('nom_classe', 'id_classe');
 
-                foreach ($allowedClasseIds as $classeId) {
-                    $existing = Planification::where('id_classe', $classeId)
-                        ->where('id_annee', $data['id_annee'])
-                        ->pluck('motif')
-                        ->map(fn ($motif) => strtolower(trim((string) $motif)))
-                        ->all();
-                    $requiredTypes = $isPublicSchool ? ['cooperative'] : ['annuelle', 'mensuelle', 'trimestrielle'];
+            foreach ($allowedClasseIds as $classeId) {
+                $existing = Planification::where('id_classe', $classeId)
+                    ->where('id_annee', $data['id_annee'])
+                    ->pluck('motif')
+                    ->map(fn ($motif) => strtolower(trim((string) $motif)))
+                    ->all();
+                $requiredTypes = $isPublicSchool ? ['cooperative'] : ['annuelle', 'mensuelle', 'trimestrielle'];
 
-                    if (empty(array_diff($requiredTypes, $existing)) && empty($tranchesByRow)) {
-                        $errors[] = $isPublicSchool
-                            ? "La coopérative existe déjà pour la classe {$classNames[$classeId]}."
-                            : "La classe {$classNames[$classeId]} est déjà planifiée avec les trois types.";
+                if (empty(array_diff($requiredTypes, $existing)) && empty($tranchesByRow)) {
+                    $errors[] = $isPublicSchool
+                        ? "La coopérative existe déjà pour la classe {$classNames[$classeId]}."
+                        : "La classe {$classNames[$classeId]} est déjà planifiée avec les trois types.";
+                    continue;
+                }
+
+                foreach ($data['motif'] as $index => $motif) {
+                    if (isset($invalidRows[$index])) {
                         continue;
                     }
 
-                    foreach ($data['motif'] as $index => $motif) {
-                        if (isset($invalidRows[$index])) {
-                            continue;
-                        }
+                    $tranche = $tranchesByRow[$index] ?? null;
+                    $motif = $isPublicSchool ? 'cooperative' : strtolower(trim((string) $motif));
+                    $dateDebut = $data['date_debut'][$index] ?? null;
+                    $dateFin = $data['date_fin'][$index] ?? null;
+                    $montant = $data['montant'][$index] ?? null;
 
-                        $tranche = $tranchesByRow[$index] ?? null;
-                        $motif = $isPublicSchool ? 'cooperative' : strtolower(trim((string) $motif));
-                        $dateDebut = $data['date_debut'][$index] ?? null;
-                        $dateFin = $data['date_fin'][$index] ?? null;
-                        $montant = $data['montant'][$index] ?? null;
-
-                        if ($tranche) {
-                            // Le total et la date de fin de la formule sont
-                            // toujours deduits des tranches (source de verite),
-                            // ce qui garde intact tout le code qui lit
-                            // montant_planification / date_fin.
-                            $motif = count($tranche['lignes']) . ' tranches';
-                            $dateFin = $tranche['date_fin'];
-                            $montant = $tranche['total'];
-                        }
-
-                        if (strtotime((string) $dateFin) <= strtotime((string) $dateDebut)) {
-                            $errors[] = 'La date de fin doit être strictement postérieure à la date de début à la ligne ' . ($index + 1) . '.';
-                            continue;
-                        }
-                        if (in_array($motif, $existing, true)) {
-                            $label = $isPublicSchool ? 'La coopérative' : "Le type de planification '{$motif}'";
-                            $errors[] = "{$label} existe déjà pour {$classNames[$classeId]} à la ligne " . ($index + 1) . '.';
-                            continue;
-                        }
-
-                        $planification = Planification::create([
-                            'motif' => $motif,
-                            'id_classe' => $classeId,
-                            'id_annee' => $data['id_annee'],
-                            'date_debut' => $dateDebut,
-                            'date_fin' => $dateFin,
-                            'montant_planification' => $montant,
-                        ]);
-
-                        if ($tranche) {
-                            foreach ($tranche['lignes'] as $position => $ligne) {
-                                PlanificationTranche::create([
-                                    'id_planification' => $planification->id_planification,
-                                    'numero' => $position + 1,
-                                    'libelle' => PlanificationTranche::libelleFor($position + 1),
-                                    'montant' => $ligne['montant'],
-                                    'date_limite' => $ligne['date_limite'],
-                                ]);
-                            }
-                        }
-
-                        $existing[] = $motif;
-                        $created++;
+                    if ($tranche) {
+                        // Le total et la date de fin de la formule sont
+                        // toujours deduits des tranches (source de verite),
+                        // ce qui garde intact tout le code qui lit
+                        // montant_planification / date_fin.
+                        $motif = count($tranche['lignes']) . ' tranches';
+                        $dateFin = $tranche['date_fin'];
+                        $montant = $tranche['total'];
                     }
-                }
-            });
-        } catch (ValidationException $exception) {
-            throw $exception;
-        } catch (\Throwable) {
-            return redirect()->route('finances.planifications.create')
-                ->withInput()
-                ->with('error', $isPublicSchool ? 'Impossible d’enregistrer la coopérative.' : 'Impossible d’enregistrer la planification du paiement.');
-        }
 
-        $message = $created > 0
-            ? ($isPublicSchool ? "{$created} coopérative(s) insérée(s) avec succès." : "{$created} planification(s) insérée(s) avec succès.")
-            : ($isPublicSchool ? 'Aucune coopérative insérée.' : 'Aucune planification insérée.');
-        return redirect()->route('finances.planifications.create')
-            ->with($created > 0 ? 'success' : 'error', $message)
-            ->with('planification_errors', $errors);
+                    if (strtotime((string) $dateFin) <= strtotime((string) $dateDebut)) {
+                        $errors[] = 'La date de fin doit être strictement postérieure à la date de début à la ligne ' . ($index + 1) . '.';
+                        continue;
+                    }
+                    if (in_array($motif, $existing, true)) {
+                        $label = $isPublicSchool ? 'La coopérative' : "Le type de planification '{$motif}'";
+                        $errors[] = "{$label} existe déjà pour {$classNames[$classeId]} à la ligne " . ($index + 1) . '.';
+                        continue;
+                    }
+
+                    $planification = Planification::create([
+                        'motif' => $motif,
+                        'id_classe' => $classeId,
+                        'id_annee' => $data['id_annee'],
+                        'date_debut' => $dateDebut,
+                        'date_fin' => $dateFin,
+                        'montant_planification' => $montant,
+                    ]);
+
+                    if ($tranche) {
+                        foreach ($tranche['lignes'] as $position => $ligne) {
+                            PlanificationTranche::create([
+                                'id_planification' => $planification->id_planification,
+                                'numero' => $position + 1,
+                                'libelle' => PlanificationTranche::libelleFor($position + 1),
+                                'montant' => $ligne['montant'],
+                                'date_limite' => $ligne['date_limite'],
+                            ]);
+                        }
+                    }
+
+                    $existing[] = $motif;
+                    $created++;
+                }
+            }
+        });
+
+        return ['created' => $created, 'errors' => $errors];
     }
 
     /**
@@ -425,6 +445,23 @@ class FinanceController extends Controller
             ->route('finances.planifications', ['id_classe' => $planification->id_classe, 'id_annee' => $planification->id_annee])
             ->with($type, $message);
 
+        try {
+            $this->modifierPlanification($planification, $request);
+        } catch (ValidationException $exception) {
+            return $listRoute('error', collect($exception->errors())->flatten()->first());
+        } catch (\Throwable) {
+            return $listRoute('error', 'Impossible de modifier cette formule de paiement.');
+        }
+
+        return $listRoute('success', $this->isPublicSchool(Ecole::find($idEcole)) ? 'Coopérative modifiée.' : 'Formule de paiement modifiée.');
+    }
+
+    /**
+     * Modification d'une formule (web et mobile) : dates, montant ou tranches,
+     * jamais sous ce qu'un élève a déjà versé. Lève une ValidationException.
+     */
+    protected function modifierPlanification(Planification $planification, Request $request): void
+    {
         $isTranche = $planification->tranches->isNotEmpty();
         $count = $planification->tranches->count();
 
@@ -443,64 +480,56 @@ class FinanceController extends Controller
             ];
         }
 
-        try {
-            $data = $request->validate($rules);
+        $data = $request->validate($rules);
 
-            $tranches = [];
-            if ($isTranche) {
-                $previousDate = null;
-                foreach (array_values($data['tranche_montant']) as $position => $montant) {
-                    $date = (string) array_values($data['tranche_date'])[$position];
-                    if ($previousDate !== null && strtotime($date) <= strtotime($previousDate)) {
-                        throw ValidationException::withMessages(['tranche_date' => 'Les dates limites des tranches doivent être strictement croissantes.']);
-                    }
-                    $tranches[] = ['montant' => round((float) $montant, 2), 'date_limite' => $date];
-                    $previousDate = $date;
+        $tranches = [];
+        if ($isTranche) {
+            $previousDate = null;
+            foreach (array_values($data['tranche_montant']) as $position => $montant) {
+                $date = (string) array_values($data['tranche_date'])[$position];
+                if ($previousDate !== null && strtotime($date) <= strtotime($previousDate)) {
+                    throw ValidationException::withMessages(['tranche_date' => 'Les dates limites des tranches doivent être strictement croissantes.']);
                 }
-                if (strtotime($previousDate) <= strtotime($data['date_debut'])) {
-                    throw ValidationException::withMessages(['date_debut' => 'La date de début doit être antérieure à la dernière tranche.']);
-                }
-
-                $data['date_fin'] = $previousDate;
-                $data['montant_planification'] = round(array_sum(array_column($tranches, 'montant')), 2);
+                $tranches[] = ['montant' => round((float) $montant, 2), 'date_limite' => $date];
+                $previousDate = $date;
+            }
+            if (strtotime($previousDate) <= strtotime($data['date_debut'])) {
+                throw ValidationException::withMessages(['date_debut' => 'La date de début doit être antérieure à la dernière tranche.']);
             }
 
-            // Ne jamais descendre sous ce qu'un eleve a deja verse sur cette formule.
-            $maxPaid = Paiement::where('id_planification', $planification->id_planification)
-                ->where(function ($q) {
-                    $q->whereNull('statut')->orWhere('statut', 'valide');
-                })
-                ->groupBy('id_eleve')
-                ->selectRaw('SUM(COALESCE(montant_paye, montant, 0)) as total')
-                ->get()
-                ->max('total') ?? 0;
-            if ((float) $data['montant_planification'] + 0.001 < (float) $maxPaid) {
-                throw ValidationException::withMessages([
-                    'montant_planification' => 'Le total ne peut pas être inférieur aux versements déjà enregistrés sur cette formule ('
-                        . number_format((float) $maxPaid, 0, ',', ' ') . ' F).',
-                ]);
-            }
-
-            DB::transaction(function () use ($planification, $data, $tranches, $isTranche) {
-                $planification->update([
-                    'date_debut' => $data['date_debut'],
-                    'date_fin' => $data['date_fin'],
-                    'montant_planification' => $data['montant_planification'],
-                ]);
-
-                if ($isTranche) {
-                    foreach ($planification->tranches as $position => $tranche) {
-                        $tranche->update($tranches[$position]);
-                    }
-                }
-            });
-        } catch (ValidationException $exception) {
-            return $listRoute('error', collect($exception->errors())->flatten()->first());
-        } catch (\Throwable) {
-            return $listRoute('error', 'Impossible de modifier cette formule de paiement.');
+            $data['date_fin'] = $previousDate;
+            $data['montant_planification'] = round(array_sum(array_column($tranches, 'montant')), 2);
         }
 
-        return $listRoute('success', $this->isPublicSchool(Ecole::find($idEcole)) ? 'Coopérative modifiée.' : 'Formule de paiement modifiée.');
+        // Ne jamais descendre sous ce qu'un eleve a deja verse sur cette formule.
+        $maxPaid = Paiement::where('id_planification', $planification->id_planification)
+            ->where(function ($q) {
+                $q->whereNull('statut')->orWhere('statut', 'valide');
+            })
+            ->groupBy('id_eleve')
+            ->selectRaw('SUM(COALESCE(montant_paye, montant, 0)) as total')
+            ->get()
+            ->max('total') ?? 0;
+        if ((float) $data['montant_planification'] + 0.001 < (float) $maxPaid) {
+            throw ValidationException::withMessages([
+                'montant_planification' => 'Le total ne peut pas être inférieur aux versements déjà enregistrés sur cette formule ('
+                    . number_format((float) $maxPaid, 0, ',', ' ') . ' F).',
+            ]);
+        }
+
+        DB::transaction(function () use ($planification, $data, $tranches, $isTranche) {
+            $planification->update([
+                'date_debut' => $data['date_debut'],
+                'date_fin' => $data['date_fin'],
+                'montant_planification' => $data['montant_planification'],
+            ]);
+
+            if ($isTranche) {
+                foreach ($planification->tranches as $position => $tranche) {
+                    $tranche->update($tranches[$position]);
+                }
+            }
+        });
     }
 
     public function deleteLegacyPlanification($id)

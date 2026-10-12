@@ -430,4 +430,100 @@ class FinanceController extends WebFinanceController
     }
 
     // contexteEleve() is already JSON in the web controller and reused unmodified via inheritance.
+
+    /**
+     * Formules de paiement (frais scolaires) d'une classe pour une année :
+     * même écran que Finances > Planifications sur le web.
+     */
+    public function planifications(Request $request)
+    {
+        $this->ensurePermission('finances_planifications_apercu');
+        $idEcole = (int) session('idEcole');
+        $user = $request->user();
+
+        $annees = AnneeScolaire::orderByDesc('id_anneeScolaire')->get();
+        $anneeCourante = $annees->first(fn ($a) => $a->date_debut && $a->date_fin
+            && now()->between(\Illuminate\Support\Carbon::parse($a->date_debut), \Illuminate\Support\Carbon::parse($a->date_fin)->endOfDay()));
+
+        $planifications = collect();
+        if ($request->filled('id_classe') && $request->filled('id_annee')) {
+            Classe::where('idEcole', $idEcole)->findOrFail($request->integer('id_classe'));
+            $planifications = \App\Models\Planification::with('tranches')
+                ->where('id_classe', $request->integer('id_classe'))
+                ->where('id_annee', $request->integer('id_annee'))
+                ->orderBy('motif')
+                ->get();
+        }
+        $lies = $planifications->isEmpty() ? collect() : DB::table('ligne_inscription')
+            ->whereIn('id_planification', $planifications->pluck('id_planification'))
+            ->selectRaw('id_planification, COUNT(*) as total')->groupBy('id_planification')->pluck('total', 'id_planification');
+
+        $peut = fn (string $permission) => $user->droit === 'SupAdmin' || $user->userHasAnyPermission([$permission, 'paiements_faire']);
+
+        return response()->json([
+            'classes' => Classe::where('idEcole', $idEcole)->orderBy('nom_classe')->get(['id_classe', 'nom_classe']),
+            'annees' => $annees->map(fn ($a) => ['id' => $a->id_anneeScolaire, 'annee' => $a->annee, 'date_debut' => $a->date_debut, 'date_fin' => $a->date_fin]),
+            'annee_courante' => $anneeCourante?->id_anneeScolaire,
+            'est_publique' => $this->isPublicSchool(Ecole::find($idEcole)),
+            'tranches_min' => \App\Models\PlanificationTranche::MIN_TRANCHES,
+            'tranches_max' => \App\Models\PlanificationTranche::MAX_TRANCHES,
+            'peut' => [
+                'creer' => $peut('finances_planifications_creation'),
+                'modifier' => $peut('finances_planifications_modification'),
+                'supprimer' => $peut('finances_planifications_supprimer'),
+            ],
+            'planifications' => $planifications->map(fn ($p) => [
+                'id' => $p->id_planification,
+                'motif' => $p->motif,
+                'date_debut' => $p->date_debut,
+                'date_fin' => $p->date_fin,
+                'montant' => (float) $p->montant_planification,
+                'eleves_lies' => (int) ($lies[$p->id_planification] ?? 0),
+                'tranches' => $p->tranches->map(fn ($t) => ['libelle' => $t->libelle, 'montant' => (float) $t->montant, 'date_limite' => \Illuminate\Support\Carbon::parse($t->date_limite)->toDateString()]),
+            ])->values(),
+        ]);
+    }
+
+    public function storePlanification(Request $request)
+    {
+        $this->ensureAnyPermission(['finances_planifications_creation', 'paiements_faire']);
+        $data = $request->validate($this->reglesCreationPlanification());
+
+        ['created' => $created, 'errors' => $errors] = $this->creerPlanifications($data, (int) session('idEcole'));
+
+        return response()->json([
+            'created' => $created,
+            'errors' => $errors,
+            'message' => $created > 0 ? "{$created} formule(s) de paiement enregistrée(s)." : 'Aucune formule enregistrée.',
+        ], $created > 0 ? 201 : 422);
+    }
+
+    public function updatePlanification(Request $request, int $id)
+    {
+        $this->ensureAnyPermission(['finances_planifications_modification', 'paiements_faire']);
+        $planification = \App\Models\Planification::with('tranches')->findOrFail($id);
+        Classe::where('idEcole', session('idEcole'))->findOrFail($planification->id_classe);
+
+        $this->modifierPlanification($planification, $request);
+
+        return response()->json(['message' => 'Formule de paiement modifiée.']);
+    }
+
+    public function destroyPlanification(int $id)
+    {
+        $this->ensureAnyPermission(['finances_planifications_supprimer', 'paiements_faire']);
+        $planification = \App\Models\Planification::findOrFail($id);
+        Classe::where('idEcole', session('idEcole'))->findOrFail($planification->id_classe);
+
+        if (DB::table('ligne_inscription')->where('id_planification', $planification->id_planification)->exists()) {
+            return response()->json(['message' => 'Impossible de supprimer : des élèves sont liés à cette formule.'], 422);
+        }
+
+        DB::transaction(function () use ($planification) {
+            \App\Models\PlanificationTranche::where('id_planification', $planification->id_planification)->delete();
+            $planification->delete();
+        });
+
+        return response()->json(['message' => 'Formule de paiement supprimée.']);
+    }
 }

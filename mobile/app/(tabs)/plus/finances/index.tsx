@@ -6,6 +6,7 @@ import PaginatedList from '@/components/PaginatedList';
 import { useAuth } from '@/context/AuthContext';
 import { useLocale } from '@/context/LocaleContext';
 import { formatMontant } from '@/lib/currency';
+import { hasPermission } from '@/lib/permissions';
 import { usePaginatedApi } from '@/lib/useApi';
 import { Classe, Eleve } from '@/types/api';
 
@@ -33,6 +34,11 @@ export default function FinancesScreen() {
         <Button mode="outlined" onPress={() => router.push('/plus/finances/caisse')}>
           {t('finances.voir_caisse')}
         </Button>
+        {hasPermission(user, 'finances_planifications_apercu') ? (
+          <Button mode="outlined" icon="cash-plus" onPress={() => router.push('/plus/finances/formules')}>
+            Formules de paiement (frais scolaires)
+          </Button>
+        ) : null}
       </View>
       <PaginatedList
         items={list.items}

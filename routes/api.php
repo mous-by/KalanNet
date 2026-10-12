@@ -138,6 +138,10 @@ Route::prefix('v1')->group(function () {
         Route::put('/programmes/{id}', [ProgrammeController::class, 'update']);
         Route::delete('/programmes/{id}', [ProgrammeController::class, 'destroy']);
 
+        Route::get('/finances/planifications', [FinanceController::class, 'planifications']);
+        Route::post('/finances/planifications', [FinanceController::class, 'storePlanification']);
+        Route::put('/finances/planifications/{id}', [FinanceController::class, 'updatePlanification']);
+        Route::delete('/finances/planifications/{id}', [FinanceController::class, 'destroyPlanification']);
         Route::get('/finances/paiements', [FinanceController::class, 'paiements']);
         Route::post('/finances/paiements', [FinanceController::class, 'storePaiement']);
         Route::post('/finances/paiements/groupes', [FinanceController::class, 'storePaiementsGroupes']);
