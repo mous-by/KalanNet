@@ -341,14 +341,18 @@
 
     <h4 id="doc-12" class="fw-bold text-uppercase mt-5 mb-3 border-bottom pb-2">11. Espaces DAE et DCAP</h4>
     <p>Les directeurs d'académie (<strong>DAE</strong>) et de CAP (<strong>DCAP</strong>) ont leur propre espace,
-    qui s'ouvre dès la connexion. Ils voient l'ensemble de leur territoire, sans accès au détail interne des
-    écoles (notes, caisse…).</p>
+    qui s'ouvre dès la connexion. Leur menu se limite à : Tableau de bord, <strong>Effectifs</strong>,
+    <strong>Évaluations communes</strong> et Documentation. Ils consultent leur territoire mais n'interviennent
+    jamais dans la gestion d'une école : ils ne peuvent ni inscrire, ni modifier, ni supprimer d'élève,
+    d'enseignant ou de paiement.</p>
     <ul>
         <li><strong>Espace DAE</strong> : nombre de CAP, d'écoles (publiques et privées), d'enseignants, d'élèves
         et de classes de l'académie, et un tableau <strong>« Répartition par CAP »</strong> (directeur, écoles,
         enseignants, élèves de chaque CAP).</li>
         <li><strong>Espace DCAP</strong> : les mêmes chiffres pour le CAP, et la liste de ses écoles avec leur
         type, leur statut, leurs contacts et leurs effectifs.</li>
+        <li><strong>Effectifs</strong> : pour chaque école, le nombre d'élèves par classe (filles, garçons, total) et
+        le nombre d'enseignants (femmes, hommes). Le DAE peut filtrer par CAP. Ces chiffres sont en lecture seule.</li>
         <li><strong>Annonces</strong> : le DAE et le DCAP publient des annonces à leur territoire (bouton
         « Publier une annonce »), avec une pièce jointe si besoin, en choisissant les destinataires :
         administrateurs, gestionnaires, enseignants, parents, ou tout le monde. Le DAE peut aussi écrire aux seuls

@@ -103,7 +103,10 @@
         @auth
             @include('partials.footer')
             @include('annonces._unread-modal')
-            @include('components.assistant')
+            {{-- KalanBot agit sur les données d'une école : pas pour le DAE / DCAP. --}}
+            @unless(in_array(Auth::user()?->droit, ['DAE', 'DCAP'], true))
+                @include('components.assistant')
+            @endunless
             @include('components.pwa-install-modal')
         @endauth
 

@@ -31,6 +31,8 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\SetLocale::class,
             // Mot de passe donné par un Admin : à remplacer avant tout le reste.
             \App\Http\Middleware\EnsurePasswordChanged::class,
+            // DAE / DCAP : uniquement leur espace de supervision (lecture).
+            \App\Http\Middleware\RestreindreSuperviseurs::class,
             \App\Http\Middleware\EnsureSchoolSelected::class,
             \App\Http\Middleware\EnsureActiveSubscription::class,
             \App\Http\Middleware\UpdateLastActivity::class,

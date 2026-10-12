@@ -50,6 +50,31 @@ class TerritoireController extends Controller
         abort(403);
     }
 
+    /** Effectifs (lecture seule) : élèves par classe et enseignants, école par école. */
+    public function effectifs(Request $request)
+    {
+        $user = Auth::user();
+        abort_unless(($user->droit === 'DAE' && $user->id_academie) || ($user->droit === 'DCAP' && $user->id_cap), 403);
+
+        $caps = $user->droit === 'DAE'
+            ? DB::table('cap')->where('id_academie', $user->id_academie)->orderBy('nom_cap')->get(['id_cap', 'nom_cap'])
+            : collect();
+        $capChoisi = $user->droit === 'DAE' ? $request->integer('cap') ?: null : (int) $user->id_cap;
+        $recherche = trim((string) $request->query('recherche', ''));
+
+        $ecoles = DB::table('ecole as e')
+            ->leftJoin('cap as c', 'c.id_cap', '=', 'e.id_cap')
+            ->when($user->droit === 'DAE', fn ($q) => $q->where('e.id_academie', $user->id_academie))
+            ->when($capChoisi, fn ($q) => $q->where('e.id_cap', $capChoisi))
+            ->when($recherche !== '', fn ($q) => $q->where('e.nomEcole', 'like', '%'.$recherche.'%'))
+            ->orderBy('c.nom_cap')->orderBy('e.nomEcole')
+            ->get(['e.idEcole', 'e.nomEcole', 'e.statut', 'c.nom_cap']);
+
+        $effectifs = StatistiquesTerritoire::effectifs($ecoles);
+
+        return view('territoire.effectifs', compact('effectifs', 'caps', 'capChoisi', 'recherche'));
+    }
+
     public function storeAnnonce(Request $request)
     {
         $user = Auth::user();
