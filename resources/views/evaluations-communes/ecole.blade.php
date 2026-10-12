@@ -32,6 +32,7 @@
                         <tr>
                             <td class="fw-semibold">{{ $evaluation->titre }}<div class="small text-muted fw-normal">{{ $evaluation->origine === 'cap' ? 'Proposée par le CAP' : "Proposée par l'académie" }}</div>
                                 @if($evaluation->consignes)<div class="small fw-normal mt-1" style="white-space: pre-line;">{{ $evaluation->consignes }}</div>@endif
+                                @if(!empty($evaluation->consignes_cap))<div class="small fw-normal mt-1" style="white-space: pre-line;"><span class="text-muted">Consignes du CAP :</span> {{ $evaluation->consignes_cap }}</div>@endif
                             </td>
                             <td>{{ $evaluation->niveau_libelle ?? 'Tous niveaux' }}<div class="small text-muted">{{ $evaluation->matiere_libelle }}</div></td>
                             <td>{{ \Carbon\Carbon::parse($evaluation->debut_at)->format('d/m/Y H:i') }}<div class="small text-muted">{{ $evaluation->duree_minutes }} min</div></td>

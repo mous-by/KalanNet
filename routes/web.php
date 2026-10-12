@@ -212,6 +212,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/territoire/evaluations/{id}', [\App\Http\Controllers\EvaluationCommuneController::class, 'show'])->name('territoire.evaluations.show');
     Route::post('/territoire/evaluations/{id}/corrige', [\App\Http\Controllers\EvaluationCommuneController::class, 'storeCorrige'])->name('territoire.evaluations.corrige');
     Route::post('/territoire/evaluations/{id}/annuler', [\App\Http\Controllers\EvaluationCommuneController::class, 'annuler'])->name('territoire.evaluations.annuler');
+    Route::post('/territoire/evaluations/{id}/publier', [\App\Http\Controllers\EvaluationCommuneController::class, 'publierAuxEcoles'])->name('territoire.evaluations.publier');
     Route::get('/territoire/evaluations/{id}/{piece}', [\App\Http\Controllers\EvaluationCommuneController::class, 'telechargerTerritoire'])->whereIn('piece', ['sujet', 'corrige'])->name('territoire.evaluations.fichier');
     Route::get('/evaluations-communes', [\App\Http\Controllers\EvaluationCommuneController::class, 'ecoleIndex'])->name('evaluations-communes.index');
     Route::get('/evaluations-communes/{id}/{piece}', [\App\Http\Controllers\EvaluationCommuneController::class, 'telechargerEcole'])->whereIn('piece', ['sujet', 'corrige'])->name('evaluations-communes.fichier');

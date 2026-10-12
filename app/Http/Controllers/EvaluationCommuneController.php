@@ -12,9 +12,10 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 /**
- * Évaluations communes (étape 1) : le DAE ou le DCAP crée l'évaluation et
- * dépose le sujet ; les écoles visées le téléchargent à partir de l'heure de
- * libération ; le corrigé leur est ouvert après l'épreuve.
+ * Évaluations communes (étape 1). Fondamental : DAE → CAP → écoles (le DCAP
+ * publie à ses écoles). Secondaire : DAE → établissements directement. Les
+ * écoles téléchargent le sujet à l'heure de libération, le corrigé après
+ * l'épreuve.
  */
 class EvaluationCommuneController extends Controller
 {
@@ -28,7 +29,11 @@ class EvaluationCommuneController extends Controller
 
         return view('evaluations-communes.territoire.index', [
             'evaluations' => EvaluationsCommunes::pourTerritoire($user),
-            'niveaux' => DB::table('classes_officielles')->orderBy('ordre_enseignement')->orderBy('id_classe_officielle')->get(['id_classe_officielle', 'nom_classe_officielle', 'ordre_enseignement']),
+            // Le DCAP ne gère que le fondamental ; le DAE, tous les ordres.
+            'niveaux' => DB::table('classes_officielles')
+                ->when($user->droit === 'DCAP', fn ($q) => $q->whereIn('ordre_enseignement', EvaluationsCommunes::ORDRES_FONDAMENTAL))
+                ->orderBy('ordre_enseignement')->orderBy('id_classe_officielle')
+                ->get(['id_classe_officielle', 'nom_classe_officielle', 'ordre_enseignement']),
             'matieres' => DB::table('matiere')->whereNull('id_ecole')->orderBy('nom_matiere')->get(['id_matiere', 'nom_matiere']),
             'caps' => $user->droit === 'DAE' ? DB::table('cap')->where('id_academie', $user->id_academie)->orderBy('nom_cap')->get(['id_cap', 'nom_cap']) : collect(),
         ]);
@@ -39,7 +44,7 @@ class EvaluationCommuneController extends Controller
         $user = $this->superviseur();
         $data = $request->validate([
             'titre' => 'required|string|max:255',
-            'id_classe_officielle' => 'nullable|integer|exists:classes_officielles,id_classe_officielle',
+            'id_classe_officielle' => 'required|integer|exists:classes_officielles,id_classe_officielle',
             'id_matiere' => 'nullable|integer|exists:matiere,id_matiere',
             'debut_at' => 'required|date|after:now',
             'duree_minutes' => 'required|integer|min:10|max:600',
@@ -52,20 +57,36 @@ class EvaluationCommuneController extends Controller
         ], [
             'debut_at.after' => "La date de l'épreuve doit être dans le futur.",
             'sujet.required' => 'Le sujet est obligatoire.',
+            'id_classe_officielle.required' => "Choisissez le niveau : il détermine si l'évaluation passe par les CAP (fondamental) ou va directement aux établissements (secondaire).",
         ]);
+
+        $ordre = DB::table('classes_officielles')->where('id_classe_officielle', $data['id_classe_officielle'])->value('ordre_enseignement');
+        $fondamental = in_array($ordre, EvaluationsCommunes::ORDRES_FONDAMENTAL, true);
+        if ($user->droit === 'DCAP' && !$fondamental) {
+            return back()->withInput()->withErrors(['id_classe_officielle' => "Un CAP n'organise que des évaluations du fondamental."]);
+        }
+        $capsVises = [];
+        if ($user->droit === 'DAE' && $fondamental) {
+            // Fondamental : adressé aux CAP cochés, ou à tous les CAP de l'académie.
+            $capsVises = array_values(array_unique($data['caps'] ?? [])) ?: DB::table('cap')->where('id_academie', $user->id_academie)->pluck('id_cap')->all();
+            if (!$capsVises) {
+                return back()->withInput()->withErrors(['caps' => "Votre académie n'a aucun CAP enregistré."]);
+            }
+        }
 
         $debut = Carbon::parse($data['debut_at']);
         $sujet = $this->ranger($request->file('sujet'));
         $corrige = $request->hasFile('corrige') ? $this->ranger($request->file('corrige')) : null;
 
-        $id = DB::transaction(function () use ($user, $data, $debut, $sujet, $corrige) {
+        $id = DB::transaction(function () use ($user, $data, $debut, $sujet, $corrige, $ordre, $capsVises) {
             $id = DB::table('evaluations_communes')->insertGetId([
                 'origine' => $user->droit === 'DAE' ? 'academie' : 'cap',
                 'id_academie' => $user->droit === 'DAE' ? $user->id_academie : DB::table('cap')->where('id_cap', $user->id_cap)->value('id_academie'),
                 'id_cap' => $user->droit === 'DCAP' ? $user->id_cap : null,
                 'id_utilisateur' => $user->idUtilisateur,
                 'titre' => $data['titre'],
-                'id_classe_officielle' => $data['id_classe_officielle'] ?? null,
+                'id_classe_officielle' => $data['id_classe_officielle'],
+                'ordre_enseignement' => $ordre,
                 'niveau_libelle' => isset($data['id_classe_officielle']) ? trim((string) DB::table('classes_officielles')->where('id_classe_officielle', $data['id_classe_officielle'])->value('nom_classe_officielle')) : null,
                 'id_matiere' => $data['id_matiere'] ?? null,
                 'matiere_libelle' => isset($data['id_matiere']) ? DB::table('matiere')->where('id_matiere', $data['id_matiere'])->value('nom_matiere') : null,
@@ -82,18 +103,22 @@ class EvaluationCommuneController extends Controller
                 'updated_at' => now(),
             ]);
 
-            if ($user->droit === 'DAE') {
-                foreach (array_unique($data['caps'] ?? []) as $idCap) {
-                    DB::table('evaluation_commune_caps')->insert(['id_evaluation' => $id, 'id_cap' => $idCap]);
-                }
+            foreach ($capsVises as $idCap) {
+                DB::table('evaluation_commune_caps')->insert(['id_evaluation' => $id, 'id_cap' => $idCap]);
             }
 
-            $this->annoncer($user, $id, $data['titre'], $debut, $data['caps'] ?? []);
+            $this->annoncer($user, $data['titre'], $debut, $capsVises);
 
             return $id;
         });
 
-        return redirect()->route('territoire.evaluations.show', $id)->with('success', 'Évaluation commune publiée. Les écoles visées ont été prévenues.');
+        $message = match (true) {
+            $user->droit === 'DCAP' => 'Évaluation publiée à vos écoles.',
+            (bool) $capsVises => 'Évaluation adressée à '.count($capsVises).' CAP. Chaque DCAP la publiera à ses écoles.',
+            default => "Évaluation envoyée aux établissements du secondaire de l'académie.",
+        };
+
+        return redirect()->route('territoire.evaluations.show', $id)->with('success', $message);
     }
 
     public function show(int $id)
@@ -105,9 +130,30 @@ class EvaluationCommuneController extends Controller
         return view('evaluations-communes.territoire.show', [
             'evaluation' => $evaluation,
             'gerable' => EvaluationsCommunes::peutGerer($user, $evaluation),
+            'aPublier' => EvaluationsCommunes::aPublierParDcap($user, $evaluation),
+            'passeParCap' => EvaluationsCommunes::passeParCap($evaluation),
+            // Le DAE suit, CAP par CAP, qui a publié à ses écoles.
+            'caps' => $user->droit === 'DAE' && $evaluation->origine === 'academie' ? EvaluationsCommunes::caps($evaluation) : collect(),
             // Un DCAP qui suit une évaluation de l'académie ne voit que ses écoles.
             'ecoles' => EvaluationsCommunes::suivi($evaluation, $user->droit === 'DCAP' && $evaluation->origine === 'academie' ? (int) $user->id_cap : null),
         ]);
+    }
+
+    /** Le DCAP publie à ses écoles une évaluation du fondamental reçue de l'académie. */
+    public function publierAuxEcoles(Request $request, int $id)
+    {
+        $user = $this->superviseur();
+        $evaluation = EvaluationsCommunes::pourTerritoire($user)->firstWhere('id', $id);
+        abort_unless($evaluation && EvaluationsCommunes::aPublierParDcap($user, $evaluation), 403);
+        $data = $request->validate(['consignes_cap' => 'nullable|string|max:5000']);
+
+        DB::transaction(function () use ($user, $evaluation, $data) {
+            DB::table('evaluation_commune_caps')->where('id_evaluation', $evaluation->id)->where('id_cap', $user->id_cap)
+                ->update(['relayee_at' => now(), 'relayee_par' => $user->idUtilisateur, 'consignes_cap' => $data['consignes_cap'] ?? null]);
+            DB::table('annonces_cap')->insert($this->annonce($user, $evaluation->titre, Carbon::parse($evaluation->debut_at)) + ['id_cap' => $user->id_cap]);
+        });
+
+        return back()->with('success', 'Évaluation publiée à vos écoles. Leurs Admin ont été prévenus.');
     }
 
     public function storeCorrige(Request $request, int $id)
@@ -167,7 +213,7 @@ class EvaluationCommuneController extends Controller
             return back()->with('error', "Le corrigé n'est pas encore disponible.");
         }
 
-        EvaluationsCommunes::accuser($evaluation->id, $idEcole, (int) Auth::id(), true);
+        EvaluationsCommunes::accuser($evaluation->id, $idEcole, (int) Auth::id());
 
         return $this->servir($evaluation, $piece);
     }
@@ -220,10 +266,39 @@ class EvaluationCommuneController extends Controller
         return Storage::download($chemin, $piece === 'sujet' ? $evaluation->sujet_nom : $evaluation->corrige_nom);
     }
 
-    /** Prévient les Admin des écoles visées par une annonce (académie, CAP choisis, ou CAP). */
-    private function annoncer($user, int $id, string $titre, Carbon $debut, array $caps): void
+    /**
+     * Prévient les bonnes personnes : DCAP → Admin de ses écoles ; DAE, fondamental →
+     * les DCAP de l'académie ; DAE, secondaire → les Admin de l'académie.
+     */
+    private function annoncer($user, string $titre, Carbon $debut, array $capsVises): void
     {
-        $annonce = [
+        if ($user->droit === 'DCAP') {
+            DB::table('annonces_cap')->insert($this->annonce($user, $titre, $debut) + ['id_cap' => $user->id_cap]);
+
+            return;
+        }
+
+        if ($capsVises) {
+            DB::table('annonces_academie')->insert([
+                'id_academie' => $user->id_academie,
+                'titre' => 'Évaluation commune à publier : '.$titre,
+                'contenu' => "Épreuve le {$debut->format('d/m/Y à H:i')}. Retrouvez-la dans « Évaluations communes » et publiez-la à vos écoles.",
+                'public_cible' => 'dcap',
+                'id_utilisateur' => $user->idUtilisateur,
+                'date_publication' => now(),
+                'statut_annonce' => 'active',
+                'type_annonce' => 'pedagogique',
+            ]);
+
+            return;
+        }
+
+        DB::table('annonces_academie')->insert($this->annonce($user, $titre, $debut) + ['id_academie' => $user->id_academie]);
+    }
+
+    private function annonce($user, string $titre, Carbon $debut): array
+    {
+        return [
             'titre' => 'Évaluation commune : '.$titre,
             'contenu' => "Épreuve le {$debut->format('d/m/Y à H:i')}. Le sujet sera téléchargeable dans « Évaluations communes » à l'heure de libération, par l'Admin ou le Gestionnaire de l'école.",
             'public_cible' => 'admin',
@@ -232,15 +307,5 @@ class EvaluationCommuneController extends Controller
             'statut_annonce' => 'active',
             'type_annonce' => 'pedagogique',
         ];
-
-        if ($user->droit === 'DCAP') {
-            DB::table('annonces_cap')->insert($annonce + ['id_cap' => $user->id_cap]);
-        } elseif ($caps) {
-            foreach (array_unique($caps) as $idCap) {
-                DB::table('annonces_cap')->insert($annonce + ['id_cap' => $idCap]);
-            }
-        } else {
-            DB::table('annonces_academie')->insert($annonce + ['id_academie' => $user->id_academie]);
-        }
     }
 }

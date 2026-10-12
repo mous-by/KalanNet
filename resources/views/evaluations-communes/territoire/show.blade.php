@@ -57,6 +57,55 @@
     </div>
 </div>
 
+{{-- DCAP : évaluation du fondamental reçue de l'académie, à publier à ses écoles. --}}
+@if($aPublier)
+    <div class="card shadow-sm mb-4 border-warning">
+        <div class="card-body">
+            <h5 class="fw-bold"><i class="bi bi-send me-2"></i>Publier à mes écoles</h5>
+            <p class="small text-muted">Cette évaluation vous est adressée par l'académie. Vos écoles ne la verront qu'après votre publication.</p>
+            <form action="{{ route('territoire.evaluations.publier', $evaluation->id) }}" method="POST">
+                @csrf
+                <label class="form-label fw-semibold" for="consignes_cap">Consignes du CAP (facultatif)</label>
+                <textarea id="consignes_cap" name="consignes_cap" rows="3" class="form-control mb-3" maxlength="5000" placeholder="Ex. Centres de composition, horaires de remise des copies…"></textarea>
+                <button type="submit" class="btn text-white" style="background-color: var(--theme-accent);"><i class="bi bi-send me-1"></i>Publier à mes écoles</button>
+            </form>
+        </div>
+    </div>
+@elseif(Auth::user()->droit === 'DCAP' && $evaluation->origine === 'academie' && $evaluation->relayee_at)
+    <div class="alert alert-success">Publiée à vos écoles le {{ \Carbon\Carbon::parse($evaluation->relayee_at)->format('d/m/Y à H:i') }}.@if($evaluation->consignes_cap)<div class="small mt-1" style="white-space: pre-line;">Vos consignes : {{ $evaluation->consignes_cap }}</div>@endif</div>
+@endif
+
+{{-- DAE, fondamental : publication CAP par CAP. --}}
+@if($caps->isNotEmpty())
+    <div class="card theme-card shadow-sm mb-4">
+        <div class="card-header theme-header d-flex justify-content-between flex-wrap gap-2">
+            <h5 class="mb-0 fw-bold"><i class="bi bi-diagram-3 me-2"></i>Publication par les CAP</h5>
+            <span class="fw-semibold">{{ $caps->whereNotNull('relayee_at')->count() }} / {{ $caps->count() }} CAP ont publié</span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead class="table-light"><tr><th>CAP</th><th>Publiée à ses écoles</th></tr></thead>
+                    <tbody>
+                        @foreach($caps as $cap)
+                            <tr>
+                                <td class="fw-semibold">{{ $cap->nom_cap }}</td>
+                                <td>
+                                    @if($cap->relayee_at)
+                                        <span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>{{ \Carbon\Carbon::parse($cap->relayee_at)->format('d/m/Y H:i') }}</span>@if($cap->relayee_par)<span class="small text-muted"> · {{ $cap->relayee_par }}</span>@endif
+                                    @else
+                                        <span class="text-muted">Pas encore</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+@endif
+
 <div class="card theme-card shadow-sm">
     <div class="card-header theme-header d-flex justify-content-between flex-wrap gap-2">
         <h5 class="mb-0 fw-bold"><i class="bi bi-check2-square me-2"></i>Réception par les écoles</h5>
@@ -88,7 +137,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="4" class="text-center text-muted py-3">Aucune école dans cette portée.</td></tr>
+                        <tr><td colspan="4" class="text-center text-muted py-3">{{ $passeParCap && $evaluation->origine === 'academie' ? "Aucune école pour l'instant : les écoles apparaissent quand leur CAP publie l'évaluation." : 'Aucune école dans cette portée.' }}</td></tr>
                     @endforelse
                 </tbody>
             </table>

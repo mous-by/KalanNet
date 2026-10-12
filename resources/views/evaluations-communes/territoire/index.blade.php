@@ -32,7 +32,17 @@
                 <tbody>
                     @forelse($evaluations as $evaluation)
                         <tr>
-                            <td class="fw-semibold">{{ $evaluation->titre }}@if($evaluation->origine === 'academie' && Auth::user()->droit === 'DCAP')<div class="small text-muted fw-normal">Proposée par l'académie</div>@endif</td>
+                            <td class="fw-semibold">{{ $evaluation->titre }}
+                                @if($evaluation->origine === 'academie' && Auth::user()->droit === 'DCAP')
+                                    <div class="small fw-normal">
+                                        @if($evaluation->relayee_at)
+                                            <span class="text-success"><i class="bi bi-check-circle-fill"></i> Publiée à vos écoles</span>
+                                        @elseif($evaluation->statut === 'publiee')
+                                            <span class="badge bg-warning text-dark">Reçue de l'académie · à publier</span>
+                                        @endif
+                                    </div>
+                                @endif
+                            </td>
                             <td>{{ $evaluation->niveau_libelle ?? '—' }}<div class="small text-muted">{{ $evaluation->matiere_libelle }}</div></td>
                             <td>{{ \Carbon\Carbon::parse($evaluation->debut_at)->format('d/m/Y H:i') }}<div class="small text-muted">{{ $evaluation->duree_minutes }} min</div></td>
                             <td class="small">{{ $evaluation->portee }}</td>
@@ -62,13 +72,16 @@
                     <input type="text" id="ec_titre" name="titre" class="form-control" maxlength="255" required value="{{ old('titre') }}" placeholder="Ex. Composition harmonisée du 1er trimestre">
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label fw-semibold" for="ec_niveau">Niveau</label>
-                    <select id="ec_niveau" name="id_classe_officielle" class="form-select">
-                        <option value="">Tous niveaux</option>
+                    <label class="form-label fw-semibold" for="ec_niveau">Niveau <span class="text-danger">*</span></label>
+                    <select id="ec_niveau" name="id_classe_officielle" class="form-select" required>
+                        <option value="">Choisir le niveau</option>
                         @foreach($niveaux as $niveau)
-                            <option value="{{ $niveau->id_classe_officielle }}" @selected(old('id_classe_officielle') == $niveau->id_classe_officielle)>{{ trim($niveau->nom_classe_officielle) }}</option>
+                            <option value="{{ $niveau->id_classe_officielle }}" data-fondamental="{{ in_array($niveau->ordre_enseignement, ['fondamentale1', 'fondamentale2'], true) ? '1' : '0' }}" @selected(old('id_classe_officielle') == $niveau->id_classe_officielle)>{{ trim($niveau->nom_classe_officielle) }}</option>
                         @endforeach
                     </select>
+                    @if(Auth::user()->droit === 'DAE')
+                        <div class="form-text" id="ec_circuit">Fondamental : envoyé aux CAP, qui le publient à leurs écoles. Secondaire : envoyé directement aux établissements.</div>
+                    @endif
                 </div>
                 <div class="col-md-6">
                     <label class="form-label fw-semibold" for="ec_matiere">Matière</label>
@@ -96,9 +109,9 @@
                     </select>
                 </div>
                 @if($caps->isNotEmpty())
-                    <div class="col-12">
-                        <label class="form-label fw-semibold">Portée</label>
-                        <div class="form-text mb-1">Laissez tout décoché pour envoyer à toute l'académie.</div>
+                    <div class="col-12 d-none" id="ec_portee_caps">
+                        <label class="form-label fw-semibold">CAP destinataires</label>
+                        <div class="form-text mb-1">Laissez tout décoché pour l'adresser à tous les CAP de l'académie.</div>
                         <div class="d-flex flex-wrap gap-3">
                             @foreach($caps as $cap)
                                 <div class="form-check">
@@ -123,7 +136,12 @@
                 </div>
                 <div class="col-12">
                     <div class="alert alert-info small mb-0">
-                        Le sujet est confidentiel : seuls l'Admin et le Gestionnaire de chaque école pourront le télécharger, et seulement à partir de l'heure choisie. Le corrigé leur sera ouvert après la fin de l'épreuve. Une annonce prévient les Admin des écoles visées.
+                        Le sujet est confidentiel : seuls l'Admin et le Gestionnaire de chaque école pourront le télécharger, et seulement à partir de l'heure choisie. Le corrigé leur sera ouvert après la fin de l'épreuve.
+                        @if(Auth::user()->droit === 'DAE')
+                            Fondamental : les DCAP sont prévenus et publient l'évaluation à leurs écoles. Secondaire : les Admin des établissements sont prévenus.
+                        @else
+                            Les Admin de vos écoles sont prévenus.
+                        @endif
                     </div>
                 </div>
             </div>
@@ -135,14 +153,27 @@
     </div>
 </div>
 
-@if($errors->any())
-    @push('scripts')
-        <script>
+@push('scripts')
+    <script>
+        // Le choix des CAP n'a de sens que pour le fondamental (le secondaire va directement aux établissements).
+        (function () {
+            const niveau = document.getElementById('ec_niveau');
+            const portee = document.getElementById('ec_portee_caps');
+            if (!niveau || !portee) return;
+            const sync = () => {
+                const fondamental = niveau.selectedOptions[0]?.dataset.fondamental === '1';
+                portee.classList.toggle('d-none', !fondamental);
+                if (!fondamental) portee.querySelectorAll('input[type=checkbox]').forEach((c) => { c.checked = false; });
+            };
+            niveau.addEventListener('change', sync);
+            sync();
+        })();
+        @if($errors->any())
             document.addEventListener('DOMContentLoaded', function () {
                 const modal = document.getElementById('nouvelleEvaluationModal');
                 if (modal && window.bootstrap) new bootstrap.Modal(modal).show();
             });
-        </script>
-    @endpush
-@endif
+        @endif
+    </script>
+@endpush
 @endsection
