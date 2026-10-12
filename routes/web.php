@@ -205,6 +205,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/annonces', [AnnouncementController::class, 'store'])->name('annonces.store');
     Route::post('/annonces/read-visible', [AnnouncementController::class, 'markVisibleAsRead'])->name('annonces.read-visible');
     Route::get('/territoire/effectifs', [\App\Http\Controllers\TerritoireController::class, 'effectifs'])->name('territoire.effectifs');
+    Route::get('/territoire/annonces', [\App\Http\Controllers\TerritoireController::class, 'annonces'])->name('territoire.annonces.index');
     Route::post('/territoire/annonces', [\App\Http\Controllers\TerritoireController::class, 'storeAnnonce'])->name('territoire.annonces.store');
     Route::delete('/territoire/annonces/{id}', [\App\Http\Controllers\TerritoireController::class, 'destroyAnnonce'])->name('territoire.annonces.destroy');
     // Évaluations communes : DAE / DCAP (création, suivi) et écoles (sujet, corrigé).

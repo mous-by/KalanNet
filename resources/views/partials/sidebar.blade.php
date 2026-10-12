@@ -147,6 +147,12 @@
                     <div class="menu-title">Évaluations communes</div>
                 </a>
             </li>
+            <li>
+                <a href="{{ route('territoire.annonces.index') }}">
+                    <div class="parent-icon"><i class="bi bi-megaphone-fill"></i></div>
+                    <div class="menu-title">Annonces</div>
+                </a>
+            </li>
         @else
         <li class="menu-label">{{ __('messages.menu.pedagogy') }}</li>
         

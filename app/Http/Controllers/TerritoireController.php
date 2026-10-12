@@ -50,6 +50,19 @@ class TerritoireController extends Controller
         abort(403);
     }
 
+    /** Annonces du territoire : publication et liste (DAE : académie ; DCAP : CAP + annonces reçues de l'académie). */
+    public function annonces()
+    {
+        $user = Auth::user();
+        abort_unless(($user->droit === 'DAE' && $user->id_academie) || ($user->droit === 'DCAP' && $user->id_cap), 403);
+
+        return view('territoire.annonces', [
+            'annonces' => AnnoncesTerritoire::publiees($user),
+            'annoncesAcademie' => $user->droit === 'DCAP' ? AnnoncesTerritoire::visibles($user, null, 10) : collect(),
+            'cibles' => $user->droit === 'DAE' ? AnnoncesTerritoire::CIBLES : collect(AnnoncesTerritoire::CIBLES)->except('dcap')->all(),
+        ]);
+    }
+
     /** Effectifs (lecture seule) : élèves par classe et enseignants, école par école. */
     public function effectifs(Request $request)
     {
@@ -119,7 +132,7 @@ class TerritoireController extends Controller
             'type_annonce' => $data['type_annonce'] ?? 'information',
         ], $fichier ?? []));
 
-        return redirect()->route('dashboard')->with('success', 'Annonce publiée à '.($user->droit === 'DAE' ? "l'académie." : 'votre CAP.'));
+        return back()->with('success', 'Annonce publiée à '.($user->droit === 'DAE' ? "l'académie." : 'votre CAP.'));
     }
 
     public function destroyAnnonce(int $id)
@@ -137,6 +150,6 @@ class TerritoireController extends Controller
             File::delete(public_path($annonce->fichier_joint));
         }
 
-        return redirect()->route('dashboard')->with('success', 'Annonce supprimée.');
+        return back()->with('success', 'Annonce supprimée.');
     }
 }
