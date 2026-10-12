@@ -94,6 +94,28 @@
         @endif
 
         <div class="{{ auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('annonces_creation') ? 'col-lg-8' : 'col-12' }}">
+            {{-- Annonces reçues de l'académie (DAE) et du CAP (DCAP) de l'école. --}}
+            @php($annoncesTerritoire = \App\Support\Territoire\AnnoncesTerritoire::visibles(auth()->user(), session('idEcole') ?: auth()->user()->idEcole, 10))
+            @if($annoncesTerritoire->isNotEmpty())
+                <div class="card theme-card shadow-sm mb-4">
+                    <div class="card-header theme-header">
+                        <h5 class="mb-0 fw-bold"><i class="bi bi-bank me-2"></i>Annonces de l'académie et du CAP</h5>
+                    </div>
+                    <div class="card-body">
+                        @foreach($annoncesTerritoire as $annonceTerritoire)
+                            <div class="border-bottom py-2">
+                                <div class="d-flex justify-content-between gap-2 flex-wrap">
+                                    <div class="fw-bold">{{ $annonceTerritoire->titre }}</div>
+                                    <span class="badge bg-light text-dark border">{{ $annonceTerritoire->source_label }}</span>
+                                </div>
+                                <div class="small text-muted">{{ \Carbon\Carbon::parse($annonceTerritoire->date_publication)->format('d/m/Y H:i') }}@if($annonceTerritoire->auteur) · {{ $annonceTerritoire->auteur }}@endif</div>
+                                <p class="mb-1 mt-1" style="white-space: pre-line;">{{ $annonceTerritoire->contenu }}</p>
+                                @if($annonceTerritoire->fichier_joint)<a href="{{ asset($annonceTerritoire->fichier_joint) }}" target="_blank" rel="noopener" class="small"><i class="bi bi-paperclip"></i> Pièce jointe</a>@endif
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
             <div class="card theme-card shadow-sm">
                 <div class="card-header theme-header">
                     <h5 class="mb-0 fw-bold">Publications</h5>

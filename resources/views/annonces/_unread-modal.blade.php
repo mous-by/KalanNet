@@ -27,6 +27,15 @@
                 ->groupBy('id_annonce');
         }
     }
+
+    // Annonces de l'académie (DAE) et du CAP (DCAP) non lues.
+    if ($user && \Illuminate\Support\Facades\Schema::hasTable('annonces_lues')) {
+        $unreadAnnouncements = $unreadAnnouncements
+            ->concat(\App\Support\Territoire\AnnoncesTerritoire::visibles($user, $schoolId ? (int) $schoolId : null, 5, true))
+            ->sortByDesc('date_publication')
+            ->take(5)
+            ->values();
+    }
 @endphp
 
 @if($unreadAnnouncements->isNotEmpty())
@@ -50,7 +59,7 @@
                                         @endif
                                     </div>
                                 </div>
-                                <span class="badge bg-primary align-self-start">{{ ucfirst($annonce->public_cible) }}</span>
+                                <span class="badge bg-primary align-self-start">{{ $annonce->source_label ?? ucfirst($annonce->public_cible) }}</span>
                             </div>
                             <div>{{ $annonce->contenu }}</div>
                             @php($files = $unreadAnnouncementFiles[$annonce->id_annonce] ?? collect())

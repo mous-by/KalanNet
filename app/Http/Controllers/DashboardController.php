@@ -47,6 +47,11 @@ class DashboardController extends Controller
             return view('dashboards.supadmin', $this->supAdminDashboardData($user));
         }
 
+        // Supervision : académie (DAE) ou CAP (DCAP), sur toutes leurs écoles.
+        if (in_array($user->droit, ['DAE', 'DCAP'], true)) {
+            return app(TerritoireController::class)->espace();
+        }
+
         return view('dashboard', $this->adminDashboardData($user, $schoolId));
     }
 

@@ -169,6 +169,9 @@ class AnnouncementController extends Controller
             );
         }
 
+        // Annonces de l'académie et du CAP affichées dans la même fenêtre.
+        \App\Support\Territoire\AnnoncesTerritoire::marquerLues(Auth::user(), session('idEcole') ?: Auth::user()->idEcole);
+
         return back();
     }
 

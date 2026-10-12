@@ -1534,6 +1534,10 @@ class FinanceController extends Controller
     {
         $this->ensurePermission('historique_paiement_apercu');
         $idEcole = session('idEcole');
+        // SupAdmin sans école sélectionnée : l'historique est propre à une école.
+        if (!$idEcole) {
+            return redirect()->route('dashboard')->with('error', 'Sélectionnez d’abord une école pour voir l’historique de ses paiements.');
+        }
 
         $storedFilters = session('finances_historique_paiements_filters', []);
         if ($request->isMethod('post')) {

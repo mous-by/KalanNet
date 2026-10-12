@@ -204,6 +204,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/annonces', [AnnouncementController::class, 'index'])->name('annonces.index');
     Route::post('/annonces', [AnnouncementController::class, 'store'])->name('annonces.store');
     Route::post('/annonces/read-visible', [AnnouncementController::class, 'markVisibleAsRead'])->name('annonces.read-visible');
+    Route::post('/territoire/annonces', [\App\Http\Controllers\TerritoireController::class, 'storeAnnonce'])->name('territoire.annonces.store');
+    Route::delete('/territoire/annonces/{id}', [\App\Http\Controllers\TerritoireController::class, 'destroyAnnonce'])->name('territoire.annonces.destroy');
     Route::get('/annonces/{id}/lecteurs', [AnnouncementController::class, 'readers'])->name('annonces.readers');
     Route::patch('/annonces/{id}/publish', [AnnouncementController::class, 'publish'])->name('annonces.publish');
     Route::patch('/annonces/{id}/archive', [AnnouncementController::class, 'archive'])->name('annonces.archive');
