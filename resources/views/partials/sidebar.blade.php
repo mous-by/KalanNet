@@ -244,6 +244,23 @@
 
         <li class="menu-label">{{ __('messages.menu.management') }}</li>
 
+        {{-- Évaluations communes : créées par le DAE / DCAP, reçues par l'Admin et le Gestionnaire. --}}
+        @if(in_array($user->droit, ['DAE', 'DCAP'], true))
+            <li>
+                <a href="{{ route('territoire.evaluations.index') }}">
+                    <div class="parent-icon"><i class="bi bi-journal-check"></i></div>
+                    <div class="menu-title">Évaluations communes</div>
+                </a>
+            </li>
+        @elseif(in_array($user->droit, ['Admin', 'Gestionnaire'], true))
+            <li>
+                <a href="{{ route('evaluations-communes.index') }}">
+                    <div class="parent-icon"><i class="bi bi-journal-check"></i></div>
+                    <div class="menu-title">Évaluations communes</div>
+                </a>
+            </li>
+        @endif
+
         @if($canOpenAnnouncements)
             <li>
                 <a href="{{ route('annonces.index') }}">

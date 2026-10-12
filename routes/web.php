@@ -206,6 +206,15 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/annonces/read-visible', [AnnouncementController::class, 'markVisibleAsRead'])->name('annonces.read-visible');
     Route::post('/territoire/annonces', [\App\Http\Controllers\TerritoireController::class, 'storeAnnonce'])->name('territoire.annonces.store');
     Route::delete('/territoire/annonces/{id}', [\App\Http\Controllers\TerritoireController::class, 'destroyAnnonce'])->name('territoire.annonces.destroy');
+    // Évaluations communes : DAE / DCAP (création, suivi) et écoles (sujet, corrigé).
+    Route::get('/territoire/evaluations', [\App\Http\Controllers\EvaluationCommuneController::class, 'index'])->name('territoire.evaluations.index');
+    Route::post('/territoire/evaluations', [\App\Http\Controllers\EvaluationCommuneController::class, 'store'])->name('territoire.evaluations.store');
+    Route::get('/territoire/evaluations/{id}', [\App\Http\Controllers\EvaluationCommuneController::class, 'show'])->name('territoire.evaluations.show');
+    Route::post('/territoire/evaluations/{id}/corrige', [\App\Http\Controllers\EvaluationCommuneController::class, 'storeCorrige'])->name('territoire.evaluations.corrige');
+    Route::post('/territoire/evaluations/{id}/annuler', [\App\Http\Controllers\EvaluationCommuneController::class, 'annuler'])->name('territoire.evaluations.annuler');
+    Route::get('/territoire/evaluations/{id}/{piece}', [\App\Http\Controllers\EvaluationCommuneController::class, 'telechargerTerritoire'])->whereIn('piece', ['sujet', 'corrige'])->name('territoire.evaluations.fichier');
+    Route::get('/evaluations-communes', [\App\Http\Controllers\EvaluationCommuneController::class, 'ecoleIndex'])->name('evaluations-communes.index');
+    Route::get('/evaluations-communes/{id}/{piece}', [\App\Http\Controllers\EvaluationCommuneController::class, 'telechargerEcole'])->whereIn('piece', ['sujet', 'corrige'])->name('evaluations-communes.fichier');
     Route::get('/annonces/{id}/lecteurs', [AnnouncementController::class, 'readers'])->name('annonces.readers');
     Route::patch('/annonces/{id}/publish', [AnnouncementController::class, 'publish'])->name('annonces.publish');
     Route::patch('/annonces/{id}/archive', [AnnouncementController::class, 'archive'])->name('annonces.archive');
