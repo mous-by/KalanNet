@@ -36,6 +36,8 @@
             <li><a href="#doc-8">Finances</a></li>
             <li><a href="#doc-9">Espace Parents</a></li>
             <li><a href="#doc-10">Abonnement de l'école</a></li>
+            <li><a href="#doc-12">Espaces DAE et DCAP</a></li>
+            <li><a href="#doc-13">Évaluations communes</a></li>
             <li><a href="#doc-11">Catalogue rapide : « où trouver quoi »</a></li>
         </ol>
     </div>
@@ -51,6 +53,21 @@
     <div class="doc-note">Si un message indique que l'abonnement de votre école a expiré, contactez la personne
     responsable de l'abonnement (voir la partie « Abonnement de l'école ») : l'accès sera limité tant que
     l'abonnement n'est pas renouvelé.</div>
+
+    <h5 class="fw-bold mt-4">Premier accès : choisir son mot de passe</h5>
+    <p>Quand un compte est créé (ou son mot de passe réinitialisé) par un administrateur, il reçoit un
+    <strong>mot de passe temporaire</strong>. À la première connexion, KalanNet affiche la page
+    <strong>« Choisissez votre mot de passe »</strong> : saisissez le mot de passe temporaire, puis votre nouveau mot
+    de passe deux fois. Rien d'autre n'est accessible tant que ce n'est pas fait.</p>
+    <ul>
+        <li>Le mot de passe doit contenir <strong>au moins 8 caractères, avec des lettres et des chiffres</strong>,
+        et être différent du mot de passe temporaire.</li>
+        <li>Une <strong>barre colorée</strong> indique sa force pendant la saisie (rouge « Très faible » à vert
+        « Fort ») : ajoutez des majuscules, des symboles ou plus de caractères pour la faire monter.</li>
+        <li>L'icône en forme d'<strong>œil</strong> à droite du champ affiche ou masque ce que vous tapez.</li>
+        <li>Après 5 mots de passe erronés, la connexion est bloquée 3 minutes : c'est une protection contre les
+        tentatives d'intrusion.</li>
+    </ul>
 
     <figure class="doc-shot">
         <img src="{{ $docImg('doc-connexion.jpg') }}" alt="Capture d'écran : page de connexion KalanNet, avec les champs identifiant et mot de passe">
@@ -86,7 +103,10 @@
         En général déjà pré-remplies, à vérifier seulement.</li>
         <li><strong>Utilisateurs</strong> : c'est ici que l'on crée un compte pour chaque membre du personnel qui
         doit utiliser KalanNet, et qu'on choisit ce qu'il a le droit de voir ou de modifier (onglet « Assigner
-        permissions »).</li>
+        permissions »). À l'enregistrement, une fenêtre <strong>« Mot de passe temporaire »</strong> l'affiche
+        <strong>une seule fois</strong> : copiez-le ou notez-le, puis transmettez-le en main propre. Si quelqu'un
+        oublie son mot de passe, le bouton en forme de <strong>clé</strong> de la liste le réinitialise et affiche
+        un nouveau mot de passe temporaire.</li>
         <li><strong>Classes officielles &amp; Types de notes</strong> : la structure pédagogique de base (les
         niveaux comme « 7ème année », les barèmes de notation).</li>
         <li><strong>Statuts de contrôle</strong> : les motifs utilisés lors de l'appel de présence (Présent,
@@ -110,6 +130,9 @@
         d'une étoile sont obligatoires, le reste peut être complété plus tard).</li>
         <li>Le <strong>matricule</strong> (numéro unique de l'élève) peut être laissé vide : KalanNet le génère
         automatiquement.</li>
+        <li><strong>Cas social</strong> : choisissez « Autre (frais particulier) » pour un élève qui bénéficie d'un
+        tarif réduit, indiquez la nature du cas (orphelin, enfant du personnel…) et le frais qu'il paie pour
+        l'année. Ce frais remplace le montant de la formule dans les paiements.</li>
         <li>Cliquez sur <strong>Valider l'inscription</strong>.</li>
     </ol>
 
@@ -158,8 +181,9 @@
     <p>Menu : <strong>Enseignants</strong>.</p>
     <ul>
         <li><strong>Liste des Enseignants / Ajouter Enseignant</strong> : gérez les fiches du personnel enseignant
-        (type de contrat, spécialité...). Un nouveau compte reçoit un mot de passe temporaire à communiquer à
-        l'enseignant.</li>
+        (type de contrat, spécialité...). Seuls le <strong>nom et le téléphone</strong> sont obligatoires, le reste
+        peut être complété plus tard. Pour qu'un enseignant se connecte, créez-lui un compte dans Configuration ->
+        Utilisateurs : il recevra un mot de passe temporaire.</li>
     </ul>
 
     <figure class="doc-shot">
@@ -247,6 +271,9 @@
     des gestionnaires, puis choisissez de l'enregistrer en <strong>brouillon</strong> (personne ne le voit
     encore) ou de le <strong>publier</strong> (visible immédiatement par le public choisi). Une annonce publiée
     peut ensuite être archivée ou supprimée à tout moment.</p>
+    <p>Les annonces de votre <strong>académie</strong> et de votre <strong>CAP</strong> arrivent aussi chez vous :
+    dans la fenêtre « Nouvelles annonces » à la connexion, et en haut de la page Annonces, avec un badge qui
+    indique leur origine (« Académie : … » ou « CAP : … »).</p>
 
     <figure class="doc-shot">
         <img src="{{ $docImg('doc-annonces.jpg') }}" alt="Capture d'écran : formulaire Nouvelle publication avec le bouton Enregistrer en surbrillance">
@@ -275,8 +302,10 @@
         <figcaption>Paiements Élèves : choisissez la classe (1), puis validez les paiements (2).</figcaption>
     </figure>
     <ul>
-        <li><strong>Formule de paiement</strong> : préparez à l'avance les échéanciers de paiement (mensualités,
-        trimestres...) pour une ou plusieurs classes.</li>
+        <li><strong>Formule de paiement</strong> : fixez les frais scolaires de chaque classe pour l'année
+        (mensuelle, trimestrielle, annuelle, ou <strong>par tranches</strong> avec une date limite par tranche),
+        pour une ou plusieurs classes à la fois. Disponible aussi dans l'application mobile (Paiements ->
+        Formules de paiement).</li>
         <li><strong>Subventions État</strong> : enregistrez un versement global reçu de l'État ; KalanNet le
         répartit automatiquement sur les élèves concernés.</li>
         <li><strong>Historique paiements</strong> : consultez et exportez tous les paiements passés.</li>
@@ -310,7 +339,71 @@
         <figcaption>Abonnements : joignez la preuve de paiement puis « Envoyer la demande ».</figcaption>
     </figure>
 
-    <h4 id="doc-11" class="fw-bold text-uppercase mt-5 mb-3 border-bottom pb-2">11. Catalogue rapide : « où trouver quoi »</h4>
+    <h4 id="doc-12" class="fw-bold text-uppercase mt-5 mb-3 border-bottom pb-2">11. Espaces DAE et DCAP</h4>
+    <p>Les directeurs d'académie (<strong>DAE</strong>) et de CAP (<strong>DCAP</strong>) ont leur propre espace,
+    qui s'ouvre dès la connexion. Ils voient l'ensemble de leur territoire, sans accès au détail interne des
+    écoles (notes, caisse…).</p>
+    <ul>
+        <li><strong>Espace DAE</strong> : nombre de CAP, d'écoles (publiques et privées), d'enseignants, d'élèves
+        et de classes de l'académie, et un tableau <strong>« Répartition par CAP »</strong> (directeur, écoles,
+        enseignants, élèves de chaque CAP).</li>
+        <li><strong>Espace DCAP</strong> : les mêmes chiffres pour le CAP, et la liste de ses écoles avec leur
+        type, leur statut, leurs contacts et leurs effectifs.</li>
+        <li><strong>Annonces</strong> : le DAE et le DCAP publient des annonces à leur territoire (bouton
+        « Publier une annonce »), avec une pièce jointe si besoin, en choisissant les destinataires :
+        administrateurs, gestionnaires, enseignants, parents, ou tout le monde. Le DAE peut aussi écrire aux seuls
+        directeurs de CAP. Chacun ne reçoit que les annonces qui le concernent.</li>
+    </ul>
+
+    <h4 id="doc-13" class="fw-bold text-uppercase mt-5 mb-3 border-bottom pb-2">12. Évaluations communes</h4>
+    <p>Une évaluation commune (composition harmonisée, devoir commun…) est préparée par l'académie ou le CAP et
+    passée le même jour dans toutes les écoles concernées. Menu : <strong>Évaluations communes</strong>.</p>
+
+    <h5 class="fw-bold mt-4">Le circuit des sujets</h5>
+    <table class="doc-catalogue">
+        <thead>
+            <tr><th>Qui crée</th><th>Niveau</th><th>Circuit</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Académie (DAE)</td><td>Fondamental I et II</td><td>DAE → DCAP de ses CAP → leurs écoles</td></tr>
+            <tr><td>Académie (DAE)</td><td>Secondaire général ou technique</td><td>DAE → directement aux lycées et établissements techniques concernés</td></tr>
+            <tr><td>CAP (DCAP)</td><td>Fondamental I et II</td><td>DCAP → ses écoles</td></tr>
+        </tbody>
+    </table>
+
+    <h5 class="fw-bold mt-4">Pour le DAE ou le DCAP : créer une évaluation</h5>
+    <ol>
+        <li>Cliquez sur <strong>Nouvelle évaluation</strong>.</li>
+        <li>Indiquez le titre, le <strong>niveau</strong> (obligatoire : il détermine le circuit), la matière, la
+        date et l'heure de début, la durée et les consignes.</li>
+        <li>Choisissez quand le sujet devient accessible aux écoles (par exemple <strong>1 h avant</strong> le
+        début). Le DAE peut aussi limiter une évaluation du fondamental à certains CAP.</li>
+        <li>Joignez le <strong>sujet</strong> (PDF, Word ou image) et, si vous l'avez, le corrigé, puis cliquez sur
+        <strong>Publier</strong>. Les personnes concernées sont prévenues par une annonce.</li>
+    </ol>
+    <p>La page <strong>Suivi</strong> d'une évaluation montre, école par école, la date de téléchargement du
+    sujet (et, pour le DAE, quels CAP ont publié l'évaluation). On peut y déposer le corrigé à tout moment ou
+    annuler l'évaluation.</p>
+
+    <h5 class="fw-bold mt-4">Pour le DCAP : publier une évaluation de l'académie</h5>
+    <p>Une évaluation du fondamental envoyée par l'académie apparaît avec le badge <strong>« Reçue de
+    l'académie · à publier »</strong>. Ouvrez-la, ajoutez si besoin vos propres consignes (centres de
+    composition, remise des copies…) et cliquez sur <strong>Publier à mes écoles</strong>. Vos écoles ne la
+    voient qu'après cette publication.</p>
+
+    <h5 class="fw-bold mt-4">Pour l'école : récupérer le sujet</h5>
+    <ul>
+        <li>Seuls l'<strong>Admin</strong> et le <strong>Gestionnaire</strong> de l'école ont accès aux évaluations
+        communes : le sujet est confidentiel.</li>
+        <li>Avant l'heure fixée, le sujet est verrouillé (« Disponible le … à … »). Ensuite, le bouton
+        <strong>Sujet</strong> le télécharge : imprimez-le pour l'épreuve et ne le diffusez pas avant.</li>
+        <li>Le <strong>corrigé</strong> devient téléchargeable après la fin de l'épreuve.</li>
+        <li>Chaque téléchargement est enregistré : l'académie ou le CAP voit que votre école a bien reçu le sujet.</li>
+    </ul>
+    <div class="doc-note">Les sujets ne sont jamais accessibles par un simple lien : KalanNet vérifie à chaque fois
+    l'école, le rôle de la personne et l'heure avant de les donner.</div>
+
+    <h4 id="doc-11" class="fw-bold text-uppercase mt-5 mb-3 border-bottom pb-2">13. Catalogue rapide : « où trouver quoi »</h4>
     <p>Un tableau pour retrouver rapidement où se trouve une action, sans avoir à relire tout le guide.</p>
 
     <table class="doc-catalogue">
@@ -338,6 +431,13 @@
             <tr><td>Enregistrer une dépense</td><td>Finances -> Dépenses</td></tr>
             <tr><td>Créer un utilisateur / gérer les permissions</td><td>Configuration -> Utilisateurs</td></tr>
             <tr><td>Définir l'année scolaire en cours</td><td>Configuration -> Années scolaires</td></tr>
+            <tr><td>Fixer les frais scolaires d'une classe</td><td>Finances -> Formule de paiement</td></tr>
+            <tr><td>Réinitialiser le mot de passe d'un utilisateur</td><td>Configuration -> Utilisateurs -> bouton clé</td></tr>
+            <tr><td>Changer mon mot de passe</td><td>Menu de mon nom (en haut à droite) -> Profil</td></tr>
+            <tr><td>Télécharger le sujet d'une évaluation commune</td><td>Évaluations communes</td></tr>
+            <tr><td>Créer une évaluation commune (DAE, DCAP)</td><td>Évaluations communes -> Nouvelle évaluation</td></tr>
+            <tr><td>Publier à ses écoles une évaluation de l'académie (DCAP)</td><td>Évaluations communes -> Suivi -> Publier à mes écoles</td></tr>
+            <tr><td>Publier une annonce à l'académie ou au CAP</td><td>Tableau de bord DAE / DCAP -> Publier une annonce</td></tr>
             <tr><td>Renouveler l'abonnement de l'école</td><td>Abonnements</td></tr>
             <tr><td>Poser une question ou dicter une instruction</td><td>Bulle KalanBot (en bas à droite)</td></tr>
         </tbody>
