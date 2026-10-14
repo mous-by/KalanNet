@@ -63,7 +63,10 @@
             </td>
             <td class="right-content">
                 @if($ecole->pays?->entete_document_droite)
-                    <strong>{!! nl2br(e($ecole->pays->entete_document_droite)) !!}</strong>
+                    {{-- Première ligne (le pays) en gras, la devise en dessous en normal. --}}
+                    @php $lignesDroite = preg_split('/\r\n|\r|\n/', trim($ecole->pays->entete_document_droite)); @endphp
+                    <strong>{{ array_shift($lignesDroite) }}</strong>
+                    @foreach($lignesDroite as $ligne)<br>{{ $ligne }}@endforeach
                 @endif
             </td>
         </tr>
