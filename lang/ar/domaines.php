@@ -19,4 +19,5 @@ return [
     'monter' => 'إلى الأعلى',
     'descendre' => 'إلى الأسفل',
     'autres' => 'بدون قسم',
+    'actions' => 'إجراء',
 ];

@@ -19,4 +19,5 @@ return [
     'monter' => 'Move up',
     'descendre' => 'Move down',
     'autres' => 'No part',
+    'actions' => 'Action',
 ];

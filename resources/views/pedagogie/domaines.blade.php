@@ -21,14 +21,17 @@
         <div class="alert alert-danger border-0 border-start border-danger border-4">{{ $errors->first() }}</div>
     @endif
 
+    @if($peutModifier)
+        <div class="mb-3 d-flex justify-content-end">
+            <button type="button" class="btn px-4 theme-pill-active" data-bs-toggle="modal" data-bs-target="#domaineModal" data-action="{{ route('pedagogie.domaines.store') }}">
+                <i class="bi bi-plus-lg me-2"></i>{{ __('domaines.add') }}
+            </button>
+        </div>
+    @endif
+
     <div class="card theme-card shadow-sm">
-        <div class="card-header theme-header d-flex align-items-center justify-content-between flex-wrap gap-2">
-            <p class="mb-0 small" style="max-width: 70ch">{{ __('domaines.intro') }}</p>
-            @if($peutModifier)
-                <button type="button" class="btn theme-pill-active px-4" data-bs-toggle="modal" data-bs-target="#domaineModal" data-action="{{ route('pedagogie.domaines.store') }}">
-                    <i class="bi bi-plus-lg me-2"></i>{{ __('domaines.add') }}
-                </button>
-            @endif
+        <div class="card-header theme-header">
+            <p class="mb-0 small" style="max-width: 80ch">{{ __('domaines.intro') }}</p>
         </div>
         <div class="card-body">
             @php $groupes = $domaines->groupBy(fn ($d) => $d->partie ?? ''); @endphp
@@ -42,7 +45,7 @@
                                 <th>{{ __('domaines.nom') }}</th>
                                 <th class="text-end">{{ __('domaines.nom_ar') }}</th>
                                 <th class="text-center" style="width: 150px">{{ __('domaines.matieres_classes') }}</th>
-                                @if($peutModifier)<th class="text-center" style="width: 190px"></th>@endif
+                                @if($peutModifier)<th class="text-center" style="width: 90px">{{ __('domaines.actions') }}</th>@endif
                             </tr>
                         </thead>
                         <tbody>
@@ -52,25 +55,40 @@
                                     <td class="text-end" dir="rtl">{{ $domaine->nom_ar }}</td>
                                     <td class="text-center">{{ $utilisations[$domaine->id_domaine] ?? 0 }}</td>
                                     @if($peutModifier)
-                                        <td class="text-center text-nowrap">
-                                            @foreach(['haut' => ['bi-arrow-up', 'monter', $loop->first], 'bas' => ['bi-arrow-down', 'descendre', $loop->last]] as $sens => [$icone, $libelle, $desactive])
-                                                <form method="POST" action="{{ route('pedagogie.domaines.deplacer', $domaine->id_domaine) }}" class="d-inline">
-                                                    @csrf
-                                                    <input type="hidden" name="sens" value="{{ $sens }}">
-                                                    <button type="submit" class="btn btn-light btn-sm" title="{{ __('domaines.'.$libelle) }}" @disabled($desactive)><i class="bi {{ $icone }}"></i></button>
-                                                </form>
-                                            @endforeach
-                                            <button type="button" class="btn btn-light btn-sm" title="{{ __('domaines.edit') }}"
-                                                data-bs-toggle="modal" data-bs-target="#domaineModal"
-                                                data-action="{{ route('pedagogie.domaines.update', $domaine->id_domaine) }}"
-                                                data-nom="{{ $domaine->nom }}" data-nom-ar="{{ $domaine->nom_ar }}" data-partie="{{ $domaine->partie }}">
-                                                <i class="bi bi-pencil-square text-primary"></i>
-                                            </button>
-                                            <form method="POST" action="{{ route('pedagogie.domaines.destroy', $domaine->id_domaine) }}" class="d-inline form-suppression-domaine">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-light btn-sm" title="{{ __('domaines.delete') }}"><i class="bi bi-trash text-danger"></i></button>
-                                            </form>
+                                        <td class="text-center">
+                                            <div class="dropdown">
+                                                <a class="text-muted fs-5" href="#" data-bs-toggle="dropdown" aria-label="Actions">
+                                                    <i class="bi bi-three-dots"></i>
+                                                </a>
+                                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3">
+                                                    @foreach(['haut' => ['bi-arrow-up', 'monter', $loop->first], 'bas' => ['bi-arrow-down', 'descendre', $loop->last]] as $sens => [$icone, $libelle, $desactive])
+                                                        @unless($desactive)
+                                                            <li>
+                                                                <form method="POST" action="{{ route('pedagogie.domaines.deplacer', $domaine->id_domaine) }}">
+                                                                    @csrf
+                                                                    <input type="hidden" name="sens" value="{{ $sens }}">
+                                                                    <button type="submit" class="dropdown-item py-2"><i class="bi {{ $icone }} text-secondary me-2"></i>{{ __('domaines.'.$libelle) }}</button>
+                                                                </form>
+                                                            </li>
+                                                        @endunless
+                                                    @endforeach
+                                                    <li>
+                                                        <a class="dropdown-item py-2" href="#" data-bs-toggle="modal" data-bs-target="#domaineModal"
+                                                            data-action="{{ route('pedagogie.domaines.update', $domaine->id_domaine) }}"
+                                                            data-nom="{{ $domaine->nom }}" data-nom-ar="{{ $domaine->nom_ar }}" data-partie="{{ $domaine->partie }}">
+                                                            <i class="bi bi-pencil text-warning me-2"></i>{{ __('domaines.edit') }}
+                                                        </a>
+                                                    </li>
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    <li>
+                                                        <form method="POST" action="{{ route('pedagogie.domaines.destroy', $domaine->id_domaine) }}" class="form-suppression-domaine">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="dropdown-item py-2 text-danger"><i class="bi bi-trash me-2"></i>{{ __('domaines.delete') }}</button>
+                                                        </form>
+                                                    </li>
+                                                </ul>
+                                            </div>
                                         </td>
                                     @endif
                                 </tr>
