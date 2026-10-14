@@ -492,15 +492,15 @@
         .mini .boxes b { flex: 1; height: 13px; border-radius: 2px; border: 1px solid #d9dee6; }
         .mini .bar { display: flex; align-items: center; gap: 3px; }
         .mini .bar i { flex: 1; } .mini .bar s { display: block; height: 3px; border-radius: 2px; text-decoration: none; }
-        .mini-classique .band, .mini-classique .boxes b.f { background: #1f3a5f; border-color: #1f3a5f; }
-        .mini-domaines .band, .mini-domaines_compact .band, .mini-domaines .boxes b.f, .mini-domaines_compact .boxes b.f { background: #14532d; border-color: #14532d; }
-        .mini-domaines .dom, .mini-domaines_compact .dom { background: #b9d3bf; }
-        .mini-essentiel .band { background: transparent; border-top: 2px solid #0f4c5c; border-radius: 0; height: 4px; }
-        .mini-essentiel .boxes b.f { background: #0f4c5c; border-color: #0f4c5c; }
+        .mini-classique .band, .mini-classique .boxes b.f { background: #222; border-color: #222; }
+        .mini-domaines .band, .mini-domaines_compact .band, .mini-domaines .boxes b.f, .mini-domaines_compact .boxes b.f { background: #222; border-color: #222; }
+        .mini-domaines .dom, .mini-domaines_compact .dom { background: #9ca3af; }
+        .mini-essentiel .band { background: transparent; border-top: 2px solid #222; border-radius: 0; height: 4px; }
+        .mini-essentiel .boxes b.f { background: #222; border-color: #222; }
         .mini-moderne { padding: 0; }
-        .mini-moderne .top { height: 18px; background: #1e3a8a; }
+        .mini-moderne .top { height: 14px; border-bottom: 1.5px solid #222; margin: 0 6px; }
         .mini-moderne .inner { padding: 5px 6px; display: flex; flex-direction: column; gap: 3px; }
-        .mini-moderne .avatar { width: 12px; height: 12px; border-radius: 50%; background: #e0e7ff; }
+        .mini-moderne .avatar { width: 12px; height: 12px; border-radius: 50%; border: 1px solid #222; }
         html[data-theme] .theme-outline-btn {
             background: var(--accent-light) !important;
             border-color: var(--border-color) !important;

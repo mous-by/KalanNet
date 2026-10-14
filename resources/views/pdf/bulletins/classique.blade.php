@@ -11,7 +11,6 @@
             <td class="annee">Année scolaire <strong>{{ $anneeScolaire }}</strong></td>
         </tr>
     </table>
-    <div class="filet"></div>
 
     <table class="identite">
         <tr>

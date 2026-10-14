@@ -268,7 +268,8 @@
 
     <p><strong>Modèles de bulletin</strong> : sur la page des bulletins d'une classe, choisissez parmi six modèles.
     Le bouton <strong>Aperçu</strong> montre le bulletin d'un élève de la classe avant de choisir, et le dernier
-    modèle choisi est retenu pour la classe.</p>
+    modèle choisi est retenu pour la classe. Tous les modèles s'impriment en noir et blanc et portent l'en-tête
+    officiel (ministère, pays, académie, CAP).</p>
     <ul>
         <li><strong>Standard</strong> (A5) : le bulletin habituel de KalanNet, utilisé tant qu'aucun autre modèle
             n'est choisi.</li>

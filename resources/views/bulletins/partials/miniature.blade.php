@@ -37,7 +37,7 @@
         <div class="top"></div>
         <div class="inner">
             <div class="d-flex align-items-center gap-1"><span class="avatar"></span><i style="width:45%"></i></div>
-            @foreach([['#16a34a', 70], ['#2563eb', 55], ['#f59e0b', 40], ['#16a34a', 80], ['#dc2626', 25], ['#2563eb', 60]] as [$couleur, $largeur])
+            @foreach([['#222', 70], ['#222', 55], ['#222', 40], ['#222', 80], ['#222', 25], ['#222', 60]] as [$couleur, $largeur])
                 <div class="bar"><i style="flex:0 0 30%"></i><s style="width:{{ $largeur }}%; max-width:55%; background:{{ $couleur }}"></s></div>
             @endforeach
         </div>

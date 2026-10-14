@@ -2,17 +2,8 @@
     $note = [\App\Support\PresentationBulletin::class, 'note'];
     $bareme = $surDix ? 10 : 20;
 @endphp
-<div class="feuille">
-    <table class="tete">
-        <tr>
-            @if($logo)<td class="logo"><img src="{{ $logo }}" alt=""></td>@endif
-            <td class="ecole">
-                <div class="nom">{{ $nomEcole }}</div>
-                <div class="sous">{{ $sousTitre ?: $academie }}@if($capLabel) · {{ $capLabel }}@endif</div>
-            </td>
-            <td class="officiel">{!! nl2br(e($enteteDroite ?? '')) !!}</td>
-        </tr>
-    </table>
+<div class="feuille a5">
+    @include('pdf.bulletins._entete_officiel')
 
     <table class="titre">
         <tr>

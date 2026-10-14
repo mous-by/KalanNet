@@ -5,17 +5,15 @@
     $parPartie = $domaines->groupBy(fn ($d) => $d->partie ?? 'autre');
     $libellesParties = ['arabe' => ['Partie arabe', 'القسم العربي'], 'francais' => ['Partie française', 'القسم الفرنسي'], 'autre' => ['Autres matières', null]];
 @endphp
-<div class="feuille">
-    <table class="tete">
-        <tr>
-            <td class="fr"><div class="nom">{{ $nomEcole }}</div>{{ $academie }}@if($capLabel)<br>{{ $capLabel }}@endif</td>
-            <td class="logo">@if($logo)<img src="{{ $logo }}" alt="">@endif</td>
-            <td class="ar"><div class="t">{{ $ar('كشف الدرجات') }}</div>@if($annee_hegirienne)<div class="p">{{ $annee_hegirienne }} H</div>@endif</td>
-        </tr>
-    </table>
+<div class="feuille a5">
+    @include('pdf.bulletins._entete_officiel')
 
     <table class="bande">
-        <tr><td class="t">{{ $periodeTitre }}</td><td class="a">Année scolaire {{ $anneeScolaire }}</td></tr>
+        <tr>
+            <td class="t">{{ $periodeTitre }}</td>
+            <td class="ar">{{ $ar('كشف الدرجات') }}</td>
+            <td class="a">{{ $anneeScolaire }}@if($annee_hegirienne) ({{ $annee_hegirienne }} H)@endif</td>
+        </tr>
     </table>
 
     <table class="eleve">
