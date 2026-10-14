@@ -36,3 +36,18 @@
 .signatures { width: 100%; margin-top: 2mm; }
 .signatures td { width: 50%; font-size: 7.5px; font-weight: bold; text-transform: uppercase; letter-spacing: .5px; vertical-align: top; height: 9mm; }
 .signatures td.d { text-align: right; }
+/* Beaucoup de matières : lignes resserrées pour tenir sur une demi-page. */
+.dense .notes td { padding-top: 0.6px; padding-bottom: 0.6px; font-size: 7.5px; }
+.dense .notes tr.domaine td, .dense .notes tr.partie td { padding-top: 1.2px; padding-bottom: 1.2px; }
+.dense .entete .logo img { width: 30px; height: 30px; }
+.dense .maitres .sign { height: 3mm; }
+.dense .signatures td { height: 7mm; }
+.dense.feuille { padding-top: 3mm; }
+.dense .ecole { margin-top: 0.5mm; }
+.dense .bande, .dense .eleve, .dense .notes, .dense .maitres, .dense .synthese { margin-top: 1mm; }
+.dense .eleve .photo img { width: 26px; height: 26px; }
+.dense .eleve .initiales { width: 26px; height: 18px; padding-top: 8px; font-size: 10px; }
+.dense .maitres td.box { padding-top: 1.5px; padding-bottom: 1.5px; }
+.dense .synthese td { padding-top: 1.5px; padding-bottom: 1.5px; }
+.dense .signatures { margin-top: 1.5mm; }
+.dense .signatures td { height: 5mm; }

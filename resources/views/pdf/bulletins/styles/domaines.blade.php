@@ -49,3 +49,14 @@
 .signatures { width: 100%; margin-top: 3mm; }
 .signatures td { width: 50%; text-align: center; font-size: 8.5px; font-weight: bold; text-transform: uppercase; letter-spacing: .6px; vertical-align: top; height: 13mm; }
 .signatures .ar { text-transform: none; letter-spacing: 0; font-size: 9.5px; font-weight: normal; }
+/* Beaucoup de matières : lignes et cadres resserrés pour tenir sur une page. */
+.dense { padding-top: 6mm; }
+.dense .entete .logo img { width: 44px; height: 44px; }
+.dense .ecole { margin-top: 1mm; }
+.dense .titre { margin-top: 2mm; }
+.dense .notes td { padding-top: 1px; padding-bottom: 1px; font-size: 8.5px; }
+.dense .notes tr.domaine td, .dense .notes tr.partie td { padding-top: 2px; padding-bottom: 2px; }
+.dense .maitres { margin-top: 2mm; }
+.dense .maitre-box .sign { height: 7mm; }
+.dense .synthese { margin-top: 2mm; }
+.dense .signatures td { height: 10mm; }

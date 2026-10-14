@@ -25,6 +25,7 @@ class Domaines
         'langue_arabe' => ['Langue et communication (arabe)', 'اللغة والتواصل', 'arabe'],
         'sciences_humaines' => ['Sciences humaines', 'العلوم الإنسانية', 'arabe'],
         'developpement_personne' => ['Développement de la personne', 'تنمية الشخصية', 'arabe'],
+        'arts_arabe' => ['Arts (arabe)', 'الفنون', 'arabe'],
         'arts' => ['Arts', 'الفنون', 'francais'],
         'langue_francaise' => ['Langue et communication (français)', 'اللغة الفرنسية والتواصل', 'francais'],
         'sciences_maths' => ['Sciences mathématiques et technologie', 'العلوم الرياضية والتكنولوجيا', 'francais'],

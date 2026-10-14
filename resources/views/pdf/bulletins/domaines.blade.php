@@ -8,7 +8,10 @@
     preg_match('/\d+/', (string) ($apercu->nom_trimestre ?? ''), $numTrimestre);
     $periodeAr = empty($apercu->mois_nom) ? ($trimestresAr[(int) ($numTrimestre[0] ?? 0)] ?? null) : null;
 @endphp
-<div class="feuille">
+@php
+    $lignesTableau = $domaines->sum(fn ($d) => $d->matieres->count()) + $domaines->count() + $parPartie->count();
+@endphp
+<div class="feuille{{ $lignesTableau > 30 ? ' dense' : '' }}">
     @include('pdf.bulletins._entete_officiel')
 
     <table class="titre">
@@ -57,7 +60,7 @@
                     </tr>
                     @foreach($domaine->matieres as $m)
                         <tr>
-                            <td class="mat">{{ $m->nom_fr ?: $m->nom_matiere }}</td>
+                            <td class="mat">{{ $m->nom_ar ? $m->nom_fr : $m->nom_matiere }}</td>
                             <td class="mat-ar">@if($m->nom_ar){{ $ar($m->nom_ar) }}@endif</td>
                             <td class="num">{{ $note($m->note_classe) }}</td>
                             <td class="num">{{ $note($m->note_compo) }}</td>

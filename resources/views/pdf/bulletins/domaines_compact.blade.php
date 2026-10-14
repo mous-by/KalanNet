@@ -5,7 +5,10 @@
     $parPartie = $domaines->groupBy(fn ($d) => $d->partie ?? 'autre');
     $libellesParties = ['arabe' => ['Partie arabe', 'القسم العربي'], 'francais' => ['Partie française', 'القسم الفرنسي'], 'autre' => ['Autres matières', null]];
 @endphp
-<div class="feuille a5">
+@php
+    $lignesTableau = $domaines->sum(fn ($d) => $d->matieres->count()) + $domaines->count() + $parPartie->count();
+@endphp
+<div class="feuille{{ $lignesTableau > 28 ? ' dense' : '' }} a5">
     @include('pdf.bulletins._entete_officiel')
 
     <table class="bande">
@@ -49,7 +52,7 @@
                     </tr>
                     @foreach($domaine->matieres as $m)
                         <tr>
-                            <td class="mat">{{ $m->nom_fr ?: $m->nom_matiere }}</td>
+                            <td class="mat">{{ $m->nom_ar ? $m->nom_fr : $m->nom_matiere }}</td>
                             <td class="mat-ar">@if($m->nom_ar){{ $ar($m->nom_ar) }}@endif</td>
                             <td class="num">{{ $note($m->note_classe) }}</td>
                             <td class="num">{{ $note($m->note_compo) }}</td>
