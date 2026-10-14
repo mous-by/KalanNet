@@ -31,10 +31,14 @@
         <div class="boxes"><b class="f"></b><b></b><b></b></div>
         @break
     @case('domaines_compact')
-        <div class="d-flex justify-content-between"><i style="width:35%"></i><i style="width:30%"></i></div>
-        <i class="band"></i>
-        <div class="rows">@for($d = 0; $d < 4; $d++)<i class="dom"></i><i class="w80"></i>@endfor</div>
-        <div class="boxes"><b></b><b></b></div>
+        @for($e = 0; $e < 2; $e++)
+            <div class="ex">
+                <div class="d-flex justify-content-between"><i style="width:35%"></i><i style="width:30%"></i></div>
+                <i class="band"></i>
+                <div class="rows">@for($d = 0; $d < 4; $d++)<i class="dom"></i><i class="w80"></i>@endfor</div>
+                <div class="boxes"><b></b><b></b></div>
+            </div>
+        @endfor
         @break
     @case('moderne')
         @for($e = 0; $e < 2; $e++)

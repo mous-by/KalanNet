@@ -41,9 +41,11 @@ class ModelesBulletin
         ],
         'domaines_compact' => [
             'nom' => 'Par domaines compact',
-            'format' => 'A5',
+            'format' => 'A4',
+            'orientation' => 'landscape',
+            'deux_exemplaires' => true,
             'calcul' => 'domaines',
-            'description' => 'La version courte du modèle médersa : chaque domaine avec sa moyenne, détail des matières, deux appréciations.',
+            'description' => 'La version courte du modèle médersa, en deux exemplaires A5 côte à côte sur une feuille A4 paysage (un pour les parents, un pour l’école) : chaque domaine avec sa moyenne, détail des matières, deux appréciations.',
         ],
         'moderne' => [
             'nom' => 'Moderne',

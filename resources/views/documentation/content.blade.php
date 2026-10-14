@@ -279,10 +279,10 @@
         <li><strong>Par domaines bilingue</strong> (A4, écoles franco-arabes) : modèle médersa, avec un en-tête en français et en arabe
             et les matières groupées par domaine. La moyenne générale est la moyenne des domaines, et il y a une
             appréciation par maître (arabe et français).</li>
-        <li><strong>Essentiel</strong> et <strong>Par domaines compact</strong> (A5, ce dernier pour les écoles
-            franco-arabes) : des bulletins d'une demi-page.
-            Pour les modèles A5, le bouton <strong>2 bulletins par feuille A4</strong> de la fenêtre de génération
-            les imprime deux par feuille, à couper en deux.</li>
+        <li><strong>Essentiel</strong> (A5) : un bulletin d'une demi-page. Le bouton <strong>2 bulletins par feuille
+            A4</strong> de la fenêtre de génération l'imprime deux par feuille, à couper en deux.</li>
+        <li><strong>Par domaines compact</strong> (A4 paysage, écoles franco-arabes) : la version courte du modèle
+            médersa, en deux exemplaires A5 du même bulletin côte à côte (un pour les parents, un pour l'école).</li>
         <li><strong>Moderne</strong> (A4 paysage) : deux exemplaires A5 du même bulletin côte à côte, séparés par un
             trait de coupe (un pour les parents, un pour l'école), avec la photo de l'élève, une barre de niveau par
             matière et l'évolution depuis la période précédente.</li>
