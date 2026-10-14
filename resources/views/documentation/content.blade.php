@@ -266,18 +266,20 @@
         <figcaption>Générer Bulletins : un bouton « Générer » par classe.</figcaption>
     </figure>
 
-    <p><strong>Modèles de bulletin</strong> : sur la page des bulletins d'une classe, choisissez parmi cinq modèles.
+    <p><strong>Modèles de bulletin</strong> : sur la page des bulletins d'une classe, choisissez parmi six modèles.
     Le bouton <strong>Aperçu</strong> montre le bulletin d'un élève de la classe avant de choisir, et le dernier
     modèle choisi est retenu pour la classe.</p>
     <ul>
+        <li><strong>Standard</strong> (A5) : le bulletin habituel de KalanNet, utilisé tant qu'aucun autre modèle
+            n'est choisi.</li>
         <li><strong>Classique</strong> (A4) : notes de classe et de composition, coefficients, moyenne, rang,
             statistiques de la classe et décision du conseil.</li>
         <li><strong>Par domaines bilingue</strong> (A4) : modèle médersa, avec un en-tête en français et en arabe
             et les matières groupées par domaine. La moyenne générale est la moyenne des domaines, et il y a une
             appréciation par maître (arabe et français).</li>
         <li><strong>Essentiel</strong>, <strong>Par domaines compact</strong> et <strong>Moderne</strong> (A5) :
-            des bulletins d'une demi-page. Dans la fenêtre de génération, le bouton
-            <strong>2 bulletins par feuille A4</strong> les imprime deux par feuille, à couper en deux. Le modèle
+            des bulletins d'une demi-page. Pour tous les modèles A5, le bouton <strong>2 bulletins par feuille A4</strong>
+            de la fenêtre de génération les imprime deux par feuille, à couper en deux. Le modèle
             Moderne affiche la photo de l'élève, une barre de niveau par matière et l'évolution depuis la période
             précédente.</li>
     </ul>

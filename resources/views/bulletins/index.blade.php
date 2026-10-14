@@ -91,7 +91,7 @@
             </div>
         </div>
         <div class="card-body">
-            <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xxl-5 g-3">
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
                 @foreach($modeles as $code => $infos)
                     <div class="col">
                         <label class="modele-tuile h-100 {{ $code === $modeleActuel ? 'is-selected' : '' }}" data-modele="{{ $code }}">

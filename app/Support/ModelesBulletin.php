@@ -12,6 +12,12 @@ use App\Models\Classe;
 class ModelesBulletin
 {
     public const MODELES = [
+        'standard' => [
+            'nom' => 'Standard',
+            'format' => 'A5',
+            'calcul' => 'standard',
+            'description' => 'Le bulletin habituel de KalanNet, inchangé : M.Class, M.Compo, moyenne, coefficient, appréciation, rang et moyenne du premier.',
+        ],
         'classique' => [
             'nom' => 'Classique',
             'format' => 'A4',
@@ -48,6 +54,7 @@ class ModelesBulletin
     public const MAX_MATIERES_A5 = 16;
 
     public const EQUIVALENT_A4 = [
+        'standard' => 'classique',
         'essentiel' => 'classique',
         'moderne' => 'classique',
         'domaines_compact' => 'domaines',
@@ -58,10 +65,10 @@ class ModelesBulletin
         return $code !== null && isset(self::MODELES[$code]);
     }
 
-    /** Modèle retenu pour la classe : le dernier choisi, sinon le Classique. */
+    /** Modèle retenu pour la classe : le dernier choisi, sinon le Standard (le bulletin habituel). */
     public static function pourClasse(Classe $classe): string
     {
-        return self::existe($classe->modele_bulletin) ? $classe->modele_bulletin : 'classique';
+        return self::existe($classe->modele_bulletin) ? $classe->modele_bulletin : 'standard';
     }
 
     public static function calcul(string $code): string
