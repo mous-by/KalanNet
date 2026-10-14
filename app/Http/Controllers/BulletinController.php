@@ -160,8 +160,8 @@ class BulletinController extends Controller
             ->where('id_classe', $classe->id_classe)
             ->where('id_annee', $data['id_annee'])
             ->where('etat_dossier', 0)
-            ->orderBy('prenom_eleve')
-            ->orderBy('nom_eleve');
+            ->orderBy('nom_eleve')
+            ->orderBy('prenom_eleve');
 
         if ($selectedIds->isNotEmpty()) {
             $query->whereIn('id_eleve', $selectedIds);
@@ -259,7 +259,7 @@ class BulletinController extends Controller
             ->where('id_classe', $classe->id_classe)
             ->where('id_annee', $data['id_annee'])
             ->where('etat_dossier', 0)
-            ->orderBy('prenom_eleve')->orderBy('nom_eleve');
+            ->orderBy('nom_eleve')->orderBy('prenom_eleve');
 
         if ($selectedIds->isNotEmpty()) {
             $studentQuery->whereIn('id_eleve', $selectedIds);

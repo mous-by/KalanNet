@@ -119,6 +119,7 @@ class EvaluationController extends Controller
             ->orderBy('id_matiere')
             ->orderBy('id_eleve')
             ->get();
+        $details = $this->triParNom($details);
         $this->authorizeEvaluationLines($details);
 
         $firstLine = $details->first();
@@ -145,7 +146,7 @@ class EvaluationController extends Controller
         $classe = $firstLine?->classe ?? new Classe(['nom_classe' => 'Non renseignée']);
         $this->authorizeClasse($classe);
 
-        $details = $details->sortBy(fn ($line) => trim(($line->eleve?->nom_eleve ?? '') . ($line->eleve?->prenom_eleve ?? '')))->values();
+        $details = $this->triParNom($details);
         $maxNote = $this->maxNoteFor($firstLine?->noteType);
         $ecole = Ecole::withoutGlobalScopes()->find($classe->idEcole ?: session('idEcole'));
 
@@ -159,10 +160,10 @@ class EvaluationController extends Controller
     {
         $this->authorizePermission('evaluation_apercu');
         $evaluation = Evaluation::findOrFail($id);
-        $details = LigneEvaluation::with(['eleve', 'matiere', 'classe', 'noteType', 'trimestre'])
+        $details = $this->triParNom(LigneEvaluation::with(['eleve', 'matiere', 'classe', 'noteType', 'trimestre'])
             ->where('id_evaluation', $evaluation->id_evaluation)
             ->orderBy('id_ligneEvaluation')
-            ->get();
+            ->get());
 
         abort_if($details->isEmpty(), 404);
         $this->authorizeEvaluationLines($details);
@@ -446,7 +447,7 @@ class EvaluationController extends Controller
             ->where('id_annee', $idAnnee)
             ->where('etat_dossier', 0)
             ->when($isLv2, fn ($q) => $q->where('id_matiere_lv2', $idMatiere))
-            ->orderBy('prenom_eleve')->orderBy('nom_eleve')
+            ->orderBy('nom_eleve')->orderBy('prenom_eleve')
             ->get();
     }
 
@@ -480,6 +481,15 @@ class EvaluationController extends Controller
         }
 
         return (int) $idEnseignant;
+    }
+
+    /** Lignes d'évaluation dans l'ordre alphabétique des élèves : nom, puis prénom. */
+    protected function triParNom($details)
+    {
+        return $details->sortBy([
+            fn ($a, $b) => strcasecmp((string) $a->eleve?->nom_eleve, (string) $b->eleve?->nom_eleve),
+            fn ($a, $b) => strcasecmp((string) $a->eleve?->prenom_eleve, (string) $b->eleve?->prenom_eleve),
+        ])->values();
     }
 
     protected function authorizeClasse(Classe $classe): void

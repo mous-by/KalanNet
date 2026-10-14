@@ -79,8 +79,8 @@ class RechercherElevesTool extends AbstractKalanbotTool
                     ->orWhere('prenom_eleve', 'LIKE', "%{$search}%")
                     ->orWhere('matricule', 'LIKE', "%{$search}%");
             })
-            ->orderBy('prenom_eleve')
             ->orderBy('nom_eleve')
+            ->orderBy('prenom_eleve')
             ->limit(15)
             ->get();
 

@@ -108,7 +108,7 @@ class CalculBulletin
             ->where('id_classe', $this->classe->id_classe)
             ->where('id_annee', $this->idAnnee)
             ->where('etat_dossier', 0)
-            ->orderBy('prenom_eleve')->orderBy('nom_eleve')
+            ->orderBy('nom_eleve')->orderBy('prenom_eleve')
             ->get()
             ->keyBy('id_eleve');
 

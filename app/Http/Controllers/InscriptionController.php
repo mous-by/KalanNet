@@ -35,7 +35,7 @@ class InscriptionController extends Controller
         $eleves = Eleve::where('id_ecole', session('idEcole'))
             ->where('etat_dossier', 0)
             ->with('classe')
-            ->orderBy('prenom_eleve')->orderBy('nom_eleve')
+            ->orderBy('nom_eleve')->orderBy('prenom_eleve')
             ->get();
         $activeTab = in_array($request->query('tab'), ['group', 'reinscription'], true) ? $request->query('tab') : 'individual';
         $reinscriptionFilters = $activeTab === 'reinscription' ? $this->defaultReinscriptionFilters($annees) : [];
@@ -532,7 +532,7 @@ class InscriptionController extends Controller
         $eleves = Eleve::where('id_ecole', session('idEcole'))
             ->where('etat_dossier', 0)
             ->with('classe')
-            ->orderBy('prenom_eleve')->orderBy('nom_eleve')
+            ->orderBy('nom_eleve')->orderBy('prenom_eleve')
             ->get();
 
         $activeTab = 'reinscription';
@@ -595,7 +595,7 @@ class InscriptionController extends Controller
             ->where('id_classe', $sourceClasse->id_classe)
             ->where('id_annee', (int) $data['source_annee_id'])
             ->with('classe')
-            ->orderBy('prenom_eleve')->orderBy('nom_eleve')
+            ->orderBy('nom_eleve')->orderBy('prenom_eleve')
             ->get();
 
         $existingIds = DB::table('ligne_reinscription')

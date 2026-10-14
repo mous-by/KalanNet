@@ -757,12 +757,7 @@ class ConfigurationController extends Controller
      */
     protected function permissionsAssignables(User $assigneur): ?array
     {
-        if ($assigneur->droit === 'SupAdmin') {
-            return null;
-        }
-
-        // Certaines permissions ne s'accordent que par le SupAdmin, même par quelqu'un qui les a.
-        return array_values(array_diff($assigneur->permissionCanonicalNames(), Permission::ACCORDEES_PAR_SUPADMIN));
+        return $assigneur->droit === 'SupAdmin' ? null : $assigneur->permissionCanonicalNames();
     }
 
     protected function groupedPermissionsAssignables(User $assigneur, ?User $cible = null): array
@@ -1450,7 +1445,7 @@ class ConfigurationController extends Controller
             return Permission::query()
                 ->whereNotIn('name', [
                     // Accordée au cas par cas par le SupAdmin, sur demande de l'école.
-                    ...Permission::ACCORDEES_PAR_SUPADMIN,
+                    ...Permission::JAMAIS_PAR_DEFAUT,
                     'enseignants_supprimer',
                     'matieres_creation',
                     'matieres_action',

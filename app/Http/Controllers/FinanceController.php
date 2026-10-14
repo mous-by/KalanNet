@@ -1588,7 +1588,7 @@ class FinanceController extends Controller
             ->where('id_classe', $classeId)
             ->where('id_annee', $anneeId)
             ->where('etat_dossier', 0)
-            ->orderBy('prenom_eleve')->orderBy('nom_eleve')
+            ->orderBy('nom_eleve')->orderBy('prenom_eleve')
             ->get();
 
         $inscriptions = DB::table('ligne_inscription')
@@ -1892,6 +1892,7 @@ class FinanceController extends Controller
             fn ($a, $b) => $a->id_annee <=> $b->id_annee,
             fn ($a, $b) => strcmp((string) ($a->classe?->nom_classe ?? ''), (string) ($b->classe?->nom_classe ?? '')),
             fn ($a, $b) => strcmp((string) ($a->eleve?->nom_eleve ?? ''), (string) ($b->eleve?->nom_eleve ?? '')),
+            fn ($a, $b) => strcmp((string) ($a->eleve?->prenom_eleve ?? ''), (string) ($b->eleve?->prenom_eleve ?? '')),
         ])->values();
     }
 

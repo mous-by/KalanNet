@@ -223,8 +223,11 @@ class Permission extends Model
      * des classes officielles est commun à toutes les écoles, et le portail
      * revendeur ne concerne que les revendeurs.
      */
-    /** Permissions que seul le SupAdmin peut accorder (jamais données d'office). */
-    public const ACCORDEES_PAR_SUPADMIN = [
+    /**
+     * Permissions jamais données d'office aux nouveaux comptes : le SupAdmin
+     * les accorde, puis chaque titulaire peut les transmettre à ses subalternes.
+     */
+    public const JAMAIS_PAR_DEFAUT = [
         'evaluations_communes_apercu',
     ];
 
@@ -253,6 +256,8 @@ class Permission extends Model
         'permissions_apercu' => [],
         'abonnements_configuration' => [],
         'abonnements_validation' => [],
+        // Module Évaluations communes : tous les rôles sauf les parents.
+        'evaluations_communes_apercu' => ['Admin', 'Gestionnaire', 'enseignant', 'DAE', 'DCAP'],
     ];
 
     public static function accessiblePourRole(string $name, ?string $droit): bool

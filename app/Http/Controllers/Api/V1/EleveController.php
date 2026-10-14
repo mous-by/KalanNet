@@ -244,7 +244,7 @@ class EleveController extends WebEleveController
             });
         }
 
-        $eleves = $query->orderBy('prenom_eleve')->orderBy('nom_eleve')->paginate(30)->withQueryString();
+        $eleves = $query->orderBy('nom_eleve')->orderBy('prenom_eleve')->paginate(30)->withQueryString();
 
         return response()->json($eleves);
     }

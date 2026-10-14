@@ -388,8 +388,8 @@ class DashboardController extends Controller
             ->with(['classe', 'plansPaiement.echeances.paiements'])
             ->when($schoolId, fn ($query, $id) => $query->where('eleve.id_ecole', $id))
             ->where('etat_dossier', 0)
-            ->orderBy('prenom_eleve')
             ->orderBy('nom_eleve')
+            ->orderBy('prenom_eleve')
             ->get();
 
         $childIds = $children->pluck('id_eleve')->filter()->values();

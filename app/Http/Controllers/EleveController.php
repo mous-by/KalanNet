@@ -51,7 +51,7 @@ class EleveController extends Controller
             });
         }
 
-        $eleves = $query->orderBy('prenom_eleve')->orderBy('nom_eleve')
+        $eleves = $query->orderBy('nom_eleve')->orderBy('prenom_eleve')
             ->get();
 
         return view('eleves.index', compact('eleves', 'classes', 'annees', 'showList'));
@@ -151,7 +151,7 @@ class EleveController extends Controller
             });
         }
 
-        $eleves = $query->orderBy('prenom_eleve')->orderBy('nom_eleve')
+        $eleves = $query->orderBy('nom_eleve')->orderBy('prenom_eleve')
             ->paginate(20)
             ->withQueryString();
 
@@ -515,7 +515,7 @@ class EleveController extends Controller
             });
         }
 
-        $eleves = $query->orderBy('prenom_eleve')->orderBy('nom_eleve')
+        $eleves = $query->orderBy('nom_eleve')->orderBy('prenom_eleve')
             ->get();
 
         if ($eleves->isEmpty()) {
@@ -546,7 +546,7 @@ class EleveController extends Controller
             });
         }
 
-        return $query->orderBy('prenom_eleve')->orderBy('nom_eleve');
+        return $query->orderBy('nom_eleve')->orderBy('prenom_eleve');
     }
 
     private function cardPrintConfig(Request $request): array

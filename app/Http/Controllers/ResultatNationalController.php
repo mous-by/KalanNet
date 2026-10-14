@@ -41,7 +41,7 @@ class ResultatNationalController extends Controller
                 ->where('id_classe', $selectedClasse->id_classe)
                 ->where('id_annee', (int) $filters['id_annee'])
                 ->where('etat_dossier', 0)
-                ->orderBy('prenom_eleve')->orderBy('nom_eleve')
+                ->orderBy('nom_eleve')->orderBy('prenom_eleve')
                 ->get();
 
             $resultats = DB::table('resultats_def_terminal')

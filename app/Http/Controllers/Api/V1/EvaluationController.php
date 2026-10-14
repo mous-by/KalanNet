@@ -101,6 +101,7 @@ class EvaluationController extends WebEvaluationController
             ->orderBy('id_matiere')
             ->orderBy('id_eleve')
             ->get();
+        $details = $this->triParNom($details);
         $this->authorizeEvaluationLines($details);
 
         $firstLine = $details->first();
