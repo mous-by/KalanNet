@@ -300,11 +300,10 @@ class ClasseController extends Controller
     /** Domaines de l'école (colonne « Domaine ») et option « deux maîtres » (écoles franco-arabes). */
     protected function optionsDomaines(?Ecole $ecole, bool $estSante): array
     {
-        $domaines = match (true) {
-            !$ecole || $estSante => collect(),
-            (bool) $ecole->franco_arabe => Domaines::pourEcole((int) $ecole->idEcole),
-            default => Domaines::existants((int) $ecole->idEcole),
-        };
+        // Les domaines ne concernent que les écoles franco-arabes.
+        $domaines = $ecole && !$estSante && $ecole->franco_arabe
+            ? Domaines::pourEcole((int) $ecole->idEcole)
+            : collect();
 
         return [
             'domaines' => $domaines,

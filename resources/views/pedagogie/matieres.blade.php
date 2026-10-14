@@ -23,7 +23,7 @@
     </div>
 
     <div class="mb-3 d-flex justify-content-end gap-2">
-        @if(session('idEcole') || auth()->user()->idEcole)
+        @if($ecoleFrancoArabe ?? false)
             <a href="{{ route('pedagogie.domaines') }}" class="btn btn-outline-secondary px-4">
                 <i class="bi bi-diagram-3 me-2"></i>{{ __('domaines.title') }}
             </a>

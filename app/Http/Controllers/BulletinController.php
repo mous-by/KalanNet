@@ -45,7 +45,7 @@ class BulletinController extends Controller
 
         return view('bulletins.index', [
             'classe' => $classe,
-            'modeles' => ModelesBulletin::MODELES,
+            'modeles' => ModelesBulletin::disponibles((int) $classe->idEcole),
             'modeleActuel' => ModelesBulletin::pourClasse($classe),
             'modeNote' => ModelesBulletin::modeNote($classe),
             'nbMatieres' => $classe->ligneClasses()->count(),
@@ -370,7 +370,7 @@ class BulletinController extends Controller
         $classe = $eleve->classe;
         $this->authorizeClasse($classe);
 
-        $modele = ModelesBulletin::existe($modele) ? $modele : ModelesBulletin::pourClasse($classe);
+        $modele = ModelesBulletin::disponible($modele, (int) $classe->idEcole) ? $modele : ModelesBulletin::pourClasse($classe);
         $calcul = CalculBulletin::pour($classe, (int) $id_annee, $mois ? null : ($id_trimestre ? (int) $id_trimestre : null), $mois ? (int) $mois : null, ModelesBulletin::calcul($modele), ModelesBulletin::modeNote($classe));
 
         $data = $calcul->pourEleve((int) $id);
@@ -464,7 +464,7 @@ class BulletinController extends Controller
         $this->authorizeClasse($classe);
 
         $data = $request->validate([
-            'modele_bulletin' => ['required', 'string', \Illuminate\Validation\Rule::in(array_keys(ModelesBulletin::MODELES))],
+            'modele_bulletin' => ['required', 'string', \Illuminate\Validation\Rule::in(array_keys(ModelesBulletin::disponibles((int) $classe->idEcole)))],
             'note_classe_mode' => 'required|in:moyenne,unique',
         ]);
 

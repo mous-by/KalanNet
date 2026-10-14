@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Classe;
+use App\Models\Ecole;
 
 /**
  * Modèles de bulletin proposés à l'impression. Le modèle ne change que la
@@ -63,15 +64,50 @@ class ModelesBulletin
         'domaines_compact' => 'domaines',
     ];
 
+    private static array $francoArabe = [];
+
     public static function existe(?string $code): bool
     {
         return $code !== null && isset(self::MODELES[$code]);
     }
 
-    /** Modèle retenu pour la classe : le dernier choisi, sinon le Standard (le bulletin habituel). */
+    /** Les modèles « par domaines » sont réservés aux écoles franco-arabes. */
+    public static function disponibles(?int $idEcole): array
+    {
+        return self::estFrancoArabe($idEcole)
+            ? self::MODELES
+            : array_filter(self::MODELES, fn ($m) => $m['calcul'] !== 'domaines');
+    }
+
+    public static function disponible(?string $code, ?int $idEcole): bool
+    {
+        return $code !== null && isset(self::disponibles($idEcole)[$code]);
+    }
+
+    /**
+     * Modèle par défaut : Par domaines bilingue pour les classes du fondamental
+     * d'une école franco-arabe, Standard pour toutes les autres.
+     */
+    public static function parDefaut(Classe $classe): string
+    {
+        return self::estFrancoArabe((int) $classe->idEcole) && in_array($classe->ordreEnseignement, ['fondamentale1', 'fondamentale2'], true)
+            ? 'domaines'
+            : 'standard';
+    }
+
+    /** Modèle retenu pour la classe : le dernier choisi (s'il est permis à l'école), sinon celui par défaut. */
     public static function pourClasse(Classe $classe): string
     {
-        return self::existe($classe->modele_bulletin) ? $classe->modele_bulletin : 'standard';
+        return self::disponible($classe->modele_bulletin, (int) $classe->idEcole) ? $classe->modele_bulletin : self::parDefaut($classe);
+    }
+
+    public static function estFrancoArabe(?int $idEcole): bool
+    {
+        if (!$idEcole) {
+            return false;
+        }
+
+        return self::$francoArabe[$idEcole] ??= (bool) Ecole::withoutGlobalScopes()->whereKey($idEcole)->value('franco_arabe');
     }
 
     public static function calcul(string $code): string

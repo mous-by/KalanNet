@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Support\Domaines;
+use App\Support\ModelesBulletin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -124,6 +125,7 @@ class DomaineController extends Controller
     {
         $idEcole = (int) (session('idEcole') ?: Auth::user()->idEcole);
         abort_unless($idEcole, 403, "Sélectionnez d'abord une école.");
+        abort_unless(ModelesBulletin::estFrancoArabe($idEcole), 404);
 
         return $idEcole;
     }

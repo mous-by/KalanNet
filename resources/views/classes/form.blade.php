@@ -35,7 +35,7 @@
         $oldDomaines = old('id_domaine', []);
         $initialRows = collect();
         $domaineDefaut = fn ($matiere) => \App\Support\Domaines::defautPourMatiere($domaines, $matiere?->domaine_defaut);
-        $afficherDomaines = $domaines->isNotEmpty() && ($francoArabe || in_array($classe->modele_bulletin, ['domaines', 'domaines_compact'], true));
+        $afficherDomaines = $francoArabe && $domaines->isNotEmpty();
 
         if (is_array($oldMatieres)) {
             $initialRows = collect($oldMatieres)->map(function ($idMatiere, $index) use ($matieres, $oldEnseignants, $oldCoefficients, $oldDomaines) {
