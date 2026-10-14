@@ -111,5 +111,4 @@
         </tr>
     </table>
 
-    <div class="pied">Moyenne de matière = (classe + composition) ÷ 2 · moyenne de domaine pondérée par les coefficients · moyenne générale = moyenne des domaines</div>
 </div>

@@ -49,4 +49,3 @@
 .signatures { width: 100%; margin-top: 3mm; }
 .signatures td { width: 50%; text-align: center; font-size: 8.5px; font-weight: bold; text-transform: uppercase; letter-spacing: .6px; vertical-align: top; height: 13mm; }
 .signatures .ar { text-transform: none; letter-spacing: 0; font-size: 9.5px; font-weight: normal; }
-.pied { margin-top: 2mm; font-size: 8px; color: #333; text-align: center; border-top: 1px solid #999; padding-top: 1.5mm; }

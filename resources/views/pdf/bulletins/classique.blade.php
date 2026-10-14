@@ -119,5 +119,4 @@
         </tr>
     </table>
 
-    <div class="pied">{{ $nomEcole }} · {{ $apercu->nom_classe }} · {{ $periodeTitre }} {{ $anneeScolaire }}</div>
 </div>

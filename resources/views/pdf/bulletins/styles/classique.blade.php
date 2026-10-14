@@ -36,4 +36,3 @@
 .decisions td { padding: 2px 0; font-size: 10px; }
 .signatures { width: 100%; margin-top: 4mm; }
 .signatures td { width: 33%; text-align: center; font-size: 9.5px; font-weight: bold; text-transform: uppercase; letter-spacing: .6px; text-decoration: underline; vertical-align: top; height: 18mm; }
-.pied { position: absolute; bottom: 5mm; left: 12mm; right: 12mm; font-size: 8.5px; color: #333; text-align: center; border-top: 1px solid #999; padding-top: 2mm; }
