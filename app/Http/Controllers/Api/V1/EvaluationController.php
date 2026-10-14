@@ -17,6 +17,7 @@ class EvaluationController extends WebEvaluationController
 {
     public function index(Request $request)
     {
+        $this->authorizePermission('evaluation_apercu');
         $context = $this->evaluationContext();
         $filters = $request->only(['id_classe', 'id_matiere', 'id_annee_scolaire', 'id_trimestre', 'mois']);
 
@@ -53,12 +54,7 @@ class EvaluationController extends WebEvaluationController
     {
         $this->authorizePermission('evaluation_creation');
         $data = $this->validateProgramme($request);
-        $user = $request->user();
-        $idEnseignant = $user->id_enseignant;
-
-        if (!$idEnseignant) {
-            abort(403, 'Seuls les enseignants peuvent programmer une évaluation.');
-        }
+        $idEnseignant = $this->enseignantDeLEvaluation($request, $data);
 
         $students = $this->studentsForEvaluation($data['id_classe'], $data['id_annee_scolaire'], $data['id_matiere'])->pluck('id_eleve')->all();
         if (empty($students)) {
@@ -96,6 +92,7 @@ class EvaluationController extends WebEvaluationController
 
     public function show($id)
     {
+        $this->authorizePermission('evaluation_apercu');
         $evaluation = Evaluation::findOrFail($id);
 
         $details = LigneEvaluation::with(['eleve', 'matiere', 'classe', 'noteType', 'trimestre'])
@@ -133,7 +130,7 @@ class EvaluationController extends WebEvaluationController
         if (empty($students)) {
             throw ValidationException::withMessages(['id_classe' => 'Aucun élève trouvé pour cette classe, cette année scolaire et — le cas échéant — cette langue LV2.']);
         }
-        $idEnseignant = $request->user()->id_enseignant ?: $details->first()->id_enseignant;
+        $idEnseignant = $this->enseignantDeLEvaluation($request, $data, (int) $details->first()->id_enseignant ?: null);
 
         DB::transaction(function () use ($evaluation, $data, $students, $idEnseignant) {
             $evaluation->update([

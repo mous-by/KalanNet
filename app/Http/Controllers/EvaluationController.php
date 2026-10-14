@@ -8,6 +8,7 @@ use App\Models\LigneEvaluation;
 use App\Models\Classe;
 use App\Models\Ecole;
 use App\Models\Eleve;
+use App\Models\Enseignant;
 use App\Models\User;
 use App\Models\Matiere;
 use App\Models\AnneeScolaire;
@@ -18,12 +19,14 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class EvaluationController extends Controller
 {
     public function index(Request $request)
     {
+        $this->authorizePermission('evaluation_apercu');
         $context = $this->evaluationContext();
         $filters = $request->only(['id_classe', 'id_matiere', 'id_annee_scolaire', 'id_trimestre', 'mois']);
 
@@ -58,6 +61,8 @@ class EvaluationController extends Controller
 
     public function create()
     {
+        $this->authorizePermission('evaluation_creation');
+
         return view('evaluations.form', $this->evaluationContext() + [
             'evaluation' => new Evaluation(),
             'details' => collect(),
@@ -69,12 +74,7 @@ class EvaluationController extends Controller
     {
         $this->authorizePermission('evaluation_creation');
         $data = $this->validateProgramme($request);
-        $user = Auth::user();
-        $idEnseignant = $user->id_enseignant;
-
-        if (!$idEnseignant) {
-            abort(403, 'Seuls les enseignants peuvent programmer une évaluation.');
-        }
+        $idEnseignant = $this->enseignantDeLEvaluation($request, $data);
 
         $students = $this->studentsForEvaluation($data['id_classe'], $data['id_annee_scolaire'], $data['id_matiere'])->pluck('id_eleve')->all();
         if (empty($students)) {
@@ -110,6 +110,7 @@ class EvaluationController extends Controller
 
     public function show($id)
     {
+        $this->authorizePermission('evaluation_apercu');
         $evaluation = Evaluation::findOrFail($id);
 
         $details = LigneEvaluation::with(['eleve', 'matiere', 'classe', 'noteType', 'trimestre'])
@@ -130,6 +131,7 @@ class EvaluationController extends Controller
 
     public function downloadNotesPdf($id)
     {
+        $this->authorizePermission('evaluation_apercu');
         $evaluation = Evaluation::findOrFail($id);
 
         $details = LigneEvaluation::with(['eleve', 'matiere', 'classe', 'noteType'])
@@ -155,6 +157,7 @@ class EvaluationController extends Controller
 
     public function edit(int $id)
     {
+        $this->authorizePermission('evaluation_apercu');
         $evaluation = Evaluation::findOrFail($id);
         $details = LigneEvaluation::with(['eleve', 'matiere', 'classe', 'noteType', 'trimestre'])
             ->where('id_evaluation', $evaluation->id_evaluation)
@@ -170,6 +173,7 @@ class EvaluationController extends Controller
 
     public function editProgramme(int $id)
     {
+        $this->authorizePermission('evaluation_modification');
         $evaluation = Evaluation::findOrFail($id);
         $details = LigneEvaluation::with(['classe', 'matiere', 'noteType', 'trimestre'])
             ->where('id_evaluation', $evaluation->id_evaluation)
@@ -198,7 +202,7 @@ class EvaluationController extends Controller
         if (empty($students)) {
             throw ValidationException::withMessages(['id_classe' => 'Aucun élève trouvé pour cette classe, cette année scolaire et — le cas échéant — cette langue LV2.']);
         }
-        $idEnseignant = Auth::user()->id_enseignant ?: $details->first()->id_enseignant;
+        $idEnseignant = $this->enseignantDeLEvaluation($request, $data, (int) $details->first()->id_enseignant ?: null);
 
         DB::transaction(function () use ($evaluation, $data, $students, $idEnseignant) {
             $evaluation->update([
@@ -331,11 +335,14 @@ class EvaluationController extends Controller
         $user = Auth::user();
         $matieres = $classe->ligneClasses
             ->when($user->id_enseignant, fn ($items) => $items->where('id_enseignants', $user->id_enseignant))
-            ->pluck('matiere')
-            ->filter()
+            ->filter(fn ($ligne) => $ligne->matiere)
             ->unique('id_matiere')
             ->values()
-            ->map(fn ($matiere) => ['id_matiere' => $matiere->id_matiere, 'nom_matiere' => $matiere->nom_matiere]);
+            ->map(fn ($ligne) => [
+                'id_matiere' => $ligne->matiere->id_matiere,
+                'nom_matiere' => $ligne->matiere->nom_matiere,
+                'id_enseignant' => $ligne->id_enseignants,
+            ]);
 
         return response()->json(['matiere' => $matieres]);
     }
@@ -372,6 +379,13 @@ class EvaluationController extends Controller
 
         return [
             'classes' => $classes,
+            // Un administrateur ou un gestionnaire programme l'évaluation au nom d'un enseignant.
+            'choisirEnseignant' => !$user->id_enseignant,
+            'enseignants' => $user->id_enseignant ? collect() : Enseignant::query()
+                ->where('is_deleted', 0)
+                ->when($user->droit !== 'SupAdmin', fn ($q) => $q->where('id_ecole', $idEcole))
+                ->orderBy('nom_prenom_enseignant')
+                ->get(['id_enseignant', 'nom_prenom_enseignant']),
             'annees' => AnneeScolaire::orderByDesc('date_debut')->get(),
             'notes' => Note::orderBy('typeNote')->get(),
             'trimestres' => Trimestre::orderBy('id_trimestre')->get(),
@@ -434,6 +448,38 @@ class EvaluationController extends Controller
             ->when($isLv2, fn ($q) => $q->where('id_matiere_lv2', $idMatiere))
             ->orderBy('prenom_eleve')->orderBy('nom_eleve')
             ->get();
+    }
+
+    /**
+     * Enseignant à qui revient l'évaluation : l'enseignant connecté lui-même ;
+     * pour un administrateur ou un gestionnaire, l'enseignant choisi dans le
+     * formulaire, sinon celui de la matière dans la classe, sinon l'actuel.
+     */
+    protected function enseignantDeLEvaluation(Request $request, array $data, ?int $actuel = null): int
+    {
+        $user = Auth::user();
+        if ($user->id_enseignant) {
+            return (int) $user->id_enseignant;
+        }
+
+        $idEcole = Classe::withoutGlobalScopes()->whereKey($data['id_classe'])->value('idEcole');
+        $choisi = $request->validate([
+            'id_enseignant' => ['nullable', 'integer', Rule::exists('enseignants', 'id_enseignant')->where('id_ecole', $idEcole)->where('is_deleted', 0)],
+        ], [
+            'id_enseignant.exists' => "Cet enseignant n'appartient pas à l'école.",
+        ])['id_enseignant'] ?? null;
+
+        $idEnseignant = $choisi
+            ?: DB::table('ligneclasse')->where('id_classe', $data['id_classe'])->where('id_matiere', $data['id_matiere'])->value('id_enseignants')
+            ?: $actuel;
+
+        if (!$idEnseignant) {
+            throw ValidationException::withMessages([
+                'id_enseignant' => "Aucun enseignant n'est attribué à cette matière dans la classe : choisissez l'enseignant.",
+            ]);
+        }
+
+        return (int) $idEnseignant;
     }
 
     protected function authorizeClasse(Classe $classe): void

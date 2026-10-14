@@ -57,6 +57,7 @@
                             <option value="">Sélectionnez une matière</option>
                         </select>
                     </div>
+                    @include('evaluations.partials.enseignant', ['selectionne' => old('id_enseignant')])
                     <div class="col-md-3">
                         <label class="form-label">Année scolaire</label>
                         <select name="id_annee_scolaire" id="id_annee_scolaire" class="form-select" required>
@@ -132,10 +133,26 @@
                         const option = document.createElement('option');
                         option.value = item.id_matiere;
                         option.textContent = item.nom_matiere;
+                        option.dataset.enseignant = item.id_enseignant || '';
                         option.selected = String(item.id_matiere) === String(selectedMatiere);
                         matiereSelect.appendChild(option);
-                    }));
+                    }))
+                    .then(proposerEnseignant);
             }
+
+            // Administrateur / gestionnaire : propose l'enseignant de la matière
+            // dans la classe, sans écraser un choix déjà fait.
+            const enseignantSelect = document.getElementById('id_enseignant');
+            let enseignantChoisi = !!(enseignantSelect && enseignantSelect.dataset.selected);
+            function proposerEnseignant() {
+                if (!enseignantSelect || enseignantChoisi) return;
+                const option = matiereSelect.options[matiereSelect.selectedIndex];
+                enseignantSelect.value = option?.dataset.enseignant || '';
+            }
+            if (enseignantSelect) {
+                enseignantSelect.addEventListener('change', () => { enseignantChoisi = enseignantSelect.value !== ''; });
+            }
+            matiereSelect.addEventListener('change', proposerEnseignant);
 
             classeSelect.addEventListener('change', function () {
                 syncPeriodMode();
