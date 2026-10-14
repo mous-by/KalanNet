@@ -82,6 +82,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/enseignants', [EnseignantController::class, 'index'])->name('enseignants.index');
     Route::post('/enseignants/search', [EnseignantController::class, 'index'])->name('enseignants.search');
     Route::get('/enseignants/create', [EnseignantController::class, 'create'])->name('enseignants.create');
+    Route::get('/enseignants/importer', [EnseignantController::class, 'importForm'])->name('enseignants.import');
+    Route::post('/enseignants/importer', [EnseignantController::class, 'import'])->name('enseignants.import.store');
+    Route::get('/enseignants/importer/modele', [EnseignantController::class, 'importTemplate'])->name('enseignants.import.template');
+    Route::get('/enseignants/exporter', [EnseignantController::class, 'export'])->name('enseignants.export');
     Route::post('/enseignants', [EnseignantController::class, 'store'])->name('enseignants.store');
     Route::get('/enseignants/emargements', [EmargementController::class, 'index'])->name('enseignants.emargements');
     Route::post('/enseignants/emargements/filter', [EmargementController::class, 'index'])->name('enseignants.emargements.filter');

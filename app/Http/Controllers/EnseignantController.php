@@ -8,6 +8,7 @@ use App\Support\Telephone;
 use App\Models\LigneClasse;
 use App\Models\Salaire;
 use App\Models\AnneeScolaire;
+use App\Services\Enseignants\ExcelEnseignants;
 use Illuminate\Support\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -256,9 +257,143 @@ class EnseignantController extends Controller
         return array_values(array_diff(array_map('intval', $ids), $actifs));
     }
 
+    public function importForm()
+    {
+        $this->autoriserImportExport('enseignants_importer');
+        $ecole = \App\Models\Ecole::withoutGlobalScopes()->find($this->ecoleCourante());
+
+        return view('enseignants.import', [
+            'contrats' => $this->contratsAutorises($ecole),
+            'maxLignes' => ExcelEnseignants::MAX_LIGNES,
+        ]);
+    }
+
+    public function importTemplate()
+    {
+        $this->autoriserImportExport('enseignants_importer');
+        $ecole = \App\Models\Ecole::withoutGlobalScopes()->find($this->ecoleCourante());
+        $classeur = app(ExcelEnseignants::class)->modele($this->contratsAutorises($ecole));
+
+        return response()->streamDownload(function () use ($classeur) {
+            (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($classeur))->save('php://output');
+        }, 'modele_import_enseignants.xlsx', [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
+    /**
+     * Import Excel : tout le fichier est vérifié avec les règles du formulaire
+     * avant d'enregistrer quoi que ce soit ; à la moindre erreur, rien n'est
+     * importé et chaque ligne à corriger est indiquée.
+     */
+    public function import(Request $request)
+    {
+        $this->autoriserImportExport('enseignants_importer');
+        $schoolId = $this->ecoleCourante();
+        $request->validate([
+            'fichier' => 'required|file|mimes:xlsx,xls|max:5120',
+        ], [
+            'fichier.required' => 'Choisissez le fichier Excel à importer.',
+            'fichier.mimes' => 'Le fichier doit être un fichier Excel (.xlsx ou .xls).',
+        ]);
+
+        try {
+            $lignes = app(ExcelEnseignants::class)->lire($request->file('fichier')->getRealPath());
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Le fichier n’a pas pu être lu. Utilisez le modèle Excel proposé.');
+        }
+
+        if (empty($lignes)) {
+            return back()->with('error', 'Le fichier ne contient aucun enseignant.');
+        }
+        if (count($lignes) > ExcelEnseignants::MAX_LIGNES) {
+            return back()->with('error', 'Le fichier contient '.count($lignes).' enseignants : '.ExcelEnseignants::MAX_LIGNES.' au plus par fichier.');
+        }
+
+        $regles = $this->reglesEnseignant($schoolId);
+        $noms = collect(ExcelEnseignants::COLONNES)->mapWithKeys(fn ($c) => [$c[0] => '« '.$c[1].' »'])->all();
+        $erreurs = [];
+        $dejaVus = ['telephone' => [], 'email' => [], 'matricule' => []];
+
+        foreach ($lignes as $numero => &$donnees) {
+            if (!empty($donnees['telephone'])) {
+                $donnees['telephone'] = Telephone::normalize((string) $donnees['telephone'], $schoolId);
+            }
+            $validation = \Illuminate\Support\Facades\Validator::make($donnees, $regles, [], $noms);
+            $messages = $validation->fails() ? $validation->errors()->all() : [];
+
+            foreach ($dejaVus as $champ => $valeurs) {
+                $valeur = $donnees[$champ] ?? null;
+                if ($valeur === null || $valeur === '') {
+                    continue;
+                }
+                $cle = mb_strtolower((string) $valeur);
+                if (isset($valeurs[$cle])) {
+                    $messages[] = $noms[$champ].' : déjà utilisé à la ligne '.$valeurs[$cle].' du fichier.';
+                } else {
+                    $dejaVus[$champ][$cle] = $numero;
+                }
+            }
+
+            if ($messages) {
+                $erreurs[$numero] = $messages;
+            }
+        }
+        unset($donnees);
+
+        if ($erreurs) {
+            return back()
+                ->with('error', count($erreurs).' ligne(s) à corriger : aucun enseignant n’a été importé.')
+                ->with('erreurs_import', $erreurs);
+        }
+
+        DB::transaction(function () use ($lignes, $schoolId) {
+            foreach ($lignes as $donnees) {
+                $donnees['avatar_enseignant'] = 'assets/images/avatars/avatar-1.png';
+                $donnees['pwd'] = Hash::make(\Illuminate\Support\Str::random(40));
+                $donnees['id_ecole'] = $schoolId;
+                $donnees['matricule'] = ($donnees['matricule'] ?? null) ?: $this->generateMatricule($donnees);
+                Enseignant::create($this->mapFields($donnees));
+            }
+        });
+
+        return redirect()->route('enseignants.index')->with('success', count($lignes).' enseignant(s) importé(s) avec succès.');
+    }
+
+    /** Liste Excel des enseignants de l'école (actifs et archivés), réimportable. */
+    public function export()
+    {
+        $this->autoriserImportExport('enseignants_exporter');
+        $schoolId = $this->ecoleCourante();
+        $ecole = \App\Models\Ecole::withoutGlobalScopes()->find($schoolId);
+        $enseignants = Enseignant::withoutGlobalScopes()->where('id_ecole', $schoolId)
+            ->orderBy('is_deleted')->orderBy('nom_prenom_enseignant')->get();
+        $classeur = app(ExcelEnseignants::class)->export($enseignants, $ecole?->nomEcole);
+        $fichier = 'Enseignants_'.\Illuminate\Support\Str::slug($ecole?->nomEcole ?: 'ecole', '_').'_'.now()->format('Y-m-d').'.xlsx';
+
+        return response()->streamDownload(function () use ($classeur) {
+            (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($classeur))->save('php://output');
+        }, $fichier, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
+    private function ecoleCourante(): int
+    {
+        $idEcole = (int) (session('idEcole') ?: Auth::user()->idEcole);
+        abort_unless($idEcole, 403, "Sélectionnez d'abord une école.");
+
+        return $idEcole;
+    }
+
+    private function autoriserImportExport(string $permission): void
+    {
+        $user = Auth::user();
+        abort_unless($user && ($user->droit === 'SupAdmin' || (in_array($user->droit, ['Admin', 'Gestionnaire'], true) && $user->userHasPermission($permission))), 403, 'Permission insuffisante.');
+    }
+
     protected function validateEnseignant(Request $request, ?int $ignoreId = null): array
     {
-        $contratsAutorises = implode(',', array_keys($this->contratsAutorises(Auth::user()->ecole)));
         $schoolId = $ignoreId
             ? Enseignant::withoutGlobalScopes()->where('id_enseignant', $ignoreId)->value('id_ecole')
             : (session('idEcole') ?: Auth::user()->idEcole);
@@ -267,7 +402,18 @@ class EnseignantController extends Controller
             $request->merge(['telephone' => Telephone::normalize($request->input('telephone'), $schoolId)]);
         }
 
-        return $request->validate([
+        return $request->validate($this->reglesEnseignant($schoolId, $ignoreId) + [
+            'avatar' => 'nullable|image|max:5120',
+        ]);
+    }
+
+    /** Règles communes au formulaire et à l'import Excel. */
+    protected function reglesEnseignant(?int $schoolId, ?int $ignoreId = null): array
+    {
+        $ecole = $schoolId ? \App\Models\Ecole::withoutGlobalScopes()->find($schoolId) : Auth::user()->ecole;
+        $contratsAutorises = implode(',', array_keys($this->contratsAutorises($ecole)));
+
+        return [
             'nom_prenom' => 'required|string|max:200',
             'genre' => 'nullable|string|in:Feminin,Masculin,Féminin',
             'email' => [
@@ -295,7 +441,6 @@ class EnseignantController extends Controller
             'nombre_heure' => 'nullable|numeric|min:0',
             'prix_heure' => 'nullable|numeric|min:0',
             'matricule' => ['nullable', 'string', 'max:100', Rule::unique('enseignants', 'matricule')->ignore($ignoreId, 'id_enseignant')],
-            'avatar' => 'nullable|image|max:5120',
             'statut_matrimonial' => 'nullable|string|max:50',
             'nombre_enfants' => 'nullable|integer|min:0',
             'pere_nom_prenom' => 'nullable|string|max:255',
@@ -303,7 +448,7 @@ class EnseignantController extends Controller
             'specialite' => 'nullable|string|max:255',
             'service_employeur' => 'nullable|string|max:255',
             'anciennete_annees' => 'nullable|integer|min:0',
-        ]);
+        ];
     }
 
     protected function contratsAutorises($ecole): array
@@ -528,7 +673,7 @@ class EnseignantController extends Controller
     protected function generateMatricule(array $data): string
     {
         // Date, genre, lieu et contrat sont facultatifs : on complète ce qui manque.
-        $age = !empty($data['date_naissance']) ? (int) now()->diffInYears(\Carbon\Carbon::parse($data['date_naissance'])) : '';
+        $age = !empty($data['date_naissance']) ? \Carbon\Carbon::parse($data['date_naissance'])->age : '';
         $genre = strtoupper(substr((string) ($data['genre'] ?? ''), 0, 1)) ?: 'X';
         $lieu = strtoupper(substr(preg_replace('/\s+/', '', (string) ($data['lieu_naissance'] ?? '')), 0, 3)) ?: 'XXX';
         $contrat = strtoupper(substr((string) ($data['type_contrat'] ?? ''), 0, 3)) ?: 'ENS';

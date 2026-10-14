@@ -7,6 +7,9 @@
         $canUpdateTeacher = $user->droit === 'SupAdmin' || $user->userHasPermission('enseignants_modification');
         $canArchiveTeacher = $user->droit === 'SupAdmin' || $user->userHasAnyPermission(['enseignants_archiver_ou_reactiver', 'enseignants_archiver ou réactiver']);
         $canDeleteTeacher = $user->droit === 'SupAdmin' || $user->userHasPermission('enseignants_supprimer');
+        $gereEcole = in_array($user->droit, ['Admin', 'Gestionnaire'], true);
+        $canImportTeacher = $user->droit === 'SupAdmin' || ($gereEcole && $user->userHasPermission('enseignants_importer'));
+        $canExportTeacher = $user->droit === 'SupAdmin' || ($gereEcole && $user->userHasPermission('enseignants_exporter'));
     @endphp
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
         <div class="breadcrumb-title pe-3">Enseignants</div>
@@ -42,10 +45,17 @@
 
     <!-- Actions -->
     <div class="row align-items-center mb-3">
-        <div class="col-md-12 pt-2 text-end">
-            <button type="button" class="btn px-4 theme-pill-active">
-                <i class="bi bi-printer me-2"></i> Imprimer la liste des enseignants
-            </button>
+        <div class="col-md-12 pt-2 d-flex justify-content-end flex-wrap gap-2">
+            @if($canExportTeacher && (session('idEcole') || $user->idEcole))
+                <a href="{{ route('enseignants.export') }}" class="btn btn-success px-4">
+                    <i class="bi bi-file-earmark-excel me-2"></i> Exporter en Excel
+                </a>
+            @endif
+            @if($canImportTeacher && (session('idEcole') || $user->idEcole))
+                <a href="{{ route('enseignants.import') }}" class="btn px-4 theme-pill-active">
+                    <i class="bi bi-upload me-2"></i> Importer des enseignants
+                </a>
+            @endif
         </div>
 
     </div>

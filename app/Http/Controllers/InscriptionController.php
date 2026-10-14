@@ -218,6 +218,7 @@ class InscriptionController extends Controller
 
     public function downloadGroupTemplate()
     {
+        $this->authorizePermission('inscriptions_inscrire');
         if (!class_exists(IOFactory::class)) {
             return back()->with('error', 'La bibliothèque PhpSpreadsheet n’est pas disponible.');
         }

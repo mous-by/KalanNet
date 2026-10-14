@@ -105,10 +105,13 @@
         </div>
     </div>
 
+    @php
+        $peutExporter = auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('eleves_exporter');
+    @endphp
     <!-- Actions -->
     <div class="row align-items-center mb-3">
         <div class="col-md-6 pt-2">
-            @if($showList && $eleves->isNotEmpty())
+            @if($showList && $eleves->isNotEmpty() && $peutExporter)
                 <form action="{{ route('eleves.list.pdf') }}" method="POST" target="_blank" id="print-eleves-form">
                     @csrf
                     <input type="hidden" name="id_classe" value="{{ request('id_classe') }}">
@@ -125,7 +128,7 @@
             @endif
         </div>
         <div class="col-md-6 pt-2">
-            @if($showList && $eleves->isNotEmpty())
+            @if($showList && $eleves->isNotEmpty() && $peutExporter)
                 <form action="{{ route('eleves.list.excel') }}" method="POST" id="export-eleves-form">
                     @csrf
                     <input type="hidden" name="id_classe" value="{{ request('id_classe') }}">

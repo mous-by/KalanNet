@@ -23,6 +23,7 @@ class EleveController extends Controller
 {
     public function index(Request $request)
     {
+        $this->authorizePermission('eleves_apercu');
         $idEcole = session('idEcole');
         
         $classes = Classe::where('idEcole', $idEcole)->get();
@@ -425,6 +426,7 @@ class EleveController extends Controller
 
     public function downloadListPdf(Request $request)
     {
+        $this->authorizePermission('eleves_exporter');
         [$eleves, $classe, $annee, $ecole] = $this->listExportData($request);
         $pdf = Pdf::loadView('pdf.eleves_liste', compact('eleves', 'classe', 'annee', 'ecole'));
         $pdf->setPaper('a4', 'portrait');
@@ -434,6 +436,7 @@ class EleveController extends Controller
 
     public function downloadListExcel(Request $request)
     {
+        $this->authorizePermission('eleves_exporter');
         [$eleves, $classe, $annee, $ecole] = $this->listExportData($request);
 
         if (!class_exists(\PhpOffice\PhpSpreadsheet\Spreadsheet::class)) {

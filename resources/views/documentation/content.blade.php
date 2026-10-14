@@ -149,7 +149,8 @@
 
     <h5 class="fw-bold mt-4">Retrouver et suivre un élève</h5>
     <ul>
-        <li><strong>Liste des Élèves</strong> : recherche par classe, impression de la liste, export Excel.</li>
+        <li><strong>Liste des Élèves</strong> : recherche par classe, impression de la liste, export Excel
+            (permission « Exporter la liste des élèves »).</li>
         <li><strong>Dossiers élèves</strong> : la fiche complète d'un élève — parcours, paiements, reçus — en un
         seul endroit. Utile pour répondre rapidement à une question d'un parent.</li>
         <li><strong>Cartes scolaires</strong> : génère et imprime les cartes d'identité des élèves, avec plusieurs
@@ -184,6 +185,12 @@
         (type de contrat, spécialité...). Seuls le <strong>nom et le téléphone</strong> sont obligatoires, le reste
         peut être complété plus tard. Pour qu'un enseignant se connecte, créez-lui un compte dans Configuration ->
         Utilisateurs : il recevra un mot de passe temporaire.</li>
+        <li><strong>Importer / exporter des enseignants</strong> : sur la liste des enseignants, le bouton
+        <strong>Importer des enseignants</strong> propose un modèle Excel à remplir (seuls le nom et prénom et le
+        téléphone sont obligatoires). Le fichier est vérifié en entier avant l'import : s'il contient une erreur,
+        aucun enseignant n'est ajouté et chaque ligne à corriger est indiquée. Le bouton <strong>Exporter en
+        Excel</strong> télécharge la liste de tous les enseignants de l'école, actifs et archivés. Chaque bouton
+        demande sa permission (« Importer des enseignants », « Exporter la liste des enseignants »).</li>
     </ul>
 
     <figure class="doc-shot">
