@@ -76,6 +76,68 @@
         </div>
     </div>
 
+    <div class="card theme-card shadow-sm mb-4" id="modele-bulletin-card">
+        <div class="card-header theme-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div>
+                <h5 class="mb-0 fw-bold">{{ __('bulletins.modele_title') }}</h5>
+                <small class="opacity-75">{{ __('bulletins.modele_desc') }}</small>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <label class="form-label mb-0 small fw-semibold" for="note_classe_mode">{{ __('bulletins.note_classe_label') }}</label>
+                <select class="form-select form-select-sm w-auto" id="note_classe_mode">
+                    <option value="moyenne" @selected($modeNote === 'moyenne')>{{ __('bulletins.note_classe_moyenne') }}</option>
+                    <option value="unique" @selected($modeNote === 'unique')>{{ __('bulletins.note_classe_unique') }}</option>
+                </select>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xxl-5 g-3">
+                @foreach($modeles as $code => $infos)
+                    <div class="col">
+                        <label class="modele-tuile h-100 {{ $code === $modeleActuel ? 'is-selected' : '' }}" data-modele="{{ $code }}">
+                            <input type="radio" name="modele_bulletin" value="{{ $code }}" class="visually-hidden" @checked($code === $modeleActuel)>
+                            <div class="mini mini-{{ $code }} mini-{{ strtolower($infos['format']) }}" aria-hidden="true">
+                                @include('bulletins.partials.miniature', ['code' => $code])
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between gap-2 mt-2">
+                                <span class="fw-bold">{{ $infos['nom'] }}</span>
+                                <span class="format-badge {{ $infos['format'] === 'A4' ? 'is-a4' : '' }}">{{ $infos['format'] === 'A4' ? __('bulletins.modele_a4') : __('bulletins.modele_a5') }}</span>
+                            </div>
+                            <p class="small text-muted mb-2 mt-1">{{ $infos['description'] }}</p>
+                            @if($infos['format'] === 'A5' && $nbMatieres > \App\Support\ModelesBulletin::MAX_MATIERES_A5)
+                                <p class="small text-warning-emphasis mb-2"><i class="bi bi-exclamation-triangle me-1"></i>{{ __('bulletins.modele_trop_matieres', ['count' => $nbMatieres, 'a4' => $modeles[\App\Support\ModelesBulletin::EQUIVALENT_A4[$code]]['nom']]) }}</p>
+                            @endif
+                            @if($infos['calcul'] === 'domaines')
+                                <p class="small text-muted mb-2"><i class="bi bi-diagram-3 me-1"></i>{{ __('bulletins.modele_domaines_info') }}</p>
+                            @endif
+                            <div class="d-flex align-items-center justify-content-between mt-auto">
+                                <span class="small fw-semibold text-success modele-coche"><i class="bi bi-check-circle-fill me-1"></i>{{ __('bulletins.modele_choisi') }}</span>
+                                <button type="button" class="btn btn-sm btn-outline-secondary ms-auto modele-apercu" data-modele="{{ $code }}">
+                                    <i class="bi bi-eye me-1"></i>{{ __('bulletins.modele_apercu') }}
+                                </button>
+                            </div>
+                        </label>
+                    </div>
+                @endforeach
+            </div>
+            <div class="small text-success mt-2 d-none" id="modele-enregistre"><i class="bi bi-check2 me-1"></i>{{ __('bulletins.modele_enregistre') }}</div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="apercuModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">{{ __('bulletins.apercu_titre') }} · <span id="apercu-nom"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0" style="height: 78vh;">
+                    <iframe id="apercu-iframe" title="{{ __('bulletins.apercu_titre') }}" style="width:100%; height:100%; border:0;"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="card theme-card shadow-sm">
         <div class="card-header theme-header d-flex align-items-center justify-content-between flex-wrap gap-2">
             <div>
@@ -152,6 +214,9 @@
             'selectThisAria' => __('bulletins.select_this_aria'),
             'selectionCount' => __('bulletins.selection_count'),
             'exaequoSuffix' => __('bulletins.exaequo_suffix'),
+            'apercuChoisirPeriode' => __('bulletins.apercu_choisir_periode'),
+            'apercuAucunEleve' => __('bulletins.apercu_aucun_eleve'),
+            'modeles' => collect($modeles)->map(fn ($m) => $m['nom']),
         ];
     @endphp
     <script>
@@ -173,6 +238,67 @@
             const unpublishButton = document.getElementById('unpublish-bulletins');
             const publishForm = document.getElementById('publish-bulletins-form');
             const unpublishForm = document.getElementById('unpublish-bulletins-form');
+
+            let premierEleve = null;
+            const reglagesUrl = "{{ route('pedagogie.bulletins.reglages', $classe->id_classe) }}";
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
+            const noteMode = document.getElementById('note_classe_mode');
+            const enregistre = document.getElementById('modele-enregistre');
+
+            function modeleChoisi() {
+                return document.querySelector('input[name="modele_bulletin"]:checked')?.value;
+            }
+
+            function enregistrerReglages() {
+                fetch(reglagesUrl, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf},
+                    body: JSON.stringify({modele_bulletin: modeleChoisi(), note_classe_mode: noteMode.value}),
+                }).then(response => {
+                    if (!response.ok) throw new Error();
+                    enregistre.classList.remove('d-none');
+                    setTimeout(() => enregistre.classList.add('d-none'), 2500);
+                    // Les modèles par domaines et le mode de note changent les moyennes et les rangs.
+                    loadBulletins();
+                }).catch(() => alert(i18n.loadError));
+            }
+
+            document.querySelectorAll('.modele-tuile').forEach(tuile => {
+                tuile.addEventListener('click', event => {
+                    if (event.target.closest('.modele-apercu')) return;
+                    const radio = tuile.querySelector('input');
+                    if (radio.checked) return;
+                    radio.checked = true;
+                    document.querySelectorAll('.modele-tuile').forEach(t => t.classList.toggle('is-selected', t === tuile));
+                    enregistrerReglages();
+                });
+            });
+            noteMode.addEventListener('change', enregistrerReglages);
+
+            document.querySelectorAll('.modele-apercu').forEach(bouton => {
+                bouton.addEventListener('click', event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const mode = periodeMode.value;
+                    if (!annee.value || (mode === 'mois' ? !mois.value : !trimestre.value)) {
+                        alert(i18n.apercuChoisirPeriode);
+                        return;
+                    }
+                    if (!premierEleve) {
+                        alert(i18n.apercuAucunEleve);
+                        return;
+                    }
+                    const params = new URLSearchParams({id_annee: annee.value, modele: bouton.dataset.modele});
+                    if (mode === 'mois') params.set('mois', mois.value);
+                    else params.set('id_trimestre', trimestre.value);
+                    document.getElementById('apercu-nom').textContent = i18n.modeles[bouton.dataset.modele] || '';
+                    document.getElementById('apercu-iframe').src = "{{ url('/pedagogie/bulletins') }}/" + premierEleve + '/download?' + params.toString();
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('apercuModal')).show();
+                });
+            });
+            document.getElementById('apercuModal').addEventListener('hidden.bs.modal', () => {
+                document.getElementById('apercu-iframe').src = 'about:blank';
+            });
 
             if (ordre === 'fondamentale1') {
                 periodeMode.value = 'mois';
@@ -202,6 +328,7 @@
                 const moisValue = mois.value;
                 resetBulkActions();
                 syncPublicationButtons(false);
+                premierEleve = null;
                 if (!idAnnee || (mode === 'mois' ? !moisValue : !idTrimestre)) {
                     body.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">' + i18n.selectYearPeriodPrompt + '</td></tr>';
                     return;
@@ -220,6 +347,7 @@
                         return response.json();
                     })
                     .then(rows => {
+                        premierEleve = rows.length ? rows[0].id_eleve : null;
                         body.innerHTML = rows.map(row => {
                             const printParams = new URLSearchParams({id_annee: idAnnee});
                             if (mode === 'mois') printParams.set('mois', moisValue);
@@ -344,6 +472,35 @@
             border-color: var(--theme-accent) !important;
             color: #fff !important;
         }
+        .modele-tuile { display: flex; flex-direction: column; cursor: pointer; border: 1px solid var(--border-color, #dee2e6); border-radius: .75rem; padding: .75rem; background: var(--bs-body-bg); transition: border-color .15s ease, box-shadow .15s ease; }
+        .modele-tuile:hover { border-color: var(--theme-accent); }
+        .modele-tuile.is-selected { border: 2px solid var(--theme-accent); box-shadow: 0 0 0 .2rem rgba(25, 135, 84, .12); }
+        .modele-tuile .modele-coche { visibility: hidden; }
+        .format-badge { flex-shrink: 0; font-size: .72rem; font-weight: 700; padding: .15rem .5rem; border-radius: 999px; border: 1px solid #94a3b8; color: #334155; background: #f8fafc; white-space: nowrap; }
+        .format-badge.is-a4 { background: #1e293b; border-color: #1e293b; color: #fff; }
+        .modele-tuile.is-selected .modele-coche { visibility: visible; }
+        .mini { margin: 0 auto; background: #fff; border: 1px solid #d5dae2; border-radius: 3px; box-shadow: 0 2px 6px rgba(15, 23, 42, .08); padding: 7px; overflow: hidden; display: flex; flex-direction: column; gap: 3px; }
+        .mini-a4 { width: 106px; height: 150px; }
+        .mini-a5 { width: 92px; height: 130px; }
+        .mini i { display: block; height: 3px; border-radius: 2px; background: #d9dee6; font-style: normal; }
+        .mini .w40 { width: 40%; } .mini .w60 { width: 60%; } .mini .w80 { width: 80%; } .mini .c { margin: 0 auto; }
+        .mini .band { height: 7px; border-radius: 1px; }
+        .mini .rows { display: flex; flex-direction: column; gap: 2px; margin-top: 2px; }
+        .mini .rows i { height: 3px; }
+        .mini .dom { height: 4px; }
+        .mini .boxes { display: flex; gap: 3px; margin-top: auto; }
+        .mini .boxes b { flex: 1; height: 13px; border-radius: 2px; border: 1px solid #d9dee6; }
+        .mini .bar { display: flex; align-items: center; gap: 3px; }
+        .mini .bar i { flex: 1; } .mini .bar s { display: block; height: 3px; border-radius: 2px; text-decoration: none; }
+        .mini-classique .band, .mini-classique .boxes b.f { background: #1f3a5f; border-color: #1f3a5f; }
+        .mini-domaines .band, .mini-domaines_compact .band, .mini-domaines .boxes b.f, .mini-domaines_compact .boxes b.f { background: #14532d; border-color: #14532d; }
+        .mini-domaines .dom, .mini-domaines_compact .dom { background: #b9d3bf; }
+        .mini-essentiel .band { background: transparent; border-top: 2px solid #0f4c5c; border-radius: 0; height: 4px; }
+        .mini-essentiel .boxes b.f { background: #0f4c5c; border-color: #0f4c5c; }
+        .mini-moderne { padding: 0; }
+        .mini-moderne .top { height: 18px; background: #1e3a8a; }
+        .mini-moderne .inner { padding: 5px 6px; display: flex; flex-direction: column; gap: 3px; }
+        .mini-moderne .avatar { width: 12px; height: 12px; border-radius: 50%; background: #e0e7ff; }
         html[data-theme] .theme-outline-btn {
             background: var(--accent-light) !important;
             border-color: var(--border-color) !important;

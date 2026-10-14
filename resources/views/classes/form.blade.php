@@ -32,15 +32,19 @@
         $oldMatieres = old('id_matiere');
         $oldEnseignants = old('id_enseignants', []);
         $oldCoefficients = old('coefficient', []);
+        $oldDomaines = old('id_domaine', []);
         $initialRows = collect();
+        $domaineDefaut = fn ($matiere) => \App\Support\Domaines::defautPourMatiere($domaines, $matiere?->domaine_defaut);
+        $afficherDomaines = $domaines->isNotEmpty() && ($francoArabe || in_array($classe->modele_bulletin, ['domaines', 'domaines_compact'], true));
 
         if (is_array($oldMatieres)) {
-            $initialRows = collect($oldMatieres)->map(function ($idMatiere, $index) use ($matieres, $oldEnseignants, $oldCoefficients) {
+            $initialRows = collect($oldMatieres)->map(function ($idMatiere, $index) use ($matieres, $oldEnseignants, $oldCoefficients, $oldDomaines) {
                 return [
                     'id_matiere' => (int) $idMatiere,
                     'nom_matiere' => optional($matieres->firstWhere('id_matiere', (int) $idMatiere))->nom_matiere,
                     'id_enseignants' => $oldEnseignants[$index] ?? null,
                     'coefficient' => $oldCoefficients[$index] ?? 1,
+                    'id_domaine' => $oldDomaines[$index] ?? null,
                 ];
             })->filter(fn ($row) => $row['nom_matiere']);
         } elseif ($isEdit) {
@@ -49,6 +53,7 @@
                 'nom_matiere' => $ligne->matiere->nom_matiere ?? 'Matière supprimée',
                 'id_enseignants' => $ligne->id_enseignants,
                 'coefficient' => $ligne->coefficient ?? 1,
+                'id_domaine' => $ligne->id_domaine ?: $domaineDefaut($ligne->matiere),
             ]);
         }
 
@@ -56,7 +61,9 @@
             'id' => $matiere->id_matiere,
             'nom' => $matiere->nom_matiere,
             'ordres' => $matiere->ordres->pluck('ordre_enseignement')->values(),
+            'domaine' => $domaineDefaut($matiere),
         ])->values();
+        $domainesJson = $domaines->map(fn ($d) => ['id' => $d->id_domaine, 'nom' => $d->nom, 'partie' => $d->partie])->values();
         $enseignantsJson = $enseignants->map(fn ($enseignant) => [
             'id' => $enseignant->id_enseignant,
             'nom' => $enseignant->nom_prenom_enseignant,
@@ -66,6 +73,7 @@
             'remove' => __('classes.remove'),
             'matieresShownFor' => __('classes.matieres_shown_for'),
             'chooseOrdreHelp' => __('classes.choose_ordre_help'),
+            'sansDomaine' => __('classes.sans_domaine'),
         ];
     @endphp
 
@@ -136,6 +144,32 @@
                                 @endforeach
                             </select>
                         </div>
+                        @if($francoArabe)
+                            @php $deuxMaitres = (bool) old('deux_maitres', $classe->deux_maitres); @endphp
+                            <div class="col-12">
+                                <div class="border rounded-3 p-3 bg-light-subtle">
+                                    <div class="form-check form-switch">
+                                        <input type="hidden" name="deux_maitres" value="0">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="deux_maitres" name="deux_maitres" value="1" @checked($deuxMaitres)>
+                                        <label class="form-check-label fw-semibold" for="deux_maitres">{{ __('classes.deux_maitres_label') }}</label>
+                                    </div>
+                                    <small class="text-muted d-block mt-1">{{ __('classes.deux_maitres_help') }}</small>
+                                    <div class="row g-3 mt-1" id="deux-maitres-champs" @if(!$deuxMaitres) style="display:none" @endif>
+                                        @foreach(['arabe' => 'id_maitre_arabe', 'francais' => 'id_maitre_francais'] as $partie => $champ)
+                                            <div class="col-md-6">
+                                                <label class="form-label" for="{{ $champ }}">{{ __('classes.maitre_'.$partie) }} <span class="text-danger">*</span></label>
+                                                <select class="form-select maitre-partie" id="{{ $champ }}" name="{{ $champ }}" data-partie="{{ $partie }}">
+                                                    <option value="">{{ __('classes.choose') }}</option>
+                                                    @foreach($enseignants as $enseignant)
+                                                        <option value="{{ $enseignant->id_enseignant }}" @selected((string) old($champ, $classe->$champ) === (string) $enseignant->id_enseignant)>{{ $enseignant->nom_prenom_enseignant }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
                     @endif
                 </div>
             </div>
@@ -160,6 +194,7 @@
                         <thead>
                             <tr>
                                 <th>{{ __('classes.th_matiere') }}</th>
+                                @if($afficherDomaines)<th>{{ __('classes.th_domaine') }} <a href="{{ route('pedagogie.domaines') }}" class="small fw-normal ms-1" target="_blank">{{ __('classes.domaines_lien') }}</a></th>@endif
                                 <th>{{ __('classes.th_enseignant') }}</th>
                                 <th style="width: 140px;">{{ __('classes.th_coefficient') }}</th>
                                 <th class="text-center" style="width: 90px;">{{ __('classes.th_action') }}</th>
@@ -172,8 +207,18 @@
                                         <span class="fw-bold">{{ $row['nom_matiere'] }}</span>
                                         <input type="hidden" name="id_matiere[]" value="{{ $row['id_matiere'] }}">
                                     </td>
+                                    @if($afficherDomaines)
+                                        <td>
+                                            <select class="form-select domaine-select" name="id_domaine[]">
+                                                <option value="">{{ __('classes.sans_domaine') }}</option>
+                                                @foreach($domaines as $domaine)
+                                                    <option value="{{ $domaine->id_domaine }}" @selected((string) $row['id_domaine'] === (string) $domaine->id_domaine)>{{ $domaine->nom }}</option>
+                                                @endforeach
+                                            </select>
+                                        </td>
+                                    @endif
                                     <td>
-                                        <select class="form-select" name="id_enseignants[]">
+                                        <select class="form-select enseignant-select" name="id_enseignants[]">
                                             <option value="">{{ __('classes.none') }}</option>
                                             @foreach($enseignants as $enseignant)
                                                 <option value="{{ $enseignant->id_enseignant }}" @selected((string) $row['id_enseignants'] === (string) $enseignant->id_enseignant)>
@@ -251,6 +296,9 @@
             const ordreMatiereMap = @json($ordreMatiereMap);
             const matieres = @json($matieresJson);
             const enseignants = @json($enseignantsJson);
+            const domaines = @json($domainesJson);
+            const afficherDomaines = @json($afficherDomaines);
+            const deuxMaitres = document.getElementById('deux_maitres');
             const i18n = @json($classeFormI18n);
             const tbody = document.getElementById('table-matieres');
             const nomClasse = document.getElementById('nom_classe');
@@ -277,6 +325,44 @@
                 });
             }
 
+            function domaineOptions(selectionne) {
+                return '<option value="">' + escapeHtml(i18n.sansDomaine) + '</option>' + domaines.map(function (domaine) {
+                    return '<option value="' + domaine.id + '"' + (Number(selectionne) === Number(domaine.id) ? ' selected' : '') + '>' + escapeHtml(domaine.nom) + '</option>';
+                }).join('');
+            }
+
+            // Classe à deux maîtres : chaque matière revient au maître de la
+            // partie (arabe / française) de son domaine.
+            function maitreDeLaPartie(partie) {
+                const select = document.querySelector('.maitre-partie[data-partie="' + partie + '"]');
+                return select ? select.value : '';
+            }
+
+            function attribuerMaitre(row) {
+                if (!deuxMaitres || !deuxMaitres.checked) return;
+                const domaineSelect = row.querySelector('.domaine-select');
+                const domaine = domaineSelect ? domaines.find(d => Number(d.id) === Number(domaineSelect.value)) : null;
+                const maitre = domaine && domaine.partie ? maitreDeLaPartie(domaine.partie) : '';
+                if (maitre) row.querySelector('.enseignant-select').value = maitre;
+            }
+
+            function attribuerTous() {
+                tbody.querySelectorAll('tr[data-matiere-id]').forEach(attribuerMaitre);
+            }
+
+            if (deuxMaitres) {
+                deuxMaitres.addEventListener('change', function () {
+                    document.getElementById('deux-maitres-champs').style.display = deuxMaitres.checked ? '' : 'none';
+                    attribuerTous();
+                });
+                document.querySelectorAll('.maitre-partie').forEach(select => select.addEventListener('change', attribuerTous));
+            }
+            tbody.addEventListener('change', function (event) {
+                if (event.target.classList.contains('domaine-select')) {
+                    attribuerMaitre(event.target.closest('tr'));
+                }
+            });
+
             function addMatiereRow(id) {
                 if (!id || tbody.querySelector('[data-matiere-id="' + id + '"]')) return;
 
@@ -286,11 +372,13 @@
                 tbody.insertAdjacentHTML('beforeend',
                     '<tr data-matiere-id="' + matiere.id + '">' +
                     '<td><span class="fw-bold">' + escapeHtml(matiere.nom) + '</span><input type="hidden" name="id_matiere[]" value="' + matiere.id + '"></td>' +
-                    '<td><select class="form-select" name="id_enseignants[]">' + enseignantOptions() + '</select></td>' +
+                    (afficherDomaines ? '<td><select class="form-select domaine-select" name="id_domaine[]">' + domaineOptions(matiere.domaine) + '</select></td>' : '') +
+                    '<td><select class="form-select enseignant-select" name="id_enseignants[]">' + enseignantOptions() + '</select></td>' +
                     '<td><input type="number" name="coefficient[]" class="form-control" min="0" max="5" step="0.01" value="1" required></td>' +
                     '<td class="text-center"><button type="button" class="btn btn-light btn-sm remove-row" title="' + i18n.remove + '"><i class="bi bi-trash text-danger"></i></button></td>' +
                     '</tr>'
                 );
+                attribuerMaitre(tbody.lastElementChild);
             }
 
             function syncCardState(option) {

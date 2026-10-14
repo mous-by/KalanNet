@@ -22,13 +22,18 @@
         </div>
     </div>
 
-    @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('matieres_creation'))
-    <div class="mb-3 d-flex justify-content-end">
-        <a href="#" class="btn px-4 theme-pill-active" data-bs-toggle="modal" data-bs-target="#addNewCCModal">
-            <i class="bi bi-plus-lg me-2"></i>{{ __('matieres.add') }}
-        </a>
+    <div class="mb-3 d-flex justify-content-end gap-2">
+        @if(session('idEcole') || auth()->user()->idEcole)
+            <a href="{{ route('pedagogie.domaines') }}" class="btn btn-outline-secondary px-4">
+                <i class="bi bi-diagram-3 me-2"></i>{{ __('domaines.title') }}
+            </a>
+        @endif
+        @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('matieres_creation'))
+            <a href="#" class="btn px-4 theme-pill-active" data-bs-toggle="modal" data-bs-target="#addNewCCModal">
+                <i class="bi bi-plus-lg me-2"></i>{{ __('matieres.add') }}
+            </a>
+        @endif
     </div>
-    @endif
 
     <!-- Main Card -->
     <div class="card theme-card shadow-sm mt-3">

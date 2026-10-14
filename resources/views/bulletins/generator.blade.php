@@ -349,6 +349,13 @@
         }
         .kn-btn-merge:hover:not(:disabled) { opacity: .88; }
 
+        .kn-btn-deux {
+            background: rgba(22,163,74,.12);
+            color: #86efac;
+            border: 1px solid rgba(22,163,74,.35);
+        }
+        .kn-btn-deux:hover:not(:disabled) { background: rgba(22,163,74,.22); }
+
         .kn-btn-zip {
             background: rgba(245,158,11,.12);
             color: #fbbf24;
@@ -497,6 +504,11 @@
     <div class="kn-footer">
         <div class="kn-footer-status" id="kn-status">{{ __('bulletins.gen_status_generating') }}</div>
         <div class="kn-footer-actions">
+            @if(\App\Support\ModelesBulletin::format($modele) === 'A5')
+                <button id="kn-btn-deux" class="kn-btn kn-btn-deux" disabled>
+                    {{ __('bulletins.gen_btn_deux_par_feuille') }}
+                </button>
+            @endif
             <button id="kn-btn-merge" class="kn-btn kn-btn-merge" disabled>
                 {{ __('bulletins.gen_btn_merge') }}
             </button>
@@ -542,6 +554,7 @@
         'partialStatus' => __('bulletins.gen_partial_status'),
         'allGenerated' => __('bulletins.gen_all_generated'),
         'count' => __('bulletins.gen_count'),
+        'deuxParFeuilleTitle' => __('bulletins.gen_deux_par_feuille_title'),
     ];
 @endphp
 <script>
@@ -568,6 +581,7 @@
     const elBadgeDone   = document.getElementById('kn-badge-done');
     const elStatus      = document.getElementById('kn-status');
     const elBtnMerge    = document.getElementById('kn-btn-merge');
+    const elBtnDeux     = document.getElementById('kn-btn-deux');
     const elBtnZip      = document.getElementById('kn-btn-zip');
     const elIframe      = document.getElementById('kn-preview-iframe');
     const elPh          = document.getElementById('kn-placeholder');
@@ -692,6 +706,7 @@
         elBadgeDone.textContent = doneCount;
         elBtnMerge.disabled = false;
         elBtnZip.disabled   = false;
+        if (elBtnDeux) elBtnDeux.disabled = false;
     }
 
     // ── Preview ────────────────────────────────────────────────
@@ -719,6 +734,46 @@
     function setOverlayPct(pct) { elOverlayBar.style.width = pct + '%'; }
 
     // ── Fusion PDF client-side (pdf-lib) ───────────────────────
+    // ── 2 bulletins A5 par feuille A4 (paysage), avec trait de coupe ──
+    async function deuxParFeuille() {
+        if (!blobs.length) return;
+        const fname = safeName(CLASS_NAME) + '_Bulletins_2_par_feuille.pdf';
+        showOverlay(I18N.deuxParFeuilleTitle, fname, 0);
+        try {
+            const { PDFDocument, rgb } = PDFLib;
+            const out = await PDFDocument.create();
+            const pages = [];
+            for (let i = 0; i < blobs.length; i++) {
+                const src = await PDFDocument.load(await blobs[i].blob.arrayBuffer(), { ignoreEncryption: true });
+                const embarquees = await out.embedPages(src.getPages());
+                embarquees.forEach(p => pages.push(p));
+                setOverlayPct(Math.round((i / blobs.length) * 70));
+            }
+            const largeur = 841.89, hauteur = 595.28, demi = largeur / 2;
+            for (let i = 0; i < pages.length; i += 2) {
+                const feuille = out.addPage([largeur, hauteur]);
+                [pages[i], pages[i + 1]].forEach((p, j) => {
+                    if (!p) return;
+                    const echelle = Math.min(demi / p.width, hauteur / p.height);
+                    feuille.drawPage(p, {
+                        x: j * demi + (demi - p.width * echelle) / 2,
+                        y: (hauteur - p.height * echelle) / 2,
+                        xScale: echelle, yScale: echelle,
+                    });
+                });
+                feuille.drawLine({ start: { x: demi, y: 8 }, end: { x: demi, y: hauteur - 8 }, thickness: 0.4, color: rgb(0.7, 0.7, 0.7), dashArray: [4, 4] });
+                setOverlayPct(70 + Math.round((i / pages.length) * 25));
+            }
+            const bytes = await out.save();
+            setOverlayPct(100);
+            triggerDownload(URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' })), fname);
+        } catch (e) {
+            alert(I18N.fusionError.replace(':message', e.message));
+        } finally {
+            hideOverlay();
+        }
+    }
+
     async function mergePDF() {
         if (!blobs.length) return;
         const fname = safeName(CLASS_NAME) + '_Bulletins.pdf';
@@ -851,6 +906,7 @@
         if (blobs.length > 0) {
             elBtnMerge.disabled = false;
             elBtnZip.disabled   = false;
+            if (elBtnDeux) elBtnDeux.disabled = false;
         }
 
         setTimeout(() => {
@@ -872,6 +928,7 @@
     }
 
     elBtnMerge.addEventListener('click', mergePDF);
+    if (elBtnDeux) elBtnDeux.addEventListener('click', deuxParFeuille);
     elBtnZip.addEventListener('click', downloadZip);
     run();
 })();

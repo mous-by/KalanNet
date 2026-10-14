@@ -15,6 +15,7 @@ class MatiereController extends Controller
 {
     public function index(Request $request)
     {
+        $this->authorizePermission('matieres_apercu');
         $matieres = $this->matieresFiltrees($request)->paginate(20)->withQueryString();
 
         return view('pedagogie.matieres', [

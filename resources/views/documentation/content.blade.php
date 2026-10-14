@@ -266,6 +266,30 @@
         <figcaption>Générer Bulletins : un bouton « Générer » par classe.</figcaption>
     </figure>
 
+    <p><strong>Modèles de bulletin</strong> : sur la page des bulletins d'une classe, choisissez parmi cinq modèles.
+    Le bouton <strong>Aperçu</strong> montre le bulletin d'un élève de la classe avant de choisir, et le dernier
+    modèle choisi est retenu pour la classe.</p>
+    <ul>
+        <li><strong>Classique</strong> (A4) : notes de classe et de composition, coefficients, moyenne, rang,
+            statistiques de la classe et décision du conseil.</li>
+        <li><strong>Par domaines bilingue</strong> (A4) : modèle médersa, avec un en-tête en français et en arabe
+            et les matières groupées par domaine. La moyenne générale est la moyenne des domaines, et il y a une
+            appréciation par maître (arabe et français).</li>
+        <li><strong>Essentiel</strong>, <strong>Par domaines compact</strong> et <strong>Moderne</strong> (A5) :
+            des bulletins d'une demi-page. Dans la fenêtre de génération, le bouton
+            <strong>2 bulletins par feuille A4</strong> les imprime deux par feuille, à couper en deux. Le modèle
+            Moderne affiche la photo de l'élève, une barre de niveau par matière et l'évolution depuis la période
+            précédente.</li>
+    </ul>
+    <p><strong>Note de classe</strong> : au même endroit, choisissez si la note de classe est la
+    <strong>moyenne de tous les devoirs</strong> de la période ou <strong>une seule note</strong> (la dernière saisie).</p>
+    <p><strong>Classes à deux maîtres (écoles franco-arabes)</strong> : dans la fiche de la classe, cochez
+    <strong>Classe à deux maîtres</strong>, puis choisissez le maître de la partie arabe et celui de la partie
+    française. Chaque matière est rangée dans un <strong>domaine</strong>, et chaque domaine appartient à une partie :
+    KalanNet donne automatiquement les matières de la partie arabe au maître arabe et celles de la partie française
+    au maître de français. Vous pouvez ensuite confier une matière à un autre enseignant. La liste des domaines se
+    règle dans <strong>Matières -> Domaines (UE)</strong>.</p>
+
     <h4 id="doc-7" class="fw-bold text-uppercase mt-5 mb-3 border-bottom pb-2">7. Annonces</h4>
     <p>Menu : <strong>Annonces</strong>. Rédigez un message à destination de tous, des parents, des enseignants ou
     des gestionnaires, puis choisissez de l'enregistrer en <strong>brouillon</strong> (personne ne le voit

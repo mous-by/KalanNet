@@ -71,4 +71,11 @@ return [
     'no_filiere_created' => 'Aucune filière créée.',
     'create_one_link' => 'En créer une',
     'matieres_help_sante' => 'Toutes les matières disponibles sont proposées.',
+    'th_domaine' => 'Domaine',
+    'sans_domaine' => '— Sans domaine —',
+    'deux_maitres_label' => 'Classe à deux maîtres (partie arabe / partie française)',
+    'deux_maitres_help' => 'Chaque matière revient automatiquement au maître de la partie de son domaine. Vous pouvez ensuite confier une matière à un autre enseignant.',
+    'maitre_arabe' => 'Maître de la partie arabe',
+    'maitre_francais' => 'Maître de la partie française',
+    'domaines_lien' => 'Gérer les domaines',
 ];

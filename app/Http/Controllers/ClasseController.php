@@ -9,6 +9,7 @@ use App\Models\Filiere;
 use App\Models\Matiere;
 use App\Models\Enseignant;
 use App\Models\LigneClasse;
+use App\Support\Domaines;
 use App\Support\ExamenNational;
 use App\Support\SchoolOrderAccess;
 use Illuminate\Http\Request;
@@ -20,6 +21,7 @@ class ClasseController extends Controller
 {
     public function index()
     {
+        $this->authorizePermission('classes_apercu');
         $idEcole = session('idEcole');
         $user = Auth::user();
 
@@ -34,6 +36,7 @@ class ClasseController extends Controller
 
     public function create()
     {
+        $this->authorizePermission('classes_creation');
         $idEcole = session('idEcole');
         $user = Auth::user();
         $ecole = $this->resolveEcole($user, $idEcole);
@@ -55,7 +58,7 @@ class ClasseController extends Controller
             'estSante' => $estSante,
             'lignes' => collect(),
             'mode' => 'create',
-        ]);
+        ] + $this->optionsDomaines($ecole, $estSante));
     }
 
     public function associations(Request $request)
@@ -152,7 +155,7 @@ class ClasseController extends Controller
                 'ordreEnseignement' => $estSante ? null : $data['ordre_enseignement'],
                 'idEcole' => $idEcole,
                 'id_filiere' => $estSante ? $data['id_filiere'] : null,
-            ]);
+            ] + $this->champsDeuxMaitres($data));
 
             $this->syncLignesClasse($classe, $data);
         });
@@ -174,6 +177,7 @@ class ClasseController extends Controller
 
     public function edit($id)
     {
+        $this->authorizePermission('classes_modification');
         $classe = Classe::with(['ligneClasses.matiere', 'ligneClasses.enseignant', 'ecole'])->findOrFail($id);
 
         $user = Auth::user();
@@ -197,7 +201,7 @@ class ClasseController extends Controller
             'estSante' => $this->estSante($classe->ecole),
             'lignes' => $classe->ligneClasses,
             'mode' => 'edit',
-        ]);
+        ] + $this->optionsDomaines($classe->ecole, $this->estSante($classe->ecole)));
     }
 
     public function update(Request $request, $id)
@@ -222,11 +226,12 @@ class ClasseController extends Controller
                 'nom_classe' => $data['nom_classe'],
                 'ordreEnseignement' => $estSante ? null : $data['ordre_enseignement'],
                 'id_filiere' => $estSante ? $data['id_filiere'] : null,
-            ]);
+            ] + $this->champsDeuxMaitres($data));
 
             $dejaPresentes = $classe->ligneClasses()->pluck('id_matiere')->all();
+            $domainesPrecedents = $classe->ligneClasses()->pluck('id_domaine', 'id_matiere')->all();
             $classe->ligneClasses()->delete();
-            $this->syncLignesClasse($classe, $data, $dejaPresentes);
+            $this->syncLignesClasse($classe, $data, $dejaPresentes, $domainesPrecedents);
         });
 
         return redirect()->route('classes.edit', $classe->id_classe)->with('success', 'Classe modifiée avec succès.');
@@ -267,6 +272,11 @@ class ClasseController extends Controller
             'id_enseignants.*' => 'nullable|integer|exists:enseignants,id_enseignant',
             'coefficient' => 'required|array|min:1',
             'coefficient.*' => 'required|numeric|min:0|max:5',
+            'id_domaine' => 'nullable|array',
+            'id_domaine.*' => ['nullable', 'integer', Rule::exists('domaines', 'id_domaine')->where('id_ecole', $idEcole)],
+            'deux_maitres' => 'nullable|boolean',
+            'id_maitre_arabe' => ['exclude_unless:deux_maitres,1', 'required', 'integer', Rule::exists('enseignants', 'id_enseignant')->where('id_ecole', $idEcole)],
+            'id_maitre_francais' => ['exclude_unless:deux_maitres,1', 'required', 'integer', 'different:id_maitre_arabe', Rule::exists('enseignants', 'id_enseignant')->where('id_ecole', $idEcole)],
         ];
 
         if ($estSante) {
@@ -281,7 +291,36 @@ class ClasseController extends Controller
             'coefficient.*.max' => 'Le coefficient ne peut pas dépasser 5.',
             'id_filiere.required' => 'La filière est obligatoire pour une École de Santé.',
             'id_filiere.exists' => 'La filière sélectionnée n’appartient pas à cette école.',
+            'id_maitre_arabe.required' => 'Choisissez le maître de la partie arabe.',
+            'id_maitre_francais.required' => 'Choisissez le maître de la partie française.',
+            'id_maitre_francais.different' => 'Le maître de la partie française doit être différent du maître de la partie arabe.',
         ]);
+    }
+
+    /** Domaines de l'école (colonne « Domaine ») et option « deux maîtres » (écoles franco-arabes). */
+    protected function optionsDomaines(?Ecole $ecole, bool $estSante): array
+    {
+        $domaines = match (true) {
+            !$ecole || $estSante => collect(),
+            (bool) $ecole->franco_arabe => Domaines::pourEcole((int) $ecole->idEcole),
+            default => Domaines::existants((int) $ecole->idEcole),
+        };
+
+        return [
+            'domaines' => $domaines,
+            'francoArabe' => (bool) ($ecole->franco_arabe ?? false),
+        ];
+    }
+
+    protected function champsDeuxMaitres(array $data): array
+    {
+        $deuxMaitres = !empty($data['deux_maitres']);
+
+        return [
+            'deux_maitres' => $deuxMaitres,
+            'id_maitre_arabe' => $deuxMaitres ? $data['id_maitre_arabe'] : null,
+            'id_maitre_francais' => $deuxMaitres ? $data['id_maitre_francais'] : null,
+        ];
     }
 
     protected function filieresDisponibles(?int $idEcole)
@@ -298,7 +337,7 @@ class ClasseController extends Controller
      * @param  int[]  $dejaPresentes  matières que la classe avait avant la modification :
      *                                 toujours conservées, même hors du catalogue actuel.
      */
-    protected function syncLignesClasse(Classe $classe, array $data, array $dejaPresentes = []): void
+    protected function syncLignesClasse(Classe $classe, array $data, array $dejaPresentes = [], array $domainesPrecedents = []): void
     {
         $expectedOrdre = $this->ordreMatiereMap()[$classe->ordreEnseignement] ?? null;
         // Mêmes matières que celles proposées dans le formulaire : catalogue
@@ -307,6 +346,7 @@ class ClasseController extends Controller
         $autorisees = $this->matieresDisponibles(Auth::user(), (int) $classe->idEcole, $this->estSante($ecole))
             ->pluck('id_matiere')->map(fn ($id) => (int) $id)->flip();
         $dejaPresentes = array_flip(array_map('intval', $dejaPresentes));
+        $parties = DB::table('domaines')->where('id_ecole', $classe->idEcole)->pluck('partie', 'id_domaine')->all();
         foreach ($data['id_matiere'] as $index => $idMatiere) {
             $conservee = isset($dejaPresentes[(int) $idMatiere]);
             if (!$conservee && !$autorisees->has((int) $idMatiere)) {
@@ -320,11 +360,26 @@ class ClasseController extends Controller
                     continue;
                 }
             }
+            // Colonne « Domaine » absente du formulaire : on garde le domaine déjà choisi.
+            $idDomaine = array_key_exists('id_domaine', $data)
+                ? ($data['id_domaine'][$index] ?? null)
+                : ($domainesPrecedents[(int) $idMatiere] ?? null);
+            $idEnseignant = $data['id_enseignants'][$index] ?? null;
+            // Classe à deux maîtres : une matière sans enseignant choisi revient
+            // au maître de la partie (arabe / française) de son domaine.
+            if (!$idEnseignant && $classe->deux_maitres && $idDomaine) {
+                $idEnseignant = match ($parties[(int) $idDomaine] ?? null) {
+                    'arabe' => $classe->id_maitre_arabe,
+                    'francais' => $classe->id_maitre_francais,
+                    default => null,
+                };
+            }
             LigneClasse::create([
                 'id_classe' => $classe->id_classe,
                 'id_matiere' => $idMatiere,
-                'id_enseignants' => $data['id_enseignants'][$index] ?? null,
+                'id_enseignants' => $idEnseignant,
                 'coefficient' => $data['coefficient'][$index] ?? 1,
+                'id_domaine' => $idDomaine,
             ]);
         }
     }

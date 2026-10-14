@@ -124,6 +124,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/bulletins/classes', [BulletinController::class, 'classes']);
         Route::get('/bulletins/classes/{idClasse}', [BulletinController::class, 'index']);
         Route::get('/bulletins/classes/{idClasse}/data', [BulletinController::class, 'data']);
+        Route::post('/bulletins/classes/{idClasse}/reglages', [BulletinController::class, 'reglages']);
         Route::get('/bulletins/classes/{idClasse}/students', [BulletinController::class, 'studentsForBulletin']);
         Route::post('/bulletins/classes/{idClasse}/publish', [BulletinController::class, 'publishClassBulletins']);
         Route::delete('/bulletins/classes/{idClasse}/publish', [BulletinController::class, 'unpublishClassBulletins']);

@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Eleve;
 use App\Models\Classe;
-use App\Models\Ecole;
 use App\Models\AnneeScolaire;
 use App\Models\Trimestre;
-use App\Services\ConductNoteService;
+use App\Services\Bulletins\CalculBulletin;
+use App\Support\ArabePdf;
+use App\Support\ModelesBulletin;
+use Illuminate\Support\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -43,6 +45,10 @@ class BulletinController extends Controller
 
         return view('bulletins.index', [
             'classe' => $classe,
+            'modeles' => ModelesBulletin::MODELES,
+            'modeleActuel' => ModelesBulletin::pourClasse($classe),
+            'modeNote' => ModelesBulletin::modeNote($classe),
+            'nbMatieres' => $classe->ligneClasses()->count(),
             'annees' => AnneeScolaire::orderByDesc('date_debut')->get(),
             'trimestres' => Trimestre::orderBy('id_trimestre')->get(),
             'moisOptions' => $this->moisOptions(),
@@ -70,53 +76,41 @@ class BulletinController extends Controller
             return response()->json([]);
         }
 
-        $rows = Eleve::query()
-            ->where('id_classe', $classe->id_classe)
-            ->where('id_annee', $data['id_annee'])
-            ->where('etat_dossier', 0)
-            ->orderBy('prenom_eleve')->orderBy('nom_eleve')
-            ->get()
-            ->map(function ($eleve) use ($data, $periode) {
-                $bulletin = $this->getBulletinData($eleve->id_eleve, $data['id_annee'], $periode['column'] === 'id_trimestre' ? $periode['value'] : null, $periode['column'] === 'mois' ? $periode['value'] : null, false);
+        $modele = ModelesBulletin::pourClasse($classe);
+        $calcul = CalculBulletin::pour(
+            $classe,
+            (int) $data['id_annee'],
+            $periode['column'] === 'id_trimestre' ? (int) $periode['value'] : null,
+            $periode['column'] === 'mois' ? (int) $periode['value'] : null,
+            ModelesBulletin::calcul($modele),
+            ModelesBulletin::modeNote($classe)
+        );
 
-                return [
-                    'id_eleve' => $eleve->id_eleve,
-                    'matricule' => $eleve->matricule,
-                    'nom_eleve' => $eleve->nom_eleve,
-                    'prenom_eleve' => $eleve->prenom_eleve,
-                    'genre_eleve' => $eleve->genre_eleve,
-                    'moyenne' => $bulletin['moyenne_periode'] ?? 0,
-                ];
-            })
-            ->filter(fn ($row) => $row['moyenne'] > 0)
+        $ranked = $calcul->resultats()
+            ->filter(fn ($r) => $r['moyenne_periode'] > 0)
+            ->map(fn ($r) => [
+                'id_eleve' => $r['apercu']->id_eleve,
+                'matricule' => $r['apercu']->matricule,
+                'nom_eleve' => $r['apercu']->nom_eleve,
+                'prenom_eleve' => $r['apercu']->prenom_eleve,
+                'genre_eleve' => $r['apercu']->genre_eleve,
+                'moyenne' => $r['moyenne_periode'],
+                'rang' => $r['rang'],
+            ])
             ->sort(function ($a, $b) {
-                if ((float) $a['moyenne'] === (float) $b['moyenne']) {
+                if ($a['rang'] === $b['rang']) {
                     if (($a['genre_eleve'] ?? '') !== ($b['genre_eleve'] ?? '')) {
                         return ($a['genre_eleve'] ?? '') === 'F' ? -1 : 1;
                     }
-                    return strcmp($a['nom_eleve'] . $a['prenom_eleve'], $b['nom_eleve'] . $b['prenom_eleve']);
+
+                    return strcmp($a['nom_eleve'].$a['prenom_eleve'], $b['nom_eleve'].$b['prenom_eleve']);
                 }
 
-                return $b['moyenne'] <=> $a['moyenne'];
+                return $a['rang'] <=> $b['rang'];
             })
             ->values();
-
-        $lastMoyenne = null;
-        $lastRang = 0;
-        $ranked = $rows->map(function ($row, $index) use (&$lastMoyenne, &$lastRang) {
-            $moyenne = round((float) $row['moyenne'], 2);
-            if ($lastMoyenne !== null && $moyenne === $lastMoyenne) {
-                $row['rang'] = $lastRang;
-                $row['exaequo'] = true;
-            } else {
-                $row['rang'] = $index + 1;
-                $row['exaequo'] = false;
-                $lastRang = $index + 1;
-            }
-            $lastMoyenne = $moyenne;
-
-            return $row;
-        });
+        $compte = $ranked->countBy('rang');
+        $ranked = $ranked->map(fn ($row) => $row + ['exaequo' => $compte[$row['rang']] > 1]);
 
         return response()->json($ranked);
     }
@@ -133,6 +127,7 @@ class BulletinController extends Controller
             'id_trimestre' => $request->get('id_trimestre', ''),
             'mois'         => $request->get('mois', ''),
             'ids'          => $request->get('ids', '[]'),
+            'modele'       => ModelesBulletin::pourClasse($classe),
         ]);
     }
 
@@ -203,15 +198,21 @@ class BulletinController extends Controller
 
         $this->authorizeParentBulletinAccess((int) $id_eleve, (int) $id_annee, $id_trimestre ? (int) $id_trimestre : null, $mois ? (int) $mois : null);
 
-        $data = $this->getBulletinData($id_eleve, $id_annee, $id_trimestre, $mois);
-        
+        // Aperçu d'un autre modèle avant de le choisir (réservé aux gestionnaires).
+        $modele = $request->get('modele');
+        if (!ModelesBulletin::existe($modele) || Auth::user()?->droit === 'parent') {
+            $modele = null;
+        }
+
+        $data = $this->getBulletinData($id_eleve, $id_annee, $id_trimestre, $mois, true, $modele);
+
         if (!$data) {
             return back()->with('error', "Données de bulletin indisponibles.");
         }
 
-        $pdf = Pdf::loadView('pdf.bulletin', $data);
-        $pdf->setPaper('A5', 'portrait');
-        
+        $pdf = Pdf::loadView('pdf.bulletin', ['bulletins' => collect([$data]), 'modele' => $data['modele']]);
+        $pdf->setPaper(ModelesBulletin::format($data['modele']), 'portrait');
+
         return $pdf->stream('Bulletin_' . ($data['apercu']->nom_eleve ?? 'Eleve') . '.pdf');
     }
 
@@ -264,6 +265,7 @@ class BulletinController extends Controller
             $studentQuery->whereIn('id_eleve', $selectedIds);
         }
 
+        $modele = ModelesBulletin::pourClasse($classe);
         $bulletins = $studentQuery
             ->pluck('id_eleve')
             ->map(fn ($idEleve) => $this->getBulletinData(
@@ -279,18 +281,15 @@ class BulletinController extends Controller
             return back()->with('error', "Aucun bulletin disponible pour cette sélection.");
         }
 
-        $annee = AnneeScolaire::find($data['id_annee']);
         $periodeLabel = $periode['column'] === 'mois'
             ? ($this->moisOptions()[(int) $periode['value']] ?? 'Mois sélectionné')
             : (Trimestre::find($periode['value'])->nom_trimestre ?? 'Période sélectionnée');
 
-        $pdf = Pdf::loadView('pdf.bulletins_classe', [
+        $pdf = Pdf::loadView('pdf.bulletin', [
             'bulletins' => $bulletins,
-            'classe' => $classe,
-            'annee' => $annee,
-            'periodeLabel' => $periodeLabel,
+            'modele' => $modele,
         ]);
-        $pdf->setPaper('A5', 'portrait');
+        $pdf->setPaper(ModelesBulletin::format($modele), 'portrait');
 
         $fileName = 'Bulletins_' . str_replace(' ', '_', $classe->nom_classe) . '_' . str_replace(' ', '_', $periodeLabel) . '.pdf';
 
@@ -361,211 +360,120 @@ class BulletinController extends Controller
         return back()->with('success', 'Publication des bulletins retirée pour cette période.');
     }
 
-    protected function getBulletinData($id, $id_annee, $id_trimestre = null, $mois = null, bool $withRank = true)
+    /**
+     * Données du bulletin d'un élève, calculées avec toute la classe (rang,
+     * moyenne du premier). $modele : modèle demandé, sinon celui de la classe.
+     */
+    protected function getBulletinData($id, $id_annee, $id_trimestre = null, $mois = null, bool $withRank = true, ?string $modele = null)
     {
-        // 1. Basic Info
         $eleve = Eleve::with('classe')->findOrFail($id);
         $classe = $eleve->classe;
         $this->authorizeClasse($classe);
-        $ordre = $classe->ordreEnseignement;
-        $ecole = Ecole::findOrFail($classe->idEcole);
 
-        $periode_col = $mois ? "mois" : "id_trimestre";
-        $periode_val = $mois ?: $id_trimestre;
+        $modele = ModelesBulletin::existe($modele) ? $modele : ModelesBulletin::pourClasse($classe);
+        $calcul = CalculBulletin::pour($classe, (int) $id_annee, $mois ? null : ($id_trimestre ? (int) $id_trimestre : null), $mois ? (int) $mois : null, ModelesBulletin::calcul($modele), ModelesBulletin::modeNote($classe));
 
-        // 2. Conduite
-        $note_conduite = null;
-        if ($ordre !== "fondamentale1" && !$mois) {
-            $conduite = DB::table('conduite')
-                ->where('id_eleve', $id)
-                ->where('id_classe', $classe->id_classe)
-                ->where('id_annee_scolaire', $id_annee)
-                ->where('id_trimestre', $id_trimestre)
-                ->first();
-            $schoolId = (int) $classe->idEcole;
-            $hasCalls = DB::table('controle_eleve')
-                ->where('id_eleve', $id)
-                ->where('id_classe', $classe->id_classe)
-                ->where('id_annee_scolaire', $id_annee)
-                ->where('id_trimestre', $id_trimestre)
-                ->where('id_ecole', $schoolId)
-                ->exists();
-
-            if ($hasCalls) {
-                $note_conduite = app(ConductNoteService::class)->syncStudent(
-                    (int) $id,
-                    (int) $classe->id_classe,
-                    (int) $id_annee,
-                    (int) $id_trimestre,
-                    $schoolId
-                );
-            } elseif ($conduite) {
-                $note_conduite = $conduite->note_conduite;
-            }
+        $data = $calcul->pourEleve((int) $id);
+        if (!$data) {
+            return null;
         }
 
-        // 3. Aperçu Info
-        $apercu = DB::table('eleve as e')
-            ->join('classe as c', 'e.id_classe', '=', 'c.id_classe')
-            ->join('ligne_evaluation as le', 'le.id_eleve', '=', 'e.id_eleve')
-            ->leftJoin('anneescolaire as ascol', 'le.id_annee_scolaire', '=', 'ascol.id_anneeScolaire')
-            ->leftJoin('trimestre as t', 'le.id_trimestre', '=', 't.id_trimestre')
-            ->select('e.*', 'c.nom_classe', 'c.ordreEnseignement', 'ascol.annee', 't.nom_trimestre')
-            ->where('e.id_eleve', $id)
-            ->where('le.id_annee_scolaire', $id_annee)
-            ->where('le.' . $periode_col, $periode_val)
-            ->when($this->shouldFilterValidatedNotes($ecole), fn ($query) => $query->where('le.validation_status', 'valide'))
-            ->first();
+        $data['modele'] = $modele;
+        $data['statistiques'] = $calcul->statistiques();
+        $data['maitres'] = $this->maitres($classe);
+        $data['annee_hegirienne'] = $this->anneeHegirienne($data['apercu']);
+        $data['photo'] = $this->imageBase64($eleve->image);
+        if ($modele === 'moderne') {
+            $data['evolution'] = $this->moyennePrecedente($classe, (int) $id, (int) $id_annee, $id_trimestre ? (int) $id_trimestre : null, $mois ? (int) $mois : null, $modele);
+        }
 
-        if (!$apercu) return null;
+        return $data;
+    }
 
+    /** Moyenne de l'élève à la période précédente (trimestre ou mois), pour le modèle Moderne. */
+    private function moyennePrecedente(Classe $classe, int $idEleve, int $idAnnee, ?int $idTrimestre, ?int $mois, string $modele): ?float
+    {
         if ($mois) {
-            $moisNoms = $this->moisOptions();
-            $apercu->mois_nom = $moisNoms[intval($mois)] ?? 'Inconnu';
-        }
-
-        // 4. Matieres & Notes
-        $matieres = DB::table('ligneclasse as lc')
-            ->join('matiere as m', 'lc.id_matiere', '=', 'm.id_matiere')
-            ->where('lc.id_classe', $classe->id_classe)
-            ->select('m.nom_matiere', 'lc.coefficient as coef', 'lc.id_matiere', 'm.est_lv2')
-            ->get()
-            // Une classe de Secondaire peut avoir plusieurs langues LV2
-            // (Arabe/Allemand/Chinois/Russe...) affectees a des enseignants
-            // differents. Le bulletin ne doit jamais afficher ni compter
-            // dans la moyenne generale une langue LV2 que cet eleve n'a pas
-            // choisie — sinon des "0" de langues non etudiees viendraient
-            // gonfler le coefficient total et fausser sa moyenne.
-            ->reject(fn ($matiere) => $matiere->est_lv2 && (int) $matiere->id_matiere !== (int) $eleve->id_matiere_lv2)
-            ->values();
-
-        foreach ($matieres as $matiere) {
-            $matiere->M_Class = DB::table('ligne_evaluation as le')
-                ->join('note as n', 'le.id_note', '=', 'n.id_note')
-                ->where('le.id_eleve', $id)
-                ->where('le.id_matiere', $matiere->id_matiere)
-                ->where(function ($query) {
-                    $query->where('n.typeNote', 'devoir')
-                        ->orWhereIn('n.codeNote', ['dv', 'devoir']);
-                })
-                ->where('le.' . $periode_col, $periode_val)
-                ->where('le.id_annee_scolaire', $id_annee)
-                ->when($this->shouldFilterValidatedNotes($ecole), fn ($query) => $query->where('le.validation_status', 'valide'))
-                ->avg('le.note') ?? 0;
-
-            $matiere->M_Compo = (DB::table('ligne_evaluation as le')
-                ->join('note as n', 'le.id_note', '=', 'n.id_note')
-                ->where('le.id_eleve', $id)
-                ->where('le.id_matiere', $matiere->id_matiere)
-                ->where(function ($query) {
-                    $query->where('n.typeNote', 'composition')
-                        ->orWhereIn('n.codeNote', ['cp', 'composition']);
-                })
-                ->where('le.' . $periode_col, $periode_val)
-                ->where('le.id_annee_scolaire', $id_annee)
-                ->when($this->shouldFilterValidatedNotes($ecole), fn ($query) => $query->where('le.validation_status', 'valide'))
-                ->value('le.note') ?? 0) * 2;
-
-            $matiere->NT10 = DB::table('ligne_evaluation as le')
-                ->join('note as n', 'le.id_note', '=', 'n.id_note')
-                ->where('le.id_eleve', $id)
-                ->where('le.id_matiere', $matiere->id_matiere)
-                ->where(function ($query) {
-                    $query->where('n.typeNote', 'NT10')
-                        ->orWhere('n.codeNote', 'NT10');
-                })
-                ->where('le.' . $periode_col, $periode_val)
-                ->where('le.id_annee_scolaire', $id_annee)
-                ->when($this->shouldFilterValidatedNotes($ecole), fn ($query) => $query->where('le.validation_status', 'valide'))
-                ->avg('le.note') ?? 0;
-
-            // Calculations
-            if ($ordre === "fondamentale1") {
-                $matiere->M_Gle = floatval($matiere->NT10);
-                $matiere->M_Coef = $matiere->M_Gle * 1;
-            } else {
-                $matiere->M_Gle = ($matiere->M_Class + $matiere->M_Compo) / 3;
-                $matiere->M_Coef = $matiere->M_Gle * $matiere->coef;
+            $precedent = $mois === 1 ? 12 : $mois - 1;
+            $calcul = CalculBulletin::pour($classe, $idAnnee, null, $precedent, ModelesBulletin::calcul($modele), ModelesBulletin::modeNote($classe));
+        } else {
+            $precedent = Trimestre::where('id_trimestre', '<', (int) $idTrimestre)->orderByDesc('id_trimestre')->value('id_trimestre');
+            if (!$precedent) {
+                return null;
             }
-            $matiere->appreciation = $this->getAppreciation($matiere->M_Gle, $ordre);
+            $calcul = CalculBulletin::pour($classe, $idAnnee, (int) $precedent, null, ModelesBulletin::calcul($modele), ModelesBulletin::modeNote($classe));
         }
 
-        // 5. Global Averages
-        $totalCoef = ($ordre === "fondamentale1") ? $matieres->count() : $matieres->sum('coef');
-        $totalNotes = ($ordre === "fondamentale1") ? $matieres->sum('M_Gle') : $matieres->sum('M_Coef');
+        $moyenne = $calcul->pourEleve($idEleve)['moyenne_periode'] ?? null;
 
-        if ($ordre !== "fondamentale1" && $note_conduite !== null) {
-            $totalCoef += 1;
-            $totalNotes += floatval($note_conduite);
+        return $moyenne > 0 ? (float) $moyenne : null;
+    }
+
+    /** Maîtres d'une classe à deux maîtres (partie arabe / partie française). */
+    private function maitres(Classe $classe): array
+    {
+        if (!$classe->deux_maitres) {
+            return [];
         }
-
-        $moyenne_periode = $totalCoef ? $totalNotes / $totalCoef : 0;
-
-        $rankData = $withRank ? $this->classAverages($classe, (int) $id_annee, $periode_col, $periode_val) : collect();
-        $current_rang = $rankData->firstWhere('id_eleve', $id)['rang'] ?? null;
-        $total_eleves = $rankData->count();
-        $meilleure_moyenne = $rankData->first()['moyenne'] ?? 0;
+        $noms = DB::table('enseignants')->whereIn('id_enseignant', array_filter([$classe->id_maitre_arabe, $classe->id_maitre_francais]))
+            ->pluck('nom_prenom_enseignant', 'id_enseignant');
 
         return [
-            'apercu' => $apercu,
-            'ecole' => $ecole,
-            'matieres' => $matieres,
-            'moyenne_periode' => $moyenne_periode,
-            'moyenne_premier' => $meilleure_moyenne,
-            'note_conduite' => $note_conduite,
-            'appreciation_conduite' => $note_conduite ? $this->getAppreciation($note_conduite, $ordre) : null,
-            'rang' => $current_rang,
-            'total_eleves' => $total_eleves,
-            'ordre' => $ordre
+            'arabe' => $noms[$classe->id_maitre_arabe] ?? null,
+            'francais' => $noms[$classe->id_maitre_francais] ?? null,
         ];
     }
 
-    private function getAppreciation($moyenne, $ordre)
+    /** « 1447 - 1448 » : années de l'hégire couvertes par l'année scolaire. */
+    private function anneeHegirienne(object $apercu): ?string
     {
-        if ($ordre === "fondamentale1") {
-            if ($moyenne >= 9) return "Très bien";
-            if ($moyenne >= 8) return "Bien";
-            if ($moyenne >= 7) return "Assez bien";
-            if ($moyenne >= 5) return "Passable";
-            return "Insuffisant";
-        } else {
-            if ($moyenne >= 16) return "Très Bien";
-            if ($moyenne >= 14) return "Bien";
-            if ($moyenne >= 12) return "Assez Bien";
-            if ($moyenne >= 10) return "Passable";
-            return "Insuffisant";
+        if (empty($apercu->annee_debut) || empty($apercu->annee_fin)) {
+            return null;
         }
+        $debut = ArabePdf::anneeHegirienne(Carbon::parse($apercu->annee_debut));
+        $fin = ArabePdf::anneeHegirienne(Carbon::parse($apercu->annee_fin));
+
+        return $debut === $fin ? $debut : $debut.' - '.$fin;
     }
 
-    private function classAverages(Classe $classe, int $idAnnee, string $periodeCol, $periodeVal)
+    private function imageBase64(?string $chemin): ?string
     {
-        $rows = Eleve::query()
-            ->where('id_classe', $classe->id_classe)
-            ->where('id_annee', $idAnnee)
-            ->where('etat_dossier', 0)
-            ->get()
-            ->map(function ($eleve) use ($idAnnee, $periodeCol, $periodeVal) {
-                $data = $this->getBulletinData($eleve->id_eleve, $idAnnee, $periodeCol === 'id_trimestre' ? $periodeVal : null, $periodeCol === 'mois' ? $periodeVal : null, false);
-                return ['id_eleve' => $eleve->id_eleve, 'moyenne' => $data['moyenne_periode'] ?? 0];
-            })
-            ->filter(fn ($row) => $row['moyenne'] > 0)
-            ->sortByDesc('moyenne')
-            ->values();
+        if (!$chemin) {
+            return null;
+        }
+        $fichier = public_path($chemin);
+        if (!is_file($fichier) || filesize($fichier) > 3 * 1024 * 1024) {
+            return null;
+        }
+        $extension = strtolower(pathinfo($fichier, PATHINFO_EXTENSION));
+        $mime = match ($extension) {
+            'png' => 'image/png',
+            'webp' => 'image/webp',
+            'gif' => 'image/gif',
+            default => 'image/jpeg',
+        };
 
-        $lastMoyenne = null;
-        $lastRang = 0;
+        return 'data:'.$mime.';base64,'.base64_encode(file_get_contents($fichier));
+    }
 
-        return $rows->map(function ($row, $index) use (&$lastMoyenne, &$lastRang) {
-            $moyenne = round((float) $row['moyenne'], 2);
-            if ($lastMoyenne !== null && $moyenne === $lastMoyenne) {
-                $row['rang'] = $lastRang;
-            } else {
-                $row['rang'] = $index + 1;
-                $lastRang = $index + 1;
-            }
-            $lastMoyenne = $moyenne;
-            return $row;
-        });
+    /** Enregistre pour la classe le modèle de bulletin et le mode de la note de classe. */
+    public function reglages(int $idClasse, Request $request)
+    {
+        $this->authorizeBulletinGeneration();
+        $classe = Classe::findOrFail($idClasse);
+        $this->authorizeClasse($classe);
+
+        $data = $request->validate([
+            'modele_bulletin' => ['required', 'string', \Illuminate\Validation\Rule::in(array_keys(ModelesBulletin::MODELES))],
+            'note_classe_mode' => 'required|in:moyenne,unique',
+        ]);
+
+        $classe->update($data);
+
+        return response()->json([
+            'modele_bulletin' => $classe->modele_bulletin,
+            'note_classe_mode' => $classe->note_classe_mode,
+        ]);
     }
 
     protected function authorizeClasse(Classe $classe): void
@@ -597,12 +505,6 @@ class BulletinController extends Controller
     protected function moisOptions(): array
     {
         return [1 => "Janvier", 2 => "Février", 3 => "Mars", 4 => "Avril", 5 => "Mai", 6 => "Juin", 7 => "Juillet", 8 => "Août", 9 => "Septembre", 10 => "Octobre", 11 => "Novembre", 12 => "Décembre"];
-    }
-
-    private function shouldFilterValidatedNotes(Ecole $ecole): bool
-    {
-        return Schema::hasColumn('ligne_evaluation', 'validation_status')
-            && strtolower(trim((string) $ecole->statut)) === 'prive';
     }
 
     protected function authorizeBulletinPublication(): void

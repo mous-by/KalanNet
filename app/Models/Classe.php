@@ -18,6 +18,15 @@ class Classe extends Model
         'idEcole',
         'id_classe_officielle',
         'id_filiere',
+        'deux_maitres',
+        'id_maitre_arabe',
+        'id_maitre_francais',
+        'modele_bulletin',
+        'note_classe_mode',
+    ];
+
+    protected $casts = [
+        'deux_maitres' => 'boolean',
     ];
 
     public function ecole()

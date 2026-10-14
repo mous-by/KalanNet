@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BulletinController;
 use App\Http\Controllers\TimetableController;
 use App\Http\Controllers\ParentController;
+use App\Http\Controllers\DomaineController;
 use App\Http\Controllers\MatiereController;
 use App\Http\Controllers\FiliereController;
 use App\Http\Controllers\InscriptionController;
@@ -199,6 +200,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/pedagogie/classes/{idClasse}/bulletins/pdf', [BulletinController::class, 'downloadClassBulletins'])->name('pedagogie.bulletins.classe.pdf');
     Route::get('/pedagogie/bulletins/{id}/download', [BulletinController::class, 'downloadBulletin'])->name('pedagogie.bulletins.download');
     Route::get('/pedagogie/classes/{idClasse}/bulletin-generator', [BulletinController::class, 'generatorPage'])->name('pedagogie.bulletins.generator');
+    Route::post('/pedagogie/classes/{idClasse}/bulletins/reglages', [BulletinController::class, 'reglages'])->name('pedagogie.bulletins.reglages');
     Route::get('/pedagogie/classes/{idClasse}/bulletins/students', [BulletinController::class, 'studentsForBulletin'])->name('pedagogie.bulletins.students');
 
     Route::get('/annonces', [AnnouncementController::class, 'index'])->name('annonces.index');
@@ -239,6 +241,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/pedagogie/parents/{id}/edit', [ParentController::class, 'edit'])->name('pedagogie.parents.edit');
     Route::put('/pedagogie/parents/{id}', [ParentController::class, 'update'])->name('pedagogie.parents.update');
     Route::delete('/pedagogie/parents/{id}', [ParentController::class, 'destroy'])->name('pedagogie.parents.destroy');
+    Route::get('/pedagogie/domaines', [DomaineController::class, 'index'])->name('pedagogie.domaines');
+    Route::post('/pedagogie/domaines', [DomaineController::class, 'store'])->name('pedagogie.domaines.store');
+    Route::put('/pedagogie/domaines/{id}', [DomaineController::class, 'update'])->name('pedagogie.domaines.update');
+    Route::post('/pedagogie/domaines/{id}/deplacer', [DomaineController::class, 'deplacer'])->name('pedagogie.domaines.deplacer');
+    Route::delete('/pedagogie/domaines/{id}', [DomaineController::class, 'destroy'])->name('pedagogie.domaines.destroy');
     Route::get('/pedagogie/matieres', [MatiereController::class, 'index'])->name('pedagogie.matieres');
     Route::post('/pedagogie/matieres', [MatiereController::class, 'store'])->name('pedagogie.matieres.store');
     Route::put('/pedagogie/matieres/{id}', [MatiereController::class, 'update'])->name('pedagogie.matieres.update');

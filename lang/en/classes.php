@@ -71,4 +71,11 @@ return [
     'no_filiere_created' => 'No track created yet.',
     'create_one_link' => 'Create one',
     'matieres_help_sante' => 'All available subjects are offered.',
+    'th_domaine' => 'Domain',
+    'sans_domaine' => '— No domain —',
+    'deux_maitres_label' => 'Two-teacher class (Arabic part / French part)',
+    'deux_maitres_help' => 'Each subject is automatically given to the teacher of its domain\'s part. You can then assign a subject to another teacher.',
+    'maitre_arabe' => 'Arabic part teacher',
+    'maitre_francais' => 'French part teacher',
+    'domaines_lien' => 'Manage domains',
 ];
