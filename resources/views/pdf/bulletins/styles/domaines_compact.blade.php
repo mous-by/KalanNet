@@ -6,7 +6,10 @@
 .bande .ar { text-align: center; font-size: 12px; font-weight: bold; }
 .bande .a { text-align: right; }
 .eleve { width: 100%; margin-top: 1.5mm; }
-.eleve td { white-space: nowrap; padding-right: 6px; }
+.eleve td { white-space: nowrap; padding-right: 6px; vertical-align: middle; }
+.eleve td.photo { width: 40px; }
+.eleve .photo img { width: 34px; height: 34px; border-radius: 17px; border: 1px solid #000; }
+.eleve .initiales { width: 34px; height: 24px; border-radius: 17px; border: 1.2px solid #000; font-size: 12px; font-weight: bold; text-align: center; padding-top: 10px; }
 .eleve .lib { display: block; font-size: 7.5px; text-transform: uppercase; letter-spacing: .6px; color: #222; }
 .eleve .val { display: block; font-size: 10px; font-weight: bold; }
 .notes { width: 100%; margin-top: 1.5mm; }

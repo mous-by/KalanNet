@@ -18,7 +18,10 @@
 
     <table class="eleve">
         <tr>
-            <td style="width:50%"><span class="lib">Élève</span><span class="val">{{ $apercu->prenom_eleve }} {{ $apercu->nom_eleve }}</span></td>
+            <td class="photo">
+                @if($photo)<img src="{{ $photo }}" alt="">@else<div class="initiales">{{ mb_strtoupper(mb_substr((string) $apercu->prenom_eleve, 0, 1).mb_substr((string) $apercu->nom_eleve, 0, 1)) }}</div>@endif
+            </td>
+            <td style="width:44%"><span class="lib">Élève</span><span class="val">{{ $apercu->prenom_eleve }} {{ $apercu->nom_eleve }}</span></td>
             <td><span class="lib">Classe</span><span class="val">{{ $apercu->nom_classe }}</span></td>
             <td><span class="lib">Matricule</span><span class="val">{{ $apercu->matricule ?: '-' }}</span></td>
         </tr>
