@@ -245,6 +245,19 @@
             const noteMode = document.getElementById('note_classe_mode');
             const enregistre = document.getElementById('modele-enregistre');
 
+            function avertir(message, icone) {
+                if (window.Swal) {
+                    Swal.fire({
+                        text: message,
+                        icon: icone,
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--theme-accent').trim() || '#198754',
+                    });
+                } else {
+                    alert(message);
+                }
+            }
+
             function modeleChoisi() {
                 return document.querySelector('input[name="modele_bulletin"]:checked')?.value;
             }
@@ -260,7 +273,7 @@
                     setTimeout(() => enregistre.classList.add('d-none'), 2500);
                     // Les modèles par domaines et le mode de note changent les moyennes et les rangs.
                     loadBulletins();
-                }).catch(() => alert(i18n.loadError));
+                }).catch(() => avertir(i18n.loadError, 'error'));
             }
 
             document.querySelectorAll('.modele-tuile').forEach(tuile => {
@@ -281,11 +294,11 @@
                     event.stopPropagation();
                     const mode = periodeMode.value;
                     if (!annee.value || (mode === 'mois' ? !mois.value : !trimestre.value)) {
-                        alert(i18n.apercuChoisirPeriode);
+                        avertir(i18n.apercuChoisirPeriode, 'info');
                         return;
                     }
                     if (!premierEleve) {
-                        alert(i18n.apercuAucunEleve);
+                        avertir(i18n.apercuAucunEleve, 'info');
                         return;
                     }
                     const params = new URLSearchParams({id_annee: annee.value, modele: bouton.dataset.modele});
