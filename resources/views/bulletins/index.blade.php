@@ -368,7 +368,7 @@
                             return '<tr>' +
                                 '<td class="text-center"><input type="checkbox" class="form-check-input bulletin-checkbox" value="' + row.id_eleve + '" aria-label="' + i18n.selectThisAria + '"></td>' +
                                 '<td>' + escapeHtml(row.matricule || '') + '</td>' +
-                                '<td class="fw-bold">' + escapeHtml((row.nom_eleve || '') + ' ' + (row.prenom_eleve || '')) + '</td>' +
+                                '<td class="fw-bold">' + escapeHtml((row.prenom_eleve || '') + ' ' + (row.nom_eleve || '')) + '</td>' +
                                 '<td>' + escapeHtml(row.genre_eleve || '') + '</td>' +
                                 '<td>' + Number(row.moyenne || 0).toFixed(2) + '</td>' +
                                 '<td>' + rangLabel(row) + '</td>' +

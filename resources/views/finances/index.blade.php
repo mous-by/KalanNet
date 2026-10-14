@@ -101,7 +101,7 @@
                             @forelse($recentPaiements as $p)
                                 <tr>
                                     <td class="px-4 py-3">
-                                        <div class="fw-bold">{{ $p->eleve->nom_eleve }} {{ $p->eleve->prenom_eleve }}</div>
+                                        <div class="fw-bold">{{ $p->eleve->prenom_eleve }} {{ $p->eleve->nom_eleve }}</div>
                                         <small class="text-muted">{{ $p->motif }}</small>
                                     </td>
                                     <td><span class="badge bg-light text-primary border border-primary-subtle">{{ $p->classe->nom_classe }}</span></td>

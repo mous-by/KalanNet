@@ -14,7 +14,7 @@
 
     <table class="identite">
         <tr>
-            <td style="width:40%"><span class="lib">Nom et prénom</span><span class="val">{{ $apercu->prenom_eleve }} {{ $apercu->nom_eleve }}</span></td>
+            <td style="width:40%"><span class="lib">Prénom et nom</span><span class="val">{{ $apercu->prenom_eleve }} {{ $apercu->nom_eleve }}</span></td>
             <td><span class="lib">Matricule</span><span class="val">{{ $apercu->matricule ?: '-' }}</span></td>
             <td><span class="lib">Classe</span><span class="val">{{ $apercu->nom_classe }}</span></td>
             <td><span class="lib">Sexe</span><span class="val">{{ $apercu->genre_eleve ?: '-' }}</span></td>

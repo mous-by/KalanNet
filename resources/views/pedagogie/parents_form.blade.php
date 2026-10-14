@@ -155,7 +155,7 @@
                                 <option value="{{ $eleve->id_eleve }}"
                                     data-classe="{{ $eleve->id_classe }}"
                                     data-search="{{ strtolower($eleve->matricule . ' ' . $eleve->prenom_eleve . ' ' . $eleve->nom_eleve . ' ' . ($eleve->classe->nom_classe ?? '')) }}">
-                                    {{ $eleve->matricule }} — {{ $eleve->nom_eleve }} {{ $eleve->prenom_eleve }}
+                                    {{ $eleve->matricule }} — {{ $eleve->prenom_eleve }} {{ $eleve->nom_eleve }}
                                     ({{ $eleve->classe->nom_classe ?? 'N/A' }})
                                 </option>
                             @endforeach

@@ -101,7 +101,7 @@
                         @continue(!$line->eleve)
                         <tr>
                             <td class="px-4 py-3 text-muted">{{ $line->eleve->matricule }}</td>
-                            <td class="fw-bold">{{ $line->eleve->nom_eleve }} {{ $line->eleve->prenom_eleve }}</td>
+                            <td class="fw-bold">{{ $line->eleve->prenom_eleve }} {{ $line->eleve->nom_eleve }}</td>
                             <td>
                                 @if($line->note === null)
                                     <span class="badge rounded-pill px-3 py-2 bg-secondary-soft text-secondary" style="font-size: 1rem;">Non saisie</span>

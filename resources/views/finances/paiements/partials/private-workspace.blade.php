@@ -46,7 +46,7 @@
                     <select name="eleve_id" class="form-select" required>
                         <option value="">Choisir</option>
                         @foreach($eleves as $eleve)
-                            <option value="{{ $eleve->id_eleve }}">{{ $eleve->nom_eleve }} {{ $eleve->prenom_eleve }} - {{ $eleve->classe?->nom_classe }}</option>
+                            <option value="{{ $eleve->id_eleve }}">{{ $eleve->prenom_eleve }} {{ $eleve->nom_eleve }} - {{ $eleve->classe?->nom_classe }}</option>
                         @endforeach
                     </select>
                 </div>

@@ -1,3 +1,7 @@
+@php
+    // Module Évaluations communes : masqué tant que le SupAdmin n'a pas accordé la permission.
+    $docEvalCommunes = \App\Http\Controllers\EvaluationCommuneController::autorise(auth()->user());
+@endphp
 <div class="documentation-content" style="max-width: 900px; margin: 0 auto; line-height: 1.85;">
 
     @php
@@ -37,7 +41,7 @@
             <li><a href="#doc-9">Espace Parents</a></li>
             <li><a href="#doc-10">Abonnement de l'école</a></li>
             <li><a href="#doc-12">Espaces DAE et DCAP</a></li>
-            <li><a href="#doc-13">Évaluations communes</a></li>
+            @if($docEvalCommunes)<li><a href="#doc-13">Évaluations communes</a></li>@endif
             <li><a href="#doc-11">Catalogue rapide : « où trouver quoi »</a></li>
         </ol>
     </div>
@@ -381,7 +385,7 @@
     <h4 id="doc-12" class="fw-bold text-uppercase mt-5 mb-3 border-bottom pb-2">11. Espaces DAE et DCAP</h4>
     <p>Les directeurs d'académie (<strong>DAE</strong>) et de CAP (<strong>DCAP</strong>) ont leur propre espace,
     qui s'ouvre dès la connexion. Leur menu se limite à : Tableau de bord, <strong>Effectifs</strong>,
-    <strong>Évaluations communes</strong>, <strong>Annonces</strong> et Documentation. Ils consultent leur territoire mais n'interviennent
+    @if($docEvalCommunes)<strong>Évaluations communes</strong>, @endif<strong>Annonces</strong> et Documentation. Ils consultent leur territoire mais n'interviennent
     jamais dans la gestion d'une école : ils ne peuvent ni inscrire, ni modifier, ni supprimer d'élève,
     d'enseignant ou de paiement.</p>
     <ul>
@@ -398,6 +402,7 @@
         directeurs de CAP. Chacun ne reçoit que les annonces qui le concernent.</li>
     </ul>
 
+    @if($docEvalCommunes)
     <h4 id="doc-13" class="fw-bold text-uppercase mt-5 mb-3 border-bottom pb-2">12. Évaluations communes</h4>
     <p>Une évaluation commune (composition harmonisée, devoir commun…) est préparée par l'académie ou le CAP et
     passée le même jour dans toutes les écoles concernées. Menu : <strong>Évaluations communes</strong>.</p>
@@ -446,7 +451,9 @@
     <div class="doc-note">Les sujets ne sont jamais accessibles par un simple lien : KalanNet vérifie à chaque fois
     l'école, le rôle de la personne et l'heure avant de les donner.</div>
 
-    <h4 id="doc-11" class="fw-bold text-uppercase mt-5 mb-3 border-bottom pb-2">13. Catalogue rapide : « où trouver quoi »</h4>
+    @endif
+
+    <h4 id="doc-11" class="fw-bold text-uppercase mt-5 mb-3 border-bottom pb-2">{{ $docEvalCommunes ? 13 : 12 }}. Catalogue rapide : « où trouver quoi »</h4>
     <p>Un tableau pour retrouver rapidement où se trouve une action, sans avoir à relire tout le guide.</p>
 
     <table class="doc-catalogue">
@@ -477,9 +484,11 @@
             <tr><td>Fixer les frais scolaires d'une classe</td><td>Finances -> Formule de paiement</td></tr>
             <tr><td>Réinitialiser le mot de passe d'un utilisateur</td><td>Configuration -> Utilisateurs -> bouton clé</td></tr>
             <tr><td>Changer mon mot de passe</td><td>Menu de mon nom (en haut à droite) -> Profil</td></tr>
+            @if($docEvalCommunes)
             <tr><td>Télécharger le sujet d'une évaluation commune</td><td>Évaluations communes</td></tr>
             <tr><td>Créer une évaluation commune (DAE, DCAP)</td><td>Évaluations communes -> Nouvelle évaluation</td></tr>
             <tr><td>Publier à ses écoles une évaluation de l'académie (DCAP)</td><td>Évaluations communes -> Suivi -> Publier à mes écoles</td></tr>
+            @endif
             <tr><td>Publier une annonce à l'académie ou au CAP</td><td>Tableau de bord DAE / DCAP -> Publier une annonce</td></tr>
             <tr><td>Renouveler l'abonnement de l'école</td><td>Abonnements</td></tr>
             <tr><td>Poser une question ou dicter une instruction</td><td>Bulle KalanBot (en bas à droite)</td></tr>

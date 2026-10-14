@@ -161,7 +161,7 @@
                         <div class="fw-bold">{{ $appel->libelle }}</div>
                         <small class="text-muted">{{ substr($appel->heure_debut, 0, 5) }} - {{ substr($appel->heure_fin, 0, 5) }}</small>
                     </td>
-                    <td>{{ $appel->eleve?->nom_eleve }} {{ $appel->eleve?->prenom_eleve }}</td>
+                    <td>{{ $appel->eleve?->prenom_eleve }} {{ $appel->eleve?->nom_eleve }}</td>
                     <td>{{ $appel->classe?->nom_classe }}</td>
                     <td>{{ $appel->annee?->annee ?? 'Année #' . $appel->id_annee_scolaire }}</td>
                     <td>{{ $appel->matiere?->nom_matiere ?? 'Matière #' . $appel->id_matiere }}</td>

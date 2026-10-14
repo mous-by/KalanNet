@@ -148,7 +148,7 @@
                 @forelse($eleves as $eleve)
                     <tr>
                         <td>
-                            <div class="fw-bold">{{ $eleve->nom_eleve }} {{ $eleve->prenom_eleve }}</div>
+                            <div class="fw-bold">{{ $eleve->prenom_eleve }} {{ $eleve->nom_eleve }}</div>
                             <small class="text-muted">{{ $eleve->matricule }}</small>
                         </td>
                         <td>

@@ -115,6 +115,7 @@ class Permission extends Model
                 'evaluation_modification' => 'Modifier une évaluation',
                 'evaluation_supprimer' => 'Supprimer une évaluation',
                 'evaluation_validation_notes' => 'Valider les notes saisies',
+                'evaluations_communes_apercu' => 'Voir le module Évaluations communes',
                 'controle_apercu' => 'Voir les contrôles',
                 'controle_creation' => 'Créer un contrôle',
                 'controle_modification' => 'Modifier un contrôle',
@@ -222,6 +223,11 @@ class Permission extends Model
      * des classes officielles est commun à toutes les écoles, et le portail
      * revendeur ne concerne que les revendeurs.
      */
+    /** Permissions que seul le SupAdmin peut accorder (jamais données d'office). */
+    public const ACCORDEES_PAR_SUPADMIN = [
+        'evaluations_communes_apercu',
+    ];
+
     public const RESERVEES = [
         'classes_officielles_apercu' => [],
         'revendeur_apercu' => ['revendeur'],

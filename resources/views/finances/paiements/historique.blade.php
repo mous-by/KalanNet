@@ -84,7 +84,7 @@
                     <td>{{ optional($paiement->date_paiement)->format('d/m/Y') }}</td>
                     <td>{{ $paiement->reference }}</td>
                     <td>{{ $paiement->numero_recu }}</td>
-                    <td class="fw-bold">{{ $paiement->eleve?->nom_eleve }} {{ $paiement->eleve?->prenom_eleve }}</td>
+                    <td class="fw-bold">{{ $paiement->eleve?->prenom_eleve }} {{ $paiement->eleve?->nom_eleve }}</td>
                     <td>{{ $paiement->classe?->nom_classe }}</td>
                     <td>{{ $paiement->motif }}</td>
                     <td class="text-end fw-bold">@devise((float) ($paiement->montant_paye ?? $paiement->montant))</td>

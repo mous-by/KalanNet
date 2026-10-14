@@ -31,7 +31,7 @@
     <p class="muted">{{ __('finances.reference_date_line', ['reference' => $paiement->reference, 'date' => optional($paiement->date_paiement)->format('d/m/Y')]) }}</p>
 
     <table>
-        <tr><th>{{ __('finances.th_eleve') }}</th><td>{{ $paiement->eleve?->nom_eleve }} {{ $paiement->eleve?->prenom_eleve }}</td></tr>
+        <tr><th>{{ __('finances.th_eleve') }}</th><td>{{ $paiement->eleve?->prenom_eleve }} {{ $paiement->eleve?->nom_eleve }}</td></tr>
         <tr><th>{{ __('finances.label_classe') }}</th><td>{{ $paiement->classe?->nom_classe }}</td></tr>
         <tr><th>{{ __('finances.th_echeance') }}</th><td>{{ $paiement->echeance?->libelle ?? $paiement->motif }}</td></tr>
         <tr><th>{{ __('finances.th_montant_paye') }}</th><td><strong>{{ \App\Support\Devise::format($paiement->montant_paye ?? $paiement->montant, $paiement->ecole ?? null) }}</strong></td></tr>

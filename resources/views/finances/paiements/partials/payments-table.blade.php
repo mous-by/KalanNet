@@ -11,7 +11,7 @@
             @forelse($paiements as $p)
                 <tr>
                     <td class="px-4"><span class="badge bg-light text-dark">{{ $p->reference }}</span><div class="small">#{{ $p->numero_recu }}</div></td>
-                    <td>{{ $p->eleve?->nom_eleve }} {{ $p->eleve?->prenom_eleve }}</td>
+                    <td>{{ $p->eleve?->prenom_eleve }} {{ $p->eleve?->nom_eleve }}</td>
                     <td>{{ $p->echeance?->libelle ?? $p->motif }}</td>
                     <td class="fw-bold">@devise($p->montant_paye ?? $p->montant)</td>
                     <td>{{ optional($p->date_paiement)->format('d/m/Y') ?? date('d/m/Y', strtotime($p->date_paiement)) }}</td>

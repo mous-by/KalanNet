@@ -12,7 +12,7 @@
                             @foreach($plan->echeances as $echeance)
                                 @if($echeance->statut !== 'paye')
                                     <option value="{{ $echeance->id }}">
-                                        {{ $plan->eleve?->nom_eleve }} {{ $plan->eleve?->prenom_eleve }} - {{ $echeance->libelle }} ({{ number_format($echeance->montant_prevu, 0, ',', ' ') }})
+                                        {{ $plan->eleve?->prenom_eleve }} {{ $plan->eleve?->nom_eleve }} - {{ $echeance->libelle }} ({{ number_format($echeance->montant_prevu, 0, ',', ' ') }})
                                     </option>
                                 @endif
                             @endforeach
@@ -37,7 +37,7 @@
                         <option value="">Autre personne</option>
                         @foreach($eleves as $eleve)
                             @foreach($eleve->parents as $parent)
-                                <option value="{{ $parent->id_parent }}">{{ $parent->nom_prenom_parent }} - {{ $eleve->nom_eleve }} {{ $eleve->prenom_eleve }}</option>
+                                <option value="{{ $parent->id_parent }}">{{ $parent->nom_prenom_parent }} - {{ $eleve->prenom_eleve }} {{ $eleve->nom_eleve }}</option>
                             @endforeach
                         @endforeach
                     </select>

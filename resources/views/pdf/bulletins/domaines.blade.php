@@ -23,7 +23,7 @@
 
     <table class="identite">
         <tr>
-            <td style="width:38%"><span class="lib">Nom et prénom · <span class="ar">{{ $ar('الاسم واللقب') }}</span></span><span class="val">{{ $apercu->prenom_eleve }} {{ $apercu->nom_eleve }}</span></td>
+            <td style="width:38%"><span class="lib">Prénom et nom · <span class="ar">{{ $ar('الاسم واللقب') }}</span></span><span class="val">{{ $apercu->prenom_eleve }} {{ $apercu->nom_eleve }}</span></td>
             <td><span class="lib">Classe · <span class="ar">{{ $ar('الصف') }}</span></span><span class="val">{{ $apercu->nom_classe }}</span></td>
             <td><span class="lib">Matricule · <span class="ar">{{ $ar('رقم التسجيل') }}</span></span><span class="val">{{ $apercu->matricule ?: '-' }}</span></td>
             <td><span class="lib">Effectif · <span class="ar">{{ $ar('العدد') }}</span></span><span class="val">{{ $total_eleves ?: '-' }}</span></td>

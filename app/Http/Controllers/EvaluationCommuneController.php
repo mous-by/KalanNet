@@ -220,11 +220,17 @@ class EvaluationCommuneController extends Controller
 
     /* ---------------------------- Outils ---------------------------- */
 
+    /** Module masqué tant que le SupAdmin n'a pas accordé la permission. */
+    public static function autorise(?\App\Models\User $user): bool
+    {
+        return $user && ($user->droit === 'SupAdmin' || $user->userHasPermission('evaluations_communes_apercu'));
+    }
+
     private function superviseur()
     {
         $user = Auth::user();
         abort_unless(
-            ($user->droit === 'DAE' && $user->id_academie) || ($user->droit === 'DCAP' && $user->id_cap),
+            self::autorise($user) && (($user->droit === 'DAE' && $user->id_academie) || ($user->droit === 'DCAP' && $user->id_cap)),
             403
         );
 
@@ -245,7 +251,7 @@ class EvaluationCommuneController extends Controller
     {
         $user = Auth::user();
         $idEcole = (int) (session('idEcole') ?: $user->idEcole);
-        abort_unless($idEcole && in_array($user->droit, ['Admin', 'Gestionnaire', 'SupAdmin'], true), 403);
+        abort_unless($idEcole && self::autorise($user) && in_array($user->droit, ['Admin', 'Gestionnaire', 'SupAdmin'], true), 403);
 
         return $idEcole;
     }

@@ -32,7 +32,7 @@
                     <td>{{ optional($paiement->date_paiement)->format('d/m/Y') }}</td>
                     <td>{{ $paiement->reference }}</td>
                     <td>{{ $paiement->numero_recu }}</td>
-                    <td>{{ $paiement->eleve?->nom_eleve }} {{ $paiement->eleve?->prenom_eleve }}</td>
+                    <td>{{ $paiement->eleve?->prenom_eleve }} {{ $paiement->eleve?->nom_eleve }}</td>
                     <td>{{ $paiement->classe?->nom_classe }}</td>
                     <td>{{ $paiement->motif }}</td>
                     <td>{{ $paiement->nom_payeur }}</td>

@@ -29,7 +29,7 @@
     <div class="line"></div>
     <table>
         <tr><td>{{ __('finances.th_date') }}</td><td class="right">{{ optional($paiement->date_paiement)->format('d/m/Y H:i') }}</td></tr>
-        <tr><td>{{ __('finances.th_eleve') }}</td><td class="right">{{ $paiement->eleve?->nom_eleve }} {{ $paiement->eleve?->prenom_eleve }}</td></tr>
+        <tr><td>{{ __('finances.th_eleve') }}</td><td class="right">{{ $paiement->eleve?->prenom_eleve }} {{ $paiement->eleve?->nom_eleve }}</td></tr>
         <tr><td>{{ __('finances.label_classe') }}</td><td class="right">{{ $paiement->classe?->nom_classe }}</td></tr>
         <tr><td>{{ __('finances.th_motif') }}</td><td class="right">{{ $paiement->motif }}</td></tr>
         <tr><td>{{ __('finances.th_payeur') }}</td><td class="right">{{ $paiement->nom_payeur }}</td></tr>

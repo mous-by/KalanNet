@@ -14,7 +14,7 @@
             <tbody>
             @forelse($plans as $plan)
                 <tr>
-                    <td class="px-4 fw-bold">{{ $plan->eleve?->nom_eleve }} {{ $plan->eleve?->prenom_eleve }}</td>
+                    <td class="px-4 fw-bold">{{ $plan->eleve?->prenom_eleve }} {{ $plan->eleve?->nom_eleve }}</td>
                     @unless($compactPublic)
                         <td><span class="badge bg-light text-dark">{{ $statuts[$plan->statut_paiement] ?? $plan->statut_paiement }}</span></td>
                         <td>{{ $modes[$plan->mode_paiement] ?? $plan->mode_paiement }}</td>

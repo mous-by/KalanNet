@@ -99,7 +99,7 @@
     </div>
 
     <div style="margin-bottom: 20px;">
-        <strong>Élève:</strong> {{ $paiement->eleve->nom_eleve }} {{ $paiement->eleve->prenom_eleve }} ({{ $paiement->eleve->matricule }})<br>
+        <strong>Élève:</strong> {{ $paiement->eleve->prenom_eleve }} {{ $paiement->eleve->nom_eleve }} ({{ $paiement->eleve->matricule }})<br>
         <strong>Classe:</strong> {{ $paiement->classe->nom_classe }}<br>
         <strong>Année Scolaire:</strong> {{ $paiement->annee_scolaire }}
     </div>

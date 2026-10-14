@@ -107,7 +107,7 @@
             <td>{{ __('bulletins.th_classe') }}</td>
         </tr>
         <tr>
-            <td><strong>{{ $apercu->nom_eleve }} {{ $apercu->prenom_eleve }}</strong></td>
+            <td><strong>{{ $apercu->prenom_eleve }} {{ $apercu->nom_eleve }}</strong></td>
             <td><strong>{{ $apercu->genre_eleve }}</strong></td>
             <td><strong>{{ $apercu->nom_classe }}</strong></td>
         </tr>

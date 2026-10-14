@@ -158,7 +158,7 @@
             <tr>
                 <th class="num">N°</th>
                 <th class="matricule">Matricule</th>
-                <th>Nom et prénom</th>
+                <th>Prénom et nom</th>
                 <th class="note">Note</th>
             </tr>
         </thead>
@@ -167,7 +167,7 @@
                 <tr>
                     <td class="num">{{ $index + 1 }}</td>
                     <td class="matricule">{{ $line->eleve->matricule ?? '' }}</td>
-                    <td>{{ $line->eleve->nom_eleve ?? '' }} {{ $line->eleve->prenom_eleve ?? '' }}</td>
+                    <td>{{ $line->eleve->prenom_eleve ?? '' }} {{ $line->eleve->nom_eleve ?? '' }}</td>
                     <td class="note">
                         @if($line->note === null)
                             <span class="note-empty">Non saisie</span>

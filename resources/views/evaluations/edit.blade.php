@@ -101,7 +101,7 @@
                                         {{ $line->eleve->matricule ?? '' }}
                                         <input type="hidden" name="id_ligneEvaluation[]" value="{{ $line->id_ligneEvaluation }}">
                                     </td>
-                                    <td class="fw-bold">{{ $line->eleve->nom_eleve ?? '' }} {{ $line->eleve->prenom_eleve ?? '' }}</td>
+                                    <td class="fw-bold">{{ $line->eleve->prenom_eleve ?? '' }} {{ $line->eleve->nom_eleve ?? '' }}</td>
                                     <td>
                                         <input type="number" name="note[]" class="form-control evaluation-note-input" min="0" max="{{ $maxNote }}" step="0.01" value="{{ old('note.'.$index, $line->note ?? 0) }}" required data-max-note="{{ $maxNote }}">
                                         <div class="invalid-feedback">La note doit être comprise entre 0 et {{ number_format($maxNote, 0, ',', ' ') }}.</div>

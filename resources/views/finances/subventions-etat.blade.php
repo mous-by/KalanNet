@@ -128,7 +128,7 @@
                 <tbody>
                     @forelse($subventionRows as $row)
                         <tr>
-                            <td class="px-4 fw-semibold">{{ $row->eleve?->nom_eleve }} {{ $row->eleve?->prenom_eleve }}</td>
+                            <td class="px-4 fw-semibold">{{ $row->eleve?->prenom_eleve }} {{ $row->eleve?->nom_eleve }}</td>
                             <td><span class="badge bg-light text-dark">{{ $row->eleve?->matricule ?: 'N/A' }}</span></td>
                             <td>{{ $row->annee?->annee }}</td>
                             <td>{{ $row->classe?->nom_classe }}</td>

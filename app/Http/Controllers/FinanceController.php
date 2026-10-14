@@ -742,7 +742,7 @@ class FinanceController extends Controller
         return response()->json([
             'eleve' => [
                 'id' => $context['eleve']->id_eleve,
-                'nom' => trim($context['eleve']->nom_eleve . ' ' . $context['eleve']->prenom_eleve),
+                'nom' => trim($context['eleve']->prenom_eleve . ' ' . $context['eleve']->nom_eleve),
                 'statut_paiement' => $context['eleve']->statut_paiement ?? 'normal',
             ],
             'parents' => $context['eleve']->parents()->get(['parents.id_parent', 'parents.nom_prenom_parent'])->map(fn ($parent) => [
@@ -896,7 +896,7 @@ class FinanceController extends Controller
         }
 
         return redirect()->route('finances.paiements')
-            ->with('success', "Plan de paiement généré pour {$plan->eleve->nom_eleve} {$plan->eleve->prenom_eleve}.");
+            ->with('success', "Plan de paiement généré pour {$plan->eleve->prenom_eleve} {$plan->eleve->nom_eleve}.");
     }
 
     public function cancelPaiement(Request $request, $id)

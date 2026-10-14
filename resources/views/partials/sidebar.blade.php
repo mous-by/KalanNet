@@ -141,12 +141,14 @@
                     <div class="menu-title">Effectifs</div>
                 </a>
             </li>
+            @if(\App\Http\Controllers\EvaluationCommuneController::autorise($user))
             <li>
                 <a href="{{ route('territoire.evaluations.index') }}">
                     <div class="parent-icon"><i class="bi bi-journal-check"></i></div>
                     <div class="menu-title">Évaluations communes</div>
                 </a>
             </li>
+            @endif
             <li>
                 <a href="{{ route('territoire.annonces.index') }}">
                     <div class="parent-icon"><i class="bi bi-megaphone-fill"></i></div>
@@ -267,7 +269,7 @@
         <li class="menu-label">{{ __('messages.menu.management') }}</li>
 
         {{-- Évaluations communes reçues de l'académie / du CAP : Admin et Gestionnaire. --}}
-        @if(in_array($user->droit, ['Admin', 'Gestionnaire'], true))
+        @if(in_array($user->droit, ['Admin', 'Gestionnaire'], true) && \App\Http\Controllers\EvaluationCommuneController::autorise($user))
             <li>
                 <a href="{{ route('evaluations-communes.index') }}">
                     <div class="parent-icon"><i class="bi bi-journal-check"></i></div>

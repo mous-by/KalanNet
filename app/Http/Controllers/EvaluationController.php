@@ -264,7 +264,7 @@ class EvaluationController extends Controller
             $line = $linesById->get($lineId);
             if ($line && $line->matiere?->est_lv2 && (int) $line->eleve?->id_matiere_lv2 !== (int) $line->id_matiere) {
                 throw ValidationException::withMessages([
-                    'id_ligneEvaluation' => "La langue LV2 de {$line->eleve?->nom_eleve} {$line->eleve?->prenom_eleve} ne correspond plus à la matière de cette évaluation.",
+                    'id_ligneEvaluation' => "La langue LV2 de {$line->eleve?->prenom_eleve} {$line->eleve?->nom_eleve} ne correspond plus à la matière de cette évaluation.",
                 ]);
             }
         }
@@ -359,7 +359,7 @@ class EvaluationController extends Controller
             ->map(fn ($eleve) => [
                 'id_eleve' => $eleve->id_eleve,
                 'matricule' => $eleve->matricule,
-                'nom' => trim($eleve->nom_eleve . ' ' . $eleve->prenom_eleve),
+                'nom' => trim($eleve->prenom_eleve . ' ' . $eleve->nom_eleve),
             ]);
 
         return response()->json(['eleves' => $students]);

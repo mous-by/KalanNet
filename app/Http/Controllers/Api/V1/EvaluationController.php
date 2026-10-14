@@ -191,7 +191,7 @@ class EvaluationController extends WebEvaluationController
             $line = $linesById->get($lineId);
             if ($line && $line->matiere?->est_lv2 && (int) $line->eleve?->id_matiere_lv2 !== (int) $line->id_matiere) {
                 throw ValidationException::withMessages([
-                    'id_ligneEvaluation' => "La langue LV2 de {$line->eleve?->nom_eleve} {$line->eleve?->prenom_eleve} ne correspond plus à la matière de cette évaluation.",
+                    'id_ligneEvaluation' => "La langue LV2 de {$line->eleve?->prenom_eleve} {$line->eleve?->nom_eleve} ne correspond plus à la matière de cette évaluation.",
                 ]);
             }
         }

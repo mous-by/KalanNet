@@ -69,7 +69,7 @@ class PaiementEleveReportService
             'KALANNET',
             'RECU:' . $paiement->numero_recu,
             'REF:' . $paiement->reference,
-            'ELEVE:' . trim(($paiement->eleve?->nom_eleve ?? '') . ' ' . ($paiement->eleve?->prenom_eleve ?? '')),
+            'ELEVE:' . trim(($paiement->eleve?->prenom_eleve ?? '') . ' ' . ($paiement->eleve?->nom_eleve ?? '')),
             'MONTANT:' . (string) ($paiement->montant_paye ?? $paiement->montant),
             'DATE:' . optional($paiement->date_paiement)->format('Y-m-d'),
         ]);
@@ -188,7 +188,7 @@ class PaiementEleveReportService
         $resume = $plan->resume_paiement ?? ['montant_attendu' => 0, 'montant_paye' => 0, 'reste' => 0, 'statut' => '-'];
 
         return [
-            trim(($plan->eleve?->nom_eleve ?? '') . ' ' . ($plan->eleve?->prenom_eleve ?? '')),
+            trim(($plan->eleve?->prenom_eleve ?? '') . ' ' . ($plan->eleve?->nom_eleve ?? '')),
             $plan->classe?->nom_classe,
             $plan->anneeScolaire?->annee,
             $plan->statut_paiement,
@@ -206,7 +206,7 @@ class PaiementEleveReportService
             optional($paiement->date_paiement)->format('d/m/Y'),
             $paiement->reference,
             $paiement->numero_recu,
-            trim(($paiement->eleve?->nom_eleve ?? '') . ' ' . ($paiement->eleve?->prenom_eleve ?? '')),
+            trim(($paiement->eleve?->prenom_eleve ?? '') . ' ' . ($paiement->eleve?->nom_eleve ?? '')),
             $paiement->classe?->nom_classe,
             $paiement->motif,
             (float) ($paiement->montant_paye ?? $paiement->montant),

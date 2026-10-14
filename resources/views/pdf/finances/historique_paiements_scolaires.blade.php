@@ -22,7 +22,7 @@
             @foreach($plans as $plan)
                 @php($resume = $plan->resume_paiement)
                 <tr>
-                    <td>{{ $plan->eleve?->nom_eleve }} {{ $plan->eleve?->prenom_eleve }}</td>
+                    <td>{{ $plan->eleve?->prenom_eleve }} {{ $plan->eleve?->nom_eleve }}</td>
                     <td>{{ $plan->classe?->nom_classe }}</td>
                     <td>{{ $plan->anneeScolaire?->annee }}</td>
                     <td>{{ $plan->statut_paiement }}</td>
