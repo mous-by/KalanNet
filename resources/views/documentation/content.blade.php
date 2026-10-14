@@ -271,8 +271,8 @@
     modèle choisi est retenu pour la classe. Tous les modèles s'impriment en noir et blanc et portent l'en-tête
     officiel (ministère, pays, académie, CAP).</p>
     <ul>
-        <li><strong>Standard</strong> (A5) : le bulletin habituel de KalanNet, utilisé tant qu'aucun autre modèle
-            n'est choisi.</li>
+        <li><strong>Standard</strong> (A4 paysage) : le bulletin habituel de KalanNet, en deux exemplaires A5 côte à
+            côte (un pour les parents, un pour l'école), utilisé tant qu'aucun autre modèle n'est choisi.</li>
         <li><strong>Classique</strong> (A4) : notes de classe et de composition, coefficients, moyenne, rang,
             statistiques de la classe et décision du conseil.</li>
         <li><strong>Par domaines bilingue</strong> (A4) : modèle médersa, avec un en-tête en français et en arabe

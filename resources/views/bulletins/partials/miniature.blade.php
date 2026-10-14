@@ -1,11 +1,14 @@
 {{-- Croquis du modèle : donne l'allure générale sans charger de PDF. --}}
 @switch($code)
     @case('standard')
-        <div class="d-flex justify-content-between"><i style="width:35%"></i><i style="width:35%"></i></div>
-        <i class="w60 c"></i>
-        <i class="band" style="background:transparent; border:1.5px double #475569; height:9px"></i>
-        <div class="rows">@for($i = 0; $i < 8; $i++)<i class="{{ $i % 2 ? 'w80' : '' }}" style="background:#cbd5e1"></i>@endfor</div>
-        <div class="d-flex justify-content-between" style="margin-top:auto"><i style="width:28%"></i><i style="width:28%"></i><i style="width:28%"></i></div>
+        @for($e = 0; $e < 2; $e++)
+            <div class="ex">
+                <div class="d-flex justify-content-between"><i style="width:35%"></i><i style="width:35%"></i></div>
+                <i class="w60 c"></i>
+                <i class="band" style="background:transparent; border:1.5px double #475569; height:8px"></i>
+                <div class="rows">@for($i = 0; $i < 7; $i++)<i class="{{ $i % 2 ? 'w80' : '' }}" style="background:#cbd5e1"></i>@endfor</div>
+            </div>
+        @endfor
         @break
     @case('classique')
         <i class="w60 c"></i><i class="w40 c"></i>

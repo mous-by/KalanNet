@@ -33,6 +33,3 @@
 .signatures { width: 100%; margin-top: 3.5mm; }
 .signatures td { width: 50%; font-size: 8px; font-weight: bold; text-transform: uppercase; letter-spacing: .6px; text-decoration: underline; vertical-align: top; height: 11mm; }
 .signatures td.d { text-align: right; }
-.deux-exemplaires { width: 100%; table-layout: fixed; }
-.deux-exemplaires td.exemplaire { width: 50%; vertical-align: top; padding: 0; }
-.deux-exemplaires td.coupe { border-left: 1px dashed #000; }

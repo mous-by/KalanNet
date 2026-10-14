@@ -14,9 +14,11 @@ class ModelesBulletin
     public const MODELES = [
         'standard' => [
             'nom' => 'Standard',
-            'format' => 'A5',
+            'format' => 'A4',
+            'orientation' => 'landscape',
+            'deux_exemplaires' => true,
             'calcul' => 'standard',
-            'description' => 'Le bulletin habituel de KalanNet, inchangé : M.Class, M.Compo, moyenne, coefficient, appréciation, rang et moyenne du premier.',
+            'description' => 'Le bulletin habituel de KalanNet, inchangé, en deux exemplaires A5 côte à côte sur une feuille A4 paysage (un pour les parents, un pour l’école).',
         ],
         'classique' => [
             'nom' => 'Classique',
@@ -46,7 +48,7 @@ class ModelesBulletin
             'nom' => 'Moderne',
             'format' => 'A4',
             'orientation' => 'landscape',
-            'demi_page' => true,
+            'deux_exemplaires' => true,
             'calcul' => 'standard',
             'description' => 'Deux exemplaires A5 du même bulletin côte à côte sur une feuille A4 paysage (un pour les parents, un pour l’école) : photo de l’élève, barre de niveau par matière, évolution depuis la période précédente.',
         ],
@@ -87,10 +89,16 @@ class ModelesBulletin
         return self::MODELES[$code]['orientation'] ?? 'portrait';
     }
 
-    /** Contenu imprimé sur une demi-feuille A4 (format A5, ou Moderne : deux exemplaires A5). */
+    /** Deux exemplaires A5 du même bulletin côte à côte sur une feuille A4 paysage. */
+    public static function deuxExemplaires(string $code): bool
+    {
+        return !empty(self::MODELES[$code]['deux_exemplaires']);
+    }
+
+    /** Contenu imprimé sur une demi-feuille A4 (format A5, ou deux exemplaires A5). */
     public static function demiPage(string $code): bool
     {
-        return self::format($code) === 'A5' || !empty(self::MODELES[$code]['demi_page']);
+        return self::format($code) === 'A5' || self::deuxExemplaires($code);
     }
 
     public static function modeNote(Classe $classe): string

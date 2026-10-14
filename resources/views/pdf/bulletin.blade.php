@@ -15,13 +15,28 @@
         .ar { font-family: 'DejaVu Sans', sans-serif; }
         .num { text-align: center; white-space: nowrap; }
         table { border-collapse: collapse; }
+        .deux-exemplaires { width: 100%; table-layout: fixed; }
+        .deux-exemplaires td.exemplaire { width: 50%; vertical-align: top; padding: 0; }
+        .deux-exemplaires td.gauche { padding-right: 8px; }
+        .deux-exemplaires td.droite { padding-left: 8px; border-left: 1px dashed #000; }
         @include('pdf.bulletins.styles.'.$modele)
     </style>
 </head>
 <body>
 @foreach($bulletins as $bulletin)
+    @php $variables = \App\Support\PresentationBulletin::variables($bulletin); @endphp
     <div class="page">
-        @include('pdf.bulletins.'.$modele, \App\Support\PresentationBulletin::variables($bulletin))
+        @if(\App\Support\ModelesBulletin::deuxExemplaires($modele))
+            {{-- A4 paysage : deux exemplaires A5 du même bulletin (parents / école), séparés par un trait de coupe. --}}
+            <table class="deux-exemplaires">
+                <tr>
+                    <td class="exemplaire gauche">@include('pdf.bulletins.'.$modele, $variables)</td>
+                    <td class="exemplaire droite">@include('pdf.bulletins.'.$modele, $variables)</td>
+                </tr>
+            </table>
+        @else
+            @include('pdf.bulletins.'.$modele, $variables)
+        @endif
     </div>
 @endforeach
 </body>
