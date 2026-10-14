@@ -133,4 +133,5 @@ return [
     'apercu_titre' => 'Aperçu du modèle',
     'gen_btn_deux_par_feuille' => '🗞 2 bulletins par feuille A4',
     'gen_deux_par_feuille_title' => 'Mise en page 2 par feuille A4…',
+    'modele_a4_paysage' => 'A4 paysage · 2 exemplaires',
 ];

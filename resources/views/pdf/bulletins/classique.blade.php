@@ -30,7 +30,7 @@
             <tbody>
                 @foreach($matieres as $m)
                     <tr class="{{ $loop->even ? 'alt' : '' }}">
-                        <td class="matiere">{{ \App\Support\ArabePdf::texte($m->nom_matiere) }}@if($m->enseignant)<span class="prof">{{ $m->enseignant }}</span>@endif</td>
+                        <td class="matiere">{{ \App\Support\ArabePdf::texte($m->nom_matiere) }}</td>
                         <td class="num moy">{{ $note($m->M_Gle) }}</td>
                         <td class="num appr">{{ $m->appreciation }}</td>
                     </tr>
@@ -48,7 +48,7 @@
                 <tr class="bareme"><td></td><td class="num">/ 20</td><td class="num">/ 20</td><td class="num">(cl. + 2 × co.) / 3</td><td class="num">k</td><td class="num">moy. × k</td><td></td></tr>
                 @foreach($matieres as $m)
                     <tr class="{{ $loop->even ? 'alt' : '' }}">
-                        <td class="matiere">{{ \App\Support\ArabePdf::texte($m->nom_matiere) }}@if($m->enseignant)<span class="prof">{{ $m->enseignant }}</span>@endif</td>
+                        <td class="matiere">{{ \App\Support\ArabePdf::texte($m->nom_matiere) }}</td>
                         <td class="num">{{ $note($m->note_classe) }}</td>
                         <td class="num">{{ $note($m->note_compo) }}</td>
                         <td class="num moy">{{ $note($m->M_Gle) }}</td>

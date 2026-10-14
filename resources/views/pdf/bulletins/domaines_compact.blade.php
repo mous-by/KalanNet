@@ -65,7 +65,6 @@
                     <td class="box" style="{{ $loop->first ? 'border-right:none' : '' }}">
                         @if(isset($parties[$partie]))
                             <div class="lib">{{ $titre }} · {{ $note($parties[$partie]['moyenne']) }} / {{ $bareme }}</div>
-                            <div class="nom">{{ $maitres[$partie] ?? '' }}</div>
                             <div class="appr">{{ $parties[$partie]['appreciation'] }}</div>
                             <div class="sign"></div>
                         @endif

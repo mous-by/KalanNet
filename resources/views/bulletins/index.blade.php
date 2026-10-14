@@ -96,15 +96,15 @@
                     <div class="col">
                         <label class="modele-tuile h-100 {{ $code === $modeleActuel ? 'is-selected' : '' }}" data-modele="{{ $code }}">
                             <input type="radio" name="modele_bulletin" value="{{ $code }}" class="visually-hidden" @checked($code === $modeleActuel)>
-                            <div class="mini mini-{{ $code }} mini-{{ strtolower($infos['format']) }}" aria-hidden="true">
+                            <div class="mini mini-{{ $code }} {{ ($infos['orientation'] ?? '') === 'landscape' ? 'mini-paysage' : 'mini-'.strtolower($infos['format']) }}" aria-hidden="true">
                                 @include('bulletins.partials.miniature', ['code' => $code])
                             </div>
                             <div class="d-flex align-items-center justify-content-between gap-2 mt-2">
                                 <span class="fw-bold">{{ $infos['nom'] }}</span>
-                                <span class="format-badge {{ $infos['format'] === 'A4' ? 'is-a4' : '' }}">{{ $infos['format'] === 'A4' ? __('bulletins.modele_a4') : __('bulletins.modele_a5') }}</span>
+                                <span class="format-badge {{ $infos['format'] === 'A4' ? 'is-a4' : '' }}">{{ ($infos['orientation'] ?? '') === 'landscape' ? __('bulletins.modele_a4_paysage') : ($infos['format'] === 'A4' ? __('bulletins.modele_a4') : __('bulletins.modele_a5')) }}</span>
                             </div>
                             <p class="small text-muted mb-2 mt-1">{{ $infos['description'] }}</p>
-                            @if($infos['format'] === 'A5' && $nbMatieres > \App\Support\ModelesBulletin::MAX_MATIERES_A5)
+                            @if(\App\Support\ModelesBulletin::demiPage($code) && isset(\App\Support\ModelesBulletin::EQUIVALENT_A4[$code]) && $nbMatieres > \App\Support\ModelesBulletin::MAX_MATIERES_A5)
                                 <p class="small text-warning-emphasis mb-2"><i class="bi bi-exclamation-triangle me-1"></i>{{ __('bulletins.modele_trop_matieres', ['count' => $nbMatieres, 'a4' => $modeles[\App\Support\ModelesBulletin::EQUIVALENT_A4[$code]]['nom']]) }}</p>
                             @endif
                             @if($infos['calcul'] === 'domaines')
@@ -495,6 +495,9 @@
         .mini { margin: 0 auto; background: #fff; border: 1px solid #d5dae2; border-radius: 3px; box-shadow: 0 2px 6px rgba(15, 23, 42, .08); padding: 7px; overflow: hidden; display: flex; flex-direction: column; gap: 3px; }
         .mini-a4 { width: 106px; height: 150px; }
         .mini-a5 { width: 92px; height: 130px; }
+        .mini-paysage { width: 150px; height: 106px; flex-direction: row; gap: 0; padding: 0; }
+        .mini-paysage .ex { flex: 1; padding: 5px; display: flex; flex-direction: column; gap: 3px; }
+        .mini-paysage .ex + .ex { border-left: 1px dashed #222; }
         .mini i { display: block; height: 3px; border-radius: 2px; background: #d9dee6; font-style: normal; }
         .mini .w40 { width: 40%; } .mini .w60 { width: 60%; } .mini .w80 { width: 80%; } .mini .c { margin: 0 auto; }
         .mini .band { height: 7px; border-radius: 1px; }

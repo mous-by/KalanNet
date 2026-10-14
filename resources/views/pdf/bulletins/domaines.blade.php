@@ -45,15 +45,15 @@
                 @php [$libFr, $libAr] = $libellesParties[$partie] ?? $libellesParties['autre']; @endphp
                 @if($parPartie->count() > 1 || $partie !== 'autre')
                     <tr class="partie">
-                        <td colspan="4">{{ $libFr }}@if(!empty($maitres[$partie])) <span class="maitre">— Maître : {{ $maitres[$partie] }}</span>@endif</td>
+                        <td colspan="4">{{ $libFr }}</td>
                         <td colspan="4" class="ar">@if($libAr){{ $ar($libAr) }}@endif</td>
                     </tr>
                 @endif
                 @foreach($domainesPartie as $domaine)
                     <tr class="domaine">
-                        <td colspan="2">{{ $domaine->nom }}</td>
+                        <td colspan="2">{{ $domaine->nom }} <span class="dom-appr">· {{ $domaine->appreciation }}</span></td>
                         <td colspan="5" class="dom-ar">@if($domaine->nom_ar){{ $ar($domaine->nom_ar) }}@endif</td>
-                        <td class="num dom-moy">{{ $note($domaine->moyenne) }}<span class="dom-appr">{{ $domaine->appreciation }}</span></td>
+                        <td class="num dom-moy">{{ $note($domaine->moyenne) }}</td>
                     </tr>
                     @foreach($domaine->matieres as $m)
                         <tr>
@@ -82,7 +82,7 @@
                                 <div class="tete"><table><tr><td>{{ $titreFr }}</td><td class="ar">{{ $ar($titreAr) }}</td></tr></table></div>
                                 <div class="corps">
                                     <table>
-                                        <tr><td>{{ $maitres[$partie] ?? 'Nom :' }}</td><td class="v">{{ $note($parties[$partie]['moyenne']) }} / {{ $bareme }}</td></tr>
+                                        <tr><td>Moyenne · {{ $ar('المعدل') }}</td><td class="v">{{ $note($parties[$partie]['moyenne']) }} / {{ $bareme }}</td></tr>
                                         <tr><td>Appréciation · {{ $ar('التقدير') }}</td><td class="v appr">{{ $parties[$partie]['appreciation'] }}</td></tr>
                                         <tr><td class="sign" colspan="2">Signature · {{ $ar('التوقيع') }}</td></tr>
                                     </table>

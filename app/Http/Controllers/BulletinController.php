@@ -211,7 +211,7 @@ class BulletinController extends Controller
         }
 
         $pdf = Pdf::loadView('pdf.bulletin', ['bulletins' => collect([$data]), 'modele' => $data['modele']]);
-        $pdf->setPaper(ModelesBulletin::format($data['modele']), 'portrait');
+        $pdf->setPaper(ModelesBulletin::format($data['modele']), ModelesBulletin::orientation($data['modele']));
 
         return $pdf->stream('Bulletin_' . ($data['apercu']->nom_eleve ?? 'Eleve') . '.pdf');
     }
@@ -289,7 +289,7 @@ class BulletinController extends Controller
             'bulletins' => $bulletins,
             'modele' => $modele,
         ]);
-        $pdf->setPaper(ModelesBulletin::format($modele), 'portrait');
+        $pdf->setPaper(ModelesBulletin::format($modele), ModelesBulletin::orientation($modele));
 
         $fileName = 'Bulletins_' . str_replace(' ', '_', $classe->nom_classe) . '_' . str_replace(' ', '_', $periodeLabel) . '.pdf';
 

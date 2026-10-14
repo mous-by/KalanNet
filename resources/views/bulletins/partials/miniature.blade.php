@@ -34,12 +34,14 @@
         <div class="boxes"><b></b><b></b></div>
         @break
     @case('moderne')
-        <div class="top"></div>
-        <div class="inner">
-            <div class="d-flex align-items-center gap-1"><span class="avatar"></span><i style="width:45%"></i></div>
-            @foreach([['#222', 70], ['#222', 55], ['#222', 40], ['#222', 80], ['#222', 25], ['#222', 60]] as [$couleur, $largeur])
-                <div class="bar"><i style="flex:0 0 30%"></i><s style="width:{{ $largeur }}%; max-width:55%; background:{{ $couleur }}"></s></div>
-            @endforeach
-        </div>
+        @for($e = 0; $e < 2; $e++)
+            <div class="ex">
+                <i class="w60 c"></i>
+                <div class="d-flex align-items-center gap-1"><span class="avatar"></span><i style="width:45%"></i></div>
+                @foreach([70, 55, 40, 80, 25, 60] as $largeur)
+                    <div class="bar"><i style="flex:0 0 30%"></i><s style="width:{{ $largeur }}%; max-width:55%; background:#222"></s></div>
+                @endforeach
+            </div>
+        @endfor
         @break
 @endswitch

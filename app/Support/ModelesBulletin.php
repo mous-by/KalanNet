@@ -44,9 +44,11 @@ class ModelesBulletin
         ],
         'moderne' => [
             'nom' => 'Moderne',
-            'format' => 'A5',
+            'format' => 'A4',
+            'orientation' => 'landscape',
+            'demi_page' => true,
             'calcul' => 'standard',
-            'description' => 'Visuel pour les parents : photo de l’élève, barre de niveau par matière, évolution depuis la période précédente.',
+            'description' => 'Deux exemplaires A5 du même bulletin côte à côte sur une feuille A4 paysage (un pour les parents, un pour l’école) : photo de l’élève, barre de niveau par matière, évolution depuis la période précédente.',
         ],
     ];
 
@@ -56,7 +58,6 @@ class ModelesBulletin
     public const EQUIVALENT_A4 = [
         'standard' => 'classique',
         'essentiel' => 'classique',
-        'moderne' => 'classique',
         'domaines_compact' => 'domaines',
     ];
 
@@ -79,6 +80,17 @@ class ModelesBulletin
     public static function format(string $code): string
     {
         return self::MODELES[$code]['format'] ?? 'A5';
+    }
+
+    public static function orientation(string $code): string
+    {
+        return self::MODELES[$code]['orientation'] ?? 'portrait';
+    }
+
+    /** Contenu imprimé sur une demi-feuille A4 (format A5, ou Moderne : deux exemplaires A5). */
+    public static function demiPage(string $code): bool
+    {
+        return self::format($code) === 'A5' || !empty(self::MODELES[$code]['demi_page']);
     }
 
     public static function modeNote(Classe $classe): string
