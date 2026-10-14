@@ -33,18 +33,20 @@
         $oldEnseignants = old('id_enseignants', []);
         $oldCoefficients = old('coefficient', []);
         $oldDomaines = old('id_domaine', []);
+        $oldGroupes = old('groupe', []);
         $initialRows = collect();
         $domaineDefaut = fn ($matiere) => \App\Support\Domaines::defautPourMatiere($domaines, $matiere?->domaine_defaut);
         $afficherDomaines = $francoArabe && $domaines->isNotEmpty();
 
         if (is_array($oldMatieres)) {
-            $initialRows = collect($oldMatieres)->map(function ($idMatiere, $index) use ($matieres, $oldEnseignants, $oldCoefficients, $oldDomaines) {
+            $initialRows = collect($oldMatieres)->map(function ($idMatiere, $index) use ($matieres, $oldEnseignants, $oldCoefficients, $oldDomaines, $oldGroupes) {
                 return [
                     'id_matiere' => (int) $idMatiere,
                     'nom_matiere' => optional($matieres->firstWhere('id_matiere', (int) $idMatiere))->nom_matiere,
                     'id_enseignants' => $oldEnseignants[$index] ?? null,
                     'coefficient' => $oldCoefficients[$index] ?? 1,
                     'id_domaine' => $oldDomaines[$index] ?? null,
+                    'groupe' => $oldGroupes[$index] ?? null,
                 ];
             })->filter(fn ($row) => $row['nom_matiere']);
         } elseif ($isEdit) {
@@ -54,6 +56,7 @@
                 'id_enseignants' => $ligne->id_enseignants,
                 'coefficient' => $ligne->coefficient ?? 1,
                 'id_domaine' => $ligne->id_domaine ?: $domaineDefaut($ligne->matiere),
+                'groupe' => $ligne->groupe,
             ]);
         }
 
@@ -74,6 +77,9 @@
             'matieresShownFor' => __('classes.matieres_shown_for'),
             'chooseOrdreHelp' => __('classes.choose_ordre_help'),
             'sansDomaine' => __('classes.sans_domaine'),
+            'groupeAuto' => __('classes.groupe_auto'),
+            'groupePrincipale' => __('classes.groupe_principale'),
+            'groupeSecondaire' => __('classes.groupe_secondaire'),
         ];
     @endphp
 
@@ -197,6 +203,7 @@
                                 @if($afficherDomaines)<th>{{ __('classes.th_domaine') }} <a href="{{ route('pedagogie.domaines') }}" class="small fw-normal ms-1" target="_blank">{{ __('classes.domaines_lien') }}</a></th>@endif
                                 <th>{{ __('classes.th_enseignant') }}</th>
                                 <th style="width: 140px;">{{ __('classes.th_coefficient') }}</th>
+                                <th class="col-groupe" style="width: 190px;" title="{{ __('classes.groupe_aide') }}">{{ __('classes.th_groupe') }}</th>
                                 <th class="text-center" style="width: 90px;">{{ __('classes.th_action') }}</th>
                             </tr>
                         </thead>
@@ -229,6 +236,13 @@
                                     </td>
                                     <td>
                                         <input type="number" name="coefficient[]" class="form-control" min="0" max="5" step="0.01" value="{{ $row['coefficient'] }}" required>
+                                    </td>
+                                    <td class="col-groupe">
+                                        <select class="form-select" name="groupe[]">
+                                            <option value="">{{ __('classes.groupe_auto') }}</option>
+                                            <option value="principale" @selected($row['groupe'] === 'principale')>{{ __('classes.groupe_principale') }}</option>
+                                            <option value="secondaire" @selected($row['groupe'] === 'secondaire')>{{ __('classes.groupe_secondaire') }}</option>
+                                        </select>
                                     </td>
                                     <td class="text-center">
                                         <button type="button" class="btn btn-light btn-sm remove-row" title="{{ __('classes.remove') }}">
@@ -325,6 +339,14 @@
                 });
             }
 
+            // Colonne « Groupe » (matière principale / secondaire) : classes du secondaire seulement.
+            function afficherGroupes() {
+                const secondaire = !!ordreSelect && (ordreSelect.value || '').startsWith('secondaire');
+                document.querySelectorAll('.col-groupe').forEach(cell => cell.style.display = secondaire ? '' : 'none');
+            }
+            if (ordreSelect) ordreSelect.addEventListener('change', afficherGroupes);
+            afficherGroupes();
+
             function domaineOptions(selectionne) {
                 return '<option value="">' + escapeHtml(i18n.sansDomaine) + '</option>' + domaines.map(function (domaine) {
                     return '<option value="' + domaine.id + '"' + (Number(selectionne) === Number(domaine.id) ? ' selected' : '') + '>' + escapeHtml(domaine.nom) + '</option>';
@@ -375,10 +397,12 @@
                     (afficherDomaines ? '<td><select class="form-select domaine-select" name="id_domaine[]">' + domaineOptions(matiere.domaine) + '</select></td>' : '') +
                     '<td><select class="form-select enseignant-select" name="id_enseignants[]">' + enseignantOptions() + '</select></td>' +
                     '<td><input type="number" name="coefficient[]" class="form-control" min="0" max="5" step="0.01" value="1" required></td>' +
+                    '<td class="col-groupe"><select class="form-select" name="groupe[]"><option value="">' + escapeHtml(i18n.groupeAuto) + '</option><option value="principale">' + escapeHtml(i18n.groupePrincipale) + '</option><option value="secondaire">' + escapeHtml(i18n.groupeSecondaire) + '</option></select></td>' +
                     '<td class="text-center"><button type="button" class="btn btn-light btn-sm remove-row" title="' + i18n.remove + '"><i class="bi bi-trash text-danger"></i></button></td>' +
                     '</tr>'
                 );
                 attribuerMaitre(tbody.lastElementChild);
+                afficherGroupes();
             }
 
             function syncCardState(option) {

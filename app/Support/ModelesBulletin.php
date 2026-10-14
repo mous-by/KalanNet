@@ -47,13 +47,13 @@ class ModelesBulletin
             'calcul' => 'domaines',
             'description' => 'La version courte du modèle médersa, en deux exemplaires A5 côte à côte sur une feuille A4 paysage (un pour les parents, un pour l’école) : photo de l’élève, chaque domaine avec sa moyenne, détail des matières, deux appréciations.',
         ],
-        'moderne' => [
-            'nom' => 'Moderne',
+        'principales' => [
+            'nom' => 'Matières principales / secondaires',
             'format' => 'A4',
             'orientation' => 'landscape',
             'deux_exemplaires' => true,
-            'calcul' => 'standard',
-            'description' => 'Deux exemplaires A5 du même bulletin côte à côte sur une feuille A4 paysage (un pour les parents, un pour l’école) : photo de l’élève, barre de niveau par matière, évolution depuis la période précédente.',
+            'calcul' => 'principales',
+            'description' => 'Modèle du secondaire : matières principales puis secondaires, chacune avec son total et sa moyenne partielle ; moyenne générale = moyenne des deux moyennes partielles ; rang et moyenne du premier. Deux exemplaires A5 côte à côte sur une feuille A4 paysage.',
         ],
     ];
 

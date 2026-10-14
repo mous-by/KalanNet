@@ -230,8 +230,9 @@ class ClasseController extends Controller
 
             $dejaPresentes = $classe->ligneClasses()->pluck('id_matiere')->all();
             $domainesPrecedents = $classe->ligneClasses()->pluck('id_domaine', 'id_matiere')->all();
+            $groupesPrecedents = $classe->ligneClasses()->pluck('groupe', 'id_matiere')->all();
             $classe->ligneClasses()->delete();
-            $this->syncLignesClasse($classe, $data, $dejaPresentes, $domainesPrecedents);
+            $this->syncLignesClasse($classe, $data, $dejaPresentes, $domainesPrecedents, $groupesPrecedents);
         });
 
         return redirect()->route('classes.edit', $classe->id_classe)->with('success', 'Classe modifiée avec succès.');
@@ -272,6 +273,8 @@ class ClasseController extends Controller
             'id_enseignants.*' => 'nullable|integer|exists:enseignants,id_enseignant',
             'coefficient' => 'required|array|min:1',
             'coefficient.*' => 'required|numeric|min:0|max:5',
+            'groupe' => 'nullable|array',
+            'groupe.*' => 'nullable|in:principale,secondaire',
             'id_domaine' => 'nullable|array',
             'id_domaine.*' => ['nullable', 'integer', Rule::exists('domaines', 'id_domaine')->where('id_ecole', $idEcole)],
             'deux_maitres' => 'nullable|boolean',
@@ -336,7 +339,7 @@ class ClasseController extends Controller
      * @param  int[]  $dejaPresentes  matières que la classe avait avant la modification :
      *                                 toujours conservées, même hors du catalogue actuel.
      */
-    protected function syncLignesClasse(Classe $classe, array $data, array $dejaPresentes = [], array $domainesPrecedents = []): void
+    protected function syncLignesClasse(Classe $classe, array $data, array $dejaPresentes = [], array $domainesPrecedents = [], array $groupesPrecedents = []): void
     {
         $expectedOrdre = $this->ordreMatiereMap()[$classe->ordreEnseignement] ?? null;
         // Mêmes matières que celles proposées dans le formulaire : catalogue
@@ -379,6 +382,10 @@ class ClasseController extends Controller
                 'id_enseignants' => $idEnseignant,
                 'coefficient' => $data['coefficient'][$index] ?? 1,
                 'id_domaine' => $idDomaine,
+                // Groupe (matière principale / secondaire) : conservé si la colonne n'est pas envoyée.
+                'groupe' => array_key_exists('groupe', $data)
+                    ? (($data['groupe'][$index] ?? null) ?: null)
+                    : ($groupesPrecedents[(int) $idMatiere] ?? null),
             ]);
         }
     }

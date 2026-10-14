@@ -513,10 +513,6 @@
         .mini-domaines .dom, .mini-domaines_compact .dom { background: #9ca3af; }
         .mini-essentiel .band { background: transparent; border-top: 2px solid #222; border-radius: 0; height: 4px; }
         .mini-essentiel .boxes b.f { background: #222; border-color: #222; }
-        .mini-moderne { padding: 0; }
-        .mini-moderne .top { height: 14px; border-bottom: 1.5px solid #222; margin: 0 6px; }
-        .mini-moderne .inner { padding: 5px 6px; display: flex; flex-direction: column; gap: 3px; }
-        .mini-moderne .avatar { width: 12px; height: 12px; border-radius: 50%; border: 1px solid #222; }
         html[data-theme] .theme-outline-btn {
             background: var(--accent-light) !important;
             border-color: var(--border-color) !important;

@@ -78,4 +78,9 @@ return [
     'maitre_arabe' => 'Arabic part teacher',
     'maitre_francais' => 'French part teacher',
     'domaines_lien' => 'Manage domains',
+    'th_groupe' => 'Group',
+    'groupe_auto' => 'Auto (from coefficient)',
+    'groupe_principale' => 'Main',
+    'groupe_secondaire' => 'Secondary',
+    'groupe_aide' => '“Main / secondary subjects” report card: a subject left on Auto is main if its coefficient is at least 2.',
 ];

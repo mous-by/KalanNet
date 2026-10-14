@@ -383,30 +383,13 @@ class BulletinController extends Controller
         $data['maitres'] = $this->maitres($classe);
         $data['annee_hegirienne'] = $this->anneeHegirienne($data['apercu']);
         $data['photo'] = $this->imageBase64($eleve->image);
-        if ($modele === 'moderne') {
-            $data['evolution'] = $this->moyennePrecedente($classe, (int) $id, (int) $id_annee, $id_trimestre ? (int) $id_trimestre : null, $mois ? (int) $mois : null, $modele);
+        if ($modele === 'principales') {
+            $data['lv2'] = $eleve->id_matiere_lv2
+                ? trim(preg_replace('/\s*LV2$/i', '', (string) DB::table('matiere')->where('id_matiere', $eleve->id_matiere_lv2)->value('nom_matiere')))
+                : null;
         }
 
         return $data;
-    }
-
-    /** Moyenne de l'élève à la période précédente (trimestre ou mois), pour le modèle Moderne. */
-    private function moyennePrecedente(Classe $classe, int $idEleve, int $idAnnee, ?int $idTrimestre, ?int $mois, string $modele): ?float
-    {
-        if ($mois) {
-            $precedent = $mois === 1 ? 12 : $mois - 1;
-            $calcul = CalculBulletin::pour($classe, $idAnnee, null, $precedent, ModelesBulletin::calcul($modele), ModelesBulletin::modeNote($classe));
-        } else {
-            $precedent = Trimestre::where('id_trimestre', '<', (int) $idTrimestre)->orderByDesc('id_trimestre')->value('id_trimestre');
-            if (!$precedent) {
-                return null;
-            }
-            $calcul = CalculBulletin::pour($classe, $idAnnee, (int) $precedent, null, ModelesBulletin::calcul($modele), ModelesBulletin::modeNote($classe));
-        }
-
-        $moyenne = $calcul->pourEleve($idEleve)['moyenne_periode'] ?? null;
-
-        return $moyenne > 0 ? (float) $moyenne : null;
     }
 
     /** Maîtres d'une classe à deux maîtres (partie arabe / partie française). */

@@ -290,9 +290,11 @@
             A4</strong> de la fenêtre de génération l'imprime deux par feuille, à couper en deux.</li>
         <li><strong>Par domaines compact</strong> (A4 paysage, écoles franco-arabes) : la version courte du modèle
             médersa, en deux exemplaires A5 du même bulletin côte à côte (un pour les parents, un pour l'école).</li>
-        <li><strong>Moderne</strong> (A4 paysage) : deux exemplaires A5 du même bulletin côte à côte, séparés par un
-            trait de coupe (un pour les parents, un pour l'école), avec la photo de l'élève, une barre de niveau par
-            matière et l'évolution depuis la période précédente.</li>
+        <li><strong>Matières principales / secondaires</strong> (A4 paysage, deux exemplaires) : modèle du
+            secondaire. Les matières principales puis secondaires ont chacune leur total et leur moyenne partielle, et
+            la moyenne générale est la moyenne des deux moyennes partielles. Dans la fiche de la classe, la colonne
+            <strong>Groupe</strong> indique si une matière est principale ou secondaire ; laissée sur « Auto », une
+            matière est principale si son coefficient est d'au moins 2.</li>
     </ul>
     <p><strong>Note de classe</strong> : au même endroit, choisissez si la note de classe est la
     <strong>moyenne de tous les devoirs</strong> de la période ou <strong>une seule note</strong> (la dernière saisie).</p>

@@ -158,6 +158,9 @@ class CalculBulletin
         if ($this->calcul === 'domaines') {
             return $this->moyennesParDomaines($donnees);
         }
+        if ($this->calcul === 'principales') {
+            return $this->moyennesParGroupe($donnees);
+        }
 
         $fondamental1 = $this->ordre === 'fondamentale1';
         $totalCoef = $fondamental1 ? $matieres->count() : $matieres->sum('coef');
@@ -193,7 +196,7 @@ class CalculBulletin
                 ? (float) $nt10->avg()
                 : (($noteClasse ?? 0) + ($noteCompo ?? 0)) / 2;
             $matiere->M_Coef = $matiere->M_Gle * $matiere->coef;
-        } elseif ($this->ordre === 'fondamentale1') {
+        } elseif ($this->ordre === 'fondamentale1' && $this->calcul !== 'principales') {
             $matiere->M_Gle = (float) $matiere->NT10;
             $matiere->M_Coef = $matiere->M_Gle;
         } else {
@@ -242,6 +245,50 @@ class CalculBulletin
         return $donnees;
     }
 
+    /**
+     * Matières principales puis secondaires (conduite comprise, coefficient 1) :
+     * total et moyenne partielle de chaque groupe ; moyenne générale = moyenne
+     * des deux moyennes partielles. Une matière sans groupe choisi est
+     * principale si son coefficient est d'au moins 2.
+     */
+    private function moyennesParGroupe(array $donnees): array
+    {
+        $groupes = ['principales' => collect(), 'secondaires' => collect()];
+        foreach ($donnees['matieres'] as $m) {
+            $groupe = $m->groupe ?: ($m->coef >= 2 ? 'principale' : 'secondaire');
+            $groupes[$groupe === 'principale' ? 'principales' : 'secondaires']->push($m);
+        }
+        if ($donnees['note_conduite'] !== null) {
+            $groupes['secondaires']->push((object) [
+                'nom_matiere' => 'Conduite', 'est_conduite' => true, 'coef' => 1.0,
+                'note_classe' => null, 'note_compo' => null,
+                'M_Gle' => $donnees['note_conduite'], 'M_Coef' => $donnees['note_conduite'],
+                'appreciation' => $donnees['appreciation_conduite'],
+            ]);
+        }
+
+        $resultat = [];
+        foreach ($groupes as $cle => $matieres) {
+            if ($matieres->isEmpty()) {
+                continue;
+            }
+            $coef = $matieres->sum('coef');
+            $total = $matieres->sum('M_Coef');
+            $resultat[$cle] = (object) [
+                'matieres' => $matieres->values(),
+                'total_coef' => $coef,
+                'total' => $total,
+                'moyenne' => $coef > 0 ? $total / $coef : 0,
+            ];
+        }
+
+        $donnees['groupes'] = $resultat;
+        $donnees['total_coef'] = collect($resultat)->sum('total_coef');
+        $donnees['moyenne_periode'] = $resultat ? collect($resultat)->avg('moyenne') : 0;
+
+        return $donnees;
+    }
+
     /** Rang (ex aequo : même rang), moyenne du premier et effectif classé. */
     private function classer(Collection $resultats): Collection
     {
@@ -282,7 +329,7 @@ class CalculBulletin
             ->leftJoin('enseignants as en', 'en.id_enseignant', '=', 'lc.id_enseignants')
             ->where('lc.id_classe', $this->classe->id_classe)
             ->orderBy('lc.id_ligneclasse')
-            ->get(['m.nom_matiere', 'lc.coefficient as coef', 'lc.id_matiere', 'm.est_lv2', 'lc.id_domaine', 'm.domaine_defaut', 'en.nom_prenom_enseignant as enseignant'])
+            ->get(['m.nom_matiere', 'lc.coefficient as coef', 'lc.id_matiere', 'm.est_lv2', 'lc.id_domaine', 'lc.groupe', 'm.domaine_defaut', 'en.nom_prenom_enseignant as enseignant'])
             ->map(function ($l) use ($domaines) {
                 $l->id_domaine = $l->id_domaine ?: Domaines::defautPourMatiere($domaines, $l->domaine_defaut);
 

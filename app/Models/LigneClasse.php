@@ -16,6 +16,7 @@ class LigneClasse extends Model
         'id_enseignants',
         'coefficient',
         'id_domaine',
+        'groupe',
     ];
 
     public function classe()

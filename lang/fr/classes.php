@@ -78,4 +78,9 @@ return [
     'maitre_arabe' => 'Maître de la partie arabe',
     'maitre_francais' => 'Maître de la partie française',
     'domaines_lien' => 'Gérer les domaines',
+    'th_groupe' => 'Groupe',
+    'groupe_auto' => 'Auto (selon le coefficient)',
+    'groupe_principale' => 'Principale',
+    'groupe_secondaire' => 'Secondaire',
+    'groupe_aide' => 'Bulletin « Matières principales / secondaires » : une matière laissée en Auto est principale si son coefficient est d\'au moins 2.',
 ];

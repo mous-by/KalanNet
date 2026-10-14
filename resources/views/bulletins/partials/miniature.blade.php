@@ -40,14 +40,18 @@
             </div>
         @endfor
         @break
-    @case('moderne')
+    @case('principales')
         @for($e = 0; $e < 2; $e++)
             <div class="ex">
-                <i class="w60 c"></i>
-                <div class="d-flex align-items-center gap-1"><span class="avatar"></span><i style="width:45%"></i></div>
-                @foreach([70, 55, 40, 80, 25, 60] as $largeur)
-                    <div class="bar"><i style="flex:0 0 30%"></i><s style="width:{{ $largeur }}%; max-width:55%; background:#222"></s></div>
-                @endforeach
+                <div class="d-flex justify-content-between"><i style="width:45%"></i><i style="width:15%"></i></div>
+                <i class="w60"></i>
+                <div class="rows">
+                    @for($i = 0; $i < 5; $i++)<i class="{{ $i % 2 ? 'w80' : '' }}"></i>@endfor
+                    <i class="dom" style="background:#bbb"></i>
+                    @for($i = 0; $i < 3; $i++)<i class="w80"></i>@endfor
+                    <i class="dom" style="background:#bbb"></i>
+                    <i class="dom" style="background:#777"></i>
+                </div>
             </div>
         @endfor
         @break
