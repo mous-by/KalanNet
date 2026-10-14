@@ -49,6 +49,9 @@
                     'groupe' => $oldGroupes[$index] ?? null,
                 ];
             })->filter(fn ($row) => $row['nom_matiere']);
+        } elseif (!$isEdit && !empty($lignesSuite)) {
+            // Classe suivante : matières reprises de la classe précédente.
+            $initialRows = $lignesSuite;
         } elseif ($isEdit) {
             $initialRows = $lignes->map(fn ($ligne) => [
                 'id_matiere' => $ligne->id_matiere,
@@ -104,6 +107,12 @@
 
     @if(session('success'))
         <div class="alert alert-success border-0 border-start border-success border-4">{{ session('success') }}</div>
+    @endif
+
+    @if(!$isEdit && !empty($classeSource))
+        <div class="alert alert-info border-0 border-start border-info border-4">
+            <i class="bi bi-copy me-2"></i>{{ __('classes.suite_info', ['classe' => $classeSource->nom_classe]) }}
+        </div>
     @endif
 
     <form method="POST" action="{{ $action }}" id="classe-form">
@@ -383,7 +392,24 @@
                 if (event.target.classList.contains('domaine-select')) {
                     attribuerMaitre(event.target.closest('tr'));
                 }
+                // Fondamental I (un seul maître) : l'enseignant choisi est repris
+                // pour toutes les matières qui n'en ont pas encore ; on peut
+                // ensuite le changer matière par matière.
+                if (event.target.classList.contains('enseignant-select') && event.target.value && estFondamental1SansDeuxMaitres()) {
+                    tbody.querySelectorAll('.enseignant-select').forEach(function (select) {
+                        if (!select.value) select.value = event.target.value;
+                    });
+                }
             });
+
+            function estFondamental1SansDeuxMaitres() {
+                return !!ordreSelect && ordreSelect.value === 'fondamentale1' && !(deuxMaitres && deuxMaitres.checked);
+            }
+
+            function enseignantDeLaClasse() {
+                const rempli = Array.from(tbody.querySelectorAll('.enseignant-select')).find(select => select.value);
+                return rempli ? rempli.value : '';
+            }
 
             function addMatiereRow(id) {
                 if (!id || tbody.querySelector('[data-matiere-id="' + id + '"]')) return;
@@ -402,6 +428,9 @@
                     '</tr>'
                 );
                 attribuerMaitre(tbody.lastElementChild);
+                if (estFondamental1SansDeuxMaitres() && enseignantDeLaClasse()) {
+                    tbody.lastElementChild.querySelector('.enseignant-select').value = enseignantDeLaClasse();
+                }
                 afficherGroupes();
             }
 

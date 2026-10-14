@@ -9,6 +9,7 @@ use App\Models\Filiere;
 use App\Models\Matiere;
 use App\Models\Enseignant;
 use App\Models\LigneClasse;
+use App\Support\ClasseSuivante;
 use App\Support\Domaines;
 use App\Support\ExamenNational;
 use App\Support\SchoolOrderAccess;
@@ -34,11 +35,12 @@ class ClasseController extends Controller
         return view('classes.index', compact('classes'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
         $this->authorizePermission('classes_creation');
         $idEcole = session('idEcole');
         $user = Auth::user();
+        $suite = $request->filled('depuis') ? $this->suiteDe((int) $request->query('depuis'), $idEcole) : null;
         $ecole = $this->resolveEcole($user, $idEcole);
         $estSante = $this->estSante($ecole);
 
@@ -49,7 +51,9 @@ class ClasseController extends Controller
         $filieres = $this->filieresDisponibles($idEcole);
 
         return view('classes.form', [
-            'classe' => new Classe(),
+            'classe' => $suite['classe'] ?? new Classe(),
+            'lignesSuite' => $suite['lignes'] ?? null,
+            'classeSource' => $suite['source'] ?? null,
             'matieres' => $matieres,
             'enseignants' => $enseignants,
             'ordres' => $ordres,
@@ -149,7 +153,7 @@ class ClasseController extends Controller
             $this->ensureOrdreAllowed($data['ordre_enseignement'], Auth::user(), $idEcole);
         }
 
-        DB::transaction(function () use ($data, $idEcole, $estSante) {
+        $classe = DB::transaction(function () use ($data, $idEcole, $estSante) {
             $classe = Classe::create([
                 'nom_classe' => $data['nom_classe'],
                 'ordreEnseignement' => $estSante ? null : $data['ordre_enseignement'],
@@ -158,9 +162,21 @@ class ClasseController extends Controller
             ] + $this->champsDeuxMaitres($data));
 
             $this->syncLignesClasse($classe, $data);
+
+            return $classe;
         });
 
-        return redirect()->route('classes.index')->with('success', 'Classe et matières enregistrées avec succès.');
+        // Proposer de créer la classe suivante (même matières) si elle n'existe pas encore.
+        $nomSuivant = ClasseSuivante::nom($classe->nom_classe);
+        $existe = $nomSuivant && Classe::where('idEcole', $idEcole)->where('nom_classe', $nomSuivant)->exists();
+
+        return redirect()->route('classes.index')
+            ->with('success', 'Classe et matières enregistrées avec succès.')
+            ->with('classe_suivante', $nomSuivant && !$existe ? [
+                'id' => $classe->id_classe,
+                'nom' => $classe->nom_classe,
+                'suivante' => $nomSuivant,
+            ] : null);
     }
 
     public function show($id)
@@ -298,6 +314,52 @@ class ClasseController extends Controller
             'id_maitre_francais.required' => 'Choisissez le maître de la partie française.',
             'id_maitre_francais.different' => 'Le maître de la partie française doit être différent du maître de la partie arabe.',
         ]);
+    }
+
+    /**
+     * Classe suivante à partir d'une classe de l'école : nom et cycle
+     * suivants, mêmes matières (coefficient, domaine, groupe). Enseignants :
+     * en Fondamental I, un enseignant qui n'a encore aucune classe est proposé
+     * pour toutes les matières ; ailleurs, ils restent à choisir.
+     */
+    protected function suiteDe(int $idSource, ?int $idEcole): ?array
+    {
+        $source = Classe::with('ligneClasses.matiere')->where('idEcole', $idEcole)->find($idSource);
+        if (!$source) {
+            return null;
+        }
+
+        $ordre = ClasseSuivante::ordre($source->ordreEnseignement, $source->nom_classe);
+        $classe = new Classe([
+            'nom_classe' => ClasseSuivante::nom($source->nom_classe) ?? '',
+            'ordreEnseignement' => $ordre,
+            'id_filiere' => $source->id_filiere,
+            'deux_maitres' => $source->deux_maitres,
+        ]);
+
+        $enseignantLibre = null;
+        if ($ordre === 'fondamentale1' && !$source->deux_maitres) {
+            $occupes = DB::table('ligneclasse as lc')
+                ->join('classe as c', 'c.id_classe', '=', 'lc.id_classe')
+                ->where('c.idEcole', $idEcole)
+                ->whereNotNull('lc.id_enseignants')
+                ->pluck('lc.id_enseignants');
+            $enseignantLibre = Enseignant::where('id_ecole', $idEcole)->where('is_deleted', 0)
+                ->whereNotIn('id_enseignant', $occupes)
+                ->orderBy('nom_prenom_enseignant')
+                ->value('id_enseignant');
+        }
+
+        $lignes = $source->ligneClasses->map(fn ($ligne) => [
+            'id_matiere' => $ligne->id_matiere,
+            'nom_matiere' => $ligne->matiere->nom_matiere ?? '',
+            'id_enseignants' => $enseignantLibre,
+            'coefficient' => $ligne->coefficient ?? 1,
+            'id_domaine' => $ligne->id_domaine,
+            'groupe' => $ligne->groupe,
+        ])->filter(fn ($row) => $row['nom_matiere'] !== '')->values();
+
+        return ['classe' => $classe, 'lignes' => $lignes, 'source' => $source];
     }
 
     /** Domaines de l'école (colonne « Domaine ») et option « deux maîtres » (écoles franco-arabes). */

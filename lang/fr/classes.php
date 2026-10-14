@@ -83,4 +83,9 @@ return [
     'groupe_principale' => 'Principale',
     'groupe_secondaire' => 'Secondaire',
     'groupe_aide' => 'Bulletin « Matières principales / secondaires » : une matière laissée en Auto est principale si son coefficient est d\'au moins 2.',
+    'suite_info' => 'Classe préparée à partir de « :classe » : mêmes matières et coefficients. Vérifiez le nom, l\'ordre d\'enseignement et les enseignants avant d\'enregistrer.',
+    'suite_question_titre' => 'Classe enregistrée',
+    'suite_question' => 'Voulez-vous créer maintenant la classe suivante « :suivante » avec les mêmes matières que « :classe » ?',
+    'suite_oui' => 'Oui, créer « :suivante »',
+    'suite_non' => 'Non, merci',
 ];

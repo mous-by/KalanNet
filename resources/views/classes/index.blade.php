@@ -137,6 +137,26 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const i18n = @json($classesIndexI18n);
+            // Après l'enregistrement d'une classe : proposer la classe suivante avec les mêmes matières.
+            const suivante = @json(session('classe_suivante'));
+            if (suivante && window.Swal) {
+                const remplacer = (texte) => texte.replace(':classe', suivante.nom).replace(':suivante', suivante.suivante);
+                Swal.fire({
+                    title: @json(__('classes.suite_question_titre')),
+                    text: remplacer(@json(__('classes.suite_question'))),
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: remplacer(@json(__('classes.suite_oui'))),
+                    cancelButtonText: @json(__('classes.suite_non')),
+                    confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--theme-accent').trim() || '#198754',
+                    reverseButtons: true,
+                }).then(function (result) {
+                    if (result.isConfirmed) {
+                        window.location.href = @json(route('classes.create')) + '?depuis=' + encodeURIComponent(suivante.id);
+                    }
+                });
+            }
+
             document.querySelectorAll('[data-confirm-delete]').forEach(function (form) {
                 form.addEventListener('submit', function (event) {
                     event.preventDefault();

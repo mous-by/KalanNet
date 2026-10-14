@@ -83,4 +83,9 @@ return [
     'groupe_principale' => 'Main',
     'groupe_secondaire' => 'Secondary',
     'groupe_aide' => '“Main / secondary subjects” report card: a subject left on Auto is main if its coefficient is at least 2.',
+    'suite_info' => 'Class prepared from “:classe”: same subjects and coefficients. Check the name, level and teachers before saving.',
+    'suite_question_titre' => 'Class saved',
+    'suite_question' => 'Do you want to create the next class “:suivante” now with the same subjects as “:classe”?',
+    'suite_oui' => 'Yes, create “:suivante”',
+    'suite_non' => 'No, thanks',
 ];
