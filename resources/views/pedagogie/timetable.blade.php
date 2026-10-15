@@ -251,11 +251,11 @@
                                                         <div class="row g-1 mt-1 quick-time-wrapper {{ $matiereId ? '' : 'd-none' }}">
                                                             <div class="col-6">
                                                                 <label style="font-size: 9px;" class="text-muted mb-0 d-block">Début</label>
-                                                                <input type="time" name="slots[{{ $jour }}][{{ $heure }}][heure_debut]" class="form-control form-control-sm quick-input-debut" style="font-size: 10px; padding: 2px 4px; height: 23px;" value="{{ $heureDebutVal }}" @if(!empty($storedHourRows[$heure])) data-manual-time="1" @endif onchange="markManualTime(this); recalculateAllTimes(); proposerRecreationSiBesoin(this.closest('tr').dataset.hour)">
+                                                                <input type="time" name="slots[{{ $jour }}][{{ $heure }}][heure_debut]" class="form-control form-control-sm quick-input-debut" style="font-size: 10px; padding: 2px 4px; height: 23px;" value="{{ $heureDebutVal }}" @if(!empty($storedHourRows[$heure])) data-manual-time="1" @endif onfocus="this.dataset.avant = this.value" onchange="changerHeureLigne(this)">
                                                             </div>
                                                             <div class="col-6">
                                                                 <label style="font-size: 9px;" class="text-muted mb-0 d-block">Fin</label>
-                                                                <input type="time" name="slots[{{ $jour }}][{{ $heure }}][heure_fin]" class="form-control form-control-sm quick-input-fin" style="font-size: 10px; padding: 2px 4px; height: 23px;" value="{{ $heureFinVal }}" @if(!empty($storedHourRows[$heure])) data-manual-time="1" @endif onchange="markManualTime(this); recalculateAllTimes(); proposerRecreationSiBesoin(this.closest('tr').dataset.hour)">
+                                                                <input type="time" name="slots[{{ $jour }}][{{ $heure }}][heure_fin]" class="form-control form-control-sm quick-input-fin" style="font-size: 10px; padding: 2px 4px; height: 23px;" value="{{ $heureFinVal }}" @if(!empty($storedHourRows[$heure])) data-manual-time="1" @endif onfocus="this.dataset.avant = this.value" onchange="changerHeureLigne(this)">
                                                             </div>
                                                         </div>
                                                     </div>
@@ -769,6 +769,33 @@
 
     function markManualTime(input) {
         input.dataset.manualTime = '1';
+    }
+
+    /**
+     * Une ligne de la grille a une seule plage horaire : l'heure saisie dans une
+     * case s'applique à toutes les cases de la ligne. Changer le début décale la
+     * fin d'autant (la durée du cours est gardée).
+     */
+    function changerHeureLigne(input) {
+        const ligne = input.closest('tr');
+        if (!ligne || !input.value) return;
+        const estDebut = input.classList.contains('quick-input-debut');
+
+        if (estDebut) {
+            const finActuelle = input.closest('.quick-time-wrapper')?.querySelector('.quick-input-fin')?.value;
+            const avant = input.dataset.avant || '';
+            let duree = (avant && finActuelle) ? minutesDe(finActuelle) - minutesDe(avant) : 60;
+            if (!(duree > 0)) duree = 60;
+            const nouvelleFin = addMinutesToTime(input.value, duree);
+            ligne.querySelectorAll('.quick-input-debut').forEach((champ) => { champ.value = input.value; champ.dataset.manualTime = '1'; });
+            ligne.querySelectorAll('.quick-input-fin').forEach((champ) => { champ.value = nouvelleFin; champ.dataset.manualTime = '1'; });
+        } else {
+            ligne.querySelectorAll('.quick-input-fin').forEach((champ) => { champ.value = input.value; champ.dataset.manualTime = '1'; });
+        }
+        input.dataset.avant = input.value;
+
+        recalculateAllTimes();
+        proposerRecreationSiBesoin(ligne.dataset.hour);
     }
 
     function recalculateAllTimes() {
