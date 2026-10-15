@@ -16,7 +16,8 @@ class UpdateLastActivity
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (Auth::check()) {
+        // Accès d'assistance : ce n'est pas le client qui est actif.
+        if (Auth::check() && !$request->session()->has('assistance')) {
             $user = Auth::user();
             // Update only if last activity was more than 1 minute ago to reduce DB load
             if (!$user->last_activity || $user->last_activity->diffInMinutes(now()) >= 1) {

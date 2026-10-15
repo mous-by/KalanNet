@@ -20,7 +20,8 @@ class EnsurePasswordChanged
     {
         $user = Auth::user();
 
-        if ($user && $user->doit_changer_mdp && !$request->routeIs(...self::ROUTES_PERMISES)) {
+        // Accès d'assistance : le SupAdmin ne choisit jamais le mot de passe du client.
+        if ($user && $user->doit_changer_mdp && !session()->has('assistance') && !$request->routeIs(...self::ROUTES_PERMISES)) {
             return $request->expectsJson()
                 ? response()->json(['message' => __('securite.mdp_a_changer'), 'code' => 'password_change_required'], 403)
                 : redirect()->route('password.force');

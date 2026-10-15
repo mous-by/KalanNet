@@ -84,6 +84,11 @@
                                         <i class="bx bx-user-check text-primary fs-5"></i>
                                     </a>
                                 @endif
+                                @if($connectedUser->droit === 'SupAdmin' && !$isCurrentUser && (int) $utilisateur->statut === 1 && !in_array($utilisateur->droit, \App\Services\Assistance\AccesAssistance::ROLES_EXCLUS, true) && !session()->has('assistance'))
+                                    <button type="button" class="btn btn-light btn-sm p-2 js-acces-assistance" data-url="{{ route('assistance.ouvrir', $utilisateur->idUtilisateur) }}" data-nom="{{ $utilisateur->nomPrenom }}" title="{{ __('assistance.bouton') }}">
+                                        <i class="bx bx-support text-danger fs-5"></i>
+                                    </button>
+                                @endif
                                 @if($statusAllowed)
                                     <button class="btn btn-light btn-sm p-2" data-bs-toggle="modal" data-bs-target="#statusUserModal{{ $utilisateur->idUtilisateur }}" title="{{ (int) $utilisateur->statut === 1 ? __('configuration.ut_toggle_title_desactiver') : __('configuration.ut_toggle_title_activer') }}">
                                         @if((int) $utilisateur->statut === 1)
@@ -145,3 +150,40 @@
         </tbody>
     </table>
 </div>
+
+@once
+    @push('scripts')
+        <script>
+            // Accès d'assistance : motif obligatoire, puis envoi du formulaire.
+            document.addEventListener('click', function (evenement) {
+                const bouton = evenement.target.closest('.js-acces-assistance');
+                if (!bouton) return;
+                const textes = {!! json_encode(['titre' => __('assistance.titre'), 'label' => __('assistance.motif_label'), 'placeholder' => __('assistance.motif_placeholder'), 'confirmer' => __('assistance.confirmer'), 'annuler' => __('assistance.annuler'), 'court' => __('assistance.motif_court'), 'explication' => __('assistance.explication', ['nom' => ':nom', 'minutes' => \App\Services\Assistance\AccesAssistance::DUREE_MINUTES])], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) !!};
+                Swal.fire({
+                    title: textes.titre,
+                    text: textes.explication.replace(':nom', bouton.dataset.nom),
+                    input: 'textarea',
+                    inputLabel: textes.label,
+                    inputPlaceholder: textes.placeholder,
+                    showCancelButton: true,
+                    confirmButtonText: textes.confirmer,
+                    cancelButtonText: textes.annuler,
+                    confirmButtonColor: '#d33',
+                    inputValidator: (valeur) => (!valeur || valeur.trim().length < 10) ? textes.court : undefined,
+                }).then((resultat) => {
+                    if (!resultat.isConfirmed) return;
+                    const formulaire = document.createElement('form');
+                    formulaire.method = 'POST';
+                    formulaire.action = bouton.dataset.url;
+                    for (const [nom, valeur] of [['_token', {!! json_encode(csrf_token()) !!}], ['motif', resultat.value.trim()]]) {
+                        const champ = document.createElement('input');
+                        champ.type = 'hidden'; champ.name = nom; champ.value = valeur;
+                        formulaire.appendChild(champ);
+                    }
+                    document.body.appendChild(formulaire);
+                    formulaire.submit();
+                });
+            });
+        </script>
+    @endpush
+@endonce

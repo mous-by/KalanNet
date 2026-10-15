@@ -88,7 +88,11 @@
         <div class="col-12 col-lg-9">
             <div class="card theme-card shadow-sm">
                 <div class="card-header theme-header d-flex align-items-center justify-content-between flex-wrap gap-2">
-                    <h5 class="mb-0 fw-bold"><i class="bx bx-group me-2"></i>{{ __('configuration.ut_liste_title') }}</h5>
+                    <h5 class="mb-0 fw-bold"><i class="bx bx-group me-2"></i>{{ __('configuration.ut_liste_title') }}
+                        @if($connectedUser->droit === 'SupAdmin' && !session()->has('assistance'))
+                            <a href="{{ route('assistance.journal') }}" class="btn btn-link btn-sm fw-normal ms-2 p-0"><i class="bx bx-history me-1"></i>{{ __('assistance.journal') }}</a>
+                        @endif
+                    </h5>
                     <div class="d-flex align-items-center gap-2 flex-wrap">
                         <form action="{{ route('configuration.utilisateurs') }}" method="GET" data-auto-filter="true">
                             <div class="d-flex flex-wrap gap-2">

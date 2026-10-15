@@ -29,6 +29,8 @@ return Application::configure(basePath: dirname(__DIR__))
             // et le SupAdmin serait lui aussi bloqué, empêchant toute désactivation.
             \App\Http\Middleware\CheckMaintenanceMode::class,
             \App\Http\Middleware\SetLocale::class,
+            // Accès d'assistance d'un SupAdmin : durée limitée, actions sensibles interdites.
+            \App\Http\Middleware\ControleAssistance::class,
             // Mot de passe donné par un Admin : à remplacer avant tout le reste.
             \App\Http\Middleware\EnsurePasswordChanged::class,
             // DAE / DCAP : uniquement leur espace de supervision (lecture).

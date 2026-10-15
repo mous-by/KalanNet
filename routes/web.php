@@ -324,6 +324,10 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/configuration/utilisateurs/{id}', [ConfigurationController::class, 'destroyUtilisateur'])->name('configuration.utilisateurs.destroy');
     Route::get('/configuration/utilisateurs/{id}/permissions', [ConfigurationController::class, 'editUserPermissions'])->name('configuration.utilisateurs.permissions');
     Route::put('/configuration/utilisateurs/{id}/permissions', [ConfigurationController::class, 'updateUserPermissions'])->name('configuration.utilisateurs.permissions.update');
+    // Accès d'assistance (SupAdmin) au compte d'un client, et son journal.
+    Route::post('/configuration/utilisateurs/{id}/assistance', [\App\Http\Controllers\AssistanceController::class, 'ouvrir'])->name('assistance.ouvrir');
+    Route::post('/assistance/terminer', [\App\Http\Controllers\AssistanceController::class, 'fermer'])->name('assistance.terminer');
+    Route::get('/assistance/journal', [\App\Http\Controllers\AssistanceController::class, 'journal'])->name('assistance.journal');
     Route::get('/configuration/permissions', [ConfigurationController::class, 'permissions'])->name('configuration.permissions');
     Route::post('/configuration/permissions', [ConfigurationController::class, 'storePermission'])->name('configuration.permissions.store');
 

@@ -96,6 +96,9 @@
 
         <!--start content-->
         <main class="page-content">
+            @auth
+                @include('partials.bandeau-assistance')
+            @endauth
             @yield('content')
         </main>
         <!--end content-->
