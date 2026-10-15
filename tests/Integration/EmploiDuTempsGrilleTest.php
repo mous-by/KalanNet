@@ -65,6 +65,22 @@ class EmploiDuTempsGrilleTest extends IntegrationTestCase
             ->assertJsonPath('grille.recreations.09:00', 15);
     }
 
+    public function test_edition_colonne_horaire_et_boutons_au_theme(): void
+    {
+        $admin = $this->adminComplet(1);
+        GrilleEmploiDuTemps::enregistrer($this->classe, $this->annee, ['08:00' => ['debut' => '07:30', 'fin' => '08:30']], []);
+        $html = $this->actingAs($admin)->withSession(['idEcole' => 1, 'timetable_id_classe' => $this->classe, 'timetable_id_annee' => $this->annee])
+            ->get('/pedagogie/timetable')->assertOk()->getContent();
+
+        // Colonne Horaire : champs début / fin modifiables en mode édition, mis à jour en direct.
+        $this->assertMatchesRegularExpression('#class="[^"]*ligne-debut[^"]*"[^>]*value="07:30"[^>]*oninput="changerHeureLigne\(this\)"#', $html);
+        $this->assertMatchesRegularExpression('#class="[^"]*ligne-fin[^"]*"[^>]*value="08:30"#', $html);
+        // Boutons Lecture / Édition : couleur du thème.
+        $this->assertStringContainsString('mode-grille', $html);
+        $this->assertStringContainsString('.mode-grille .btn-check:checked + .btn', $html);
+        $this->assertStringNotContainsString('btn-outline-primary px-3 py-2 fw-semibold" for="mode_', $html);
+    }
+
     public function test_emplois_du_temps_existants_reconstitues_depuis_les_cours(): void
     {
         [$m1, $m2, $m3] = $this->matieres;

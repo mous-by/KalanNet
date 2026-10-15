@@ -91,14 +91,14 @@
                 @if($selectedClasse && $selectedAnnee && $canEditTimetable)
                     <div class="d-flex align-items-center gap-3">
                         {{-- Mode Toggle --}}
-                        <div class="btn-group shadow-sm" role="group" aria-label="Mode affichage">
+                        <div class="btn-group shadow-sm mode-grille" role="group" aria-label="Mode affichage">
                             <input type="radio" class="btn-check" name="grid_mode" id="mode_lecture" autocomplete="off" checked onclick="setGridMode('lecture')">
-                            <label class="btn btn-outline-primary px-3 py-2 fw-semibold" for="mode_lecture" style="font-size: 13px;">
+                            <label class="btn px-3 py-2 fw-semibold" for="mode_lecture" style="font-size: 13px;">
                                 <i class="bi bi-eye me-1"></i> Mode Lecture / Impression
                             </label>
                             
                             <input type="radio" class="btn-check" name="grid_mode" id="mode_edition" autocomplete="off" onclick="setGridMode('edition')">
-                            <label class="btn btn-outline-primary px-3 py-2 fw-semibold" for="mode_edition" style="font-size: 13px;">
+                            <label class="btn px-3 py-2 fw-semibold" for="mode_edition" style="font-size: 13px;">
                                 <i class="bi bi-pencil-square me-1"></i> Mode Édition
                             </label>
                         </div>
@@ -183,6 +183,13 @@
                                             <td class="text-center fw-bold bg-white align-middle text-primary" style="white-space: nowrap; font-size: 13px; padding: 12px 6px;">
                                                 <span class="hour-range">{{ $heureDebutLigne }} - {{ $heureFinLigne }}</span>
                                                     @if($canEditTimetable)
+                                                        {{-- Édition : horaires de la ligne, appliqués en direct à toutes ses cases. --}}
+                                                        <div class="timetable-edit-block d-none no-print mt-1 d-flex flex-column gap-1 align-items-center">
+                                                            <input type="time" class="form-control form-control-sm ligne-debut" style="font-size: 11px; width: 92px;" value="{{ $heureDebutLigne }}" aria-label="Début" @if(!empty($storedHourRows[$heure])) data-manual-time="1" @endif onfocus="this.dataset.avant = this.value" oninput="changerHeureLigne(this)" onchange="changerHeureLigne(this)">
+                                                            <input type="time" class="form-control form-control-sm ligne-fin" style="font-size: 11px; width: 92px;" value="{{ $heureFinLigne }}" aria-label="Fin" @if(!empty($storedHourRows[$heure])) data-manual-time="1" @endif onfocus="this.dataset.avant = this.value" oninput="changerHeureLigne(this)" onchange="changerHeureLigne(this)">
+                                                        </div>
+                                                    @endif
+                                                    @if($canEditTimetable)
                                                         <button type="button" class="btn btn-outline-warning btn-sm mt-2 px-2 py-1 no-print timetable-edit-block d-none" style="font-size: 10px; border-radius: 6px;" onclick="openRecessProposal('{{ $heure }}')">
                                                             <i class="bi bi-clock me-1"></i>Récréation
                                                         </button>
@@ -251,11 +258,11 @@
                                                         <div class="row g-1 mt-1 quick-time-wrapper {{ $matiereId ? '' : 'd-none' }}">
                                                             <div class="col-6">
                                                                 <label style="font-size: 9px;" class="text-muted mb-0 d-block">Début</label>
-                                                                <input type="time" name="slots[{{ $jour }}][{{ $heure }}][heure_debut]" class="form-control form-control-sm quick-input-debut" style="font-size: 10px; padding: 2px 4px; height: 23px;" value="{{ $heureDebutVal }}" @if(!empty($storedHourRows[$heure])) data-manual-time="1" @endif onfocus="this.dataset.avant = this.value" onchange="changerHeureLigne(this)">
+                                                                <input type="time" name="slots[{{ $jour }}][{{ $heure }}][heure_debut]" class="form-control form-control-sm quick-input-debut" style="font-size: 10px; padding: 2px 4px; height: 23px;" value="{{ $heureDebutVal }}" @if(!empty($storedHourRows[$heure])) data-manual-time="1" @endif onfocus="this.dataset.avant = this.value" oninput="changerHeureLigne(this)" onchange="changerHeureLigne(this)">
                                                             </div>
                                                             <div class="col-6">
                                                                 <label style="font-size: 9px;" class="text-muted mb-0 d-block">Fin</label>
-                                                                <input type="time" name="slots[{{ $jour }}][{{ $heure }}][heure_fin]" class="form-control form-control-sm quick-input-fin" style="font-size: 10px; padding: 2px 4px; height: 23px;" value="{{ $heureFinVal }}" @if(!empty($storedHourRows[$heure])) data-manual-time="1" @endif onfocus="this.dataset.avant = this.value" onchange="changerHeureLigne(this)">
+                                                                <input type="time" name="slots[{{ $jour }}][{{ $heure }}][heure_fin]" class="form-control form-control-sm quick-input-fin" style="font-size: 10px; padding: 2px 4px; height: 23px;" value="{{ $heureFinVal }}" @if(!empty($storedHourRows[$heure])) data-manual-time="1" @endif onfocus="this.dataset.avant = this.value" oninput="changerHeureLigne(this)" onchange="changerHeureLigne(this)">
                                                             </div>
                                                         </div>
                                                     </div>
@@ -439,6 +446,29 @@
         @keyframes recessSlideBottom {
             from { transform: translateY(150%); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Boutons Lecture / Édition : couleur du thème de l'utilisateur (mode actif rempli). */
+        .mode-grille .btn {
+            color: var(--theme-accent, #0d6efd);
+            background-color: transparent;
+            border: 2px solid var(--theme-accent, #0d6efd);
+            transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .mode-grille .btn:hover {
+            color: var(--theme-accent, #0d6efd);
+            background-color: color-mix(in srgb, var(--theme-accent, #0d6efd) 12%, transparent);
+        }
+        .mode-grille .btn-check:checked + .btn,
+        .mode-grille .btn-check:checked + .btn:hover {
+            color: var(--text-on-accent, #fff);
+            background-color: var(--theme-accent, #0d6efd);
+            border-color: var(--theme-accent, #0d6efd);
+            box-shadow: 0 2px 6px color-mix(in srgb, var(--theme-accent, #0d6efd) 35%, transparent);
+        }
+        .mode-grille .btn-check:focus-visible + .btn {
+            outline: 2px solid var(--theme-accent, #0d6efd);
+            outline-offset: 2px;
         }
 
         /* Premium Magic Button Styling */
@@ -779,18 +809,20 @@
     function changerHeureLigne(input) {
         const ligne = input.closest('tr');
         if (!ligne || !input.value) return;
-        const estDebut = input.classList.contains('quick-input-debut');
+        const estDebut = input.classList.contains('quick-input-debut') || input.classList.contains('ligne-debut');
+        const debuts = ligne.querySelectorAll('.quick-input-debut, .ligne-debut');
+        const fins = ligne.querySelectorAll('.quick-input-fin, .ligne-fin');
 
         if (estDebut) {
-            const finActuelle = input.closest('.quick-time-wrapper')?.querySelector('.quick-input-fin')?.value;
+            const finActuelle = ligne.querySelector('.ligne-fin')?.value || input.closest('.quick-time-wrapper')?.querySelector('.quick-input-fin')?.value;
             const avant = input.dataset.avant || '';
             let duree = (avant && finActuelle) ? minutesDe(finActuelle) - minutesDe(avant) : 60;
             if (!(duree > 0)) duree = 60;
             const nouvelleFin = addMinutesToTime(input.value, duree);
-            ligne.querySelectorAll('.quick-input-debut').forEach((champ) => { champ.value = input.value; champ.dataset.manualTime = '1'; });
-            ligne.querySelectorAll('.quick-input-fin').forEach((champ) => { champ.value = nouvelleFin; champ.dataset.manualTime = '1'; });
+            debuts.forEach((champ) => { champ.value = input.value; champ.dataset.manualTime = '1'; });
+            fins.forEach((champ) => { champ.value = nouvelleFin; champ.dataset.manualTime = '1'; });
         } else {
-            ligne.querySelectorAll('.quick-input-fin').forEach((champ) => { champ.value = input.value; champ.dataset.manualTime = '1'; });
+            fins.forEach((champ) => { champ.value = input.value; champ.dataset.manualTime = '1'; });
         }
         input.dataset.avant = input.value;
 
@@ -830,8 +862,12 @@
                 }
             }
             
-            const manualStart = rowTimeInputs.find((item) => item.startInput.dataset.manualTime === '1' && item.startInput.value)?.startInput.value;
-            const manualEnd = rowTimeInputs.find((item) => item.endInput.dataset.manualTime === '1' && item.endInput.value)?.endInput.value;
+            const ligneDebut = document.querySelector(`tr[data-hour="${hr}"] .ligne-debut`);
+            const ligneFin = document.querySelector(`tr[data-hour="${hr}"] .ligne-fin`);
+            const manualStart = rowTimeInputs.find((item) => item.startInput.dataset.manualTime === '1' && item.startInput.value)?.startInput.value
+                || (ligneDebut && ligneDebut.dataset.manualTime === '1' && ligneDebut.value ? ligneDebut.value : undefined);
+            const manualEnd = rowTimeInputs.find((item) => item.endInput.dataset.manualTime === '1' && item.endInput.value)?.endInput.value
+                || (ligneFin && ligneFin.dataset.manualTime === '1' && ligneFin.value ? ligneFin.value : undefined);
             const rowStartTime = manualStart || currentEndTime;
             
             // Calculate row end time by adding 1 hour unless the row was explicitly adjusted.
@@ -852,6 +888,9 @@
                 if (hourRange) {
                     hourRange.textContent = `${rowStartTime} - ${rowEndTime}`;
                 }
+                // Champs de la colonne Horaire (édition) : suivent la ligne, sauf celui en cours de saisie.
+                if (ligneDebut && document.activeElement !== ligneDebut) ligneDebut.value = rowStartTime;
+                if (ligneFin && document.activeElement !== ligneFin) ligneFin.value = rowEndTime;
             }
             
             // Update currentEndTime to rowEndTime
