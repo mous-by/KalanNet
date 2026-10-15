@@ -132,6 +132,11 @@ supprimés ne se restaurent pas (les utilisateurs se reconnectent).
 
 ## Intervention 2 — correctif complémentaire, puis index
 
+> **Réalisée et vérifiée le 16/10/2026** sur `~/htdocs/kalannet.com` : `d1b8056`,
+> `a6bf3d9`, `20ed0fb` présents ; correctif présent dans les deux contrôleurs
+> d'évaluation ; migration des index appliquée (99 ms) ; les 10 index listés par
+> `SHOW INDEX`. (Correctif et index appliqués dans la même séance.)
+
 Le prochain `git pull` apporte à la fois :
 - `d1b8056` **sécurité** : suppression de l'évaluation d'une autre école refusée ;
 - `a6bf3d9` tableau de bord (5 comptages en 1), `e1349a3` test unitaire, documentation ;
