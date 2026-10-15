@@ -170,6 +170,7 @@ class CalculBulletin
             'appreciation_conduite' => $conduite ? self::appreciation($conduite, $this->ordre) : null,
             'ordre' => $this->ordre,
             'domaines' => collect(),
+            'groupes' => [],
             'parties' => [],
         ];
 
@@ -188,6 +189,11 @@ class CalculBulletin
             $totalNotes += $conduite;
         }
         $donnees['moyenne_periode'] = $totalCoef ? $totalNotes / $totalCoef : 0;
+
+        // Secondaire : matières affichées en « principales » puis « secondaires » sur tous les modèles.
+        if (str_starts_with((string) $this->ordre, 'secondaire')) {
+            $donnees['groupes'] = $this->grouperMatieres($donnees);
+        }
 
         return $donnees;
     }
@@ -276,6 +282,23 @@ class CalculBulletin
      */
     private function moyennesParGroupe(array $donnees): array
     {
+        $resultat = $this->grouperMatieres($donnees);
+
+        $donnees['groupes'] = $resultat;
+        $donnees['total_coef'] = collect($resultat)->sum('total_coef');
+        $donnees['moyenne_periode'] = $resultat ? collect($resultat)->avg('moyenne') : 0;
+
+        return $donnees;
+    }
+
+    /**
+     * Matières principales puis secondaires (conduite comprise, coefficient 1),
+     * avec total et moyenne partielle de chaque groupe. Sans groupe choisi
+     * dans la classe, une matière est principale si son coefficient est
+     * d'au moins 2.
+     */
+    private function grouperMatieres(array $donnees): array
+    {
         $groupes = ['principales' => collect(), 'secondaires' => collect()];
         foreach ($donnees['matieres'] as $m) {
             $groupe = $m->groupe ?: ($m->coef >= 2 ? 'principale' : 'secondaire');
@@ -284,7 +307,7 @@ class CalculBulletin
         if ($donnees['note_conduite'] !== null) {
             $groupes['secondaires']->push((object) [
                 'nom_matiere' => 'Conduite', 'est_conduite' => true, 'coef' => 1.0,
-                'note_classe' => null, 'note_compo' => null,
+                'note_classe' => null, 'note_compo' => null, 'M_Class' => null, 'M_Compo' => null,
                 'M_Gle' => $donnees['note_conduite'], 'M_Coef' => $donnees['note_conduite'],
                 'appreciation' => $donnees['appreciation_conduite'],
             ]);
@@ -305,11 +328,7 @@ class CalculBulletin
             ];
         }
 
-        $donnees['groupes'] = $resultat;
-        $donnees['total_coef'] = collect($resultat)->sum('total_coef');
-        $donnees['moyenne_periode'] = $resultat ? collect($resultat)->avg('moyenne') : 0;
-
-        return $donnees;
+        return $resultat;
     }
 
     /** Rang (ex aequo : même rang), moyenne du premier et effectif classé. */

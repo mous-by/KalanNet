@@ -47,7 +47,7 @@ class ClasseController extends WebClasseController
             'ordres' => $this->ordresDisponibles($user, $idEcole),
             'filieres' => $this->filieresDisponibles($idEcole),
             'est_sante' => $estSante,
-            'series' => collect(\App\Support\Series::SERIES)->map(fn ($s, $code) => ['code' => $code, 'libelle' => $s[0], 'niveau' => $s[1]])->values(),
+            'series' => collect(\App\Support\Series::pourNiveau(11))->map(fn ($s, $code) => ['code' => $code, 'libelle' => $s[0], 'niveau' => $s[1]])->values(),
         ]);
     }
 

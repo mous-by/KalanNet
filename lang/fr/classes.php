@@ -90,6 +90,6 @@ return [
     'suite_non' => 'Non, merci',
     'serie_label' => 'Série',
     'serie_aucune' => '— Aucune —',
-    'serie_aide' => 'Sert à la tendance d\'orientation du bulletin.',
+    'serie_aide' => 'Classes de 11ème : sert à orienter les élèves vers une série de 12ème sur le bulletin de fin d\'année.',
     'serie_lien' => 'Matières des séries',
 ];

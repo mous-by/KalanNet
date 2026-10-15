@@ -30,12 +30,11 @@
 
     <table class="notes">
         <thead>
-            <tr><th>Matières</th><th>M.CL</th><th>M.COMP</th><th>M.G</th><th>Coef</th><th>Moy.Coef</th><th>Appr.</th></tr>
+            <tr><th>Matières</th><th>M.CL</th><th>M.COMP</th><th>M.G</th><th>Coef</th><th>Moy.Coef</th><th>Appr.</th><th style="width:16px"></th></tr>
         </thead>
         <tbody>
-            <tr class="formule"><td></td><td>m</td><td>n</td><td>(m+2n)/3</td><td>k</td><td>(m+2n)/3 × k</td><td></td></tr>
+            <tr class="formule"><td></td><td>m</td><td>n</td><td>(m+2n)/3</td><td>k</td><td>(m+2n)/3 × k</td><td></td><td></td></tr>
             @foreach($groupes ?? [] as $cle => $groupe)
-                <tr class="groupe"><td colspan="7">{{ $titres[$cle] }}</td></tr>
                 @foreach($groupe->matieres as $m)
                     <tr>
                         <td class="mat">{{ \App\Support\ArabePdf::texte($m->nom_matiere) }}</td>
@@ -45,6 +44,9 @@
                         <td class="c">{{ $coef($m->coef) }}</td>
                         <td class="n">{{ $note($m->M_Coef) }}</td>
                         <td class="appr">{{ $m->appreciation }}</td>
+                        @if($loop->first)
+                            @include('pdf.bulletins._groupe_vertical', ['cle' => $cle, 'lignes' => $groupe->matieres->count() + 2])
+                        @endif
                     </tr>
                 @endforeach
                 <tr class="partiel">
@@ -63,6 +65,7 @@
                 <td class="c">{{ $coef($total_coef ?? 0) }}</td>
                 <td class="n">{{ $note($moyenne_periode) }}</td>
                 <td class="appr">{{ \App\Services\Bulletins\CalculBulletin::appreciation($moyenne_periode, null) }}</td>
+                <td></td>
             </tr>
         </tbody>
     </table>

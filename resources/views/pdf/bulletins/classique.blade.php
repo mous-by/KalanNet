@@ -1,6 +1,8 @@
 @php
     $note = [\App\Support\PresentationBulletin::class, 'note'];
     $bareme = $surDix ? 10 : 20;
+    // Secondaire : matières principales puis secondaires, libellé vertical à droite.
+    $avecGroupes = !empty($groupes ?? []);
 @endphp
 <div class="feuille">
     @include('pdf.bulletins._entete_officiel')
@@ -42,10 +44,36 @@
                 <tr>
                     <th style="text-align:left">Matière</th>
                     <th>Classe</th><th>Compo</th><th>Moyenne</th><th>Coef</th><th>Total</th><th>Appréciation</th>
+                    @if($avecGroupes)<th style="width:16px"></th>@endif
                 </tr>
             </thead>
             <tbody>
-                <tr class="bareme"><td></td><td class="num">/ 20</td><td class="num">/ 20</td><td class="num">(cl. + 2 × co.) / 3</td><td class="num">k</td><td class="num">moy. × k</td><td></td></tr>
+                <tr class="bareme"><td></td><td class="num">/ 20</td><td class="num">/ 20</td><td class="num">(cl. + 2 × co.) / 3</td><td class="num">k</td><td class="num">moy. × k</td><td></td>@if($avecGroupes)<td></td>@endif</tr>
+                @if($avecGroupes)
+                    @foreach($groupes as $cleGroupe => $groupe)
+                        @foreach($groupe->matieres as $m)
+                            <tr class="{{ $loop->even ? 'alt' : '' }}">
+                                <td class="matiere">{{ !empty($m->est_conduite) ? 'Conduite' : \App\Support\ArabePdf::texte($m->nom_matiere) }}</td>
+                                <td class="num">{{ !empty($m->est_conduite) ? '' : $note($m->note_classe) }}</td>
+                                <td class="num">{{ !empty($m->est_conduite) ? '' : $note($m->note_compo) }}</td>
+                                <td class="num moy">{{ $note($m->M_Gle) }}</td>
+                                <td class="num">{{ $note($m->coef, $m->coef == (int) $m->coef ? 0 : 2) }}</td>
+                                <td class="num">{{ $note($m->M_Coef) }}</td>
+                                <td class="num appr">{{ $m->appreciation }}</td>
+                                @if($loop->first)
+                                    @include('pdf.bulletins._groupe_vertical', ['cle' => $cleGroupe, 'lignes' => $groupe->matieres->count() + 1, 'taille' => '8.5px'])
+                                @endif
+                            </tr>
+                        @endforeach
+                        <tr style="background:#f1f1f1; font-weight:bold">
+                            <td>Total partiel · moyenne</td><td></td><td></td>
+                            <td class="num">{{ $note($groupe->moyenne) }}</td>
+                            <td class="num">{{ $note($groupe->total_coef, 0) }}</td>
+                            <td class="num">{{ $note($groupe->total) }}</td>
+                            <td class="num appr">{{ \App\Services\Bulletins\CalculBulletin::appreciation($groupe->moyenne, $ordre) }}</td>
+                        </tr>
+                    @endforeach
+                @else
                 @foreach($matieres as $m)
                     <tr class="{{ $loop->even ? 'alt' : '' }}">
                         <td class="matiere">{{ \App\Support\ArabePdf::texte($m->nom_matiere) }}</td>
@@ -64,11 +92,13 @@
                         <td class="num">{{ $note($note_conduite) }}</td><td class="num appr">{{ $appreciation_conduite }}</td>
                     </tr>
                 @endif
+                @endif
                 <tr class="total">
                     <td>Total</td><td></td><td></td><td></td>
                     <td class="num">{{ $note($matieres->sum('coef') + ($note_conduite !== null ? 1 : 0), 0) }}</td>
                     <td class="num">{{ $note($matieres->sum('M_Coef') + ($note_conduite ?? 0)) }}</td>
                     <td></td>
+                    @if($avecGroupes)<td></td>@endif
                 </tr>
             </tbody>
         @endif

@@ -1,6 +1,8 @@
 @php
     $note = [\App\Support\PresentationBulletin::class, 'note'];
     $bareme = $surDix ? 10 : 20;
+    // Secondaire : matières principales puis secondaires, libellé vertical à droite.
+    $avecGroupes = !empty($groupes ?? []);
 @endphp
 <div class="feuille a5">
     @include('pdf.bulletins._entete_officiel')
@@ -27,9 +29,31 @@
                 <th>Moy. / {{ $bareme }}</th>
                 @unless($surDix)<th>Coef</th>@endunless
                 <th style="text-align:right">Appréciation</th>
+                @if($avecGroupes)<th style="width:14px"></th>@endif
             </tr>
         </thead>
         <tbody>
+            @if($avecGroupes)
+                @foreach($groupes as $cleGroupe => $groupe)
+                    @foreach($groupe->matieres as $m)
+                        <tr>
+                            <td class="mat">{{ !empty($m->est_conduite) ? 'Conduite' : \App\Support\ArabePdf::texte($m->nom_matiere) }}</td>
+                            <td class="num moy">{{ $note($m->M_Gle) }}</td>
+                            <td class="num">{{ $note($m->coef, $m->coef == (int) $m->coef ? 0 : 2) }}</td>
+                            <td class="appr">{{ $m->appreciation }}</td>
+                            @if($loop->first)
+                                @include('pdf.bulletins._groupe_vertical', ['cle' => $cleGroupe, 'lignes' => $groupe->matieres->count() + 1, 'largeur' => '14px', 'taille' => '7.5px'])
+                            @endif
+                        </tr>
+                    @endforeach
+                    <tr style="background:#f1f1f1; font-weight:bold">
+                        <td class="mat">Moy. partielle</td>
+                        <td class="num">{{ $note($groupe->moyenne) }}</td>
+                        <td class="num">{{ $note($groupe->total_coef, 0) }}</td>
+                        <td class="appr">{{ \App\Services\Bulletins\CalculBulletin::appreciation($groupe->moyenne, $ordre) }}</td>
+                    </tr>
+                @endforeach
+            @else
             @foreach($matieres as $m)
                 <tr>
                     <td class="mat">{{ \App\Support\ArabePdf::texte($m->nom_matiere) }}</td>
@@ -45,6 +69,7 @@
                     <td class="num">1</td>
                     <td class="appr">{{ $appreciation_conduite }}</td>
                 </tr>
+            @endif
             @endif
         </tbody>
     </table>

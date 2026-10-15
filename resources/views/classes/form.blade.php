@@ -163,7 +163,7 @@
                             <label class="form-label" for="serie">{{ __('classes.serie_label') }}</label>
                             <select class="form-select" id="serie" name="serie">
                                 <option value="">{{ __('classes.serie_aucune') }}</option>
-                                @foreach(\App\Support\Series::SERIES as $code => [$libelleSerie, $niveauSerie])
+                                @foreach(\App\Support\Series::pourNiveau(11) as $code => [$libelleSerie, $niveauSerie])
                                     <option value="{{ $code }}" data-niveau="{{ $niveauSerie }}" @selected(old('serie', $classe->serie) === $code)>{{ $libelleSerie }}</option>
                                 @endforeach
                             </select>
@@ -372,7 +372,8 @@
             function afficherSerie() {
                 if (!serieChamp || !ordreSelect) return;
                 const niveau = parseInt((nomClasse.value.match(/^\s*(\d{1,2})/) || [])[1] || '0', 10);
-                const visible = ordreSelect.value === 'secondairegenerale' && (niveau === 11 || niveau === 12);
+                // 11ème seulement : la 10ème est orientée automatiquement, la 12ème est la dernière année.
+                const visible = ordreSelect.value === 'secondairegenerale' && niveau === 11;
                 serieChamp.style.display = visible ? '' : 'none';
                 serieSelect.querySelectorAll('option[data-niveau]').forEach(option => {
                     option.hidden = Number(option.dataset.niveau) !== niveau;

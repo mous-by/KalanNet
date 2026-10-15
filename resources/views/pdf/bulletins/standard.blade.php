@@ -45,6 +45,8 @@
     }
 
     $rangAffiche = $rang ?: '-';
+    // Secondaire : matières principales puis secondaires, libellé vertical à droite.
+    $avecGroupes = !empty($groupes ?? []);
     $totalAffiche = $total_eleves ?: '-';
 @endphp
 
@@ -150,6 +152,7 @@
                     <th>Coef</th>
                     <th>M.Coef</th>
                     <th>{{ __('bulletins.pdf_th_appreciation') }}</th>
+                    @if($avecGroupes)<th style="width:16px"></th>@endif
                 </tr>
             </thead>
             <tbody>
@@ -161,7 +164,37 @@
                     <td><strong>K</strong></td>
                     <td><strong>(n+m)/3 * k</strong></td>
                     <td></td>
+                    @if($avecGroupes)<td></td>@endif
                 </tr>
+                @if($avecGroupes)
+                    @foreach($groupes as $cleGroupe => $groupe)
+                        @foreach($groupe->matieres as $matiere)
+                            <tr>
+                                <td class="text-left">{{ !empty($matiere->est_conduite) ? __('bulletins.pdf_conduite') : \App\Support\ArabePdf::texte($matiere->nom_matiere) }}</td>
+                                <td>{{ !empty($matiere->est_conduite) ? '' : number_format($matiere->M_Class ?? 0, 2) }}</td>
+                                <td>{{ !empty($matiere->est_conduite) ? '' : number_format($matiere->M_Compo ?? 0, 2) }}</td>
+                                <td>{{ number_format($matiere->M_Gle ?? 0, 2) }}</td>
+                                <td>{{ !empty($matiere->est_conduite) ? '1' : number_format($matiere->coef ?? 0, 2) }}</td>
+                                <td>{{ number_format($matiere->M_Coef ?? 0, 2) }}</td>
+                                <td>{{ $matiere->appreciation }}</td>
+                                @if($loop->first)
+                                    @include('pdf.bulletins._groupe_vertical', ['cle' => $cleGroupe, 'lignes' => $groupe->matieres->count() + 2])
+                                @endif
+                            </tr>
+                        @endforeach
+                        <tr class="total-row" style="background:#f1f1f1">
+                            <td class="text-left">Total partiel</td><td></td><td></td><td></td>
+                            <td>{{ number_format($groupe->total_coef, 2) }}</td>
+                            <td>{{ number_format($groupe->total, 2) }}</td>
+                            <td></td>
+                        </tr>
+                        <tr class="total-row" style="background:#f1f1f1">
+                            <td class="text-left">Moy. partielle</td><td></td><td></td><td></td><td></td>
+                            <td>{{ number_format($groupe->moyenne, 2) }}</td>
+                            <td>{{ \App\Services\Bulletins\CalculBulletin::appreciation($groupe->moyenne, $ordre) }}</td>
+                        </tr>
+                    @endforeach
+                @else
                 @foreach($matieres as $matiere)
                     <tr>
                         <td class="text-left">{{ \App\Support\ArabePdf::texte($matiere->nom_matiere) }}</td>
@@ -185,6 +218,7 @@
                         <td>{{ $appreciation_conduite }}</td>
                     </tr>
                 @endif
+                @endif
 
                 <tr class="total-row">
                     <td>{{ __('bulletins.pdf_total') }}</td>
@@ -194,6 +228,7 @@
                     <td>{{ number_format($matieres->sum('coef') + ($note_conduite !== null ? 1 : 0), 2) }}</td>
                     <td>{{ number_format($matieres->sum('M_Coef') + ($note_conduite ?? 0), 2) }}</td>
                     <td></td>
+                    @if($avecGroupes)<td></td>@endif
                 </tr>
             </tbody>
         @endif

@@ -388,7 +388,8 @@ class ClasseController extends Controller
         }
         $niveau = \App\Support\ClasseSuivante::niveau($data['nom_classe'] ?? '');
 
-        return (\App\Support\Series::SERIES[$serie][1] ?? null) === $niveau ? $serie : null;
+        // Série des classes de 11ème seulement (elle oriente vers les séries de 12ème).
+        return $niveau === 11 && (\App\Support\Series::SERIES[$serie][1] ?? null) === 11 ? $serie : null;
     }
 
     protected function champsDeuxMaitres(array $data): array
