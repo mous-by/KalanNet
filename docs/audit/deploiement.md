@@ -20,6 +20,14 @@ Remplacer dans les commandes :
 
 ## Intervention 1 — correctifs de sécurité et performances
 
+> **Réalisée et vérifiée le 15/10/2026** sur `~/htdocs/kalannet.com` (https://kalannet.com) :
+> correctifs `2ffc1f0`, `8b7c9a9`, `8f0340b`, `e400627` présents ; API et web :
+> choix d'école sans mot de passe refusé ; 46 anciens jetons API supprimés.
+> Le serveur porte en plus des fichiers d'hébergement propres à LWS (`.htaccess`,
+> `default_index.html`, `test.html`), sans code applicatif.
+>
+> Sur ce serveur : `git --no-pager …` (pas de pager), pas de `mktemp` ni de `head`.
+
 Commits concernés (tous dans `origin/main`) :
 
 | Commit | Contenu |
@@ -41,7 +49,7 @@ Exporter la base depuis phpMyAdmin (comme l'export du 15/10) et la garder hors d
 ```bash
 cd <dossier>
 git status --short                 # doit être vide (aucune modification locale sur le serveur)
-git log -1 --oneline               # noter la version actuelle (pour un retour arrière)
+git --no-pager log -1 --oneline    # noter la version actuelle (pour un retour arrière)
 git pull origin main
 php artisan migrate --force        # attendu : « Nothing to migrate »
 php artisan optimize:clear
@@ -78,8 +86,8 @@ curl -s -X POST "<domaine>/api/v1/auth/select-school" -H "Accept: application/js
 Web — même vérification, sans être connecté :
 
 ```bash
-J=$(mktemp)
-T=$(curl -s -c "$J" "<domaine>/login" | grep -o 'name="_token" value="[^"]*"' | cut -d'"' -f4)
+J=~/kn_verif_cookies.txt
+T=$(curl -s -c "$J" "<domaine>/login" | grep -o 'name="_token" value="[^"]*"' | cut -d'"' -f4); T="${T%%$'\n'*}"   # premier jeton seulement
 curl -s -o /dev/null -w "%{http_code} %{redirect_url}\n" -b "$J" -c "$J" -X POST "<domaine>/login/select-school" \
   -d _token="$T" -d idUtilisateur=19 -d idEcole=12
 curl -s -o /dev/null -w "%{http_code} %{redirect_url}\n" -b "$J" "<domaine>/dashboard"
@@ -135,7 +143,7 @@ Essai sur la copie de production : 10 index créés en 0,4 s, retour arrière en
 
 ```bash
 cd <dossier>
-git log -1 --oneline                         # noter la version
+git --no-pager log -1 --oneline              # noter la version
 git pull origin main
 php artisan migrate:status | tail -3         # la migration des index doit apparaître « Pending »
 php artisan migrate --force
