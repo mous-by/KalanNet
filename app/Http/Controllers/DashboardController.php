@@ -62,16 +62,22 @@ class DashboardController extends Controller
         })->orderBy('id_anneeScolaire', 'desc')->first();
         $idAnnee = $anneeEnCours ? $anneeEnCours->id_anneeScolaire : null;
 
-        // General stats
-        $activeStudentsQuery = Eleve::when($schoolId, function ($query, $schoolId) {
+        // General stats : actifs (0), abandons (2) et diplômés (3), filles et garçons, en une requête.
+        $genresFilles = ['Féminin', 'Feminin', 'F', 'Fille', 'Femme'];
+        $genresGarcons = ['Masculin', 'M', 'Garçon', 'Garcon', 'Homme', 'H'];
+        $effectifsParEtat = Eleve::when($schoolId, function ($query, $schoolId) {
             $query->where('id_ecole', $schoolId);
         })->when($idAnnee, function ($query, $idAnnee) {
             $query->where('id_annee', $idAnnee);
-        })->where('etat_dossier', 0);
+        })->whereIn('etat_dossier', [0, 2, 3])
+            ->groupBy('etat_dossier')
+            ->selectRaw('etat_dossier, COUNT(*) as total, SUM(genre_eleve IN ('.implode(', ', array_fill(0, count($genresFilles), '?')).')) as filles, SUM(genre_eleve IN ('.implode(', ', array_fill(0, count($genresGarcons), '?')).')) as garcons', [...$genresFilles, ...$genresGarcons])
+            ->get()
+            ->keyBy(fn ($ligne) => (int) $ligne->etat_dossier);
 
-        $totalEleves = (clone $activeStudentsQuery)->count();
-        $totalGarcons = (clone $activeStudentsQuery)->whereIn('genre_eleve', ['Masculin', 'M', 'Garçon', 'Garcon', 'Homme', 'H'])->count();
-        $totalFilles = (clone $activeStudentsQuery)->whereIn('genre_eleve', ['Féminin', 'Feminin', 'F', 'Fille', 'Femme'])->count();
+        $totalEleves = (int) ($effectifsParEtat->get(0)->total ?? 0);
+        $totalGarcons = (int) ($effectifsParEtat->get(0)->garcons ?? 0);
+        $totalFilles = (int) ($effectifsParEtat->get(0)->filles ?? 0);
 
         $totalEnseignants = Enseignant::when($schoolId, function ($query, $schoolId) {
             $query->where('id_ecole', $schoolId);
@@ -90,19 +96,11 @@ class DashboardController extends Controller
         })->where('status', 1)->value('montant_net') ?? 0;
 
         // Pedagogical indicators
-        $totalAbandons = Eleve::when($schoolId, function ($query, $schoolId) {
-            $query->where('id_ecole', $schoolId);
-        })->when($idAnnee, function ($query, $idAnnee) {
-            $query->where('id_annee', $idAnnee);
-        })->where('etat_dossier', 2)->count();
+        $totalAbandons = (int) ($effectifsParEtat->get(2)->total ?? 0);
 
         $tauxAbandon = $totalEleves > 0 ? round(($totalAbandons / ($totalEleves + $totalAbandons)) * 100, 1) : 0;
 
-        $totalDiplomes = Eleve::when($schoolId, function ($query, $schoolId) {
-            $query->where('id_ecole', $schoolId);
-        })->when($idAnnee, function ($query, $idAnnee) {
-            $query->where('id_annee', $idAnnee);
-        })->where('etat_dossier', 3)->count();
+        $totalDiplomes = (int) ($effectifsParEtat->get(3)->total ?? 0);
 
         $typeEcole = $schoolId ? Ecole::withoutGlobalScopes()->find($schoolId)?->typeEcole : null;
         $estSante = $typeEcole === 'École de Santé';
