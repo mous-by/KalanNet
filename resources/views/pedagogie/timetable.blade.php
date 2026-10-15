@@ -4,10 +4,8 @@
     @php
         $jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
         $heures = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
-        $storedHourRows = [];
-        if (!empty($selectedClasse) && !empty($selectedAnnee)) {
-            $storedHourRows = session('timetable_hours_' . $selectedClasse->id_classe . '_' . $selectedAnnee->id_anneeScolaire, []);
-        }
+        // Horaires des lignes enregistrés en base (TimetableController / GrilleEmploiDuTemps).
+        $storedHourRows = $storedHourRows ?? [];
     @endphp
 
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
@@ -253,11 +251,11 @@
                                                         <div class="row g-1 mt-1 quick-time-wrapper {{ $matiereId ? '' : 'd-none' }}">
                                                             <div class="col-6">
                                                                 <label style="font-size: 9px;" class="text-muted mb-0 d-block">Début</label>
-                                                                <input type="time" name="slots[{{ $jour }}][{{ $heure }}][heure_debut]" class="form-control form-control-sm quick-input-debut" style="font-size: 10px; padding: 2px 4px; height: 23px;" value="{{ $heureDebutVal }}" @if(!empty($storedHourRows[$heure])) data-manual-time="1" @endif onchange="markManualTime(this); recalculateAllTimes()">
+                                                                <input type="time" name="slots[{{ $jour }}][{{ $heure }}][heure_debut]" class="form-control form-control-sm quick-input-debut" style="font-size: 10px; padding: 2px 4px; height: 23px;" value="{{ $heureDebutVal }}" @if(!empty($storedHourRows[$heure])) data-manual-time="1" @endif onchange="markManualTime(this); recalculateAllTimes(); proposerRecreationSiBesoin(this.closest('tr').dataset.hour)">
                                                             </div>
                                                             <div class="col-6">
                                                                 <label style="font-size: 9px;" class="text-muted mb-0 d-block">Fin</label>
-                                                                <input type="time" name="slots[{{ $jour }}][{{ $heure }}][heure_fin]" class="form-control form-control-sm quick-input-fin" style="font-size: 10px; padding: 2px 4px; height: 23px;" value="{{ $heureFinVal }}" @if(!empty($storedHourRows[$heure])) data-manual-time="1" @endif onchange="markManualTime(this); recalculateAllTimes()">
+                                                                <input type="time" name="slots[{{ $jour }}][{{ $heure }}][heure_fin]" class="form-control form-control-sm quick-input-fin" style="font-size: 10px; padding: 2px 4px; height: 23px;" value="{{ $heureFinVal }}" @if(!empty($storedHourRows[$heure])) data-manual-time="1" @endif onchange="markManualTime(this); recalculateAllTimes(); proposerRecreationSiBesoin(this.closest('tr').dataset.hour)">
                                                             </div>
                                                         </div>
                                                     </div>
@@ -562,17 +560,14 @@
                 selectEnseignant.value = preferredTeacher;
             }
 
-            // Propose a recess only at the natural morning break points and only once per hour.
+            // Deux heures de cours d'affilée : proposer une récréation après cette ligne.
             const tr = select.closest('tr');
             const hr = tr ? tr.getAttribute('data-hour') : null;
             if (hr) {
-                const hours = @json($heures);
-                const idx = hours.indexOf(hr);
-                if (idx !== -1 && [1, 3].includes(idx)) {
-                    setTimeout(() => {
-                        triggerRecessProposal(hr);
-                    }, 500);
-                }
+                setTimeout(() => {
+                    recalculateAllTimes();
+                    proposerRecreationSiBesoin(hr);
+                }, 500);
             }
         } else {
             enseignantWrapper.classList.add('d-none');
@@ -602,6 +597,48 @@
             container.style.backgroundColor = '';
             container.style.borderColor = '';
         }, 1000);
+    }
+
+    /* Récréation proposée après deux heures de cours d'affilée (horaires réels des lignes). */
+    const DUREE_AVANT_RECREATION = 120;
+
+    function minutesDe(heure) {
+        const [h, m] = String(heure).split(':').map(Number);
+        return (h || 0) * 60 + (m || 0);
+    }
+
+    function plageDeLigne(heure) {
+        const texte = document.querySelector(`tr[data-hour="${heure}"] .hour-range`)?.textContent || '';
+        const trouve = texte.match(/(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})/);
+        return trouve ? [trouve[1], trouve[2]] : null;
+    }
+
+    function ligneOccupee(heure) {
+        return @json($jours).some((jour) => document.querySelector(`select[name="slots[${jour}][${heure}][id_matiere]"]`)?.value);
+    }
+
+    function recreationApres(heure) {
+        const champ = document.getElementById('recess_after_' + heure.replace(':', '_'));
+        return champ && parseInt(champ.value, 10) > 0;
+    }
+
+    function proposerRecreationSiBesoin(heure) {
+        const lignes = @json($heures);
+        const index = lignes.indexOf(heure);
+        if (!heure || index === -1 || index === lignes.length - 1 || recreationApres(heure)) return;
+
+        // Minutes de cours depuis la dernière récréation (ou ligne vide) jusqu'à cette ligne incluse.
+        let cumul = 0;
+        for (let i = 0; i <= index; i++) {
+            const ligne = lignes[i];
+            if (!ligneOccupee(ligne)) { cumul = 0; continue; }
+            const plage = plageDeLigne(ligne);
+            if (plage) cumul += Math.max(0, minutesDe(plage[1]) - minutesDe(plage[0]));
+            if (i < index && recreationApres(ligne)) cumul = 0;
+        }
+        if (cumul >= DUREE_AVANT_RECREATION) {
+            triggerRecessProposal(heure);
+        }
     }
 
     /* Intelligent sliding Recess proposal */

@@ -79,6 +79,7 @@ class SuppressionEcole
                     ['note', ['id_ecole' => $e]],
                     ['ligneclasse', ['id_classe' => $ids['classes']]],
                     ['classe_maitres', ['id_classe' => $ids['classes']]], // maîtres des classes du Jardin
+                    ['emploi_du_temps_grilles', ['id_classe' => $ids['classes']]],
                     ['note_classe_choix', ['id_classe' => $ids['classes']]],
                     ['domaines', ['id_ecole' => $e]],
                     ['series_matieres', ['id_ecole' => $e]],

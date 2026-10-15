@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Support\GrilleEmploiDuTemps;
 use App\Http\Controllers\TimetableController as WebTimetableController;
 use App\Models\AnneeScolaire;
 use App\Models\Classe;
@@ -67,6 +68,8 @@ class TimetableController extends WebTimetableController
             'selected_annee' => $selectedAnnee,
             'lignes_classe' => $lignesClasse,
             'timetable' => $timetable,
+            // Horaires des lignes et récréations de la classe (nouvelle clé, ignorée par les anciennes versions).
+            'grille' => $idClasse && $idAnnee ? GrilleEmploiDuTemps::lire((int) $idClasse, (int) $idAnnee, EmploiDuTemps::where('id_classe', $idClasse)->where('id_annee_scolaire', $idAnnee)->get(['heure_debut', 'heure_fin'])) : null,
         ]);
     }
 
@@ -189,9 +192,7 @@ class TimetableController extends WebTimetableController
             }
         }
 
-        $recesses = $request->input('recesses', []);
-        session(['timetable_recesses_' . $id_classe => $recesses]);
-        session([$this->hoursSessionKey($id_classe, $id_annee) => $hourRows]);
+        GrilleEmploiDuTemps::enregistrer((int) $id_classe, (int) $id_annee, $hourRows, (array) $request->input('recesses', []));
 
         return response()->json(['success' => true]);
     }
@@ -224,8 +225,9 @@ class TimetableController extends WebTimetableController
             ->get();
 
         $timetable = $courses->groupBy('jour');
-        $recesses = session('timetable_recesses_' . $id_classe, []);
-        $storedHours = session($this->hoursSessionKey($id_classe, $id_annee), []);
+        $grille = GrilleEmploiDuTemps::lire((int) $id_classe, (int) $id_annee, EmploiDuTemps::where('id_classe', $id_classe)->where('id_annee_scolaire', $id_annee)->get(['heure_debut', 'heure_fin']));
+        $recesses = $grille['recreations'];
+        $storedHours = $grille['horaires'];
         $jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
         $heures = $this->pdfHours($storedHours, $courses);
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\GrilleEmploiDuTemps;
 use App\Models\EmploiDuTemps;
 use App\Models\Classe;
 use App\Models\Enseignant;
@@ -127,12 +128,12 @@ class TimetableController extends Controller
                 ->get();
         }
 
-        $recesses = [];
-        if ($id_classe) {
-            $recesses = session('timetable_recesses_' . $id_classe, []);
-        }
+        // Horaires des lignes et récréations, enregistrés en base (communs à tous les utilisateurs).
+        $grille = $id_classe && $id_annee ? GrilleEmploiDuTemps::lire((int) $id_classe, (int) $id_annee, EmploiDuTemps::where('id_classe', $id_classe)->where('id_annee_scolaire', $id_annee)->get(['heure_debut', 'heure_fin'])) : ['horaires' => [], 'recreations' => []];
+        $recesses = $grille['recreations'];
+        $storedHourRows = $grille['horaires'];
 
-        return view('pedagogie.timetable', compact('classes', 'annees', 'timetable', 'coursesList', 'matieres', 'matieresForGrid', 'enseignants', 'selectedClasse', 'selectedAnnee', 'ecole', 'recesses', 'lignesClasse', 'teacherSuggestionMap', 'canEditTimetable', 'isTeacher'));
+        return view('pedagogie.timetable', compact('classes', 'annees', 'timetable', 'coursesList', 'matieres', 'matieresForGrid', 'enseignants', 'selectedClasse', 'selectedAnnee', 'ecole', 'recesses', 'storedHourRows', 'lignesClasse', 'teacherSuggestionMap', 'canEditTimetable', 'isTeacher'));
     }
 
     public function store(Request $request)
@@ -282,9 +283,7 @@ class TimetableController extends Controller
             }
         }
 
-        $recesses = $request->input('recesses', []);
-        session(['timetable_recesses_' . $id_classe => $recesses]);
-        session([$this->hoursSessionKey($id_classe, $id_annee) => $hourRows]);
+        GrilleEmploiDuTemps::enregistrer((int) $id_classe, (int) $id_annee, $hourRows, (array) $request->input('recesses', []));
 
         return back()->with('success', 'Emploi du temps enregistré avec succès.');
     }
@@ -314,8 +313,9 @@ class TimetableController extends Controller
 
         $timetable = $courses->groupBy('jour');
 
-        $recesses = session('timetable_recesses_' . $id_classe, []);
-        $storedHours = session($this->hoursSessionKey($id_classe, $id_annee), []);
+        $grille = GrilleEmploiDuTemps::lire((int) $id_classe, (int) $id_annee, EmploiDuTemps::where('id_classe', $id_classe)->where('id_annee_scolaire', $id_annee)->get(['heure_debut', 'heure_fin']));
+        $recesses = $grille['recreations'];
+        $storedHours = $grille['horaires'];
 
         $jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
         $heures = $this->pdfHours($storedHours, $courses);
@@ -324,11 +324,6 @@ class TimetableController extends Controller
         $pdf->setPaper('a4', 'landscape');
         
         return $pdf->download('Emploi_du_temps_' . str_replace(' ', '_', $selectedClasse->nom_classe) . '.pdf');
-    }
-
-    protected function hoursSessionKey(int|string $idClasse, int|string $idAnnee): string
-    {
-        return 'timetable_hours_' . $idClasse . '_' . $idAnnee;
     }
 
     protected function ensureCanManageTimetable(): void
