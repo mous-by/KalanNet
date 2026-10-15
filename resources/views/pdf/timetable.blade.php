@@ -204,8 +204,9 @@
                     @foreach($jours as $jour)
                         <td>
                             @php
-                                $courses = $timetable[$jour] ?? collect();
-                                $course = $courses->first(fn ($c) => substr($c->heure_debut, 0, 5) === $rowStartTime);
+                                $course = isset($placement)
+                                    ? ($placement[$jour][$heure] ?? null)
+                                    : ($timetable[$jour] ?? collect())->first(fn ($c) => substr($c->heure_debut, 0, 5) === $rowStartTime);
                             @endphp
                             @if($course)
                                 <div class="course-matiere">{{ $course->matiere->nom_matiere ?? 'Matière' }}</div>

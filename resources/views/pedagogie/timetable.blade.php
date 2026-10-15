@@ -3,7 +3,8 @@
 @section('content')
     @php
         $jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
-        $heures = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
+        // Lignes de la grille (10 au moins, plus si des cours l'exigent) : TimetableController / GrilleEmploiDuTemps::disposer().
+        $heures = $lignesGrille ?? ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
         // Horaires des lignes enregistrés en base (TimetableController / GrilleEmploiDuTemps).
         $storedHourRows = $storedHourRows ?? [];
     @endphp
@@ -198,9 +199,8 @@
                                             @foreach($jours as $jour)
                                                 <td class="p-2 align-middle text-center position-relative" style="min-width: 165px; height: 110px;">
                                                     @php
-                                                        $courses = $timetable[$jour] ?? collect();
-                                                        // Find the course at this recalculated hour slot.
-                                                        $course = $courses->first(fn ($c) => substr($c->heure_debut, 0, 5) >= $heureDebutLigne && substr($c->heure_debut, 0, 5) < $heureFinLigne);
+                                                        // Case du cours, calculée une fois pour toute la grille : chaque cours a la sienne.
+                                                        $course = ($placement ?? [])[$jour][$heure] ?? null;
                                                         $courseId = $course ? $course->id : '';
                                                         $matiereId = $course ? $course->id_matiere : '';
                                                         $enseignantId = $course ? $course->id_enseignant : '';

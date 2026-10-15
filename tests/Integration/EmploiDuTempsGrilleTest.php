@@ -81,6 +81,32 @@ class EmploiDuTempsGrilleTest extends IntegrationTestCase
         $this->assertStringNotContainsString('btn-outline-primary px-3 py-2 fw-semibold" for="mode_', $html);
     }
 
+    /** Cas réel : emploi du temps saisi sur le mobile (heures libres), consulté sur le web. */
+    public function test_cours_saisis_sur_le_mobile_tous_visibles_sur_le_web(): void
+    {
+        $admin = $this->adminComplet(1);
+        [$m1, $m2, $m3] = $this->matieres;
+        GrilleEmploiDuTemps::enregistrer($this->classe, $this->annee, ['08:00' => ['debut' => '08:00', 'fin' => '09:00'], '09:00' => ['debut' => '09:00', 'fin' => '10:00']], ['09:00' => 15]);
+        $jeton = $admin->createToken('mobile')->plainTextToken;
+        foreach ([['Lundi', $m1, '7h30', '8h30'], ['Mardi', $m1, '08:00', '08:30'], ['Mardi', $m2, '08:30', '09:00'], ['Mercredi', $m3, '13:30', '15:00'], ['Jeudi', $m2, '8:00', '9:00']] as [$jour, $m, $debut, $fin]) {
+            $this->withToken($jeton)->postJson('/api/v1/timetable', ['id_classe' => $this->classe, 'id_matiere' => $m, 'id_annee_scolaire' => $this->annee, 'jour' => $jour, 'heure_debut' => $debut, 'heure_fin' => $fin])->assertSuccessful();
+        }
+        $this->withToken($jeton)->postJson('/api/v1/timetable', ['id_classe' => $this->classe, 'id_matiere' => $m1, 'id_annee_scolaire' => $this->annee, 'jour' => 'Vendredi', 'heure_debut' => 'abc', 'heure_fin' => '09:00'])->assertStatus(422);
+
+        $cours = DB::table('emploi_du_temps')->where('id_classe', $this->classe)->where('id_annee_scolaire', $this->annee)->get();
+        $this->assertSame(['07:30', '08:00', '08:30', '13:30', '08:00'], $cours->sortBy('id')->pluck('heure_debut')->map(fn ($h) => substr($h, 0, 5))->values()->all(), 'heures normalisées');
+
+        $html = $this->actingAs($admin)->withSession(['idEcole' => 1, 'timetable_id_classe' => $this->classe, 'timetable_id_annee' => $this->annee])->get('/pedagogie/timetable')->assertOk()->getContent();
+        preg_match_all('#name="slots\[(\w+)\]\[[\d:]+\]\[id\]" value="(\d+)"#', $html, $m, PREG_SET_ORDER);
+        $this->assertEqualsCanonicalizing($cours->pluck('id')->map(fn ($id) => (string) $id)->all(), array_column($m, 2), 'chaque cours a sa case sur le web');
+        $this->assertSame(2, count(array_filter($m, fn ($x) => $x[1] === 'Mardi')), 'les deux cours de mardi (même heure) visibles');
+        $this->assertStringContainsString('13:30 - 15:00', $html);
+
+        $disposition = GrilleEmploiDuTemps::disposer($this->classe, $this->annee, \App\Models\EmploiDuTemps::where('id_classe', $this->classe)->where('id_annee_scolaire', $this->annee)->get());
+        $this->assertSame(0, $disposition['non_places']);
+        $this->assertSame(15, collect($disposition['recreations'])->first(), 'la récréation suit sa ligne');
+    }
+
     public function test_emplois_du_temps_existants_reconstitues_depuis_les_cours(): void
     {
         [$m1, $m2, $m3] = $this->matieres;

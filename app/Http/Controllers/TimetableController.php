@@ -128,16 +128,22 @@ class TimetableController extends Controller
                 ->get();
         }
 
-        // Horaires des lignes et récréations, enregistrés en base (communs à tous les utilisateurs).
-        $grille = $id_classe && $id_annee ? GrilleEmploiDuTemps::lire((int) $id_classe, (int) $id_annee, EmploiDuTemps::where('id_classe', $id_classe)->where('id_annee_scolaire', $id_annee)->get(['heure_debut', 'heure_fin'])) : ['horaires' => [], 'recreations' => []];
-        $recesses = $grille['recreations'];
-        $storedHourRows = $grille['horaires'];
+        // Grille : horaires des lignes et récréations enregistrés en base, et une case pour chaque cours
+        // (y compris ceux saisis sur l'application mobile, à des heures libres).
+        $disposition = $id_classe && $id_annee
+            ? GrilleEmploiDuTemps::disposer((int) $id_classe, (int) $id_annee, collect($timetable)->flatten(1))
+            : ['lignes' => array_fill_keys(array_slice(GrilleEmploiDuTemps::LIGNES, 0, GrilleEmploiDuTemps::LIGNES_MIN), []), 'horaires' => [], 'recreations' => [], 'placement' => []];
+        $recesses = $disposition['recreations'];
+        $storedHourRows = $disposition['horaires'];
+        $lignesGrille = array_keys($disposition['lignes']);
+        $placement = $disposition['placement'];
 
-        return view('pedagogie.timetable', compact('classes', 'annees', 'timetable', 'coursesList', 'matieres', 'matieresForGrid', 'enseignants', 'selectedClasse', 'selectedAnnee', 'ecole', 'recesses', 'storedHourRows', 'lignesClasse', 'teacherSuggestionMap', 'canEditTimetable', 'isTeacher'));
+        return view('pedagogie.timetable', compact('classes', 'annees', 'timetable', 'coursesList', 'matieres', 'matieresForGrid', 'enseignants', 'selectedClasse', 'selectedAnnee', 'ecole', 'recesses', 'storedHourRows', 'lignesGrille', 'placement', 'lignesClasse', 'teacherSuggestionMap', 'canEditTimetable', 'isTeacher'));
     }
 
     public function store(Request $request)
     {
+        $this->normaliserHeures($request);
         $this->ensureCanManageTimetable();
 
         $data = $request->validate([
@@ -146,8 +152,8 @@ class TimetableController extends Controller
             'id_enseignant' => 'nullable',
             'id_annee_scolaire' => 'required',
             'jour' => 'required',
-            'heure_debut' => 'required',
-            'heure_fin' => 'required|after:heure_debut',
+            'heure_debut' => 'required|date_format:H:i',
+            'heure_fin' => 'required|date_format:H:i|after:heure_debut',
         ]);
 
         $this->authorizeClasseForTimetable((int) $data['id_classe']);
@@ -168,6 +174,7 @@ class TimetableController extends Controller
 
     public function update(Request $request, $id)
     {
+        $this->normaliserHeures($request);
         $this->ensureCanManageTimetable();
 
         $data = $request->validate([
@@ -176,8 +183,8 @@ class TimetableController extends Controller
             'id_enseignant' => 'nullable',
             'id_annee_scolaire' => 'required',
             'jour' => 'required',
-            'heure_debut' => 'required',
-            'heure_fin' => 'required|after:heure_debut',
+            'heure_debut' => 'required|date_format:H:i',
+            'heure_fin' => 'required|date_format:H:i|after:heure_debut',
         ]);
 
         $course = $this->authorizeCourseForTimetable((int) $id);
@@ -235,8 +242,8 @@ class TimetableController extends Controller
                 $id = $data['id'] ?? null;
                 $id_matiere = $data['id_matiere'] ?? null;
                 $id_enseignant = $data['id_enseignant'] ?? null;
-                $heure_debut = $data['heure_debut'] ?? null;
-                $heure_fin = $data['heure_fin'] ?? null;
+                $heure_debut = GrilleEmploiDuTemps::normaliserHeure($data['heure_debut'] ?? null);
+                $heure_fin = GrilleEmploiDuTemps::normaliserHeure($data['heure_fin'] ?? null);
 
                 if (!empty($id_matiere) && $heure_debut && $heure_fin && !isset($hourRows[$heureKey])) {
                     $hourRows[$heureKey] = [
@@ -313,14 +320,14 @@ class TimetableController extends Controller
 
         $timetable = $courses->groupBy('jour');
 
-        $grille = GrilleEmploiDuTemps::lire((int) $id_classe, (int) $id_annee, EmploiDuTemps::where('id_classe', $id_classe)->where('id_annee_scolaire', $id_annee)->get(['heure_debut', 'heure_fin']));
-        $recesses = $grille['recreations'];
-        $storedHours = $grille['horaires'];
+        $disposition = GrilleEmploiDuTemps::disposer((int) $id_classe, (int) $id_annee, $courses);
+        $recesses = $disposition['recreations'];
+        $placement = $disposition['placement'];
 
         $jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
-        $heures = $this->pdfHours($storedHours, $courses);
+        $heures = $disposition['horaires'];
 
-        $pdf = Pdf::loadView('pdf.timetable', compact('selectedClasse', 'selectedAnnee', 'ecole', 'timetable', 'recesses', 'jours', 'heures'));
+        $pdf = Pdf::loadView('pdf.timetable', compact('selectedClasse', 'selectedAnnee', 'ecole', 'timetable', 'recesses', 'jours', 'heures', 'placement'));
         $pdf->setPaper('a4', 'landscape');
         
         return $pdf->download('Emploi_du_temps_' . str_replace(' ', '_', $selectedClasse->nom_classe) . '.pdf');
@@ -361,22 +368,12 @@ class TimetableController extends Controller
         return $course;
     }
 
-    protected function pdfHours($storedHours, $courses): array
+    /** Heures saisies librement (application mobile : « 8:00 », « 8h00 ») ramenées au format 08:00. */
+    protected function normaliserHeures(Request $request): void
     {
-        if (is_array($storedHours) && !empty($storedHours)) {
-            return collect($storedHours)
-                ->filter(fn ($hour) => !empty($hour['debut']) && !empty($hour['fin']))
-                ->sortBy('debut')
-                ->all();
-        }
-
-        return $courses
-            ->groupBy(fn ($course) => substr($course->heure_debut, 0, 5))
-            ->map(fn ($items, $start) => [
-                'debut' => $start,
-                'fin' => substr($items->max('heure_fin'), 0, 5),
-            ])
-            ->sortBy('debut')
-            ->all();
+        $request->merge(collect(['heure_debut', 'heure_fin'])
+            ->filter(fn ($champ) => $request->filled($champ))
+            ->mapWithKeys(fn ($champ) => [$champ => GrilleEmploiDuTemps::normaliserHeure($request->input($champ)) ?? $request->input($champ)])
+            ->all());
     }
 }

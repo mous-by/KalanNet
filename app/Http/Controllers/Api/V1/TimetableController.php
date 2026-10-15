@@ -75,6 +75,7 @@ class TimetableController extends WebTimetableController
 
     public function store(Request $request)
     {
+        $this->normaliserHeures($request);
         $this->ensureCanManageTimetable();
 
         $data = $request->validate([
@@ -83,8 +84,8 @@ class TimetableController extends WebTimetableController
             'id_enseignant' => 'nullable',
             'id_annee_scolaire' => 'required',
             'jour' => 'required',
-            'heure_debut' => 'required',
-            'heure_fin' => 'required|after:heure_debut',
+            'heure_debut' => 'required|date_format:H:i',
+            'heure_fin' => 'required|date_format:H:i|after:heure_debut',
         ]);
 
         $this->authorizeClasseForTimetable((int) $data['id_classe']);
@@ -97,6 +98,7 @@ class TimetableController extends WebTimetableController
 
     public function update(Request $request, $id)
     {
+        $this->normaliserHeures($request);
         $this->ensureCanManageTimetable();
 
         $data = $request->validate([
@@ -105,8 +107,8 @@ class TimetableController extends WebTimetableController
             'id_enseignant' => 'nullable',
             'id_annee_scolaire' => 'required',
             'jour' => 'required',
-            'heure_debut' => 'required',
-            'heure_fin' => 'required|after:heure_debut',
+            'heure_debut' => 'required|date_format:H:i',
+            'heure_fin' => 'required|date_format:H:i|after:heure_debut',
         ]);
 
         $course = $this->authorizeCourseForTimetable((int) $id);
@@ -152,8 +154,8 @@ class TimetableController extends WebTimetableController
                 $id = $data['id'] ?? null;
                 $id_matiere = $data['id_matiere'] ?? null;
                 $id_enseignant = $data['id_enseignant'] ?? null;
-                $heure_debut = $data['heure_debut'] ?? null;
-                $heure_fin = $data['heure_fin'] ?? null;
+                $heure_debut = GrilleEmploiDuTemps::normaliserHeure($data['heure_debut'] ?? null);
+                $heure_fin = GrilleEmploiDuTemps::normaliserHeure($data['heure_fin'] ?? null);
 
                 if (!empty($id_matiere) && $heure_debut && $heure_fin && !isset($hourRows[$heureKey])) {
                     $hourRows[$heureKey] = ['debut' => $heure_debut, 'fin' => $heure_fin];
@@ -225,13 +227,13 @@ class TimetableController extends WebTimetableController
             ->get();
 
         $timetable = $courses->groupBy('jour');
-        $grille = GrilleEmploiDuTemps::lire((int) $id_classe, (int) $id_annee, EmploiDuTemps::where('id_classe', $id_classe)->where('id_annee_scolaire', $id_annee)->get(['heure_debut', 'heure_fin']));
-        $recesses = $grille['recreations'];
-        $storedHours = $grille['horaires'];
+        $disposition = GrilleEmploiDuTemps::disposer((int) $id_classe, (int) $id_annee, $courses);
+        $recesses = $disposition['recreations'];
+        $placement = $disposition['placement'];
         $jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
-        $heures = $this->pdfHours($storedHours, $courses);
+        $heures = $disposition['horaires'];
 
-        $pdf = Pdf::loadView('pdf.timetable', compact('selectedClasse', 'selectedAnnee', 'ecole', 'timetable', 'recesses', 'jours', 'heures'));
+        $pdf = Pdf::loadView('pdf.timetable', compact('selectedClasse', 'selectedAnnee', 'ecole', 'timetable', 'recesses', 'jours', 'heures', 'placement'));
         $pdf->setPaper('a4', 'landscape');
 
         return $pdf->stream('Emploi_du_temps_' . str_replace(' ', '_', $selectedClasse->nom_classe) . '.pdf');
