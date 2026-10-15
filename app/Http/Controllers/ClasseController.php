@@ -298,6 +298,9 @@ class ClasseController extends Controller
             'id_domaine' => 'nullable|array',
             'id_domaine.*' => ['nullable', 'integer', Rule::exists('domaines', 'id_domaine')->where('id_ecole', $idEcole)],
             'deux_maitres' => 'nullable|boolean',
+            // Jardin : un, deux maîtres ou plus pour la classe.
+            'id_maitres' => 'nullable|array',
+            'id_maitres.*' => ['nullable', 'integer', Rule::exists('enseignants', 'id_enseignant')->where('id_ecole', $idEcole)],
             'id_maitre_arabe' => ['exclude_unless:deux_maitres,1', 'required', 'integer', Rule::exists('enseignants', 'id_enseignant')->where('id_ecole', $idEcole)],
             'id_maitre_francais' => ['exclude_unless:deux_maitres,1', 'required', 'integer', 'different:id_maitre_arabe', Rule::exists('enseignants', 'id_enseignant')->where('id_ecole', $idEcole)],
         ];
@@ -428,10 +431,16 @@ class ClasseController extends Controller
             ->pluck('id_matiere')->map(fn ($id) => (int) $id)->flip();
         $dejaPresentes = array_flip(array_map('intval', $dejaPresentes));
         $parties = DB::table('domaines')->where('id_ecole', $classe->idEcole)->pluck('partie', 'id_domaine')->all();
-        // Jardin : ni matières ni notes.
+        // Jardin : ni matières ni notes, mais un ou plusieurs maîtres.
         if (Ordres::sansNotes($classe->ordreEnseignement)) {
+            // Une application qui n'envoie pas encore la liste garde les maîtres déjà enregistrés.
+            if (array_key_exists('id_maitres', $data)) {
+                $classe->maitres()->sync(array_values(array_unique(array_filter(array_map('intval', $data['id_maitres'] ?? [])))));
+            }
+
             return;
         }
+        $classe->maitres()->detach();
         foreach ($data['id_matiere'] ?? [] as $index => $idMatiere) {
             $conservee = isset($dejaPresentes[(int) $idMatiere]);
             if (!$conservee && !$autorisees->has((int) $idMatiere)) {

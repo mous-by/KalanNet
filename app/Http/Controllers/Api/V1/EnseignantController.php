@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\EnseignantController as WebEnseignantController;
+use App\Models\Classe;
 use App\Models\Enseignant;
 use App\Models\LigneClasse;
 use Illuminate\Http\Request;
@@ -61,6 +62,9 @@ class EnseignantController extends WebEnseignantController
             ->where('id_enseignants', $enseignant->id_enseignant)
             ->orderBy('id_classe')
             ->get();
+        // Classes du Jardin dont il est maître (pas de matière).
+        $classesJardin = Classe::whereHas('maitres', fn ($q) => $q->where('enseignants.id_enseignant', $enseignant->id_enseignant))
+            ->get(['id_classe', 'nom_classe']);
 
         $emargementStats = [
             'total' => $enseignant->emargements()->count(),
@@ -89,6 +93,7 @@ class EnseignantController extends WebEnseignantController
         return response()->json([
             'enseignant' => $enseignant,
             'lignes_classes' => $lignesClasses,
+            'classes_jardin' => $classesJardin,
             'emargement_stats' => $emargementStats,
             'presence_stats' => $presenceStats,
             'recent_emargements' => $recentEmargements,

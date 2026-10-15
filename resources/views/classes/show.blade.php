@@ -65,6 +65,21 @@
             </div>
         </div>
 
+        @if(\App\Support\Ordres::sansNotes($classe->ordreEnseignement))
+            <div class="col-12">
+                <div class="card border-0 rounded-4 shadow-sm">
+                    <div class="card-body p-4">
+                        <h5 class="fw-bold mb-3">{{ __('classes.jardin_maitres') }}</h5>
+                        @forelse($classe->maitres as $maitre)
+                            <span class="badge bg-light text-dark border fs-6 fw-normal me-2 mb-2"><i class="bi bi-person me-1"></i>{{ $maitre->nom_prenom_enseignant }}</span>
+                        @empty
+                            <span class="text-danger small"><i class="bi bi-exclamation-triangle me-1"></i>{{ __('classes.not_assigned') }}</span>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+        @endif
+
         <!-- Subjects and Teachers Table -->
         <div class="col-12">
             <div class="card border-0 rounded-4 shadow-sm overflow-hidden">

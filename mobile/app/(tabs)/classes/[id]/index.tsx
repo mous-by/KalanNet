@@ -61,7 +61,15 @@ export default function ClasseDetailScreen() {
 
       {deleteError ? <Text style={styles.error}>{deleteError}</Text> : null}
 
-      <Text style={styles.sectionTitle}>{t('classes.subjects_title')}</Text>
+      {classe.ordreEnseignement === 'jardin' ? (
+        <>
+          <Text style={styles.sectionTitle}>Maître(s) de la classe</Text>
+          <Text style={styles.meta}>
+            {(classe.maitres ?? []).map((m) => m.nom_prenom_enseignant).join(', ') || t('classes.no_teacher')}
+          </Text>
+        </>
+      ) : null}
+      {classe.ordreEnseignement === 'jardin' ? null : <Text style={styles.sectionTitle}>{t('classes.subjects_title')}</Text>}
       {(classe.ligneClasses ?? []).map((ligne, index) => (
         <View key={ligne.id_ligneclasse ?? index}>
           {index > 0 ? <Divider style={styles.divider} /> : null}

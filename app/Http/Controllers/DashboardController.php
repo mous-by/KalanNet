@@ -196,7 +196,11 @@ class DashboardController extends Controller
             ->orderBy('id_classe')
             ->get();
 
-        $classeIds = $assignments->pluck('id_classe')->filter()->unique()->values();
+        // Classes du Jardin : maître de la classe sans matière.
+        $classesJardin = \App\Models\Classe::whereHas('maitres', fn ($q) => $q->where('enseignants.id_enseignant', $teacherId))
+            ->when($schoolId, fn ($query) => $query->where('idEcole', $schoolId))
+            ->pluck('id_classe');
+        $classeIds = $assignments->pluck('id_classe')->concat($classesJardin)->filter()->unique()->values();
         $matiereIds = $assignments->pluck('id_matiere')->filter()->unique()->values();
 
         $totalClasses = $classeIds->count();

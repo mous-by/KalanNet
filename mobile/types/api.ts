@@ -75,6 +75,8 @@ export interface Classe {
   classeOfficielle?: ClasseOfficielle | null;
   filiere?: Filiere | null;
   ligneClasses?: LigneClasse[];
+  // Jardin : maîtres de la classe (pas de matières).
+  maitres?: { id_enseignant: number; nom_prenom_enseignant: string }[];
   [key: string]: unknown;
 }
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { IconButton, Text, TextInput } from 'react-native-paper';
+import { Chip, IconButton, Text, TextInput } from 'react-native-paper';
 
 import OfflineBanner from '@/components/OfflineBanner';
 import requiredLabel from '@/components/RequiredLabel';
@@ -49,6 +49,7 @@ export default function ClasseForm({ classe, onSaved }: Props) {
   const [ordre, setOrdre] = useState<string | null>(classe?.ordreEnseignement ?? null);
   const [idFiliere, setIdFiliere] = useState<number | null>(classe?.id_filiere ?? null);
   const [serie, setSerie] = useState<string | null>(classe?.serie ?? null);
+  const [maitres, setMaitres] = useState<number[]>((classe?.maitres ?? []).map((m) => m.id_enseignant));
   const [lignes, setLignes] = useState<LigneForm[]>([{ id_matiere: null, id_enseignant: null, coefficient: '1' }]);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -121,6 +122,7 @@ export default function ClasseForm({ classe, onSaved }: Props) {
       id_enseignants: validLignes.map((l) => l.id_enseignant),
       coefficient: validLignes.map((l) => Number(l.coefficient) || 0),
       serie: seriesProposees.some((x) => x.code === serie) ? serie : null,
+      ...(jardin ? { id_maitres: maitres } : {}),
     };
     try {
       if (!isOnline) {
@@ -187,7 +189,25 @@ export default function ClasseForm({ classe, onSaved }: Props) {
       ) : null}
 
       {jardin ? (
-        <Text style={styles.jardin}>Jardin (préscolaire) : pas de matières, pas de notes ni de bulletin. À la réinscription, les élèves passent à la section suivante (Petite section → Grande section → 1ère année).</Text>
+        <>
+          <Text style={styles.sectionTitle}>Maître(s) de la classe</Text>
+          <View style={styles.maitres}>
+            {(options?.enseignants ?? []).map((e) => {
+              const choisi = maitres.includes(e.id_enseignant);
+              return (
+                <Chip
+                  key={e.id_enseignant}
+                  selected={choisi}
+                  showSelectedCheck
+                  onPress={() => setMaitres((liste) => (choisi ? liste.filter((id) => id !== e.id_enseignant) : [...liste, e.id_enseignant]))}
+                >
+                  {e.nom_prenom_enseignant}
+                </Chip>
+              );
+            })}
+          </View>
+          <Text style={styles.jardin}>Jardin (préscolaire) : pas de matières, pas de notes ni de bulletin. À la réinscription, les élèves passent à la section suivante (Petite section → Grande section → 1ère année).</Text>
+        </>
       ) : (
       <>
       <Text style={styles.sectionTitle}>{t('classes.subjects_title')}</Text>
@@ -233,6 +253,7 @@ export default function ClasseForm({ classe, onSaved }: Props) {
 
 const styles = StyleSheet.create({
   jardin: { marginTop: 12, opacity: 0.8 },
+  maitres: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   input: {
     marginBottom: 12,
   },

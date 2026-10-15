@@ -166,8 +166,8 @@
                                         @forelse($lignesClasses as $ligne)
                                             <tr>
                                                 <td class="fw-bold">{{ $ligne->classe->nom_classe ?? 'N/A' }}</td>
-                                                <td>{{ $ligne->matiere->nom_matiere ?? 'N/A' }}</td>
-                                                <td>{{ number_format($ligne->coefficient, 2) }}</td>
+                                                <td>{{ $ligne->matiere->nom_matiere ?? __('classes.jardin_maitre_ligne') }}</td>
+                                                <td>{{ $ligne->matiere ? number_format($ligne->coefficient, 2) : '—' }}</td>
                                             </tr>
                                         @empty
                                             <tr>
@@ -572,8 +572,8 @@
                 @forelse($lignesClasses as $ligne)
                     <tr>
                         <td>{{ $ligne->classe->nom_classe ?? 'N/A' }}</td>
-                        <td>{{ $ligne->matiere->nom_matiere ?? 'N/A' }}</td>
-                        <td>{{ number_format($ligne->coefficient, 2) }}</td>
+                        <td>{{ $ligne->matiere->nom_matiere ?? __('classes.jardin_maitre_ligne') }}</td>
+                        <td>{{ $ligne->matiere ? number_format($ligne->coefficient, 2) : '—' }}</td>
                     </tr>
                 @empty
                     <tr>

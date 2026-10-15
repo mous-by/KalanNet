@@ -151,7 +151,8 @@ class PresenceController extends Controller
         $assigned = LigneClasse::query()
             ->where('id_enseignants', $data['id_enseignant'])
             ->where('id_classe', $data['id_classe'])
-            ->exists();
+            ->exists()
+            || DB::table('classe_maitres')->where('id_enseignant', $data['id_enseignant'])->where('id_classe', $data['id_classe'])->exists();
 
         if (!$assigned) {
             throw ValidationException::withMessages([
@@ -259,6 +260,15 @@ class PresenceController extends Controller
                 'label' => $line->classe->nom_classe,
             ];
         }
+
+        // Classes du Jardin : leurs maîtres (sans matière).
+        DB::table('classe_maitres as cm')->join('classe as c', 'c.id_classe', '=', 'cm.id_classe')
+            ->when($user->droit === 'enseignant', fn ($query) => $query->where('cm.id_enseignant', $user->id_enseignant))
+            ->when($user->droit !== 'SupAdmin' && $user->droit !== 'enseignant', fn ($query) => $query->where('c.idEcole', $idEcole))
+            ->get(['cm.id_enseignant', 'c.id_classe', 'c.nom_classe'])
+            ->each(function ($ligne) use (&$classesByTeacher) {
+                $classesByTeacher[(int) $ligne->id_enseignant][(int) $ligne->id_classe] = ['id' => (int) $ligne->id_classe, 'label' => $ligne->nom_classe];
+            });
 
         return [
             'classesByTeacher' => collect($classesByTeacher)->map(fn ($items) => array_values($items))->toArray(),

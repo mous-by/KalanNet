@@ -93,4 +93,7 @@ return [
     'serie_aide' => 'Used for the guidance trend on the report card.',
     'serie_lien' => 'Stream subjects',
     'jardin_sans_matieres' => 'Kindergarten (pre-school): no subjects, marks or report cards. At re-enrolment, pupils move up automatically (Petite section → Grande section → 1st year).',
+    'jardin_maitres' => 'Class teacher(s)',
+    'jardin_aucun_enseignant' => 'No teacher registered for the school yet.',
+    'jardin_maitre_ligne' => 'Class teacher (kindergarten)',
 ];

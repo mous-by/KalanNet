@@ -200,8 +200,32 @@
             </div>
         </div>
 
-        <div class="alert alert-info border-0 border-start border-info border-4" id="jardin-sans-matieres" style="display:none;">
-            <i class="bi bi-info-circle me-1"></i>{{ __('classes.jardin_sans_matieres') }}
+        @php
+            $maitresChoisis = collect(old('id_maitres', $classe->exists ? $classe->maitres->pluck('id_enseignant')->all() : []))->map(fn ($id) => (int) $id)->all();
+        @endphp
+        <div class="card border-top border-4 border-primary shadow-sm" id="jardin-sans-matieres" style="display:none;">
+            <div class="card-header">
+                <h5 class="mb-0 fw-bold">{{ __('classes.jardin_maitres') }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info border-0 border-start border-info border-4 py-2">
+                    <i class="bi bi-info-circle me-1"></i>{{ __('classes.jardin_sans_matieres') }}
+                </div>
+                <input type="hidden" name="id_maitres[]" value="">
+                <div class="row row-cols-1 row-cols-md-3 g-2">
+                    @forelse($enseignants as $enseignant)
+                        <div class="col">
+                            <label class="matiere-check-card d-flex align-items-center gap-2 border rounded-3 p-2 @if(in_array((int) $enseignant->id_enseignant, $maitresChoisis, true)) is-checked @endif" for="maitre_{{ $enseignant->id_enseignant }}">
+                                <input type="checkbox" class="form-check-input maitre-jardin flex-shrink-0" id="maitre_{{ $enseignant->id_enseignant }}" name="id_maitres[]" value="{{ $enseignant->id_enseignant }}" @checked(in_array((int) $enseignant->id_enseignant, $maitresChoisis, true))>
+                                <span>{{ $enseignant->nom_prenom_enseignant }}</span>
+                            </label>
+                        </div>
+                    @empty
+                        <div class="col text-muted">{{ __('classes.jardin_aucun_enseignant') }}</div>
+                    @endforelse
+                </div>
+                @error('id_maitres.*')<div class="text-danger small mt-2">{{ $message }}</div>@enderror
+            </div>
         </div>
 
         <div class="card border-top border-4 border-primary shadow-sm" id="carte-matieres">
@@ -391,8 +415,10 @@
                 const jardin = !!ordreSelect && ordreSelect.value === 'jardin';
                 document.getElementById('carte-matieres').style.display = jardin ? 'none' : '';
                 document.getElementById('jardin-sans-matieres').style.display = jardin ? '' : 'none';
+                document.querySelectorAll('#jardin-sans-matieres input').forEach(champ => champ.disabled = !jardin);
                 document.querySelectorAll('#table-matieres input, #table-matieres select').forEach(champ => champ.disabled = jardin);
             }
+            document.querySelectorAll('.maitre-jardin').forEach(caseMaitre => caseMaitre.addEventListener('change', () => caseMaitre.closest('.matiere-check-card').classList.toggle('is-checked', caseMaitre.checked)));
             if (ordreSelect) ordreSelect.addEventListener('change', afficherMatieres);
             afficherMatieres();
             nomClasse.addEventListener('input', afficherSerie);

@@ -24,7 +24,7 @@ class ClasseController extends WebClasseController
 
     public function show($id)
     {
-        $classe = Classe::with(['ligneClasses.matiere', 'ligneClasses.enseignant', 'ecole', 'filiere'])->findOrFail($id);
+        $classe = Classe::with(['ligneClasses.matiere', 'ligneClasses.enseignant', 'ecole', 'filiere', 'maitres:id_enseignant,nom_prenom_enseignant'])->findOrFail($id);
 
         $user = request()->user();
         if ($user->droit !== 'SupAdmin' && $user->idEcole !== $classe->idEcole) {
@@ -77,7 +77,7 @@ class ClasseController extends WebClasseController
             return $classe;
         });
 
-        return response()->json($classe->load(['ligneClasses.matiere', 'ligneClasses.enseignant', 'filiere']), 201);
+        return response()->json($classe->load(['ligneClasses.matiere', 'ligneClasses.enseignant', 'filiere', 'maitres:id_enseignant,nom_prenom_enseignant']), 201);
     }
 
     public function update(Request $request, $id)
@@ -112,7 +112,7 @@ class ClasseController extends WebClasseController
             $this->syncLignesClasse($classe, $data, $dejaPresentes, $domainesPrecedents, $groupesPrecedents);
         });
 
-        return response()->json($classe->fresh(['ligneClasses.matiere', 'ligneClasses.enseignant', 'filiere']));
+        return response()->json($classe->fresh(['ligneClasses.matiere', 'ligneClasses.enseignant', 'filiere', 'maitres:id_enseignant,nom_prenom_enseignant']));
     }
 
     public function destroy($id)

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Classe;
 use App\Models\Enseignant;
 use App\Rules\PaysPhone;
 use App\Support\Telephone;
@@ -98,6 +99,11 @@ class EnseignantController extends Controller
             ->where('id_enseignants', $enseignant->id_enseignant)
             ->orderBy('id_classe')
             ->get();
+        // Classes du Jardin : maître de la classe, sans matière.
+        $lignesClasses = $lignesClasses->concat(
+            Classe::whereHas('maitres', fn ($q) => $q->where('enseignants.id_enseignant', $enseignant->id_enseignant))->get()
+                ->map(fn ($classe) => (new LigneClasse(['id_classe' => $classe->id_classe]))->setRelation('classe', $classe)->setRelation('matiere', null))
+        );
 
         $recentEmargements = $enseignant->emargements()
             ->with(['classe', 'matiere', 'trimestre', 'lecon'])
@@ -226,6 +232,7 @@ class EnseignantController extends Controller
         DB::transaction(function () use ($enseignant) {
             $id = (int) $enseignant->id_enseignant;
             LigneClasse::where('id_enseignants', $id)->update(['id_enseignants' => null]);
+            DB::table('classe_maitres')->where('id_enseignant', $id)->delete();
             DB::table('emploi_du_temps')->where('id_enseignant', $id)->delete();
             $comptes = DB::table('utilisateurs')->where('id_enseignant', $id)->pluck('idUtilisateur');
             DB::table('user_permission')->whereIn('user_id', $comptes)->delete();

@@ -12,6 +12,12 @@ class Classe extends Model
     protected $primaryKey = 'id_classe';
     public $timestamps = false;
 
+    /** Maîtres d'une classe du Jardin (pas de matières, donc pas de ligneclasse). */
+    public function maitres()
+    {
+        return $this->belongsToMany(Enseignant::class, 'classe_maitres', 'id_classe', 'id_enseignant');
+    }
+
     /** Classes qui ont des notes et des bulletins (le Jardin n'en a pas). */
     public function scopeAvecNotes($query)
     {
