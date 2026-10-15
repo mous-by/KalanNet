@@ -15,6 +15,9 @@
         <div class="col-lg-6">
             <div class="card theme-card shadow-sm text-center">
                 <div class="card-body p-4">
+                    @if(session('success'))
+                        <div class="alert alert-success border-0 text-start"><i class="bx bx-check-circle me-1"></i>{{ session('success') }}</div>
+                    @endif
                     <i class="bx bx-support text-danger" style="font-size: 3rem;"></i>
                     <h4 class="fw-bold mt-2">{{ __('assistance.attente_titre') }}</h4>
                     <p class="text-muted">{{ __('assistance.attente_texte', ['nom' => $compte]) }}</p>

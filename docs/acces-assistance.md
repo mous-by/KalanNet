@@ -43,4 +43,4 @@ Limite : la fenêtre d'accord s'affiche sur le site web ; un Admin qui n'utilise
 que l'application mobile reçoit la notification mais doit ouvrir le site pour
 répondre.
 
-Tests : `tests/Integration/AccesAssistanceTest.php` (9 tests).
+Tests : `tests/Integration/AccesAssistanceTest.php` (10 tests).

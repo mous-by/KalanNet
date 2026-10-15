@@ -30,7 +30,7 @@ class AssistanceController extends Controller
 
         $idAcces = $this->assistance->demander($request, $superviseur, $cible, trim($data['motif']));
 
-        return redirect()->route('assistance.attente', $idAcces);
+        return redirect()->route('assistance.attente', $idAcces)->with('success', __('assistance.demande_envoyee', ['nom' => $cible->nomPrenom]));
     }
 
     public function attente(int $id)

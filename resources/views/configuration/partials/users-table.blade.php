@@ -85,7 +85,7 @@
                                     </a>
                                 @endif
                                 @if($connectedUser->droit === 'SupAdmin' && !$isCurrentUser && (int) $utilisateur->statut === 1 && !in_array($utilisateur->droit, \App\Services\Assistance\AccesAssistance::ROLES_EXCLUS, true) && !session()->has('assistance'))
-                                    <button type="button" class="btn btn-light btn-sm p-2 js-acces-assistance" data-url="{{ route('assistance.ouvrir', $utilisateur->idUtilisateur) }}" data-nom="{{ $utilisateur->nomPrenom }}" title="{{ __('assistance.bouton') }}">
+                                    <button type="button" class="btn btn-light btn-sm p-2 js-acces-assistance" data-url="{{ route('assistance.demander', $utilisateur->idUtilisateur) }}" data-nom="{{ $utilisateur->nomPrenom }}" title="{{ __('assistance.bouton') }}">
                                         <i class="bx bx-support text-danger fs-5"></i>
                                     </button>
                                 @endif

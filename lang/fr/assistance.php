@@ -66,4 +66,5 @@ return [
     'statut_en_cours' => 'en cours',
     'statut_termine' => 'terminée',
     'autre_compte' => 'Votre session SupAdmin a été remplacée par un autre compte dans ce navigateur (par exemple pour accepter la demande). Faites accepter la demande depuis un autre navigateur ou un autre appareil, puis relancez-la.',
+    'demande_envoyee' => 'Demande envoyée : les Admins de l\'école doivent accepter l\'accès au compte de :nom dans les 2 minutes.',
 ];

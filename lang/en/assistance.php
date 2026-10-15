@@ -66,4 +66,5 @@ return [
     'statut_en_cours' => 'in progress',
     'statut_termine' => 'closed',
     'autre_compte' => 'Your SupAdmin session was replaced by another account in this browser (for example to accept the request). Accept the request from another browser or device, then send it again.',
+    'demande_envoyee' => 'Request sent: the school\'s Admins must accept access to :nom\'s account within 2 minutes.',
 ];

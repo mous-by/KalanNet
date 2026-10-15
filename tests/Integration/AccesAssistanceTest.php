@@ -128,6 +128,22 @@ class AccesAssistanceTest extends IntegrationTestCase
         $this->travelBack();
     }
 
+    /** Le bouton de la liste des utilisateurs envoie bien une demande (pas l'entrée directe). */
+    public function test_bouton_de_la_liste_envoie_la_demande(): void
+    {
+        $sup = $this->compte('SupAdmin');
+        $cible = $this->compte('Admin', 1);
+        $html = $this->actingAs($sup)->get('/configuration/utilisateurs?idEcole=1')->assertOk()->getContent();
+        $this->assertMatchesRegularExpression('#data-url="[^"]*/configuration/utilisateurs/'.$cible->idUtilisateur.'/assistance"#', $html, 'adresse du bouton');
+        preg_match('#data-url="([^"]*/configuration/utilisateurs/'.$cible->idUtilisateur.'/assistance)"#', $html, $m);
+
+        $reponse = $this->actingAs($sup)->post(parse_url($m[1], PHP_URL_PATH), ['motif' => 'Demande depuis le bouton']);
+        $demande = $this->derniereDemande();
+        $reponse->assertRedirect(route('assistance.attente', $demande->id))->assertSessionHas('success');
+        $this->assertSame(['en_attente', $cible->idUtilisateur], [$demande->statut, (int) $demande->id_utilisateur]);
+        $this->actingAs($sup)->get(route('assistance.attente', $demande->id, false))->assertOk()->assertSee(__('assistance.demande_envoyee', ['nom' => $cible->nomPrenom]));
+    }
+
     /** Cas réel : l'Admin accepte dans le même navigateur, ce qui remplace la session SupAdmin. */
     public function test_meme_navigateur_message_clair_sans_404(): void
     {
