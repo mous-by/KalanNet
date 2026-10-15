@@ -110,18 +110,31 @@ class DashboardController extends Controller
         $examensLabel = $niveauxExamens ? implode('/', $niveauxExamens) : 'examens nationaux';
 
         // Class distribution
-        $classesData = Classe::when($schoolId, function ($query, $schoolId) {
+        $classes = Classe::when($schoolId, function ($query, $schoolId) {
             $query->where('idEcole', $schoolId);
-        })->get()->map(function($classe) use ($idAnnee) {
-            $students = $classe->eleves()
-                ->when($idAnnee, fn ($query, $idAnnee) => $query->where('id_annee', $idAnnee))
-                ->where('etat_dossier', 0);
+        })->get();
+
+        // Effectifs de toutes les classes en une requête (au lieu de trois par classe).
+        $filles = ['Féminin', 'Feminin', 'F', 'Fille', 'Femme'];
+        $garcons = ['Masculin', 'M', 'Garçon', 'Garcon', 'Homme', 'H'];
+        $marques = fn (array $valeurs) => implode(', ', array_fill(0, count($valeurs), '?'));
+        $effectifs = Eleve::query()
+            ->whereIn('id_classe', $classes->pluck('id_classe'))
+            ->when($idAnnee, fn ($query, $idAnnee) => $query->where('id_annee', $idAnnee))
+            ->where('etat_dossier', 0)
+            ->groupBy('id_classe')
+            ->selectRaw('id_classe, COUNT(*) as total, SUM(genre_eleve IN ('.$marques($filles).')) as filles, SUM(genre_eleve IN ('.$marques($garcons).')) as garcons', [...$filles, ...$garcons])
+            ->get()
+            ->keyBy('id_classe');
+
+        $classesData = $classes->map(function ($classe) use ($effectifs) {
+            $effectif = $effectifs->get($classe->id_classe);
 
             return [
                 'nom' => $classe->nom_classe,
-                'total' => (clone $students)->count(),
-                'filles' => (clone $students)->whereIn('genre_eleve', ['Féminin', 'Feminin', 'F', 'Fille', 'Femme'])->count(),
-                'garcons' => (clone $students)->whereIn('genre_eleve', ['Masculin', 'M', 'Garçon', 'Garcon', 'Homme', 'H'])->count(),
+                'total' => (int) ($effectif->total ?? 0),
+                'filles' => (int) ($effectif->filles ?? 0),
+                'garcons' => (int) ($effectif->garcons ?? 0),
             ];
         })->sortByDesc('total');
 

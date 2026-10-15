@@ -44,6 +44,11 @@ class Devise
      * $ecole accepte aussi directement un Pays (ex: un id_pays choisi dans un
      * formulaire d'ecole avant meme que l'ecole existe) -- utilise tel quel.
      */
+    /** @var array<int, Ecole|null> écoles déjà lues pendant la requête HTTP en cours */
+    private static array $ecolesMemoire = [];
+
+    private static ?int $requeteMemoire = null;
+
     public static function resolvePays(Ecole|Pays|int|null $ecole = null): Pays
     {
         if ($ecole instanceof Pays) {
@@ -53,7 +58,13 @@ class Devise
             $ecole = session('idEcole');
         }
         if (is_int($ecole) || is_string($ecole)) {
-            $ecole = Ecole::withoutGlobalScopes()->with('pays')->find($ecole);
+            // Même école plusieurs fois dans une page (montants, examens...) : une seule lecture par requête HTTP.
+            $requete = spl_object_id(request());
+            if (static::$requeteMemoire !== $requete) {
+                static::$requeteMemoire = $requete;
+                static::$ecolesMemoire = [];
+            }
+            $ecole = static::$ecolesMemoire[(int) $ecole] ??= Ecole::withoutGlobalScopes()->with('pays')->find($ecole);
         }
         if ($ecole instanceof Ecole && !$ecole->relationLoaded('pays')) {
             $ecole->load('pays');
