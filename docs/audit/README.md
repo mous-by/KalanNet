@@ -6,6 +6,8 @@ reste à décider.
 
 | Fichier | Contenu |
 |---|---|
+| [rapport-final.md](rapport-final.md) | **Synthèse de l'audit** (architecture, problèmes par priorité, résultats, recommandations) |
+| [inventaire-tables.md](inventaire-tables.md) | Les 93 tables : modèle, clés, index, volumes, usage, anomalies |
 | [rapport-securite-performances.md](rapport-securite-performances.md) | Failles corrigées et optimisations réalisées, avec mesures avant / après |
 | [index-base-de-donnees.md](index-base-de-donnees.md) | Index proposés (non appliqués), preuves `EXPLAIN`, coûts, procédure et retour arrière |
 | [verifications-avant-index.sql](verifications-avant-index.sql) | Contrôles en lecture seule à lancer avant d'ajouter les index |
@@ -31,11 +33,10 @@ Ne jamais les lancer sur la production.
 |---|---|
 | `SelectionEcoleTest` | Le choix de l'école (web et API) exige un mot de passe vérifié ; jeton de sélection falsifié, d'un autre compte ou expiré refusé |
 | `TerritoireEcoleIdTest` | Un DAE / DCAP ne cible par `ecole_id` qu'une école de son académie / CAP |
-| `IsolationEcolesTest` | Les ressources d'une autre école renvoient 403 / 404 (web et API), jamais 500 ni données |
+| `IsolationEcolesTest` | Les ressources d'une autre école renvoient 403 / 404 (web et API), jamais 500 ni données ; suppression d'une évaluation d'une autre école refusée |
 | `ConduiteBulletinTest` | Règles de la note de conduite du bulletin (6 cas) et aucune écriture pendant le calcul |
 | `SchemaExisteTest` | Cache des vérifications de schéma et invalidation après une migration |
 | `TableauDeBordTest` | Effectifs par classe du tableau de bord = comptages directs |
 
-La suite habituelle (`vendor/bin/phpunit`, SQLite) est inchangée. Elle contient
-un échec antérieur à l'audit : `tests/Unit/MaliPhoneTest.php` vise la classe
-`App\Rules\MaliPhone`, renommée `PaysPhone` lors de l'internationalisation.
+La suite habituelle (`vendor/bin/phpunit`, SQLite) passe : `MaliPhoneTest`, qui
+visait une classe renommée, est remplacé par `tests/Unit/PaysPhoneTest.php`.

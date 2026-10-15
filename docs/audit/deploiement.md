@@ -130,31 +130,62 @@ supprimés ne se restaurent pas (les utilisateurs se reconnectent).
 
 ---
 
-## Intervention 2 — index (après validation de l'intervention 1)
+## Intervention 2 — correctif complémentaire, puis index
 
-Détail et preuves : [index-base-de-donnees.md](index-base-de-donnees.md).
-Essai sur la copie de production : 10 index créés en 0,4 s, retour arrière en
-0,7 s, schéma revenu à l'identique, données inchangées.
+Le prochain `git pull` apporte à la fois :
+- `d1b8056` **sécurité** : suppression de l'évaluation d'une autre école refusée ;
+- `a6bf3d9` tableau de bord (5 comptages en 1), `e1349a3` test unitaire, documentation ;
+- `20ed0fb` la migration des **10 index**.
 
-1. Sauvegarde (export phpMyAdmin).
-2. Un commit séparé ajoute la migration dans `database/migrations/` (préparé à ce
-   moment-là, pas avant, pour ne pas partir avec l'intervention 1).
-3. Sur le serveur :
+Pour garder les index séparés : **2a** `git pull` sans `migrate` (le correctif est
+actif, la migration reste en attente), vérification ; puis **2b** `migrate`.
+
+### 2a — correctif (sans migration)
+
+Avant : export phpMyAdmin de la base. Une commande par ligne :
 
 ```bash
-cd <dossier>
-git --no-pager log -1 --oneline              # noter la version
+cd ~/htdocs/kalannet.com
+git --no-pager log -1 --oneline
 git pull origin main
-php artisan migrate:status | tail -3         # la migration des index doit apparaître « Pending »
-php artisan migrate --force
-php artisan tinker --execute="foreach (['eleve','utilisateurs','matiere','matiere_ordre','controle_eleve','conduite','ligne_reinscription'] as \$t) echo \$t, ' : ', collect(DB::select(\"SHOW INDEX FROM \$t WHERE Key_name LIKE 'idx\\\\_%'\"))->pluck('Key_name')->unique()->implode(', '), PHP_EOL;"
+php artisan optimize:clear
+for c in d1b8056 a6bf3d9 20ed0fb; do git merge-base --is-ancestor $c HEAD && echo "$c présent" || echo "$c ABSENT"; done
+grep -cF '// Classe d' app/Http/Controllers/EvaluationController.php
+php artisan migrate:status | grep ajouter_index
 ```
 
-Attendu : `utilisateurs` (email, telephone, ecole), `eleve` (classe_annee,
-ecole_annee), `matiere` (ecole), `matiere_ordre` (matiere), `controle_eleve`
-(periode), `conduite` (periode), `ligne_reinscription` (eleve_annee).
+Attendu : 3 × « présent » ; `1` ; la migration `2026_10_16_100000_ajouter_index_audit_performance`
+en **Pending** (pas encore appliquée). Puis, dans le navigateur, Tableau de bord et
+Évaluations avec un compte Admin.
 
-Retour arrière : `php artisan migrate:rollback --step=1` (ne retire que ces 10 index).
+### 2b — index (heures creuses)
+
+```bash
+cd ~/htdocs/kalannet.com
+php artisan migrate --force
+php artisan tinker --execute="foreach (['eleve','utilisateurs','matiere','matiere_ordre','controle_eleve','conduite','ligne_reinscription'] as \$t) echo \$t, ' : ', collect(DB::select(\"SHOW INDEX FROM \$t WHERE Key_name LIKE 'idx\\\\_%'\"))->pluck('Key_name')->unique()->implode(', '), PHP_EOL;"
+php artisan optimize:clear
+```
+
+Attendu : `eleve : idx_eleve_classe_annee, idx_eleve_ecole_annee`,
+`utilisateurs : idx_utilisateurs_email, idx_utilisateurs_telephone, idx_utilisateurs_ecole`,
+`matiere : idx_matiere_ecole`, `matiere_ordre : idx_matiere_ordre_matiere`,
+`controle_eleve : idx_controle_eleve_periode`, `conduite : idx_conduite_periode`,
+`ligne_reinscription : idx_ligne_reinscription_eleve_annee`. Puis vérifier les
+pages Élèves, Classes, Bulletins, Réinscription, Tableau de bord.
+
+Retour arrière des index : `php artisan migrate:rollback --step=1 --force` (ne
+retire que ces 10 index, aucune donnée touchée). Retour arrière du code :
+`git checkout <version notée>` puis `php artisan optimize:clear`.
+
+Essais réalisés : base de test (≈ 300 écoles) et copie de la production —
+création 0,4 à 0,6 s, retour arrière 0,5 à 0,7 s, schéma restauré à l'identique.
+
+### dev.kalannet.com
+
+Même procédure dans `~/htdocs/dev.kalannet.com` si ce site est utilisé ; y
+supprimer aussi les anciens jetons API avec la commande protégée de
+l'intervention 1 (étape 5).
 
 ---
 

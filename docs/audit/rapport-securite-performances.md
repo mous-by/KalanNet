@@ -49,12 +49,30 @@ dépendent du serveur et des volumes et ne le sont pas.
   autre école (évaluations et bulletins).
 - **Test** : `tests/Integration/IsolationEcolesTest.php`.
 
-### 1.4 Isolation des écoles — vérifiée
+### 1.4 Suppression de l'évaluation d'une autre école — élevée, corrigée
 
-Un Admin de l'école 1 demandant élèves, classes, enseignants, parents,
-évaluations et bulletins de l'école 119 reçoit 403 ou 404 sur les 19 routes web
-et 13 routes API testées. Aucune fuite détectée. Non couvert à ce jour : routes
-POST / PUT / DELETE, paiements et reçus, rôles enseignant et parent.
+- **Constat (confirmé par test).** `DELETE /evaluations/{id}` (web et API)
+  supprimait l'évaluation d'une autre école et toutes ses notes : la vérification
+  de l'école n'était faite que si la classe de l'évaluation était chargée, or
+  le filtre par école la rend nulle pour une autre école.
+- **Correction** (commit `d1b8056`) : 404. Test : `IsolationEcolesTest` (il échoue
+  sans le correctif).
+
+### 1.5 Isolation des écoles et des rôles — vérifiée
+
+- **Lecture** : 19 routes web et 13 routes API (élèves, classes, enseignants,
+  parents, évaluations, bulletins) — 403 / 404, aucune fuite.
+- **Écriture** : 42 routes web et 33 routes API en POST / PUT / PATCH / DELETE
+  (modification, suppression, transfert, validation, paiements, utilisateurs,
+  bulletins) — la seule faille trouvée est 1.4 ; toutes les autres refusent sans
+  rien modifier.
+- **Parent** : aucun accès aux données d'un élève qui n'est pas son enfant
+  (7 routes) ; aucun accès aux listes d'élèves, paiements, enseignants, classes.
+- **Enseignant** : aucun accès en lecture, modification ou suppression aux
+  évaluations d'un collègue (web et API) ; pas d'accès aux listes d'élèves,
+  paiements ou utilisateurs.
+- Non couvert : DAE / DCAP en écriture (aucun compte en production ; leurs routes
+  sont restreintes par `RestreindreSuperviseurs`).
 
 ## 2. Performances
 
@@ -113,10 +131,13 @@ HTML de 8 pages identique avant / après. Test : `SchemaExisteTest`.
 - École et pays (formatage des montants) lus une fois par requête HTTP
   (`Devise::resolvePays`), sans cache persistant.
 
+- Actifs, abandons, diplômés, filles et garçons de l'école en une requête au
+  lieu de cinq (commit `a6bf3d9`).
+
 | Tableau de bord Admin | Avant | Après |
 |---|---|---|
-| Web | 71 requêtes | 41 requêtes |
-| API | 55 requêtes | 31 requêtes |
+| Web | 71 requêtes | 37 requêtes |
+| API | 55 requêtes | 27 requêtes |
 
 Sorties identiques (Admin, enseignant, SupAdmin ; web et API ; finances).
 Test : `TableauDeBordTest`.
@@ -125,8 +146,6 @@ Test : `TableauDeBordTest`.
 
 - Index de la base : proposés, non appliqués — voir [index-base-de-donnees.md](index-base-de-donnees.md).
 - Génération des PDF de classe en tâche de fond.
-- Tableau de bord Admin : environ 40 requêtes, dont un comptage d'élèves fait 3 fois.
-- Isolation : tester aussi les routes d'écriture, les paiements et les rôles enseignant / parent.
 - Tables sans clé primaire : `user_permission` (utilisée), `roles`, `role_permission`,
   `user_role` (inutilisées), `evaluationprof`, `indiscipline` (vides).
-- `tests/Unit/MaliPhoneTest.php` échoue depuis le renommage de `MaliPhone` en `PaysPhone`.
+- `user_permission` sans clé primaire ni contrainte d'unicité (0 doublon aujourd'hui).
