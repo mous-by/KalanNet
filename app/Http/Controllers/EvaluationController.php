@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use App\Support\Ordres;
 
 class EvaluationController extends Controller
 {
@@ -416,7 +417,7 @@ class EvaluationController extends Controller
 
         $classe = Classe::find((int) $data['id_classe']);
         $this->ensureTeacherCanEvaluate((int) $data['id_classe'], (int) $data['id_matiere']);
-        if ($classe?->ordreEnseignement === 'fondamentale1') {
+        if (Ordres::surDix($classe?->ordreEnseignement)) {
             if (empty($data['mois'])) {
                 throw ValidationException::withMessages(['mois' => 'Le mois est obligatoire pour cette classe.']);
             }

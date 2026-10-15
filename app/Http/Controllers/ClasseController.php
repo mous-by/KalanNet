@@ -12,6 +12,7 @@ use App\Models\LigneClasse;
 use App\Support\ClasseSuivante;
 use App\Support\Domaines;
 use App\Support\ExamenNational;
+use App\Support\Ordres;
 use App\Support\SchoolOrderAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -341,7 +342,7 @@ class ClasseController extends Controller
         ]);
 
         $enseignantLibre = null;
-        if ($ordre === 'fondamentale1' && !$source->deux_maitres) {
+        if (Ordres::surDix($ordre) && !$source->deux_maitres) {
             $occupes = DB::table('ligneclasse as lc')
                 ->join('classe as c', 'c.id_classe', '=', 'lc.id_classe')
                 ->where('c.idEcole', $idEcole)
@@ -508,6 +509,21 @@ class ClasseController extends Controller
 
     protected function ordresDisponibles($user, ?int $idEcole = null): array
     {
+        $ordres = $this->ordresDuType($user, $idEcole);
+        $ecole = $this->resolveEcole($user, $idEcole);
+
+        // Le Jardin accompagne chaque type d'école (Fondamental I + Jardin,
+        // Collège + Jardin...) ; le complexe scolaire l'a déjà avec tous ses ordres.
+        if ($ecole && !isset($ordres[Ordres::JARDIN]) && Ordres::proposeJardin($ecole->typeEcole)
+            && $ecole->typeEcole !== 'Complexe Scolaire') {
+            $ordres = [Ordres::JARDIN => ExamenNational::ordresLabels($ecole)[Ordres::JARDIN]] + $ordres;
+        }
+
+        return $ordres;
+    }
+
+    protected function ordresDuType($user, ?int $idEcole = null): array
+    {
         $ecole = $this->resolveEcole($user, $idEcole);
         $typeEcole = $ecole->typeEcole ?? null;
 
@@ -604,6 +620,7 @@ class ClasseController extends Controller
     protected function ordreMatiereMap(): array
     {
         return [
+            'jardin' => 'Jardin',
             'fondamentale1' => 'Fondamentale I',
             'fondamentale2' => 'Fondamentale II',
             'secondairegenerale' => 'Secondaire Generale',

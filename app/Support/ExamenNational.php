@@ -48,6 +48,7 @@ class ExamenNational
     {
         if (static::estMali($ecole)) {
             return [
+                'jardin' => 'Jardin (préscolaire)',
                 'fondamentale1' => 'Fondamentale I (1 à 6)',
                 'fondamentale2' => 'Fondamentale II (7 à 9)',
                 'secondairegenerale' => 'Secondaire Général',
@@ -59,6 +60,7 @@ class ExamenNational
         $final = static::final($ecole)['grade'] ?? 12;
 
         return [
+            'jardin' => 'Jardin (préscolaire)',
             'fondamentale1' => 'Primaire (1 à 6)',
             'fondamentale2' => "Secondaire 1er cycle (7 à {$intermediaire})",
             'secondairegenerale' => 'Secondaire 2nd cycle (' . ($intermediaire + 1) . " à {$final})",

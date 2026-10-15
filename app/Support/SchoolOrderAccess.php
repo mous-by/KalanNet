@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 class SchoolOrderAccess
 {
     public const ORDERS = [
+        'jardin' => 'Jardin',
         'fondamentale1' => 'Fondamentale I',
         'fondamentale2' => 'Fondamentale II',
         'secondairegenerale' => 'Secondaire Général',
@@ -21,6 +22,7 @@ class SchoolOrderAccess
         $value = str_replace([' ', '-', '_', 'é', 'è', 'ê', 'à'], ['', '', '', 'e', 'e', 'e', 'a'], $value);
 
         return match ($value) {
+            'jardin', 'prescolaire', 'maternelle' => 'jardin',
             'fondamentale1', 'fondamentalei' => 'fondamentale1',
             'fondamentale2', 'fondamentaleii' => 'fondamentale2',
             'secondaire', 'secondairegeneral', 'secondairegenerale', 'lycee' => 'secondairegenerale',

@@ -431,7 +431,7 @@
             });
 
             function estFondamental1SansDeuxMaitres() {
-                return !!ordreSelect && ordreSelect.value === 'fondamentale1' && !(deuxMaitres && deuxMaitres.checked);
+                return !!ordreSelect && ['fondamentale1', 'jardin'].includes(ordreSelect.value) && !(deuxMaitres && deuxMaitres.checked);
             }
 
             function enseignantDeLaClasse() {

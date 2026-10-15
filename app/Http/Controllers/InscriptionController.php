@@ -947,7 +947,7 @@ class InscriptionController extends Controller
     {
         $ordre = Str::lower(Str::ascii((string) $classe->ordreEnseignement));
 
-        return str_contains($ordre, 'fondamentale1') || str_contains($ordre, 'fondamentale i') ? 5.0 : 10.0;
+        return str_contains($ordre, 'fondamentale1') || str_contains($ordre, 'fondamentale i') || str_contains($ordre, 'jardin') ? 5.0 : 10.0;
     }
 
     private function proposeDecision(?float $moyenne, float $threshold): string
@@ -1115,6 +1115,7 @@ class InscriptionController extends Controller
     private function ensureMatiereLv2CompatibleWithClasse(int $idMatiereLv2, Classe $classe): void
     {
         $map = [
+            'jardin' => 'Jardin',
             'fondamentale1' => 'Fondamentale I',
             'fondamentale2' => 'Fondamentale II',
             'secondairegenerale' => 'Secondaire Generale',

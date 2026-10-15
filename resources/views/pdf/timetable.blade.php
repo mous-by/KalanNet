@@ -126,7 +126,7 @@
         $nomAffiche = '';
         if ($typeEcole === "complexe scolaire") {
             $nomAffiche = "Complexe scolaire " . ($ecole->nomComplexe ?? '');
-            if ($ordre === "fondamentale1" || $ordre === "fondamentale2") {
+            if (\App\Support\Ordres::sousCap($ordre)) {
                 if (!empty($ecole->nomFondamental)) {
                     $nomAffiche = "École Fondamentale : " . $ecole->nomFondamental;
                 }
@@ -138,7 +138,7 @@
                 }
             }
         } else {
-            if (($ordre === "fondamentale1" || $ordre === "fondamentale2") && !empty($ecole->nomFondamental)) {
+            if (\App\Support\Ordres::sousCap($ordre) && !empty($ecole->nomFondamental)) {
                 $nomAffiche = "École Fondamentale : " . $ecole->nomFondamental;
             } elseif ($ordre === "secondaire" && !empty($ecole->nomLycee)) {
                 $nomAffiche = "Lycée : " . $ecole->nomLycee;

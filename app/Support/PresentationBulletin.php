@@ -17,7 +17,7 @@ class PresentationBulletin
         $academie = NomAcademie::sansPrefixe($ecole->academieRef->nom_academie ?? $ecole->academie ?? '');
         $cap = trim(preg_replace('/^\s*cap\s+(d[’\']?|de)?\s*/iu', '', (string) ($ecole->capRef->nom_cap ?? $ecole->cap ?? '')));
 
-        $estFondamental = in_array($ordre, ['fondamentale1', 'fondamentale2'], true);
+        $estFondamental = Ordres::sousCap($ordre);
         $estTechnique = str_starts_with((string) $ordre, 'secondairetechnique');
         $estLycee = !$estTechnique && str_starts_with((string) $ordre, 'secondaire');
         $cycle = trim(preg_replace('/\s*\(.*\)\s*$/', '', ExamenNational::ordresLabels($ecole)[$ordre] ?? ''));
@@ -54,7 +54,7 @@ class PresentationBulletin
             'periodeTitre' => $periode,
             'anneeScolaire' => $apercu->annee ?? '',
             'rangTexte' => $rang ? $rang.($rang === 1 ? 'er' : 'e').(($bulletin['exaequo'] ?? false) ? ' ex' : '') : '-',
-            'surDix' => $ordre === 'fondamentale1',
+            'surDix' => Ordres::surDix($ordre),
             'telephone' => $ecole->telephone ?? null,
         ];
     }

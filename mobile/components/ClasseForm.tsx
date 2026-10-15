@@ -73,7 +73,7 @@ export default function ClasseForm({ classe, onSaved }: Props) {
         if (i === index) return { ...l, ...patch };
         // Fondamental I (un seul maître) : l'enseignant choisi est repris pour
         // les matières qui n'en ont pas encore ; il reste modifiable ensuite.
-        if (patch.id_enseignant && ordre === 'fondamentale1' && !l.id_enseignant) return { ...l, id_enseignant: patch.id_enseignant };
+        if (patch.id_enseignant && (ordre === 'fondamentale1' || ordre === 'jardin') && !l.id_enseignant) return { ...l, id_enseignant: patch.id_enseignant };
         return l;
       })
     );

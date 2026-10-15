@@ -133,6 +133,7 @@ class StatistiquesTerritoire
     }
 
     private const ORDRES = [
+        'jardin' => 'Jardin',
         'fondamentale1' => 'Fondamental I',
         'fondamentale2' => 'Fondamental II',
         'secondairegenerale' => 'Secondaire général',

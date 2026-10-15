@@ -15,7 +15,7 @@
         }
     }
 
-    $estFondamental = in_array($ordre, ['fondamentale1', 'fondamentale2'], true);
+    $estFondamental = \App\Support\Ordres::sousCap($ordre);
     $estTechnique = str_starts_with((string) $ordre, 'secondairetechnique');
     $estLycee = !$estTechnique && str_starts_with((string) $ordre, 'secondaire');
     // Libellé du cycle adapté au pays (ex: "Fondamentale II" au Mali, "Secondaire 1er cycle" ailleurs).
@@ -59,7 +59,7 @@
                     ********************<br>
                 @endif
                 {{ __('bulletins.academie_de', ['name' => $academyName]) }}
-                @if(in_array($ordre, ['fondamentale1', 'fondamentale2'], true) && $capName)
+                @if(\App\Support\Ordres::sousCap($ordre) && $capName)
                     <div class="cap-texte">{{ __('bulletins.cap_de', ['name' => $capName]) }}</div>
                 @endif
             </td>
@@ -116,7 +116,7 @@
     </table>
 
     <table class="notes-table">
-        @if($ordre === 'fondamentale1')
+        @if(\App\Support\Ordres::surDix($ordre))
             <thead>
                 <tr>
                     <th>{{ __('bulletins.pdf_th_matiere') }}</th>

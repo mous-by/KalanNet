@@ -29,7 +29,7 @@ class CreerClasseTool extends AbstractKalanbotTool
             'type' => 'OBJECT',
             'properties' => [
                 'nom_classe' => ['type' => 'STRING'],
-                'ordre_enseignement' => ['type' => 'STRING', 'description' => "Ex: fondamentale1, fondamentale2, secondairegenerale, secondairetechniqueetprofessionnel."],
+                'ordre_enseignement' => ['type' => 'STRING', 'description' => "Ex: jardin, fondamentale1, fondamentale2, secondairegenerale, secondairetechniqueetprofessionnel."],
                 'matieres' => [
                     'type' => 'ARRAY',
                     'description' => 'Matières enseignées dans cette classe.',

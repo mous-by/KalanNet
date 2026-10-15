@@ -5,6 +5,7 @@ namespace App\Services\Bulletins;
 use App\Models\Classe;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use App\Support\Ordres;
 
 /**
  * Moyenne annuelle d'une classe : moyenne des moyennes des périodes composées
@@ -52,7 +53,7 @@ class MoyennesAnnuelles
         $trimestres = (clone $notes)->whereNull('mois')->whereNotNull('id_trimestre')->distinct()->pluck('id_trimestre')->map(fn ($t) => (int) $t)->values();
 
         // Fondamental I : compositions mensuelles si la classe en a ; sinon trimestres.
-        $parMois = $this->classe->ordreEnseignement === 'fondamentale1' ? $mois->isNotEmpty() : $trimestres->isEmpty() && $mois->isNotEmpty();
+        $parMois = Ordres::surDix($this->classe->ordreEnseignement) ? $mois->isNotEmpty() : $trimestres->isEmpty() && $mois->isNotEmpty();
 
         if ($parMois) {
             // Année scolaire : de septembre à août.

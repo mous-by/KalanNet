@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use App\Support\Ordres;
 
 class EleveController extends Controller
 {
@@ -254,6 +255,7 @@ class EleveController extends Controller
     protected function ensureMatiereLv2CompatibleWithClasse(int $idMatiereLv2, Classe $classe): void
     {
         $map = [
+            'jardin' => 'Jardin',
             'fondamentale1' => 'Fondamentale I',
             'fondamentale2' => 'Fondamentale II',
             'secondairegenerale' => 'Secondaire Generale',
@@ -768,7 +770,7 @@ class EleveController extends Controller
             return collect();
         }
 
-        $sur = ($calcul === 'standard' && $classe->ordreEnseignement === 'fondamentale1') ? 10 : 20;
+        $sur = ($calcul === 'standard' && Ordres::surDix($classe->ordreEnseignement)) ? 10 : 20;
 
         // Période la plus récente d'abord, puis la moyenne annuelle.
         return collect($annuel['periodes'])

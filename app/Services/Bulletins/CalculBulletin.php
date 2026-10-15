@@ -10,6 +10,7 @@ use App\Support\Domaines;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use App\Support\Ordres;
 
 /**
  * Calcule les bulletins de toute une classe pour une période, en chargeant
@@ -61,7 +62,7 @@ class CalculBulletin
     public static function appreciation(?float $moyenne, ?string $ordre): string
     {
         $moyenne = (float) $moyenne;
-        if ($ordre === 'fondamentale1') {
+        if (Ordres::surDix($ordre)) {
             return match (true) {
                 $moyenne >= 9 => 'Très bien',
                 $moyenne >= 8 => 'Bien',
@@ -181,7 +182,7 @@ class CalculBulletin
             return $this->moyennesParGroupe($donnees);
         }
 
-        $fondamental1 = $this->ordre === 'fondamentale1';
+        $fondamental1 = Ordres::surDix($this->ordre);
         $totalCoef = $fondamental1 ? $matieres->count() : $matieres->sum('coef');
         $totalNotes = $fondamental1 ? $matieres->sum('M_Gle') : $matieres->sum('M_Coef');
         if (!$fondamental1 && $conduite !== null) {
@@ -225,7 +226,7 @@ class CalculBulletin
                 ? (float) $nt10->avg()
                 : (($noteClasse ?? 0) + ($noteCompo ?? 0)) / 2;
             $matiere->M_Coef = $matiere->M_Gle * $matiere->coef;
-        } elseif ($this->ordre === 'fondamentale1' && $this->calcul !== 'principales') {
+        } elseif (Ordres::surDix($this->ordre) && $this->calcul !== 'principales') {
             $matiere->M_Gle = (float) $matiere->NT10;
             $matiere->M_Coef = $matiere->M_Gle;
         } else {
@@ -382,7 +383,7 @@ class CalculBulletin
     /** Notes de conduite de la classe (trimestre seulement, hors Fondamental I). */
     private function conduites(Collection $idsEleves): array
     {
-        if ($this->ordre === 'fondamentale1' || $this->mois || !$this->idTrimestre) {
+        if (Ordres::surDix($this->ordre) || $this->mois || !$this->idTrimestre) {
             return [];
         }
 
