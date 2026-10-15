@@ -13,6 +13,8 @@ import { Enseignant, LigneClasse } from '@/types/api';
 interface EnseignantDetail {
   enseignant: Enseignant;
   lignes_classes: LigneClasse[];
+  // Classes du Jardin dont il est maître (pas de matière).
+  classes_jardin?: { id_classe: number; nom_classe: string }[];
   emargement_stats: { total: number; valides: number; heures: number };
   presence_stats: { total: number; valides: number; heures: number };
 }
@@ -41,6 +43,7 @@ export default function EnseignantDetailScreen() {
   if (error || !data) return <Text style={styles.error}>{error ?? 'Enseignant introuvable.'}</Text>;
 
   const { enseignant, lignes_classes, emargement_stats, presence_stats } = data;
+  const classesJardin = data.classes_jardin ?? [];
   const isArchived = enseignant.is_deleted === 1;
 
   return (
@@ -78,7 +81,7 @@ export default function EnseignantDetailScreen() {
       </Card>
 
       <Text style={styles.sectionTitle}>Classes assignées</Text>
-      {lignes_classes.length === 0 ? (
+      {lignes_classes.length === 0 && classesJardin.length === 0 ? (
         <Text style={styles.meta}>Aucune classe assignée.</Text>
       ) : (
         lignes_classes.map((ligne, index) => (
@@ -87,6 +90,11 @@ export default function EnseignantDetailScreen() {
           </Text>
         ))
       )}
+      {classesJardin.map((classe) => (
+        <Text key={`jardin-${classe.id_classe}`} style={styles.classeRow}>
+          {classe.nom_classe} · Maître de la classe (Jardin)
+        </Text>
+      ))}
 
       <SuccessSnackbar visible={successVisible} message={successMessage} onDismiss={() => setSuccessVisible(false)} />
     </ScrollView>
