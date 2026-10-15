@@ -19,7 +19,11 @@ class Ordres
     public const SOUS_CAP = [self::JARDIN, 'fondamentale1', 'fondamentale2'];
 
     /** Types d'école qui ne proposent pas de Jardin. */
-    private const SANS_JARDIN = ['École de Santé', 'Secondaire Technique et Professionnel', 'Technique et Professionnelle'];
+    private const SANS_JARDIN = [
+        'École de Santé',
+        'Secondaire Generale', 'Lycée Privée',
+        'Secondaire Technique et Professionnel', 'Technique et Professionnelle',
+    ];
 
     public static function surDix(?string $ordre): bool
     {
