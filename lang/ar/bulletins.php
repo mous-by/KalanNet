@@ -133,4 +133,5 @@ return [
     'gen_btn_deux_par_feuille' => '🗞 كشفان في ورقة A4',
     'gen_deux_par_feuille_title' => 'جارٍ وضع كشفين في كل ورقة A4…',
     'modele_a4_paysage' => 'A4 أفقي · نسختان',
+    'fin_annee_label' => 'كشف آخر السنة (مع المعدل السنوي)',
 ];

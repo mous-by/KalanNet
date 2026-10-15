@@ -138,9 +138,4 @@ class ModelesBulletin
     {
         return self::format($code) === 'A5' || self::deuxExemplaires($code);
     }
-
-    public static function modeNote(Classe $classe): string
-    {
-        return $classe->note_classe_mode === 'unique' ? 'unique' : 'moyenne';
-    }
 }

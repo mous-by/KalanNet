@@ -111,6 +111,8 @@
         </tr>
     </table>
 
+    @include('pdf.bulletins._annuel', ['marge' => '3mm'])
+
     <table class="signatures">
         <tr>
             <td>Le maître / professeur principal</td>

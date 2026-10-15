@@ -71,6 +71,11 @@
                             <option value="{{ $value }}">{{ $moisLabels[$value] ?? $label }}</option>
                         @endforeach
                     </select>
+                    {{-- Compositions mensuelles : la moyenne annuelle s'imprime sur demande (fin d'année). --}}
+                    <div class="form-check mt-2">
+                        <input class="form-check-input" type="checkbox" id="fin_annee">
+                        <label class="form-check-label small" for="fin_annee">{{ __('bulletins.fin_annee_label') }}</label>
+                    </div>
                 </div>
             </div>
         </div>
@@ -81,13 +86,6 @@
             <div>
                 <h5 class="mb-0 fw-bold">{{ __('bulletins.modele_title') }}</h5>
                 <small class="opacity-75">{{ __('bulletins.modele_desc') }}</small>
-            </div>
-            <div class="d-flex align-items-center gap-2">
-                <label class="form-label mb-0 small fw-semibold" for="note_classe_mode">{{ __('bulletins.note_classe_label') }}</label>
-                <select class="form-select form-select-sm w-auto" id="note_classe_mode">
-                    <option value="moyenne" @selected($modeNote === 'moyenne')>{{ __('bulletins.note_classe_moyenne') }}</option>
-                    <option value="unique" @selected($modeNote === 'unique')>{{ __('bulletins.note_classe_unique') }}</option>
-                </select>
             </div>
         </div>
         <div class="card-body">
@@ -230,6 +228,7 @@
             const body = document.getElementById('bulletins-body');
             const trimestreField = document.querySelector('.trimestre-field');
             const moisField = document.querySelector('.mois-field');
+            const finAnnee = document.getElementById('fin_annee');
             const selectAll = document.getElementById('select-all-bulletins');
             const printSelected = document.getElementById('print-selected-bulletins');
             const printAll = document.getElementById('print-all-bulletins');
@@ -242,7 +241,6 @@
             let premierEleve = null;
             const reglagesUrl = "{{ route('pedagogie.bulletins.reglages', $classe->id_classe) }}";
             const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
-            const noteMode = document.getElementById('note_classe_mode');
             const enregistre = document.getElementById('modele-enregistre');
 
             function avertir(message, icone) {
@@ -266,12 +264,12 @@
                 fetch(reglagesUrl, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf},
-                    body: JSON.stringify({modele_bulletin: modeleChoisi(), note_classe_mode: noteMode.value}),
+                    body: JSON.stringify({modele_bulletin: modeleChoisi()}),
                 }).then(response => {
                     if (!response.ok) throw new Error();
                     enregistre.classList.remove('d-none');
                     setTimeout(() => enregistre.classList.add('d-none'), 2500);
-                    // Les modèles par domaines et le mode de note changent les moyennes et les rangs.
+                    // Les modèles par domaines ou principales / secondaires changent les moyennes et les rangs.
                     loadBulletins();
                 }).catch(() => avertir(i18n.loadError, 'error'));
             }
@@ -286,7 +284,6 @@
                     enregistrerReglages();
                 });
             });
-            noteMode.addEventListener('change', enregistrerReglages);
 
             document.querySelectorAll('.modele-apercu').forEach(bouton => {
                 bouton.addEventListener('click', event => {
@@ -303,6 +300,7 @@
                     }
                     const params = new URLSearchParams({id_annee: annee.value, modele: bouton.dataset.modele});
                     if (mode === 'mois') params.set('mois', mois.value);
+                    if (mode === 'mois' && finAnnee.checked) params.set('fin_annee', '1');
                     else params.set('id_trimestre', trimestre.value);
                     document.getElementById('apercu-nom').textContent = i18n.modeles[bouton.dataset.modele] || '';
                     document.getElementById('apercu-iframe').src = "{{ url('/pedagogie/bulletins') }}/" + premierEleve + '/download?' + params.toString();
@@ -365,6 +363,7 @@
                             const printParams = new URLSearchParams({id_annee: idAnnee});
                             if (mode === 'mois') printParams.set('mois', moisValue);
                             else printParams.set('id_trimestre', idTrimestre);
+                            if (mode === 'mois' && finAnnee.checked) printParams.set('fin_annee', '1');
                             return '<tr>' +
                                 '<td class="text-center"><input type="checkbox" class="form-check-input bulletin-checkbox" value="' + row.id_eleve + '" aria-label="' + i18n.selectThisAria + '"></td>' +
                                 '<td>' + escapeHtml(row.matricule || '') + '</td>' +
@@ -430,6 +429,7 @@
             function submitBulk(ids) {
                 const params = new URLSearchParams({ id_annee: annee.value });
                 if (periodeMode.value === 'mois') params.set('mois', mois.value);
+                if (periodeMode.value === 'mois' && finAnnee.checked) params.set('fin_annee', '1');
                 else params.set('id_trimestre', trimestre.value);
                 if (ids && ids.length > 0) params.set('ids', JSON.stringify(ids));
                 const url = "{{ route('pedagogie.bulletins.generator', $classe->id_classe) }}?" + params.toString();

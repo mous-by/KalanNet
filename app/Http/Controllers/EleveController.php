@@ -754,20 +754,28 @@ class EleveController extends Controller
             ->get();
     }
 
+    /** Moyennes de l'élève sur l'année en cours : chaque période composée et la moyenne annuelle. */
     protected function studentMoyennes(Eleve $eleve)
     {
-        if (!Schema::hasTable('moyenne_eleve')) {
+        $classe = $eleve->id_classe ? Classe::withoutGlobalScopes()->find($eleve->id_classe) : null;
+        if (!$classe || !$eleve->id_annee) {
             return collect();
         }
 
-        return DB::table('moyenne_eleve as me')
-            ->leftJoin('trimestre as t', 'me.id_trimestre', '=', 't.id_trimestre')
-            ->where('me.id_eleve', $eleve->id_eleve)
-            ->when(Schema::hasColumn('moyenne_eleve', 'id_anneeScolaire'), fn ($query) => $query->where('me.id_anneeScolaire', $eleve->id_annee))
-            ->select(['me.moyenne', 'me.rang', 'me.mois', 'me.valide', 't.nom_trimestre'])
-            ->orderByRaw('COALESCE(me.id_trimestre, 0) desc')
-            ->limit(6)
-            ->get();
+        $calcul = \App\Support\ModelesBulletin::calcul(\App\Support\ModelesBulletin::pourClasse($classe));
+        $annuel = \App\Services\Bulletins\MoyennesAnnuelles::pour($classe, (int) $eleve->id_annee, $calcul)->pourEleve((int) $eleve->id_eleve);
+        if (!$annuel) {
+            return collect();
+        }
+
+        $sur = ($calcul === 'standard' && $classe->ordreEnseignement === 'fondamentale1') ? 10 : 20;
+
+        // Période la plus récente d'abord, puis la moyenne annuelle.
+        return collect($annuel['periodes'])
+            ->map(fn ($p, $libelle) => (object) ['nom_trimestre' => $libelle, 'mois' => null, 'moyenne' => $p['moyenne'], 'rang' => $p['rang'], 'valide' => 1, 'sur' => $sur])
+            ->reverse()
+            ->values()
+            ->push((object) ['nom_trimestre' => 'Moyenne annuelle', 'mois' => null, 'moyenne' => $annuel['moyenne'], 'rang' => $annuel['rang'].' / '.$annuel['total'], 'valide' => 1, 'sur' => $sur]);
     }
 
     protected function studentTransfers(Eleve $eleve)

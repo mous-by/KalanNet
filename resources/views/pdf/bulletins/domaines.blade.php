@@ -106,6 +106,7 @@
             <td style="border-right:none"><span class="lib">Moy. du premier · <span class="ar">{{ $ar('معدل الأول') }}</span></span><span class="val">{{ $note($statistiques['premier']) }}</span></td>
         </tr>
     </table>
+    @include('pdf.bulletins._annuel')
 
     <table class="signatures">
         <tr>

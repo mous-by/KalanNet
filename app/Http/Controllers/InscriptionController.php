@@ -24,6 +24,9 @@ class InscriptionController extends Controller
 {
     public function index(Request $request)
     {
+        // Même règle que le menu : voir les inscriptions ou pouvoir inscrire.
+        $user = \Illuminate\Support\Facades\Auth::user();
+        abort_unless($user && ($user->droit === 'SupAdmin' || $user->userHasAnyPermission(['inscriptions_apercu', 'inscriptions_inscrire'])), 403, 'Permission insuffisante.');
         $classes = Classe::where('idEcole', session('idEcole'))->orderBy('nom_classe')->get();
         $classeIds = $classes->pluck('id_classe');
         $annees = AnneeScolaire::orderByDesc('id_anneeScolaire')->get();
@@ -956,25 +959,21 @@ class InscriptionController extends Controller
         return $moyenne >= $threshold ? 'passant' : 'redoublant';
     }
 
+    /**
+     * Moyenne annuelle de l'élève dans sa classe : moyenne des périodes
+     * composées (mois ou trimestres), avec le calcul du bulletin de la classe.
+     */
     private function moyenneAnnuelle(int $idEleve, int $idClasse, int $idAnnee): ?float
     {
-        if (!Schema::hasTable('moyenne_eleve')) {
+        $classe = Classe::withoutGlobalScopes()->find($idClasse);
+        if (!$classe) {
             return null;
         }
 
-        $query = DB::table('moyenne_eleve')
-            ->where('id_eleve', $idEleve)
-            ->where('id_classe', $idClasse)
-            ->where('id_anneeScolaire', $idAnnee)
-            ->where('moyenne', '>', 0);
+        $calcul = \App\Support\ModelesBulletin::calcul(\App\Support\ModelesBulletin::pourClasse($classe));
+        $moyenne = \App\Services\Bulletins\MoyennesAnnuelles::pour($classe, $idAnnee, $calcul)->pourEleve($idEleve)['moyenne'] ?? null;
 
-        if (Schema::hasColumn('moyenne_eleve', 'valide')) {
-            $query->where('valide', 1);
-        }
-
-        $average = $query->avg('moyenne');
-
-        return $average !== null ? round((float) $average, 2) : null;
+        return $moyenne !== null ? round((float) $moyenne, 2) : null;
     }
 
     private function nationalExamLevel(Classe $classe): ?string

@@ -134,4 +134,5 @@ return [
     'gen_btn_deux_par_feuille' => '🗞 2 report cards per A4 sheet',
     'gen_deux_par_feuille_title' => 'Laying out 2 per A4 sheet…',
     'modele_a4_paysage' => 'A4 landscape · 2 copies',
+    'fin_annee_label' => 'End-of-year report card (with the yearly average)',
 ];

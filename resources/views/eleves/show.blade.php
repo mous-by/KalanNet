@@ -250,7 +250,7 @@
                                     <div class="small text-muted">{{ $moyenne->valide ? __('eleves.valide') : __('eleves.en_attente_validation') }}</div>
                                 </div>
                                 <div class="text-end">
-                                    <strong>{{ number_format((float) $moyenne->moyenne, 2) }}/20</strong>
+                                    <strong>{{ number_format((float) $moyenne->moyenne, 2) }}/{{ $moyenne->sur ?? 20 }}</strong>
                                     <div class="small text-muted">{{ __('eleves.rang_prefix') }} {{ $moyenne->rang ?: 'N/A' }}</div>
                                 </div>
                             </div>
@@ -289,7 +289,7 @@
                             </div>
                             <div class="history-item">
                                 <span>{{ __('eleves.hist_derniere_moyenne') }}</span>
-                                <strong>{{ $moyennes->first()?->moyenne ? number_format((float) $moyennes->first()->moyenne, 2).'/20' : __('eleves.hist_aucun') }}</strong>
+                                <strong>{{ $moyennes->first()?->moyenne ? number_format((float) $moyennes->first()->moyenne, 2).'/'.($moyennes->first()->sur ?? 20) : __('eleves.hist_aucun') }}</strong>
                             </div>
                         </div>
                         @forelse($transferts as $transfert)

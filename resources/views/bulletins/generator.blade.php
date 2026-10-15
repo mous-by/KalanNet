@@ -567,6 +567,7 @@
         id_trimestre: @json($id_trimestre),
         mois:         @json($mois),
         ids:          @json($ids),
+        fin_annee:    @json($fin_annee),
     };
 
     // Elements
@@ -840,6 +841,7 @@
         if (PARAMS.id_trimestre)               qp.set('id_trimestre', PARAMS.id_trimestre);
         if (PARAMS.mois)                       qp.set('mois',         PARAMS.mois);
         if (PARAMS.ids && PARAMS.ids !== '[]') qp.set('ids',          PARAMS.ids);
+        if (PARAMS.fin_annee)                  qp.set('fin_annee',    '1');
 
         let students;
         try {

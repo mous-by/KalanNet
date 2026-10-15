@@ -34,6 +34,39 @@
         </div>
     @endif
 
+    @if($noteClasse)
+        {{-- Note de classe de la matière pour la période : moyenne des devoirs ou ce devoir seulement. --}}
+        <div class="card shadow-sm mb-4 border-start border-4 border-primary">
+            <div class="card-body">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                    <div>
+                        <div class="fw-bold mb-1"><i class="bi bi-calculator me-2"></i>Note de classe de {{ $first->matiere->nom_matiere ?? 'la matière' }} pour cette période</div>
+                        <div class="small text-muted">
+                            @if($noteClasse['mode'] === 'moyenne')
+                                Actuellement : <strong>moyenne de tous les devoirs</strong> ({{ $noteClasse['nb_devoirs'] }} devoir(s) sur la période).
+                            @elseif($noteClasse['ce_devoir'])
+                                Actuellement : <strong>ce devoir seulement</strong>. Les autres devoirs de la période ne comptent pas.
+                            @else
+                                Actuellement : <strong>un seul devoir</strong> : « {{ $noteClasse['devoir_retenu'] }} ».
+                            @endif
+                        </div>
+                    </div>
+                    @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('evaluation_modification'))
+                        <form method="POST" action="{{ route('evaluations.note-classe', $evaluation->id_evaluation) }}" class="d-flex flex-wrap gap-2">
+                            @csrf
+                            <button type="submit" name="mode" value="moyenne" class="btn btn-sm {{ $noteClasse['mode'] === 'moyenne' ? 'btn-primary' : 'btn-outline-primary' }}" @disabled($noteClasse['mode'] === 'moyenne')>
+                                Moyenne de tous les devoirs
+                            </button>
+                            <button type="submit" name="mode" value="unique" class="btn btn-sm {{ $noteClasse['ce_devoir'] ? 'btn-primary' : 'btn-outline-primary' }}" @disabled($noteClasse['ce_devoir'])>
+                                Ce devoir seulement
+                            </button>
+                        </form>
+                    @endif
+                </div>
+            </div>
+        </div>
+    @endif
+
     <form method="POST" action="{{ route('evaluations.update', $evaluation->id_evaluation) }}">
         @csrf
         @method('PUT')

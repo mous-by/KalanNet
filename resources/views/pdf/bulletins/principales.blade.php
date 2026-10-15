@@ -73,6 +73,7 @@
             <td style="white-space:nowrap"><span class="lib">Moy. du 1er :</span> {{ $note($statistiques['premier']) }} / 20</td>
         </tr>
     </table>
+    @include('pdf.bulletins._annuel', ['taille' => '9px'])
 
     <table class="signatures">
         <tr><td>Le parent ou tuteur</td><td class="d">Le directeur / proviseur</td></tr>

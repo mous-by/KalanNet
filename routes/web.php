@@ -145,6 +145,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/evaluations/{id}/edit', [EvaluationController::class, 'edit'])->name('evaluations.edit');
     Route::put('/evaluations/{id}', [EvaluationController::class, 'update'])->name('evaluations.update');
     Route::patch('/evaluations/{id}/validate-notes', [EvaluationController::class, 'validateNotes'])->name('evaluations.validate-notes');
+    Route::post('/evaluations/{id}/note-classe', [EvaluationController::class, 'noteClasse'])->name('evaluations.note-classe');
     Route::delete('/evaluations/{id}', [EvaluationController::class, 'destroy'])->name('evaluations.destroy');
     Route::get('/evaluations/{id}/pdf', [EvaluationController::class, 'downloadNotesPdf'])->name('evaluations.pdf');
     Route::get('/evaluations/{id}', [EvaluationController::class, 'show'])->name('evaluations.show');

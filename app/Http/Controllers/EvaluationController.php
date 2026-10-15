@@ -168,8 +168,9 @@ class EvaluationController extends Controller
         abort_if($details->isEmpty(), 404);
         $this->authorizeEvaluationLines($details);
         $this->authorizeClasse($details->first()->classe);
+        $noteClasse = $this->noteClasseInfo($evaluation, $details->first());
 
-        return view('evaluations.edit', compact('evaluation', 'details'));
+        return view('evaluations.edit', compact('evaluation', 'details', 'noteClasse'));
     }
 
     public function editProgramme(int $id)
@@ -322,6 +323,10 @@ class EvaluationController extends Controller
 
         DB::transaction(function () use ($evaluation) {
             LigneEvaluation::where('id_evaluation', $evaluation->id_evaluation)->delete();
+            // Devoir retenu seul pour la note de classe : la matière revient à la moyenne des devoirs.
+            if (Schema::hasTable('note_classe_choix')) {
+                DB::table('note_classe_choix')->where('id_evaluation', $evaluation->id_evaluation)->delete();
+            }
             $evaluation->delete();
         });
 
@@ -481,6 +486,90 @@ class EvaluationController extends Controller
         }
 
         return (int) $idEnseignant;
+    }
+
+    /**
+     * Note de classe de la matière pour la période de ce devoir : moyenne de
+     * tous les devoirs (par défaut) ou ce devoir seulement. Réglable par
+     * l'enseignant de l'évaluation ou par un utilisateur qui peut la modifier.
+     */
+    public function noteClasse(Request $request, int $id)
+    {
+        $this->authorizePermission('evaluation_modification');
+        $evaluation = Evaluation::findOrFail($id);
+        $details = LigneEvaluation::with(['classe', 'noteType'])->where('id_evaluation', $evaluation->id_evaluation)->get();
+        abort_if($details->isEmpty(), 404);
+        $this->authorizeEvaluationLines($details);
+        $this->authorizeClasse($details->first()->classe);
+
+        $ligne = $details->first();
+        abort_unless($this->estDevoir($ligne->noteType), 422, 'Seul un devoir peut servir de note de classe.');
+        $mode = $request->validate(['mode' => 'required|in:moyenne,unique'])['mode'];
+
+        $cle = [
+            'id_classe' => $ligne->id_classe,
+            'id_matiere' => $ligne->id_matiere,
+            'id_annee' => $ligne->id_annee_scolaire,
+            'id_trimestre' => $ligne->mois ? null : $ligne->id_trimestre,
+            'mois' => $ligne->mois ?: null,
+        ];
+
+        if ($mode === 'unique') {
+            DB::table('note_classe_choix')->updateOrInsert($cle, [
+                'mode' => 'unique',
+                'id_evaluation' => $evaluation->id_evaluation,
+                'modifie_par' => Auth::id(),
+                'updated_at' => now(),
+                'created_at' => now(),
+            ]);
+            $message = 'Note de classe : seul ce devoir compte pour cette matière et cette période.';
+        } else {
+            DB::table('note_classe_choix')->where($cle)->delete();
+            $message = 'Note de classe : moyenne de tous les devoirs de la période.';
+        }
+
+        return redirect()->route('evaluations.edit', $evaluation->id_evaluation)->with('success', $message);
+    }
+
+    /** Ce que la page de saisie affiche du choix de la note de classe (null si ce n'est pas un devoir). */
+    protected function noteClasseInfo(Evaluation $evaluation, LigneEvaluation $ligne): ?array
+    {
+        if (!$this->estDevoir($ligne->noteType) || !Schema::hasTable('note_classe_choix')) {
+            return null;
+        }
+
+        $periode = fn ($query, string $prefixe = '') => $ligne->mois
+            ? $query->where($prefixe.'mois', $ligne->mois)
+            : $query->where($prefixe.'id_trimestre', $ligne->id_trimestre)->whereNull($prefixe.'mois');
+
+        $choix = $periode(DB::table('note_classe_choix')
+            ->where('id_classe', $ligne->id_classe)
+            ->where('id_matiere', $ligne->id_matiere)
+            ->where('id_annee', $ligne->id_annee_scolaire))
+            ->where('mode', 'unique')
+            ->first();
+
+        $devoirs = $periode(DB::table('ligne_evaluation as le')
+            ->join('note as n', 'n.id_note', '=', 'le.id_note')
+            ->join('evaluation as e', 'e.id_evaluation', '=', 'le.id_evaluation')
+            ->where('le.id_classe', $ligne->id_classe)
+            ->where('le.id_matiere', $ligne->id_matiere)
+            ->where('le.id_annee_scolaire', $ligne->id_annee_scolaire), 'le.')
+            ->where(fn ($q) => $q->whereRaw('LOWER(n.typeNote) = ?', ['devoir'])->orWhereRaw('LOWER(n.codeNote) in (?, ?)', ['dv', 'devoir']))
+            ->distinct()
+            ->get(['e.id_evaluation', 'e.libeller']);
+
+        return [
+            'mode' => $choix ? 'unique' : 'moyenne',
+            'ce_devoir' => $choix && (int) $choix->id_evaluation === (int) $evaluation->id_evaluation,
+            'devoir_retenu' => $choix ? $devoirs->firstWhere('id_evaluation', $choix->id_evaluation)?->libeller : null,
+            'nb_devoirs' => $devoirs->count(),
+        ];
+    }
+
+    protected function estDevoir(?Note $note): bool
+    {
+        return $note && (strtolower((string) $note->typeNote) === 'devoir' || in_array(strtolower((string) $note->codeNote), ['dv', 'devoir'], true));
     }
 
     /** Lignes d'évaluation dans l'ordre alphabétique des élèves : nom, puis prénom. */

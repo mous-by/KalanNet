@@ -88,6 +88,7 @@
             <td style="border-right:none"><span class="lib">Premier</span><span class="val">{{ $note($statistiques['premier']) }}</span></td>
         </tr>
     </table>
+    @include('pdf.bulletins._annuel', ['taille' => '8.5px', 'marge' => '1.5mm'])
 
     <table class="signatures">
         <tr><td>Le parent · {{ $ar('ولي الأمر') }}</td><td class="d">Le directeur · {{ $ar('المدير') }}</td></tr>

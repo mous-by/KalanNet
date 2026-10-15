@@ -60,6 +60,7 @@
             <td><span class="lib">Premier</span><span class="val">{{ $note($statistiques['premier']) }}</span></td>
         </tr>
     </table>
+    @include('pdf.bulletins._annuel', ['taille' => '9px'])
 
     <table class="signatures">
         <tr>

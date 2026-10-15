@@ -300,8 +300,15 @@
             <strong>Groupe</strong> indique si une matière est principale ou secondaire ; laissée sur « Auto », une
             matière est principale si son coefficient est d'au moins 2.</li>
     </ul>
-    <p><strong>Note de classe</strong> : au même endroit, choisissez si la note de classe est la
-    <strong>moyenne de tous les devoirs</strong> de la période ou <strong>une seule note</strong> (la dernière saisie).</p>
+    <p><strong>Note de classe</strong> : pour chaque matière et chaque trimestre (ou mois), la note de classe est
+    la <strong>moyenne de tous les devoirs</strong> ou <strong>un seul devoir</strong>. Le choix se fait sur la page de
+    saisie des notes d'un devoir (« Moyenne de tous les devoirs » ou « Ce devoir seulement »), par l'enseignant ou par
+    toute personne autorisée à modifier les évaluations.</p>
+    <p><strong>Moyenne annuelle</strong> : moyenne des périodes composées (somme des moyennes des trimestres ÷ nombre
+    de trimestres ; en compositions mensuelles, somme des mois ÷ nombre de mois). Elle s'affiche avec le
+    <strong>rang annuel</strong> sur le bulletin du dernier trimestre ; en compositions mensuelles, cochez « Bulletin
+    de fin d'année » avant d'imprimer. La réinscription s'en sert pour proposer le passage (5/10 au Fondamental I,
+    10/20 ailleurs), et la fiche de l'élève l'affiche avec les moyennes de chaque période.</p>
     <p><strong>Classes à deux maîtres (écoles franco-arabes)</strong> : dans la fiche de la classe, cochez
     <strong>Classe à deux maîtres</strong>, puis choisissez le maître de la partie arabe et celui de la partie
     française. Chaque matière est rangée dans un <strong>domaine</strong>, et chaque domaine appartient à une partie :

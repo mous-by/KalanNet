@@ -19,8 +19,9 @@ use Illuminate\Support\Facades\Schema;
  * - « domaines » : moyenne de matière = (classe + compo) / 2, moyenne de
  *   chaque domaine pondérée par les coefficients, moyenne générale = moyenne
  *   des domaines, et une appréciation par partie (maître arabe / français).
- * La note de classe est soit la moyenne des devoirs, soit une seule note
- * (la dernière saisie).
+ * La note de classe d'une matière est, pour chaque période, la moyenne des
+ * devoirs ou un seul devoir, selon le choix fait à la saisie des notes
+ * (table note_classe_choix ; par défaut : la moyenne).
  */
 class CalculBulletin
 {
@@ -29,6 +30,8 @@ class CalculBulletin
     private Ecole $ecole;
     private ?string $ordre;
     private Collection $resultats;
+    /** id_matiere => id_evaluation du seul devoir retenu pour la note de classe. */
+    private array $choixNoteClasse = [];
 
     public function __construct(
         private Classe $classe,
@@ -36,18 +39,23 @@ class CalculBulletin
         private ?int $idTrimestre,
         private ?int $mois,
         private string $calcul = 'standard',
-        private string $modeNote = 'moyenne',
     ) {
         $this->ecole = Ecole::withoutGlobalScopes()->findOrFail($classe->idEcole);
         $this->ordre = $classe->ordreEnseignement;
     }
 
     /** Instance partagée pendant la requête (un bulletin par élève relance sinon tout le calcul). */
-    public static function pour(Classe $classe, int $idAnnee, ?int $idTrimestre, ?int $mois, string $calcul, string $modeNote): self
+    public static function pour(Classe $classe, int $idAnnee, ?int $idTrimestre, ?int $mois, string $calcul): self
     {
-        $cle = implode('|', [$classe->id_classe, $idAnnee, $idTrimestre, $mois, $calcul, $modeNote]);
+        $cle = implode('|', [$classe->id_classe, $idAnnee, $idTrimestre, $mois, $calcul]);
 
-        return self::$cache[$cle] ??= new self($classe, $idAnnee, $idTrimestre, $mois, $calcul, $modeNote);
+        return self::$cache[$cle] ??= new self($classe, $idAnnee, $idTrimestre, $mois, $calcul);
+    }
+
+    /** Vide le cache (après une modification de notes ou de choix pendant la même requête). */
+    public static function oublier(): void
+    {
+        self::$cache = [];
     }
 
     public static function appreciation(?float $moyenne, ?string $ordre): string
@@ -119,8 +127,18 @@ class CalculBulletin
             ->where('le.'.$periodeCol, $periodeVal)
             ->when($this->filtrerNotesValidees(), fn ($q) => $q->where('le.validation_status', 'valide'))
             ->orderBy('le.id_ligneEvaluation')
-            ->get(['le.id_eleve', 'le.id_matiere', 'le.note', 'n.typeNote', 'n.codeNote'])
+            ->get(['le.id_eleve', 'le.id_matiere', 'le.id_evaluation', 'le.note', 'n.typeNote', 'n.codeNote'])
             ->groupBy('id_eleve');
+
+        $this->choixNoteClasse = Schema::hasTable('note_classe_choix')
+            ? DB::table('note_classe_choix')
+                ->where('id_classe', $this->classe->id_classe)
+                ->where('id_annee', $this->idAnnee)
+                ->where($periodeCol, $periodeVal)
+                ->where('mode', 'unique')
+                ->pluck('id_evaluation', 'id_matiere')
+                ->all()
+            : [];
 
         $lignes = $this->matieresDeLaClasse();
         $conduites = $this->conduites($eleves->keys());
@@ -176,11 +194,16 @@ class CalculBulletin
 
     private function calculerMatiere(object $matiere, Collection $notes): object
     {
-        $devoirs = $notes->filter(fn ($n) => $this->estType($n, 'devoir', ['dv', 'devoir']))->pluck('note')->map(fn ($v) => (float) $v);
+        $lignesDevoirs = $notes->filter(fn ($n) => $this->estType($n, 'devoir', ['dv', 'devoir']));
+        // Un seul devoir retenu pour cette matière et cette période : on ne garde que lui.
+        if ($devoirRetenu = $this->choixNoteClasse[$matiere->id_matiere] ?? null) {
+            $lignesDevoirs = $lignesDevoirs->where('id_evaluation', $devoirRetenu);
+        }
+        $devoirs = $lignesDevoirs->pluck('note')->filter(fn ($v) => $v !== null)->map(fn ($v) => (float) $v);
         $compo = $notes->first(fn ($n) => $this->estType($n, 'composition', ['cp', 'composition']));
-        $nt10 = $notes->filter(fn ($n) => $this->estType($n, 'nt10', ['nt10']))->pluck('note')->map(fn ($v) => (float) $v);
+        $nt10 = $notes->filter(fn ($n) => $this->estType($n, 'nt10', ['nt10']))->pluck('note')->filter(fn ($v) => $v !== null)->map(fn ($v) => (float) $v);
 
-        $noteClasse = $devoirs->isEmpty() ? null : ($this->modeNote === 'unique' ? $devoirs->last() : $devoirs->avg());
+        $noteClasse = $devoirs->isEmpty() ? null : $devoirs->avg();
         $noteCompo = $compo ? (float) $compo->note : null;
 
         $matiere->coef = (float) ($matiere->coef ?? 0);

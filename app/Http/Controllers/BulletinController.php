@@ -7,6 +7,7 @@ use App\Models\Classe;
 use App\Models\AnneeScolaire;
 use App\Models\Trimestre;
 use App\Services\Bulletins\CalculBulletin;
+use App\Services\Bulletins\MoyennesAnnuelles;
 use App\Support\ArabePdf;
 use App\Support\ModelesBulletin;
 use Illuminate\Support\Carbon;
@@ -47,7 +48,6 @@ class BulletinController extends Controller
             'classe' => $classe,
             'modeles' => ModelesBulletin::disponibles((int) $classe->idEcole),
             'modeleActuel' => ModelesBulletin::pourClasse($classe),
-            'modeNote' => ModelesBulletin::modeNote($classe),
             'nbMatieres' => $classe->ligneClasses()->count(),
             'annees' => AnneeScolaire::orderByDesc('date_debut')->get(),
             'trimestres' => Trimestre::orderBy('id_trimestre')->get(),
@@ -82,8 +82,7 @@ class BulletinController extends Controller
             (int) $data['id_annee'],
             $periode['column'] === 'id_trimestre' ? (int) $periode['value'] : null,
             $periode['column'] === 'mois' ? (int) $periode['value'] : null,
-            ModelesBulletin::calcul($modele),
-            ModelesBulletin::modeNote($classe)
+            ModelesBulletin::calcul($modele)
         );
 
         $ranked = $calcul->resultats()
@@ -127,6 +126,7 @@ class BulletinController extends Controller
             'id_trimestre' => $request->get('id_trimestre', ''),
             'mois'         => $request->get('mois', ''),
             'ids'          => $request->get('ids', '[]'),
+            'fin_annee'    => $request->boolean('fin_annee'),
             'modele'       => ModelesBulletin::pourClasse($classe),
         ]);
     }
@@ -170,6 +170,9 @@ class BulletinController extends Controller
         $params = ['id_annee' => $data['id_annee']];
         if (!empty($data['mois'])) {
             $params['mois'] = $data['mois'];
+            if ($request->boolean('fin_annee')) {
+                $params['fin_annee'] = 1;
+            }
         } elseif (!empty($data['id_trimestre'])) {
             $params['id_trimestre'] = $data['id_trimestre'];
         }
@@ -371,7 +374,7 @@ class BulletinController extends Controller
         $this->authorizeClasse($classe);
 
         $modele = ModelesBulletin::disponible($modele, (int) $classe->idEcole) ? $modele : ModelesBulletin::pourClasse($classe);
-        $calcul = CalculBulletin::pour($classe, (int) $id_annee, $mois ? null : ($id_trimestre ? (int) $id_trimestre : null), $mois ? (int) $mois : null, ModelesBulletin::calcul($modele), ModelesBulletin::modeNote($classe));
+        $calcul = CalculBulletin::pour($classe, (int) $id_annee, $mois ? null : ($id_trimestre ? (int) $id_trimestre : null), $mois ? (int) $mois : null, ModelesBulletin::calcul($modele));
 
         $data = $calcul->pourEleve((int) $id);
         if (!$data) {
@@ -380,6 +383,18 @@ class BulletinController extends Controller
 
         $data['modele'] = $modele;
         $data['statistiques'] = $calcul->statistiques();
+
+        // Bulletin de fin d'année : moyenne et rang annuels (moyenne des périodes composées).
+        $annuel = MoyennesAnnuelles::pour($classe, (int) $id_annee, ModelesBulletin::calcul($modele));
+        $data['annuel'] = null;
+        // Compositions mensuelles : seulement si l'école imprime les bulletins de fin d'année.
+        if ((!$mois || request()->boolean('fin_annee'))
+            && $annuel->estDernierePeriode($mois ? null : ($id_trimestre ? (int) $id_trimestre : null), $mois ? (int) $mois : null)
+            && ($resultatAnnuel = $annuel->pourEleve((int) $id))) {
+            $data['annuel'] = $resultatAnnuel + [
+                'libelle' => $resultatAnnuel['nb_periodes'].' '.($annuel->mensuel() ? 'composition(s) mensuelle(s)' : 'trimestre(s)'),
+            ];
+        }
         $data['maitres'] = $this->maitres($classe);
         $data['annee_hegirienne'] = $this->anneeHegirienne($data['apercu']);
         $data['photo'] = $this->imageBase64($eleve->image);
@@ -439,7 +454,7 @@ class BulletinController extends Controller
         return 'data:'.$mime.';base64,'.base64_encode(file_get_contents($fichier));
     }
 
-    /** Enregistre pour la classe le modèle de bulletin et le mode de la note de classe. */
+    /** Enregistre le modèle de bulletin de la classe. */
     public function reglages(int $idClasse, Request $request)
     {
         $this->authorizeBulletinGeneration();
@@ -448,14 +463,12 @@ class BulletinController extends Controller
 
         $data = $request->validate([
             'modele_bulletin' => ['required', 'string', \Illuminate\Validation\Rule::in(array_keys(ModelesBulletin::disponibles((int) $classe->idEcole)))],
-            'note_classe_mode' => 'required|in:moyenne,unique',
         ]);
 
         $classe->update($data);
 
         return response()->json([
             'modele_bulletin' => $classe->modele_bulletin,
-            'note_classe_mode' => $classe->note_classe_mode,
         ]);
     }
 

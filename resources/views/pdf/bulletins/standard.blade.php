@@ -205,6 +205,13 @@
             <td><strong>{{ __('bulletins.pdf_rang_label') }}</strong> {{ $rangAffiche }} / {{ $totalAffiche }}</td>
             <td><strong>{{ __('bulletins.pdf_moyenne_premier_label') }}</strong> {{ number_format($moyenne_premier ?? 0, 2) }}</td>
         </tr>
+        @if(!empty($annuel))
+            <tr>
+                <td><strong>Moyenne annuelle :</strong> {{ number_format($annuel['moyenne'], 2) }}</td>
+                <td><strong>Rang annuel :</strong> {{ $annuel['rang'] }} / {{ $annuel['total'] }}</td>
+                <td>({{ $annuel['libelle'] }})</td>
+            </tr>
+        @endif
     </table>
 
     <table class="signature-table">
