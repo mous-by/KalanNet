@@ -35,12 +35,12 @@ primaire ; 2 tables jamais utilisées (`roles`, `role_permission`) ; 0 doublon e
 |---|---|---|---|
 | **Critique** | Connexion à n'importe quel compte sans mot de passe par le choix de l'école (web et API) | Confirmé | Corrigé (`2ffc1f0`), **déployé et vérifié en production** le 15/10 ; 46 anciens jetons supprimés |
 | **Élevée** | DAE / DCAP : tableau de bord d'une école hors territoire par `ecole_id` | Confirmé (aucun compte DAE/DCAP en production) | Corrigé (`8b7c9a9`), déployé |
-| **Élevée** | Suppression de l'évaluation (et des notes) d'une autre école | Confirmé | Corrigé (`d1b8056`), **à déployer** |
+| **Élevée** | Suppression de l'évaluation (et des notes) d'une autre école | Confirmé | Corrigé (`d1b8056`), déployé et vérifié le 16/10 |
 | **Élevée** | Jetons API sans expiration | Confirmé | 90 jours (`2ffc1f0`), déployé |
 | **Élevée** | Bulletins : écriture en base à chaque consultation, 189 requêtes par bulletin | Confirmé | Corrigé (`674042e`), déployé |
 | Moyenne | 16 requêtes `information_schema` par page (12 lectures de cache avec le cache en base) | Confirmé | Corrigé (`397b929`, `e400627`), déployé |
-| Moyenne | Index manquants (élèves d'une classe, connexion, conduite, réinscription…) | Confirmé (`EXPLAIN`, base de test) | 10 index prêts (`20ed0fb`), **à déployer** |
-| Moyenne | Tableau de bord : N+1 par classe et comptages répétés | Confirmé | Corrigé (`6c7dfa9` déployé, `a6bf3d9` à déployer) |
+| Moyenne | Index manquants (élèves d'une classe, connexion, conduite, réinscription…) | Confirmé (`EXPLAIN`, base de test) | 10 index (`20ed0fb`), déployés et vérifiés le 16/10 |
+| Moyenne | Tableau de bord : N+1 par classe et comptages répétés | Confirmé | Corrigé (`6c7dfa9`, `a6bf3d9`), déployé |
 | Moyenne | PDF des bulletins d'une classe : ~13 s pour 55 élèves (rendu dompdf) | Confirmé | Non traité : génération en tâche de fond recommandée |
 | Faible | Erreur 500 au lieu de 404 sur les évaluations d'une autre école | Confirmé | Corrigé (`8f0340b`), déployé |
 | Faible | Tables sans clé primaire, `user_permission` sans unicité | Confirmé | À décider |
@@ -112,17 +112,16 @@ index produisent un gain visible : ils préparent la croissance.
 
 ## K. Restant à traiter
 
-1. Déployer `d1b8056`, `a6bf3d9` et les 10 index (procédure : [deploiement.md](deploiement.md)).
-2. Publier l'application mobile vc17.
-3. Génération des PDF de classe en tâche de fond (file `database` déjà configurée).
-4. `user_permission` : clé primaire / unicité ; décider du sort de `roles`, `role_permission`.
-5. Clés étrangères sur les notes et les liaisons, après contrôle des orphelins.
-6. Vérifier sur LWS : `php -v`, `APP_DEBUG=false`, HTTPS forcé.
-7. Supprimer `test.html` et `default_index.html` du serveur s'ils sont accessibles.
+1. Publier l'application mobile vc17 (procédure : [deploiement.md](deploiement.md)).
+2. Génération des PDF de classe en tâche de fond (file `database` déjà configurée).
+3. `user_permission` : clé primaire / unicité ; décider du sort de `roles`, `role_permission`.
+4. Clés étrangères sur les notes et les liaisons, après contrôle des orphelins.
+5. Vérifier sur LWS : `php -v`, `APP_DEBUG=false`, HTTPS forcé.
+6. Supprimer `test.html` et `default_index.html` du serveur s'ils sont accessibles.
 
 ## L. Montée en charge
 
-- Les 10 index d'abord (coût minimal tant que les tables sont petites).
+- Les 10 index sont en place depuis le 16/10/2026.
 - Cache et sessions en base fonctionnent sur un seul serveur ; Redis si plusieurs
   serveurs ou forte charge.
 - Bulletins de classe et exports lourds en Jobs (`php artisan queue:work`,
