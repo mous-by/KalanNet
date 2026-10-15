@@ -26,6 +26,8 @@ class MoyennesAnnuelles
     {
     }
 
+    private ?int $dernierTrimestre = null;
+
     public static function pour(Classe $classe, int $idAnnee, string $calcul): self
     {
         return self::$cache[$classe->id_classe.'|'.$idAnnee.'|'.$calcul] ??= new self($classe, $idAnnee, $calcul);
@@ -142,7 +144,10 @@ class MoyennesAnnuelles
             return $derniere['mois'] === (int) $mois;
         }
 
-        return $idTrimestre && (int) $idTrimestre === (int) DB::table('trimestre')->max('id_trimestre')
+        // Dernier trimestre lu une fois par instance (une instance par classe et par année).
+        $this->dernierTrimestre ??= (int) DB::table('trimestre')->max('id_trimestre');
+
+        return $idTrimestre && (int) $idTrimestre === $this->dernierTrimestre
             && $derniere['id_trimestre'] === (int) $idTrimestre;
     }
 }

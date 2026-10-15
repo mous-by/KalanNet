@@ -380,17 +380,23 @@ class CalculBulletin
             });
     }
 
-    /** Notes de conduite de la classe (trimestre seulement, hors Fondamental I). */
+    /**
+     * Notes de conduite de la classe (trimestre seulement, hors Fondamental I).
+     *
+     * Même résultat que l'ancien ConductNoteService::syncClass() suivi d'une
+     * lecture de « conduite », mais calculé en deux requêtes et sans écrire :
+     * - élève ayant des contrôles (même classe, année, trimestre, école) :
+     *   18 - somme des pénalités, entre 6 et 18 ;
+     * - sinon : la note déjà enregistrée dans « conduite », ou rien.
+     * Les appels d'épreuve continuent de tenir « conduite » à jour.
+     */
     private function conduites(Collection $idsEleves): array
     {
         if (Ordres::surDix($this->ordre) || $this->mois || !$this->idTrimestre) {
             return [];
         }
 
-        $idEcole = (int) $this->classe->idEcole;
-        app(ConductNoteService::class)->syncClass((int) $this->classe->id_classe, $this->idAnnee, $this->idTrimestre, $idEcole);
-
-        return DB::table('conduite')
+        $notes = DB::table('conduite')
             ->where('id_classe', $this->classe->id_classe)
             ->where('id_annee_scolaire', $this->idAnnee)
             ->where('id_trimestre', $this->idTrimestre)
@@ -398,6 +404,26 @@ class CalculBulletin
             ->pluck('note_conduite', 'id_eleve')
             ->map(fn ($n) => $n === null ? null : (float) $n)
             ->all();
+
+        // Jointure externe : un contrôle introuvable compte pour 0, comme avant.
+        $penalites = DB::table('controle_eleve')
+            ->leftJoin('controle', 'controle.id_controle', '=', 'controle_eleve.id_controle')
+            ->where('controle_eleve.id_classe', $this->classe->id_classe)
+            ->where('controle_eleve.id_annee_scolaire', $this->idAnnee)
+            ->where('controle_eleve.id_trimestre', $this->idTrimestre)
+            ->where('controle_eleve.id_ecole', (int) $this->classe->idEcole)
+            ->whereIn('controle_eleve.id_eleve', $idsEleves)
+            ->groupBy('controle_eleve.id_eleve')
+            ->selectRaw('controle_eleve.id_eleve as id_eleve, SUM(ABS(COALESCE(controle.penalite_conduite, 0))) as penalite')
+            ->pluck('penalite', 'id_eleve');
+
+        $service = app(ConductNoteService::class);
+        foreach ($penalites as $idEleve => $penalite) {
+            // « note_conduite » est un FLOAT : la note relue après écriture était arrondie à 6 chiffres.
+            $notes[(int) $idEleve] = (float) sprintf('%.6G', $service->noteFromPenalty((float) $penalite));
+        }
+
+        return $notes;
     }
 
     /** Informations communes à tous les bulletins : classe, année, période. */

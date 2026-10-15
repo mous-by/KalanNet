@@ -271,10 +271,12 @@ class BulletinController extends Controller
         }
 
         $modele = ModelesBulletin::pourClasse($classe);
+        // Élèves et classe chargés une seule fois pour toute la classe.
         $bulletins = $studentQuery
-            ->pluck('id_eleve')
-            ->map(fn ($idEleve) => $this->getBulletinData(
-                $idEleve,
+            ->with('classe')
+            ->get()
+            ->map(fn (Eleve $eleve) => $this->getBulletinData(
+                $eleve,
                 (int) $data['id_annee'],
                 $periode['column'] === 'id_trimestre' ? $periode['value'] : null,
                 $periode['column'] === 'mois' ? $periode['value'] : null
@@ -371,7 +373,9 @@ class BulletinController extends Controller
      */
     protected function getBulletinData($id, $id_annee, $id_trimestre = null, $mois = null, bool $withRank = true, ?string $modele = null)
     {
-        $eleve = Eleve::with('classe')->findOrFail($id);
+        // $id : identifiant de l'élève, ou l'élève déjà chargé avec sa classe (bulletins de toute une classe).
+        $eleve = $id instanceof Eleve ? $id : Eleve::with('classe')->findOrFail($id);
+        $id = $eleve->id_eleve;
         $classe = $eleve->classe;
         $this->authorizeClasse($classe);
 
