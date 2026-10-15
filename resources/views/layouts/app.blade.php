@@ -98,6 +98,7 @@
         <main class="page-content">
             @auth
                 @include('partials.bandeau-assistance')
+                @include('partials.demande-assistance')
             @endauth
             @yield('content')
         </main>

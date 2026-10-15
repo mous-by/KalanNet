@@ -18,6 +18,8 @@
                             <th>{{ __('assistance.col_compte') }}</th>
                             <th>{{ __('assistance.col_ecole') }}</th>
                             <th>{{ __('assistance.col_motif') }}</th>
+                            <th>{{ __('assistance.col_statut') }}</th>
+                            <th>{{ __('assistance.col_decision') }}</th>
                             <th>{{ __('assistance.col_ip') }}</th>
                         </tr>
                     </thead>
@@ -26,21 +28,25 @@
                             <tr>
                                 <td class="text-nowrap">{{ \Illuminate\Support\Carbon::parse($ligne->debut_at)->format('d/m/Y H:i') }}</td>
                                 <td class="text-nowrap">
-                                    @if($ligne->fin_at)
+                                    @if($ligne->fin_at && $ligne->fin_raison)
                                         {{ \Illuminate\Support\Carbon::parse($ligne->fin_at)->format('d/m/Y H:i') }}
                                         <span class="badge bg-light text-dark">{{ __('assistance.raison_'.$ligne->fin_raison) }}</span>
-                                    @else
+                                    @elseif($ligne->statut === 'en_cours')
                                         <span class="badge bg-danger">{{ __('assistance.en_cours') }}</span>
+                                    @else
+                                        —
                                     @endif
                                 </td>
                                 <td>{{ $ligne->superviseur }}</td>
                                 <td>{{ $ligne->compte }} <span class="text-muted small">({{ $ligne->role }})</span></td>
                                 <td>{{ $ligne->ecole ?? '—' }}</td>
                                 <td>{{ $ligne->motif }}</td>
+                                <td><span class="badge bg-light text-dark">{{ __('assistance.statut_'.$ligne->statut) }}</span></td>
+                                <td class="small">{{ $ligne->decideur ?? '—' }}@if($ligne->decide_at)<br><span class="text-muted">{{ \Illuminate\Support\Carbon::parse($ligne->decide_at)->format('d/m H:i') }}</span>@endif</td>
                                 <td class="text-muted small">{{ $ligne->ip }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="7" class="text-center text-muted py-4">{{ __('assistance.journal_vide') }}</td></tr>
+                            <tr><td colspan="9" class="text-center text-muted py-4">{{ __('assistance.journal_vide') }}</td></tr>
                         @endforelse
                     </tbody>
                 </table>

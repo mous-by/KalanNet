@@ -18,7 +18,7 @@ class ControleAssistance
         'password.force', 'password.force.update', 'profile.password.update',
         'configuration.utilisateurs.mot-de-passe', 'configuration.utilisateurs.destroy',
         'configuration.utilisateurs.permissions', 'configuration.utilisateurs.permissions.update', 'configuration.utilisateurs.permissions.assigner',
-        'assistance.ouvrir',
+        'assistance.demander', 'assistance.attente', 'assistance.statut', 'assistance.ouvrir', 'assistance.repondre',
     ];
 
     public function __construct(private AccesAssistance $assistance)

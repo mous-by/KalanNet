@@ -325,7 +325,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/configuration/utilisateurs/{id}/permissions', [ConfigurationController::class, 'editUserPermissions'])->name('configuration.utilisateurs.permissions');
     Route::put('/configuration/utilisateurs/{id}/permissions', [ConfigurationController::class, 'updateUserPermissions'])->name('configuration.utilisateurs.permissions.update');
     // Accès d'assistance (SupAdmin) au compte d'un client, et son journal.
-    Route::post('/configuration/utilisateurs/{id}/assistance', [\App\Http\Controllers\AssistanceController::class, 'ouvrir'])->name('assistance.ouvrir');
+    Route::post('/configuration/utilisateurs/{id}/assistance', [\App\Http\Controllers\AssistanceController::class, 'demander'])->name('assistance.demander');
+    Route::get('/assistance/{id}/attente', [\App\Http\Controllers\AssistanceController::class, 'attente'])->whereNumber('id')->name('assistance.attente');
+    Route::get('/assistance/{id}/statut', [\App\Http\Controllers\AssistanceController::class, 'statut'])->whereNumber('id')->name('assistance.statut');
+    Route::post('/assistance/{id}/ouvrir', [\App\Http\Controllers\AssistanceController::class, 'ouvrir'])->whereNumber('id')->name('assistance.ouvrir');
+    Route::get('/assistance/demande', [\App\Http\Controllers\AssistanceController::class, 'demandeEnAttente'])->name('assistance.demande');
+    Route::post('/assistance/{id}/repondre', [\App\Http\Controllers\AssistanceController::class, 'repondre'])->whereNumber('id')->name('assistance.repondre');
     Route::post('/assistance/terminer', [\App\Http\Controllers\AssistanceController::class, 'fermer'])->name('assistance.terminer');
     Route::get('/assistance/journal', [\App\Http\Controllers\AssistanceController::class, 'journal'])->name('assistance.journal');
     Route::get('/configuration/permissions', [ConfigurationController::class, 'permissions'])->name('configuration.permissions');
