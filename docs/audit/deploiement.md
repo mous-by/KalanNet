@@ -54,10 +54,10 @@ php artisan optimize:clear
 ```bash
 cd <dossier>
 for c in 2ffc1f0 8b7c9a9 8f0340b e400627; do git merge-base --is-ancestor $c HEAD && echo "$c présent" || echo "$c ABSENT"; done
-grep -c "login_choix" app/Http/Controllers/AuthController.php                       # attendu : 2
-grep -c "selection_token" app/Http/Controllers/Api/V1/AuthController.php            # attendu : 3
-grep -c "ne fait pas partie de votre territoire" app/Support/Api/Authorizer.php     # attendu : 1
-grep -c 'abort_if($classe === null, 404)' app/Http/Controllers/EvaluationController.php  # attendu : 1
+grep -cF "login_choix" app/Http/Controllers/AuthController.php                       # attendu : 2
+grep -cF "selection_token" app/Http/Controllers/Api/V1/AuthController.php            # attendu : 3
+grep -cF "ne fait pas partie de votre territoire" app/Support/Api/Authorizer.php     # attendu : 1
+grep -cF 'abort_if($classe === null, 404)' app/Http/Controllers/EvaluationController.php  # attendu : 1
 php artisan tinker --execute="echo config('sanctum.expiration');"                 # attendu : 129600
 ```
 
