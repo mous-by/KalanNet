@@ -85,10 +85,15 @@ POST / PUT / DELETE, paiements et reçus, rôles enseignant et parent.
 
 - **Constat.** 16 requêtes `information_schema` (`Schema::hasTable / hasColumn`)
   à chaque page web.
-- **Correction.** `App\Support\SchemaExiste` : résultat gardé le temps de la
-  requête et, s'il est positif, dans le cache applicatif. Cache invalidé après
-  chaque `php artisan migrate` (événement `MigrationsEnded`) et par
+- **Correction.** `App\Support\SchemaExiste` : toutes les réponses positives
+  dans **une seule entrée de cache** (`schema_existe`), lue une fois par requête
+  et réécrite seulement quand une nouvelle table ou colonne est vue. Entrée
+  oubliée après chaque `php artisan migrate` (événement `MigrationsEnded`) et par
   `optimize:clear` / `cache:clear`. Une absence n'est jamais mise en cache.
+- **Cache en base de données (cas de la production)** : chaque lecture du cache
+  est une requête SQL. Première version : 12 lectures par page ; version
+  regroupée : 1 lecture (`/eleves` 29 -> 18 requêtes, `/dashboard` 49 -> 38),
+  HTML identique.
 - **Attention** : une table supprimée à la main (sans migration) demande un
   `php artisan optimize:clear`.
 

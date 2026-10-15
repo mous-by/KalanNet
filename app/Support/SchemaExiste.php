@@ -8,20 +8,24 @@ use Illuminate\Support\Facades\Schema;
 /**
  * Schema::hasTable / hasColumn sans interroger information_schema à chaque page.
  *
- * - Mémoire de la requête : une seule vérification par table ou colonne.
- * - Cache applicatif : seules les réponses positives sont gardées (une table
- *   créée plus tard est donc vue tout de suite). Le cache est invalidé à
- *   chaque « php artisan migrate » (AppServiceProvider, MigrationsEnded) et
- *   par « php artisan optimize:clear » / « cache:clear ».
+ * - Une seule entrée de cache contient toutes les réponses positives : elle est
+ *   lue une fois par requête (une requête SQL quand le cache est en base de
+ *   données, comme en production) et réécrite seulement quand une nouvelle
+ *   table ou colonne est vue pour la première fois.
+ * - Les réponses négatives ne sont jamais gardées : une table créée plus tard
+ *   est vue tout de suite.
+ * - Le cache est oublié après chaque « php artisan migrate » (AppServiceProvider,
+ *   MigrationsEnded) et par « php artisan optimize:clear » / « cache:clear ».
  */
 class SchemaExiste
 {
-    private const VERSION = 'schema_existe:version';
+    public const CLE = 'schema_existe';
 
-    /** @var array<string, bool> */
+    /** @var array<string, bool> réponses de la requête en cours (positives et négatives) */
     private static array $memoire = [];
 
-    private static ?int $version = null;
+    /** @var array<string, true>|null réponses positives lues dans le cache */
+    private static ?array $positives = null;
 
     public static function table(string $table): bool
     {
@@ -37,8 +41,8 @@ class SchemaExiste
     public static function oublier(): void
     {
         self::$memoire = [];
-        self::$version = (int) Cache::get(self::VERSION, 0) + 1;
-        Cache::forever(self::VERSION, self::$version);
+        self::$positives = null;
+        Cache::forget(self::CLE);
     }
 
     private static function verifier(string $cle, callable $verification): bool
@@ -47,15 +51,15 @@ class SchemaExiste
             return self::$memoire[$cle];
         }
 
-        self::$version ??= (int) Cache::get(self::VERSION, 0);
-        $cleCache = 'schema_existe:'.self::$version.':'.$cle;
-        if (Cache::get($cleCache) === true) {
+        self::$positives ??= (array) Cache::get(self::CLE, []);
+        if (isset(self::$positives[$cle])) {
             return self::$memoire[$cle] = true;
         }
 
         $existe = (bool) $verification();
         if ($existe) {
-            Cache::forever($cleCache, true);
+            self::$positives[$cle] = true;
+            Cache::forever(self::CLE, self::$positives);
         }
 
         return self::$memoire[$cle] = $existe;
