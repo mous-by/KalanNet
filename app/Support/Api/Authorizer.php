@@ -2,6 +2,7 @@
 
 namespace App\Support\Api;
 
+use App\Models\Ecole;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -38,8 +39,23 @@ class Authorizer
      */
     public static function resolveEcoleId(User $user, Request $request): ?int
     {
-        if (in_array($user->droit, ['SupAdmin', 'DAE', 'DCAP'], true)) {
+        if ($user->droit === 'SupAdmin') {
             return $request->integer('ecole_id') ?: null;
+        }
+
+        // DAE / DCAP : seulement une école de leur territoire (académie ou CAP).
+        if (in_array($user->droit, ['DAE', 'DCAP'], true)) {
+            $idEcole = $request->integer('ecole_id') ?: null;
+            if ($idEcole !== null) {
+                $colonne = $user->droit === 'DAE' ? 'id_academie' : 'id_cap';
+                $territoire = $user->droit === 'DAE' ? $user->id_academie : $user->id_cap;
+                $dansTerritoire = $territoire && Ecole::withoutGlobalScopes()->whereKey($idEcole)->where($colonne, $territoire)->exists();
+                if (!$dansTerritoire) {
+                    throw new HttpException(403, 'Cette école ne fait pas partie de votre territoire.');
+                }
+            }
+
+            return $idEcole;
         }
 
         if ($user->idEcole) {
