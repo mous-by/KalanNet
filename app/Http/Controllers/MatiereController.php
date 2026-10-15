@@ -7,7 +7,6 @@ use App\Models\LigneClasse;
 use App\Models\LigneEvaluation;
 use App\Models\MatiereOrdre;
 use App\Support\ExamenNational;
-use App\Support\Ordres;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -186,7 +185,6 @@ class MatiereController extends Controller
         $labels = ExamenNational::ordresLabels($idEcole);
 
         return [
-            'Jardin' => $labels['jardin'],
             'Fondamentale I' => $labels['fondamentale1'],
             'Fondamentale II' => $labels['fondamentale2'],
             'Secondaire Generale' => $labels['secondairegenerale'],
@@ -209,19 +207,6 @@ class MatiereController extends Controller
     }
 
     protected function ordresAutorises(): array
-    {
-        $ordres = $this->ordresDuType();
-        $typeEcole = $this->currentEcole()->typeEcole ?? null;
-
-        // Le Jardin accompagne chaque type d'école (sauf santé et technique).
-        if (Auth::user()->droit !== 'SupAdmin' && Ordres::proposeJardin($typeEcole) && $typeEcole !== null) {
-            array_unshift($ordres, 'Jardin');
-        }
-
-        return array_values(array_unique($ordres));
-    }
-
-    protected function ordresDuType(): array
     {
         $user = Auth::user();
         $typeEcole = $this->currentEcole()->typeEcole ?? null;

@@ -27,6 +27,7 @@ class BulletinController extends Controller
         $idEcole = session('idEcole') ?: $user->idEcole;
 
         $classes = Classe::query()
+            ->avecNotes()
             ->with(['ecole', 'classeOfficielle'])
             ->withCount(['eleves' => fn ($query) => $query->where('etat_dossier', 0)])
             ->when($user->droit !== 'SupAdmin', fn ($query) => $query->where('idEcole', $idEcole))
@@ -39,6 +40,7 @@ class BulletinController extends Controller
 
     public function index(int $idClasse)
     {
+        abort_if(\App\Support\Ordres::sansNotes(Classe::find($idClasse)?->ordreEnseignement), 404);
         $this->authorizeBulletinGeneration();
 
         $classe = Classe::findOrFail($idClasse);

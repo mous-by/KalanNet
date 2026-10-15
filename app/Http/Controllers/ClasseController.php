@@ -286,11 +286,11 @@ class ClasseController extends Controller
 
         $rules = [
             'nom_classe' => 'required|string|max:50',
-            'id_matiere' => 'required|array|min:1',
+            'id_matiere' => 'exclude_if:ordre_enseignement,jardin|required|array|min:1',
             'id_matiere.*' => 'required|integer|exists:matiere,id_matiere',
             'id_enseignants' => 'nullable|array',
             'id_enseignants.*' => 'nullable|integer|exists:enseignants,id_enseignant',
-            'coefficient' => 'required|array|min:1',
+            'coefficient' => 'exclude_if:ordre_enseignement,jardin|required|array|min:1',
             'coefficient.*' => 'required|numeric|min:0|max:5',
             'serie' => ['nullable', Rule::in(array_keys(\App\Support\Series::SERIES))],
             'groupe' => 'nullable|array',
@@ -428,7 +428,11 @@ class ClasseController extends Controller
             ->pluck('id_matiere')->map(fn ($id) => (int) $id)->flip();
         $dejaPresentes = array_flip(array_map('intval', $dejaPresentes));
         $parties = DB::table('domaines')->where('id_ecole', $classe->idEcole)->pluck('partie', 'id_domaine')->all();
-        foreach ($data['id_matiere'] as $index => $idMatiere) {
+        // Jardin : ni matières ni notes.
+        if (Ordres::sansNotes($classe->ordreEnseignement)) {
+            return;
+        }
+        foreach ($data['id_matiere'] ?? [] as $index => $idMatiere) {
             $conservee = isset($dejaPresentes[(int) $idMatiere]);
             if (!$conservee && !$autorisees->has((int) $idMatiere)) {
                 continue;

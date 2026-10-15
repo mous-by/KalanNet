@@ -311,7 +311,7 @@
                 document.getElementById('apercu-iframe').src = 'about:blank';
             });
 
-            if (ordre === 'fondamentale1' || ordre === 'jardin') {
+            if (ordre === 'fondamentale1') {
                 periodeMode.value = 'mois';
             }
             updatePeriodFields();

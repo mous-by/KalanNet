@@ -12,6 +12,12 @@ class Classe extends Model
     protected $primaryKey = 'id_classe';
     public $timestamps = false;
 
+    /** Classes qui ont des notes et des bulletins (le Jardin n'en a pas). */
+    public function scopeAvecNotes($query)
+    {
+        return $query->where(fn ($q) => $q->whereNull('ordreEnseignement')->orWhere('ordreEnseignement', '!=', \App\Support\Ordres::JARDIN));
+    }
+
     protected $fillable = [
         'nom_classe',
         'ordreEnseignement',

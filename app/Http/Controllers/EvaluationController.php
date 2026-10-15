@@ -378,6 +378,7 @@ class EvaluationController extends Controller
         $idEcole = session('idEcole') ?: $user->idEcole;
 
         $classes = Classe::query()
+            ->avecNotes()
             ->with('ligneClasses.matiere')
             ->when($user->droit !== 'SupAdmin', fn ($q) => $q->where('idEcole', $idEcole))
             ->when($user->id_enseignant, fn ($q) => $q->whereHas('ligneClasses', fn ($l) => $l->where('id_enseignants', $user->id_enseignant)))

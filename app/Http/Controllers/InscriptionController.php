@@ -10,6 +10,8 @@ use App\Models\Matiere;
 use App\Models\ParentModel;
 use App\Models\Planification;
 use App\Support\ExamenNational;
+use App\Support\ClasseSuivante;
+use App\Support\Ordres;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
@@ -616,7 +618,7 @@ class InscriptionController extends Controller
                 : null;
             $proposal = $examLevel
                 ? $this->proposeNationalExamDecision($resultatNational, $examLevel, $suggestedTargetClasse)
-                : $this->proposeDecision($moyenne, $threshold);
+                : (Ordres::sansNotes($sourceClasse->ordreEnseignement) ? 'passant' : $this->proposeDecision($moyenne, $threshold));
             $classeCibleId = match ($proposal) {
                 'redoublant' => $sourceClasse->id_classe,
                 'admis_sortant', 'diplome_sortant', 'en_attente_resultat' => null,
@@ -947,7 +949,32 @@ class InscriptionController extends Controller
     {
         $ordre = Str::lower(Str::ascii((string) $classe->ordreEnseignement));
 
-        return str_contains($ordre, 'fondamentale1') || str_contains($ordre, 'fondamentale i') || str_contains($ordre, 'jardin') ? 5.0 : 10.0;
+        return str_contains($ordre, 'fondamentale1') || str_contains($ordre, 'fondamentale i') ? 5.0 : 10.0;
+    }
+
+    /**
+     * Jardin : Petite (ou Moyenne) section -> Grande section -> 1ère année.
+     * Même lettre de classe si elle existe (« Petite section A » -> « Grande section A »).
+     */
+    private function suggestApresJardin(Classe $sourceClasse, $classes): ?Classe
+    {
+        $nomCible = ClasseSuivante::nom($sourceClasse->nom_classe);
+        if ($nomCible === null) {
+            return null;
+        }
+        $normaliser = fn ($nom) => Str::lower(Str::ascii(trim(preg_replace('/\s+/', ' ', (string) $nom))));
+        $autres = $classes->filter(fn ($c) => (int) $c->id_classe !== (int) $sourceClasse->id_classe);
+
+        $exacte = $autres->first(fn ($c) => $normaliser($c->nom_classe) === $normaliser($nomCible));
+        if ($exacte) {
+            return $exacte;
+        }
+
+        if (ClasseSuivante::ordre(Ordres::JARDIN, $sourceClasse->nom_classe) === Ordres::JARDIN) {
+            return $autres->first(fn ($c) => $c->ordreEnseignement === Ordres::JARDIN && str_contains($normaliser($c->nom_classe), 'grande section'));
+        }
+
+        return $autres->first(fn ($c) => $c->ordreEnseignement !== Ordres::JARDIN && $this->extractClasseLevel($c->nom_classe) === 1);
     }
 
     private function proposeDecision(?float $moyenne, float $threshold): string
@@ -1019,6 +1046,10 @@ class InscriptionController extends Controller
 
     private function suggestNextClasse(Classe $sourceClasse, $classes): ?Classe
     {
+        if (Ordres::sansNotes($sourceClasse->ordreEnseignement)) {
+            return $this->suggestApresJardin($sourceClasse, $classes);
+        }
+
         $currentLevel = $this->extractClasseLevel($sourceClasse->nom_classe);
         if ($currentLevel === null) {
             return null;

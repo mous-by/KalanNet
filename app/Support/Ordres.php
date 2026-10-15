@@ -5,15 +5,15 @@ namespace App\Support;
 /**
  * Règles communes aux ordres d'enseignement (clés de classe.ordreEnseignement).
  *
- * Le Jardin (préscolaire) fonctionne comme le Fondamental I : notes sur 10,
- * compositions mensuelles, un seul maître par classe, rattaché au CAP.
+ * Le Jardin (préscolaire) n'a ni matières, ni notes, ni bulletin : ses classes
+ * servent aux inscriptions, à la scolarité et au passage d'une section à l'autre.
  */
 class Ordres
 {
     public const JARDIN = 'jardin';
 
     /** Ordres notés sur 10, par compositions mensuelles. */
-    public const SUR_DIX = [self::JARDIN, 'fondamentale1'];
+    public const SUR_DIX = ['fondamentale1'];
 
     /** Ordres rattachés au CAP (en-tête des documents, nom de l'école fondamentale). */
     public const SOUS_CAP = [self::JARDIN, 'fondamentale1', 'fondamentale2'];
@@ -24,6 +24,12 @@ class Ordres
     public static function surDix(?string $ordre): bool
     {
         return in_array($ordre, self::SUR_DIX, true);
+    }
+
+    /** Pas de matières, de notes ni de bulletin. */
+    public static function sansNotes(?string $ordre): bool
+    {
+        return $ordre === self::JARDIN;
     }
 
     public static function sousCap(?string $ordre): bool

@@ -6,7 +6,7 @@ namespace App\Support;
  * Classe suivante après l'enregistrement d'une classe : « 3ème année » donne
  * « 4ème année », « 1ère année A » donne « 2ème année A ». Le cycle suit le
  * niveau quand il change (6ème -> 7ème : Fondamental II) ; au-delà, l'école
- * choisit elle-même. Au Jardin : Petite -> Moyenne -> Grande section -> 1ère année.
+ * choisit elle-même. Au Jardin : Petite (ou Moyenne) -> Grande section -> 1ère année.
  */
 class ClasseSuivante
 {
@@ -34,7 +34,7 @@ class ClasseSuivante
         $section = self::section($nom);
         if ($section !== null) {
             $suite = trim((string) preg_replace('/^.*?\b(petite|moyenne|grande)\s+section\b/iu', '', (string) $nom));
-            $suivante = self::SECTIONS[$section + 1] ?? null;
+            $suivante = $section < 2 ? 'grande' : null;
 
             return $suivante !== null
                 ? ucfirst($suivante).' section'.($suite !== '' ? ' '.$suite : '')

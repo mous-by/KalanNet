@@ -200,7 +200,11 @@
             </div>
         </div>
 
-        <div class="card border-top border-4 border-primary shadow-sm">
+        <div class="alert alert-info border-0 border-start border-info border-4" id="jardin-sans-matieres" style="display:none;">
+            <i class="bi bi-info-circle me-1"></i>{{ __('classes.jardin_sans_matieres') }}
+        </div>
+
+        <div class="card border-top border-4 border-primary shadow-sm" id="carte-matieres">
             <div class="card-header">
                 <h5 class="mb-0 fw-bold">{{ __('classes.matieres_associees') }}</h5>
             </div>
@@ -381,6 +385,16 @@
                 });
             }
             if (ordreSelect) ordreSelect.addEventListener('change', afficherSerie);
+
+            // Jardin : ni matières ni notes, la carte des matières est masquée.
+            function afficherMatieres() {
+                const jardin = !!ordreSelect && ordreSelect.value === 'jardin';
+                document.getElementById('carte-matieres').style.display = jardin ? 'none' : '';
+                document.getElementById('jardin-sans-matieres').style.display = jardin ? '' : 'none';
+                document.querySelectorAll('#table-matieres input, #table-matieres select').forEach(champ => champ.disabled = jardin);
+            }
+            if (ordreSelect) ordreSelect.addEventListener('change', afficherMatieres);
+            afficherMatieres();
             nomClasse.addEventListener('input', afficherSerie);
             afficherSerie();
 
@@ -431,7 +445,7 @@
             });
 
             function estFondamental1SansDeuxMaitres() {
-                return !!ordreSelect && ['fondamentale1', 'jardin'].includes(ordreSelect.value) && !(deuxMaitres && deuxMaitres.checked);
+                return !!ordreSelect && ordreSelect.value === 'fondamentale1' && !(deuxMaitres && deuxMaitres.checked);
             }
 
             function enseignantDeLaClasse() {

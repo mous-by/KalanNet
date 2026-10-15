@@ -21,6 +21,7 @@ class BulletinController extends WebBulletinController
         $idEcole = session('idEcole') ?: $user->idEcole;
 
         $classes = Classe::query()
+            ->avecNotes()
             ->with(['ecole', 'classeOfficielle'])
             ->withCount(['eleves' => fn ($query) => $query->where('etat_dossier', 0)])
             ->when($user->droit !== 'SupAdmin', fn ($query) => $query->where('idEcole', $idEcole))

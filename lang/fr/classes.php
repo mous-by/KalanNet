@@ -92,4 +92,5 @@ return [
     'serie_aucune' => '— Aucune —',
     'serie_aide' => 'Classes de 11ème : sert à orienter les élèves vers une série de 12ème sur le bulletin de fin d\'année.',
     'serie_lien' => 'Matières des séries',
+    'jardin_sans_matieres' => 'Jardin (préscolaire) : pas de matières, pas de notes ni de bulletin. À la réinscription, les élèves passent automatiquement à la section suivante (Petite section → Grande section → 1ère année).',
 ];

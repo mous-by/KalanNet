@@ -73,7 +73,7 @@ export default function ClasseForm({ classe, onSaved }: Props) {
         if (i === index) return { ...l, ...patch };
         // Fondamental I (un seul maître) : l'enseignant choisi est repris pour
         // les matières qui n'en ont pas encore ; il reste modifiable ensuite.
-        if (patch.id_enseignant && (ordre === 'fondamentale1' || ordre === 'jardin') && !l.id_enseignant) return { ...l, id_enseignant: patch.id_enseignant };
+        if (patch.id_enseignant && ordre === 'fondamentale1' && !l.id_enseignant) return { ...l, id_enseignant: patch.id_enseignant };
         return l;
       })
     );
@@ -102,10 +102,13 @@ export default function ClasseForm({ classe, onSaved }: Props) {
     if (filiere) setNomClasse(filiere.nom_filiere);
   }, [estSante, idFiliere, nomClasseDirty, options?.filieres]);
 
+  const jardin = !estSante && ordre === 'jardin';
+
   async function handleSubmit() {
     setError(null);
-    const validLignes = lignes.filter((l) => l.id_matiere);
-    if (!nomClasse.trim() || (estSante ? !idFiliere : !ordre) || validLignes.length === 0) {
+    // Jardin (préscolaire) : ni matières ni notes.
+    const validLignes = jardin ? [] : lignes.filter((l) => l.id_matiere);
+    if (!nomClasse.trim() || (estSante ? !idFiliere : !ordre) || (!jardin && validLignes.length === 0)) {
       setError(t(estSante ? 'classes.validation_required_sante' : 'classes.validation_required'));
       return;
     }
@@ -183,6 +186,10 @@ export default function ClasseForm({ classe, onSaved }: Props) {
         />
       ) : null}
 
+      {jardin ? (
+        <Text style={styles.jardin}>Jardin (préscolaire) : pas de matières, pas de notes ni de bulletin. À la réinscription, les élèves passent à la section suivante (Petite section → Grande section → 1ère année).</Text>
+      ) : (
+      <>
       <Text style={styles.sectionTitle}>{t('classes.subjects_title')}</Text>
       {lignes.map((ligne, index) => (
         <View key={index} style={styles.ligneRow}>
@@ -212,6 +219,8 @@ export default function ClasseForm({ classe, onSaved }: Props) {
         </View>
       ))}
       <IconButton icon="plus" mode="outlined" onPress={addLigne} style={styles.addButton} />
+      </>
+      )}
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -223,6 +232,7 @@ export default function ClasseForm({ classe, onSaved }: Props) {
 }
 
 const styles = StyleSheet.create({
+  jardin: { marginTop: 12, opacity: 0.8 },
   input: {
     marginBottom: 12,
   },

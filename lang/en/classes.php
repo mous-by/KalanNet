@@ -92,4 +92,5 @@ return [
     'serie_aucune' => '— None —',
     'serie_aide' => 'Used for the guidance trend on the report card.',
     'serie_lien' => 'Stream subjects',
+    'jardin_sans_matieres' => 'Kindergarten (pre-school): no subjects, marks or report cards. At re-enrolment, pupils move up automatically (Petite section → Grande section → 1st year).',
 ];

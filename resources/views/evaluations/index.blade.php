@@ -173,7 +173,7 @@
 
             function syncPeriodMode() {
                 const ordre = classeSelect.options[classeSelect.selectedIndex]?.dataset.ordre || '';
-                const isFondamentale1 = ordre === 'fondamentale1' || ordre === 'jardin';
+                const isFondamentale1 = ordre === 'fondamentale1';
                 trimestreField.style.display = isFondamentale1 ? 'none' : '';
                 moisField.style.display = isFondamentale1 ? '' : 'none';
                 trimestreField.querySelectorAll('select').forEach(select => select.disabled = isFondamentale1);
