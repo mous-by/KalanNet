@@ -420,6 +420,21 @@
             }
             document.querySelectorAll('.maitre-jardin').forEach(caseMaitre => caseMaitre.addEventListener('change', () => caseMaitre.closest('.matiere-check-card').classList.toggle('is-checked', caseMaitre.checked)));
             if (ordreSelect) ordreSelect.addEventListener('change', afficherMatieres);
+
+            // Jardin : le nom se remplit avec la section qui manque à l'école (modifiable).
+            const champNom = document.getElementById('nom_classe');
+            const nomJardin = @json($nomJardinPropose ?? 'Petite section');
+            let nomAuto = '';
+            if (ordreSelect && champNom) {
+                ordreSelect.addEventListener('change', function () {
+                    const libre = champNom.value.trim() === '' || champNom.value === nomAuto;
+                    if (ordreSelect.value === 'jardin' && libre) {
+                        champNom.value = nomAuto = nomJardin;
+                    } else if (ordreSelect.value !== 'jardin' && nomAuto !== '' && champNom.value === nomAuto) {
+                        champNom.value = nomAuto = '';
+                    }
+                });
+            }
             afficherMatieres();
             nomClasse.addEventListener('input', afficherSerie);
             afficherSerie();

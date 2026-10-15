@@ -32,6 +32,8 @@ interface FormOptions {
   est_sante: boolean;
   // Séries du secondaire général (11ème : Sciences, SES, LL ; 12ème : TExp, TSE…).
   series?: { code: string; libelle: string; niveau: number }[];
+  // Nom proposé pour une nouvelle classe du Jardin (Petite section, Grande section...).
+  nom_jardin_propose?: string;
 }
 
 interface Props {
@@ -102,6 +104,12 @@ export default function ClasseForm({ classe, onSaved }: Props) {
     const filiere = (options?.filieres ?? []).find((f) => f.id_filiere === idFiliere);
     if (filiere) setNomClasse(filiere.nom_filiere);
   }, [estSante, idFiliere, nomClasseDirty, options?.filieres]);
+
+  // Jardin : le nom se remplit avec la section qui manque à l'école, tant qu'il n'a pas été saisi.
+  useEffect(() => {
+    if (estSante || nomClasseDirty) return;
+    setNomClasse(ordre === 'jardin' ? (options?.nom_jardin_propose ?? 'Petite section') : '');
+  }, [estSante, ordre, nomClasseDirty, options?.nom_jardin_propose]);
 
   const jardin = !estSante && ordre === 'jardin';
 

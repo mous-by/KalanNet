@@ -29,6 +29,30 @@ class ClasseSuivante
         return null;
     }
 
+    /**
+     * Nom proposé pour une nouvelle classe du Jardin : la première section
+     * qui manque à l'école (Petite, puis Grande), sinon la lettre suivante
+     * (« Petite section B », « Grande section B »...).
+     */
+    public static function nomJardinPropose(iterable $nomsExistants): string
+    {
+        $existants = collect($nomsExistants)->map(fn ($n) => mb_strtolower(trim(preg_replace('/\s+/', ' ', (string) $n))))->all();
+        foreach (array_merge([''], range('B', 'Z')) as $lettre) {
+            foreach (['Petite section', 'Grande section'] as $section) {
+                $candidat = trim($section.' '.$lettre);
+                $variantes = [mb_strtolower($candidat)];
+                if ($lettre === '') {
+                    $variantes[] = mb_strtolower($section.' A');
+                }
+                if (!array_intersect($variantes, $existants)) {
+                    return $candidat;
+                }
+            }
+        }
+
+        return 'Petite section';
+    }
+
     public static function nom(?string $nom): ?string
     {
         $section = self::section($nom);

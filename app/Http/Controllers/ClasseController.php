@@ -53,6 +53,7 @@ class ClasseController extends Controller
 
         return view('classes.form', [
             'classe' => $suite['classe'] ?? new Classe(),
+            'nomJardinPropose' => $this->nomJardinPropose($idEcole),
             'lignesSuite' => $suite['lignes'] ?? null,
             'classeSource' => $suite['source'] ?? null,
             'matieres' => $matieres,
@@ -533,6 +534,14 @@ class ClasseController extends Controller
         }
 
         return $ordres;
+    }
+
+    /** Nom proposé quand on choisit l'ordre Jardin (voir ClasseSuivante::nomJardinPropose). */
+    protected function nomJardinPropose($idEcole): string
+    {
+        return ClasseSuivante::nomJardinPropose(
+            Classe::where('idEcole', $idEcole)->where('ordreEnseignement', Ordres::JARDIN)->pluck('nom_classe')
+        );
     }
 
     protected function ordresDuType($user, ?int $idEcole = null): array
