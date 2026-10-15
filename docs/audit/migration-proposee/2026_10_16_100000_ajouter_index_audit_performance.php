@@ -12,8 +12,13 @@
  *
  * Uniquement des index NON uniques : aucune donnée n'est modifiée ni refusée.
  * Chaque index est créé en ligne (ALGORITHM=INPLACE, LOCK=NONE, MariaDB 10.4 /
- * InnoDB) : lectures et écritures continuent pendant la création. Un index
- * déjà présent, ou dont la table / une colonne manque, est ignoré.
+ * InnoDB) : lectures et écritures continuent pendant la création.
+ *
+ * up()   : ignore un index si son nom existe déjà, si la table ou une colonne
+ *          manque, ou si un index existant commence déjà par les mêmes colonnes
+ *          (pas de double emploi).
+ * down() : ne supprime qu'un index portant l'un de ces noms ET exactement ces
+ *          colonnes, c'est-à-dire ceux que up() a créés.
  */
 
 use Illuminate\Database\Migrations\Migration;
@@ -40,9 +45,8 @@ return new class extends Migration
             'idx_matiere_ordre_matiere' => ['id_matiere', 'ordre_enseignement'],
         ],
         'controle_eleve' => [
-            // Index déjà prévus par 2026_05_25_000003, jamais créés car la table existait avant.
+            // Prévu par 2026_05_25_000003, jamais créé car la table existait avant.
             'idx_controle_eleve_periode' => ['id_ecole', 'id_classe', 'id_annee_scolaire', 'id_trimestre'],
-            'idx_controle_eleve_eleve' => ['id_eleve', 'id_controle'],
         ],
         'conduite' => [
             'idx_conduite_periode' => ['id_classe', 'id_annee_scolaire', 'id_trimestre', 'id_eleve'],
@@ -58,7 +62,8 @@ return new class extends Migration
     {
         foreach (self::INDEX as $table => $index) {
             foreach ($index as $nom => $colonnes) {
-                if (!Schema::hasTable($table) || Schema::hasIndex($table, $nom) || !Schema::hasColumns($table, $colonnes)) {
+                if (!Schema::hasTable($table) || !Schema::hasColumns($table, $colonnes)
+                    || $this->colonnesIndex($table, $nom) !== null || $this->dejaCouvert($table, $colonnes)) {
                     continue;
                 }
                 $liste = implode(', ', array_map(fn ($c) => "`$c`", $colonnes));
@@ -70,11 +75,31 @@ return new class extends Migration
     public function down(): void
     {
         foreach (self::INDEX as $table => $index) {
-            foreach (array_keys($index) as $nom) {
-                if (Schema::hasTable($table) && Schema::hasIndex($table, $nom)) {
+            foreach ($index as $nom => $colonnes) {
+                if (Schema::hasTable($table) && $this->colonnesIndex($table, $nom) === $colonnes) {
                     DB::statement("ALTER TABLE `$table` DROP INDEX `$nom`, ALGORITHM=INPLACE, LOCK=NONE");
                 }
             }
         }
+    }
+
+    /** Colonnes de l'index (dans l'ordre), ou null s'il n'existe pas. */
+    private function colonnesIndex(string $table, string $nom): ?array
+    {
+        $colonnes = DB::table('information_schema.statistics')
+            ->where('table_schema', DB::getDatabaseName())->where('table_name', $table)->where('index_name', $nom)
+            ->orderBy('seq_in_index')->pluck('column_name')->all();
+
+        return $colonnes ?: null;
+    }
+
+    /** Un index existant commence-t-il déjà par ces colonnes, dans cet ordre ? */
+    private function dejaCouvert(string $table, array $colonnes): bool
+    {
+        return DB::table('information_schema.statistics')
+            ->where('table_schema', DB::getDatabaseName())->where('table_name', $table)
+            ->orderBy('index_name')->orderBy('seq_in_index')->get(['index_name', 'column_name'])
+            ->groupBy('index_name')
+            ->contains(fn ($c) => array_slice($c->pluck('column_name')->all(), 0, count($colonnes)) === $colonnes);
     }
 };

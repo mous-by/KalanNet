@@ -31,7 +31,7 @@ prévoyaient des index, mais commencent par `if (!Schema::hasTable(...))` : les
 tables existant déjà, les index n'ont jamais été créés. La production est très
 probablement dans le même cas (à confirmer avec la requête 2 du script).
 
-## Index proposés (11)
+## Index proposés (10)
 
 Tous **non uniques** : ils ne refusent et ne modifient aucune donnée.
 
@@ -44,7 +44,6 @@ Tous **non uniques** : ils ne refusent et ne modifient aucune donnée.
 | `matiere` | `idx_matiere_ecole` | `id_ecole` | Matières de l'école (formulaire de classe, LV2) | lecture complète, 5,6 ms | 1,4 ms |
 | `matiere_ordre` | `idx_matiere_ordre_matiere` | `id_matiere, ordre_enseignement` | Ordres des matières | lecture complète, 6,1 ms | 2,1 ms |
 | `controle_eleve` | `idx_controle_eleve_periode` | `id_ecole, id_classe, id_annee_scolaire, id_trimestre` | Conduite du bulletin (pénalités de la classe) | lecture complète, 149 632 lignes, 76,2 ms | 12 lignes, 1,3 ms |
-| `controle_eleve` | `idx_controle_eleve_eleve` | `id_eleve, id_controle` | Appels d'un élève (prévu par la migration d'origine) | — | — |
 | `conduite` | `idx_conduite_periode` | `id_classe, id_annee_scolaire, id_trimestre, id_eleve` | Notes de conduite enregistrées | lecture complète, 299 442 lignes, 101,3 ms | 12 lignes, 1,7 ms |
 | `ligne_reinscription` | `idx_ligne_reinscription_eleve_annee` | `id_eleve, id_annee` | Réinscription : élèves déjà réinscrits | lecture complète, 70 272 lignes, 23,4 ms | 12 lignes, 0,6 ms |
 
@@ -57,6 +56,7 @@ complètes grandissent avec la base, les lectures par index non.
 | Table | Colonnes | Raison |
 |---|---|---|
 | `ligne_evaluation` | `id_eleve, id_annee_scolaire, id_trimestre` | Pas de gain : l'index existant sur `id_eleve` suffit déjà (bulletin 1,36 ms sans, 2,87 ms avec). 23 Mo de plus et écriture des notes nettement plus lente. |
+| `controle_eleve` | `id_eleve, id_controle` | Prévu par la migration d'origine, mais aucune requête du code ne part de `id_eleve` sur cette table : les appels filtrent par école, classe, année et trimestre (couverts par `idx_controle_eleve_periode`). |
 
 ### Écartés pour l'instant (à décider séparément)
 
@@ -76,10 +76,10 @@ complètes grandissent avec la base, les lectures par index non.
 |---|---|---|
 | `utilisateurs` (12 000 lignes) | 0,1 à 2,5 s par index | 0,7 Mo |
 | `eleve` (100 000) | 0,7 à 1,0 s par index | 5,1 Mo |
-| `controle_eleve` (150 000) | 1,0 et 2,2 s | 8,0 Mo |
+| `controle_eleve` (150 000) | 1,0 s | ≈ 4 Mo |
 | `conduite` (300 000) | 2,9 s | 9,5 Mo |
 | `ligne_reinscription` (70 000), `matiere`, `matiere_ordre` | < 0,7 s | < 2 Mo |
-| **Total, 11 index** (migration complète) | **13,2 s** | environ 26 Mo |
+| **Total, 10 index** (migration complète) | **≈ 11 s** | environ 22 Mo |
 
 **Écriture.** Sur la machine de test, 2 000 insertions : `eleve` 0,45 → 1,1 ms
 par ligne, `controle_eleve` 0,44 → 1,5 ms, `conduite` inchangé. Ces chiffres sont
@@ -113,11 +113,20 @@ appliquer en heures creuses.
 
 ## Retour arrière
 
-- `php artisan migrate:rollback --step=1` supprime les 11 index (0,3 s sur la base
-  de test). Aucune donnée n'est touchée : supprimer un index ne fait que revenir
-  au comportement actuel.
-- La migration a été testée sur la base de test : création des 11 index, relance
-  sans doublon, retour arrière, recréation.
+- `php artisan migrate:rollback --step=1` supprime les index créés (0,3 à 0,5 s sur
+  la base de test). Aucune donnée n'est touchée : supprimer un index ne fait que
+  revenir au comportement actuel.
+- **Pas de double emploi** : `up()` ignore un index si son nom existe déjà ou si un
+  index existant commence déjà par les mêmes colonnes.
+- **Retour arrière limité** : `down()` ne supprime qu'un index portant l'un des
+  10 noms **et** exactement les colonnes prévues.
+- Testé sur la base de test ([outils/6-tester-migration-pieges.php](outils/6-tester-migration-pieges.php), 8/8) :
+  index équivalent sous un autre nom (non dupliqué), nom déjà pris par un autre
+  index (laissé tel quel), relance sans effet, retour exact à l'état d'avant,
+  index préexistants conservés.
+- **Compatibilité MariaDB 10.4** : `ADD INDEX` / `DROP INDEX` avec
+  `ALGORITHM=INPLACE, LOCK=NONE` sur InnoDB (création en ligne disponible depuis
+  MariaDB 10.0) ; testé sur MariaDB 10.4.28.
 
 ## Reproduire les mesures
 
