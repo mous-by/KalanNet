@@ -9,6 +9,7 @@ reste à décider.
 | [rapport-securite-performances.md](rapport-securite-performances.md) | Failles corrigées et optimisations réalisées, avec mesures avant / après |
 | [index-base-de-donnees.md](index-base-de-donnees.md) | Index proposés (non appliqués), preuves `EXPLAIN`, coûts, procédure et retour arrière |
 | [verifications-avant-index.sql](verifications-avant-index.sql) | Contrôles en lecture seule à lancer avant d'ajouter les index |
+| [deploiement.md](deploiement.md) | Procédure LWS : sécurité, puis index, puis mobile (vérifications et retours arrière) |
 | [migration-proposee/](migration-proposee/) | Migration des index, **inactive** tant qu'elle n'est pas copiée dans `database/migrations/` |
 
 ## Tests de non-régression
