@@ -35,7 +35,9 @@ class AssistanceController extends Controller
 
     public function attente(int $id)
     {
-        $acces = $this->demandeDuSuperviseur($id);
+        if (!$acces = $this->demandeDuSuperviseur($id)) {
+            return redirect()->route('dashboard')->with('error', __('assistance.autre_compte'));
+        }
         $compte = DB::table('utilisateurs')->where('idUtilisateur', $acces->id_utilisateur)->value('nomPrenom');
 
         return view('assistance.attente', ['acces' => $acces, 'compte' => $compte, 'restant' => max(0, now()->diffInSeconds($acces->expire_demande_at, false))]);
@@ -44,14 +46,19 @@ class AssistanceController extends Controller
     /** Statut de la demande, interrogé par la page d'attente. */
     public function statut(int $id)
     {
-        $acces = $this->demandeDuSuperviseur($id);
+        if (!$acces = $this->demandeDuSuperviseur($id)) {
+            return response()->json(['statut' => 'autre_compte', 'restant' => 0], 403);
+        }
 
         return response()->json(['statut' => $acces->statut, 'restant' => (int) max(0, now()->diffInSeconds($acces->expire_demande_at, false))]);
     }
 
     public function ouvrir(Request $request, int $id)
     {
-        $this->demandeDuSuperviseur($id);
+        // Autre compte connecté dans ce navigateur (ex. l'Admin de l'école pour accepter) : session SupAdmin remplacée.
+        if (!$this->demandeDuSuperviseur($id)) {
+            return redirect()->route('dashboard')->with('error', __('assistance.autre_compte'));
+        }
         if (!$this->assistance->ouvrir($request, Auth::user(), $id)) {
             return redirect()->route('configuration.utilisateurs')->with('error', __('assistance.non_accepte'));
         }
@@ -107,12 +114,11 @@ class AssistanceController extends Controller
         return view('assistance.journal', compact('acces'));
     }
 
-    /** La demande, uniquement pour le SupAdmin qui l'a faite. */
-    private function demandeDuSuperviseur(int $id): object
+    /** La demande, uniquement pour le SupAdmin qui l'a faite (sinon null). */
+    private function demandeDuSuperviseur(int $id): ?object
     {
         $acces = AccesAssistance::demande($id);
-        abort_unless($acces && Auth::user()->droit === 'SupAdmin' && (int) $acces->id_superviseur === (int) Auth::id(), 404);
 
-        return $acces;
+        return $acces && Auth::user()->droit === 'SupAdmin' && (int) $acces->id_superviseur === (int) Auth::id() ? $acces : null;
     }
 }

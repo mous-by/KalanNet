@@ -128,6 +128,27 @@ class AccesAssistanceTest extends IntegrationTestCase
         $this->travelBack();
     }
 
+    /** Cas réel : l'Admin accepte dans le même navigateur, ce qui remplace la session SupAdmin. */
+    public function test_meme_navigateur_message_clair_sans_404(): void
+    {
+        $sup = $this->compte('SupAdmin');
+        $cible = $this->compte('Admin', 1);
+        $this->demander($sup, $cible);
+        $id = (int) $this->derniereDemande()->id;
+
+        $admin = $this->compte('Admin', 1);
+        $this->repondre($admin, $id, 'accepter')->assertOk();
+        // La page d'attente (même navigateur) interroge le statut puis tente d'entrer : l'Admin est connecté.
+        $this->getJson("/assistance/$id/statut")->assertStatus(403)->assertJsonPath('statut', 'autre_compte');
+        $this->post("/assistance/$id/ouvrir")->assertRedirect(route('dashboard'))->assertSessionHas('error', __('assistance.autre_compte'));
+        $this->connecte($admin, 'l\'Admin reste dans son propre compte');
+        $this->assertSame('accepte', $this->derniereDemande()->statut, 'la demande reste utilisable par le SupAdmin');
+
+        // Depuis sa propre session, le SupAdmin peut encore entrer.
+        $this->actingAs($sup)->post("/assistance/$id/ouvrir")->assertRedirect(route('dashboard'));
+        $this->connecte($cible, 'SupAdmin entré dans le compte');
+    }
+
     public function test_motif_obligatoire_et_refus(): void
     {
         $sup = $this->compte('SupAdmin');

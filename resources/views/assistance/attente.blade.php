@@ -8,6 +8,7 @@
             'accepte' => __('assistance.attente_accepte'),
             'refuse' => __('assistance.attente_refuse'),
             'expire' => __('assistance.attente_expire'),
+            'autre_compte' => __('assistance.autre_compte'),
         ];
     @endphp
     <div class="row justify-content-center">
@@ -61,6 +62,7 @@
                 if (fini) return;
                 try {
                     const reponse = await fetch(url, { headers: { 'Accept': 'application/json' } });
+                    if (reponse.status === 401 || reponse.redirected) { terminer('autre_compte'); return; }
                     const donnees = await reponse.json();
                     restant = donnees.restant;
                     afficher(restant);

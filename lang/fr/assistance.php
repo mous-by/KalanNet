@@ -65,4 +65,5 @@ return [
     'statut_expire' => 'expirée',
     'statut_en_cours' => 'en cours',
     'statut_termine' => 'terminée',
+    'autre_compte' => 'Votre session SupAdmin a été remplacée par un autre compte dans ce navigateur (par exemple pour accepter la demande). Faites accepter la demande depuis un autre navigateur ou un autre appareil, puis relancez-la.',
 ];

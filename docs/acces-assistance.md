@@ -33,8 +33,14 @@ d'un Admin de l'école**.
 | Trace côté client | Dates de dernière connexion et d'activité inchangées ; les actions faites pendant l'accès sont enregistrées au nom du compte |
 | Journal | `acces_assistance` : support, compte, école, motif, statut, Admin qui a décidé et quand, adresse IP, début, fin. Consultable par les SupAdmin seuls (Configuration → Utilisateurs → Journal des accès d'assistance) |
 
+**Pour tester seul** : l'Admin qui accepte doit être connecté dans **un autre
+navigateur ou un autre appareil** (ou une fenêtre de navigation privée). Dans le
+même navigateur, sa connexion remplacerait la session SupAdmin ; KalanNet
+l'indique alors par un message, et la demande acceptée reste utilisable depuis
+la session SupAdmin pendant 5 minutes.
+
 Limite : la fenêtre d'accord s'affiche sur le site web ; un Admin qui n'utilise
 que l'application mobile reçoit la notification mais doit ouvrir le site pour
 répondre.
 
-Tests : `tests/Integration/AccesAssistanceTest.php` (8 tests).
+Tests : `tests/Integration/AccesAssistanceTest.php` (9 tests).
