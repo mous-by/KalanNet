@@ -118,6 +118,7 @@ class ProfileController extends Controller
 
         $user->pwd = Hash::make($data['password']);
         $user->doit_changer_mdp = false;
+        $user->mdp_temporaire_expire_at = null;
         $user->save();
 
         $jeton = method_exists($user, 'currentAccessToken') ? $user->currentAccessToken() : null;

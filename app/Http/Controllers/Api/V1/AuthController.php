@@ -213,6 +213,11 @@ class AuthController extends Controller
 
     private function issueToken(User $user, Request $request)
     {
+        // Mot de passe temporaire non changé dans les 72 heures : il faut en demander un nouveau.
+        if (\App\Support\MotDePasse::temporaireExpire($user)) {
+            return response()->json(['message' => __('securite.temporaire_expire')], 403);
+        }
+
         $user->last_login_at = now();
         $user->last_activity = now();
         $user->save();

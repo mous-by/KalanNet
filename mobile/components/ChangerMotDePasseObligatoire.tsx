@@ -26,12 +26,23 @@ function ChampMotDePasse({ label, value, onChangeText }: { label: string; value:
 // Première connexion avec un mot de passe temporaire (donné par un Admin) :
 // rien d'autre n'est accessible tant qu'il n'est pas remplacé.
 export default function ChangerMotDePasseObligatoire() {
-  const { refreshUser, logout } = useAuth();
+  const { user, refreshUser, logout } = useAuth();
   const [actuel, setActuel] = useState('');
   const [nouveau, setNouveau] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [erreur, setErreur] = useState<string | null>(null);
   const [envoi, setEnvoi] = useState(false);
+
+  // « Enregistrer » reste grisé tant que le nouveau mot de passe ne respecte pas les règles du serveur.
+  const manque = !actuel
+    ? 'Saisissez votre mot de passe actuel (le mot de passe temporaire).'
+    : nouveau.length < 8 || !/\p{L}/u.test(nouveau) || !/\d/.test(nouveau)
+      ? 'Le nouveau mot de passe doit avoir au moins 8 caractères, avec des lettres et des chiffres.'
+      : nouveau === actuel
+        ? 'Le nouveau mot de passe doit être différent du mot de passe temporaire.'
+        : confirmation !== nouveau
+          ? 'La confirmation ne correspond pas au nouveau mot de passe.'
+          : '';
 
   async function enregistrer() {
     setErreur(null);
@@ -57,13 +68,17 @@ export default function ChangerMotDePasseObligatoire() {
         <Text>
           Votre mot de passe est <Text style={styles.gras}>temporaire</Text> : choisissez-en un nouveau pour continuer.
         </Text>
+        {user?.mdp_temporaire_valable_jusqu_au ? (
+          <Text style={styles.validite}>Ce mot de passe temporaire est valable jusqu'au {user.mdp_temporaire_valable_jusqu_au}.</Text>
+        ) : null}
       </View>
       <ChampMotDePasse label="Mot de passe actuel (celui qui vous a été donné)" value={actuel} onChangeText={setActuel} />
       <ChampMotDePasse label="Nouveau mot de passe" value={nouveau} onChangeText={setNouveau} />
       <ForceMotDePasse motDePasse={nouveau} />
       <ChampMotDePasse label="Confirmer le nouveau mot de passe" value={confirmation} onChangeText={setConfirmation} />
       {erreur ? <Text style={styles.erreur}>{erreur}</Text> : null}
-      <Button mode="contained" onPress={enregistrer} loading={envoi} disabled={!actuel || !nouveau || !confirmation} style={styles.bouton}>
+      {manque && (nouveau || confirmation) ? <Text style={styles.manque}>{manque}</Text> : null}
+      <Button mode="contained" onPress={enregistrer} loading={envoi} disabled={!!manque || envoi} style={styles.bouton}>
         Enregistrer mon mot de passe
       </Button>
       <Button onPress={logout} style={styles.deconnexion}>
@@ -77,6 +92,8 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: SURFACE.background },
   contenu: { padding: 24, paddingTop: 48 },
   titre: { fontWeight: '700', marginBottom: 16 },
+  manque: { opacity: 0.7, marginTop: 4 },
+  validite: { marginTop: 6, fontWeight: '600' },
   alerte: { backgroundColor: '#fff4e5', borderRadius: 8, padding: 12, marginBottom: 16 },
   gras: { fontWeight: '700' },
   champ: { marginBottom: 12 },

@@ -36,4 +36,11 @@ return [
     'regle_longueur' => 'At least 8 characters',
     'regle_lettres' => 'Letters',
     'regle_chiffres' => 'Numbers',
+    'manque_actuel' => 'Enter your current (temporary) password.',
+    'manque_regles' => 'The new password must have at least 8 characters, with letters and numbers.',
+    'manque_different' => 'The new password must be different from the temporary password.',
+    'manque_confirmation' => 'The confirmation does not match the new password.',
+    'temporaire_expire' => 'Your temporary password has expired (it was valid for 72 hours). Ask your administrator to generate a new one.',
+    'temporaire_valable' => 'This temporary password is valid until :date.',
+    'modal_duree' => 'Valid for :heures hours: until :date. After that, a new one must be generated.',
 ];

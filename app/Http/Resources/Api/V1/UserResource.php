@@ -19,6 +19,8 @@ class UserResource extends JsonResource
             'droit' => $this->droit,
             // Mot de passe donné par un Admin : l'app doit faire changer le mot de passe.
             'doit_changer_mdp' => (bool) $this->doit_changer_mdp,
+            // Fin de validité du mot de passe temporaire (« 18/10/2026 à 14:30 »).
+            'mdp_temporaire_valable_jusqu_au' => $this->doit_changer_mdp && $this->mdp_temporaire_expire_at ? $this->mdp_temporaire_expire_at->format('d/m/Y à H:i') : null,
             'statut' => $this->statut,
             'photo_url' => rtrim($request->root(), '/') . '/' . $this->photo_path,
             'permissions' => $this->droit === 'SupAdmin' ? [] : $this->permissionCanonicalNames(),

@@ -24,6 +24,7 @@ export default function MotDePasseTemporaireDialog({
           <Text selectable style={styles.motDePasse}>
             {motDePasse}
           </Text>
+          <Text style={styles.duree}>Valable 72 heures : jusqu'au {finValidite()}. Passé ce délai, il faudra en générer un nouveau.</Text>
           <Text style={styles.aide}>Appui long sur le mot de passe pour le copier. À sa première connexion, la personne devra choisir son propre mot de passe.</Text>
         </Dialog.Content>
         <Dialog.Actions>
@@ -36,7 +37,15 @@ export default function MotDePasseTemporaireDialog({
   );
 }
 
+/** Fin de validité du mot de passe temporaire : 72 heures après sa création (« 18/10/2026 à 14:30 »). */
+function finValidite(): string {
+  const d = new Date(Date.now() + 72 * 3600 * 1000);
+  const deux = (n: number) => String(n).padStart(2, '0');
+  return `${deux(d.getDate())}/${deux(d.getMonth() + 1)}/${d.getFullYear()} à ${deux(d.getHours())}:${deux(d.getMinutes())}`;
+}
+
 const styles = StyleSheet.create({
+  duree: { fontWeight: '600', marginTop: 10 },
   titre: { textAlign: 'center' },
   gras: { fontWeight: '700' },
   motDePasse: {

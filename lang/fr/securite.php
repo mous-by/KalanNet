@@ -36,4 +36,11 @@ return [
     'regle_longueur' => '8 caractères au moins',
     'regle_lettres' => 'Des lettres',
     'regle_chiffres' => 'Des chiffres',
+    'manque_actuel' => 'Saisissez votre mot de passe actuel (le mot de passe temporaire).',
+    'manque_regles' => 'Le nouveau mot de passe doit avoir au moins 8 caractères, avec des lettres et des chiffres.',
+    'manque_different' => 'Le nouveau mot de passe doit être différent du mot de passe temporaire.',
+    'manque_confirmation' => 'La confirmation ne correspond pas au nouveau mot de passe.',
+    'temporaire_expire' => 'Votre mot de passe temporaire a expiré (il était valable 72 heures). Demandez à votre administrateur de vous en générer un nouveau.',
+    'temporaire_valable' => 'Ce mot de passe temporaire est valable jusqu\'au :date.',
+    'modal_duree' => 'Valable :heures heures : jusqu\'au :date. Passé ce délai, il faudra en générer un nouveau.',
 ];

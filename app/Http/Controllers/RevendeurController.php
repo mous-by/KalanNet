@@ -102,9 +102,8 @@ class RevendeurController extends Controller
             'nomPrenom' => $data['nomPrenom'],
             'email' => $data['email'],
             'telephone' => Telephone::normalize($data['telephone']),
-            'pwd' => Hash::make($data['pwd']),
-            // Mot de passe choisi par le SupAdmin : à remplacer à la 1re connexion.
-            'doit_changer_mdp' => true,
+            // Mot de passe choisi par le SupAdmin : à remplacer à la 1re connexion, valable 72 heures.
+            ...\App\Support\MotDePasse::champsTemporaire($data['pwd']),
             'droit' => 'revendeur',
             'id_revendeur' => $revendeur->id,
             'statut' => 1,

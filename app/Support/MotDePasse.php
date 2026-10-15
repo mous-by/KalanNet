@@ -15,6 +15,35 @@ use Illuminate\Validation\Rules\Password;
  */
 class MotDePasse
 {
+    /** Durée de validité d'un mot de passe temporaire. */
+    public const DUREE_TEMPORAIRE_HEURES = 72;
+
+    /** Champs à enregistrer pour un mot de passe temporaire : à changer à la 1re connexion, valable 72 heures. */
+    public static function champsTemporaire(string $motDePasse): array
+    {
+        return [
+            'pwd' => \Illuminate\Support\Facades\Hash::make($motDePasse),
+            'doit_changer_mdp' => true,
+            'mdp_temporaire_expire_at' => now()->addHours(self::DUREE_TEMPORAIRE_HEURES),
+        ];
+    }
+
+    /** Mot de passe temporaire dont le délai est passé : la connexion est refusée. */
+    public static function temporaireExpire(User $user): bool
+    {
+        return (bool) $user->doit_changer_mdp
+            && $user->mdp_temporaire_expire_at
+            && now()->greaterThan($user->mdp_temporaire_expire_at);
+    }
+
+    /** « 18/10/2026 à 14:30 » : fin de validité à afficher. */
+    public static function finValidite(?User $user = null): string
+    {
+        $date = $user?->mdp_temporaire_expire_at ?? now()->addHours(self::DUREE_TEMPORAIRE_HEURES);
+
+        return \Illuminate\Support\Carbon::parse($date)->format('d/m/Y à H:i');
+    }
+
     public static function regle(): Password
     {
         return Password::min(8)->letters()->numbers();

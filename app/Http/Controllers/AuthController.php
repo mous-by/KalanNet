@@ -134,6 +134,11 @@ class AuthController extends Controller
 
     protected function performLogin($user, Request $request)
     {
+        // Mot de passe temporaire non changé dans les 72 heures : il faut en demander un nouveau.
+        if (\App\Support\MotDePasse::temporaireExpire($user)) {
+            return redirect()->route('login')->withErrors(['identifier' => __('securite.temporaire_expire')])->onlyInput('identifier');
+        }
+
         if ($request->filled('theme_preference')) {
             $user->theme_preference = $request->input('theme_preference');
         }

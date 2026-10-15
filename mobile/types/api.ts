@@ -30,6 +30,8 @@ export interface User {
   permissions: string[];
   // Mot de passe temporaire donné par un Admin : à changer avant tout le reste.
   doit_changer_mdp?: boolean;
+  // Fin de validité du mot de passe temporaire (« 18/10/2026 à 14:30 »).
+  mdp_temporaire_valable_jusqu_au?: string | null;
   ecole: Ecole | null;
 }
 

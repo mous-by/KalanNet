@@ -180,7 +180,7 @@ class ConfigurationController extends WebConfigurationController
         // Mot de passe temporaire, renvoyé une seule fois, à changer à la 1re connexion.
         $motDePasseTemporaire = \App\Support\MotDePasse::temporaire();
         $createdUser = DB::transaction(function () use ($type, $data, $authUser, $idEcole, $motDePasseTemporaire) {
-            $payload = ['pwd' => Hash::make($motDePasseTemporaire), 'doit_changer_mdp' => true, 'statut' => 1, 'image' => 'default.png'];
+            $payload = \App\Support\MotDePasse::champsTemporaire($motDePasseTemporaire) + ['statut' => 1, 'image' => 'default.png'];
 
             if ($type === 0) {
                 $enseignant = $this->enseignantsScope(Enseignant::query(), $authUser, $idEcole)
@@ -244,7 +244,10 @@ class ConfigurationController extends WebConfigurationController
         });
 
         // Renvoyé une seule fois, pour que l'auteur le transmette en main propre.
-        return response()->json(array_merge($createdUser->toArray(), ['mot_de_passe_temporaire' => $motDePasseTemporaire]), 201);
+        return response()->json(array_merge($createdUser->toArray(), [
+            'mot_de_passe_temporaire' => $motDePasseTemporaire,
+            'mot_de_passe_temporaire_valable_jusqu_au' => \App\Support\MotDePasse::finValidite(),
+        ]), 201);
     }
 
     /** Réinitialisation par un supérieur : mot de passe temporaire renvoyé une seule fois. */
@@ -256,12 +259,13 @@ class ConfigurationController extends WebConfigurationController
 
         $motDePasseTemporaire = \App\Support\MotDePasse::temporaire();
         DB::table('utilisateurs')->where('idUtilisateur', $utilisateur->idUtilisateur)
-            ->update(['pwd' => Hash::make($motDePasseTemporaire), 'doit_changer_mdp' => true]);
+            ->update(\App\Support\MotDePasse::champsTemporaire($motDePasseTemporaire));
         \App\Support\MotDePasse::revoquerAcces($utilisateur);
 
         return response()->json([
             'message' => __('securite.reinitialise', ['nom' => $utilisateur->nomPrenom]),
             'mot_de_passe_temporaire' => $motDePasseTemporaire,
+            'mot_de_passe_temporaire_valable_jusqu_au' => \App\Support\MotDePasse::finValidite(),
         ]);
     }
 

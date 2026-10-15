@@ -493,9 +493,7 @@ class ConfigurationController extends Controller
         // Mot de passe temporaire, affiché une seule fois à l'auteur, à changer à la 1re connexion.
         $motDePasseTemporaire = \App\Support\MotDePasse::temporaire();
         $createdUser = DB::transaction(function () use ($type, $data, $authUser, $idEcole, $motDePasseTemporaire) {
-            $payload = [
-                'pwd' => Hash::make($motDePasseTemporaire),
-                'doit_changer_mdp' => true,
+            $payload = \App\Support\MotDePasse::champsTemporaire($motDePasseTemporaire) + [
                 'statut' => 1,
                 'image' => 'default.png',
             ];
@@ -590,7 +588,7 @@ class ConfigurationController extends Controller
 
         $motDePasseTemporaire = \App\Support\MotDePasse::temporaire();
         DB::table('utilisateurs')->where('idUtilisateur', $utilisateur->idUtilisateur)
-            ->update(['pwd' => Hash::make($motDePasseTemporaire), 'doit_changer_mdp' => true]);
+            ->update(\App\Support\MotDePasse::champsTemporaire($motDePasseTemporaire));
         \App\Support\MotDePasse::revoquerAcces($utilisateur);
 
         return back()

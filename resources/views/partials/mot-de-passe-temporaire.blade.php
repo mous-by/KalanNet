@@ -13,7 +13,8 @@
                         <button type="button" class="btn btn-primary" id="copier-mot-de-passe-temporaire" title="{{ __('securite.copier') }}" aria-label="{{ __('securite.copier') }}"><i class="bi bi-clipboard"></i></button>
                     </div>
                     <div class="small text-success mt-2 d-none" id="mot-de-passe-temporaire-copie">{{ __('securite.copie') }}</div>
-                    <p class="small text-muted mt-3 mb-0">{{ __('securite.modal_aide') }}</p>
+                    <p class="small fw-semibold mt-3 mb-1"><i class="bi bi-hourglass-split me-1"></i>{{ __('securite.modal_duree', ['heures' => \App\Support\MotDePasse::DUREE_TEMPORAIRE_HEURES, 'date' => \App\Support\MotDePasse::finValidite()]) }}</p>
+                    <p class="small text-muted mb-0">{{ __('securite.modal_aide') }}</p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-primary" data-bs-dismiss="modal">{{ __('securite.note') }}</button>
