@@ -211,6 +211,12 @@
                 <td><strong>Rang annuel :</strong> {{ $annuel['rang'] }} / {{ $annuel['total'] }}</td>
                 <td>({{ $annuel['libelle'] }})</td>
             </tr>
+            @if(!empty($tendance))
+                <tr>
+                    <td colspan="3"><strong>Tendance :</strong> {{ collect($tendance['retenues'])->pluck('libelle')->implode(' ou ') }}
+                        ({{ collect($tendance['retenues'][0]['matieres'])->map(fn ($m, $nom) => \App\Support\ArabePdf::texte($nom).' '.number_format($m, 2))->implode(' · ') }})</td>
+                </tr>
+            @endif
         @endif
     </table>
 

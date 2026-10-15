@@ -12,5 +12,16 @@
                 &nbsp;&nbsp; Rang annuel : <strong>{{ $rangAnnuel }} / {{ $annuel['total'] }}</strong>
             </td>
         </tr>
+        @if(!empty($tendance))
+            @php
+                $retenue = collect($tendance['retenues'])->pluck('libelle')->implode(' ou ');
+                $detail = collect($tendance['retenues'][0]['matieres'])->map(fn ($m, $nom) => \App\Support\ArabePdf::texte($nom).' '.\App\Support\PresentationBulletin::note($m))->implode(' · ');
+            @endphp
+            <tr>
+                <td colspan="2" style="padding:3px 6px; border-top:1px solid #000; font-size:{{ $taille ?? '10px' }};">
+                    <strong>Tendance :</strong> {{ $retenue }} <span style="font-size:85%">({{ $detail }})</span>
+                </td>
+            </tr>
+        @endif
     </table>
 @endif

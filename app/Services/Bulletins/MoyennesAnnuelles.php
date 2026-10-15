@@ -74,19 +74,35 @@ class MoyennesAnnuelles
         }
 
         $parEleve = [];
+        $parMatiere = [];
         foreach ($this->periodes() as $periode) {
             $calcul = CalculBulletin::pour($this->classe, $this->idAnnee, $periode['id_trimestre'], $periode['mois'], $this->calcul);
             foreach ($calcul->resultats() as $idEleve => $r) {
                 if (($r['moyenne_periode'] ?? 0) > 0) {
                     $parEleve[$idEleve][$periode['libelle']] = ['moyenne' => (float) $r['moyenne_periode'], 'rang' => $r['rang'] ?? null];
+                    // Moyenne de chaque matière sur la période (pour la tendance d'orientation).
+                    foreach ($r['matieres'] as $m) {
+                        if (!empty($m->id_matiere)) {
+                            $parMatiere[$idEleve][$m->id_matiere]['nom'] = $m->nom_matiere;
+                            $parMatiere[$idEleve][$m->id_matiere]['coef'] = $m->coef;
+                            $parMatiere[$idEleve][$m->id_matiere]['est_lv2'] = !empty($m->est_lv2);
+                            $parMatiere[$idEleve][$m->id_matiere]['notes'][] = (float) $m->M_Gle;
+                        }
+                    }
                 }
             }
         }
 
-        $annuels = collect($parEleve)->map(fn ($periodes) => [
+        $annuels = collect($parEleve)->map(fn ($periodes, $idEleve) => [
             'moyenne' => collect($periodes)->avg('moyenne'),
             'nb_periodes' => count($periodes),
             'periodes' => $periodes,
+            'matieres' => collect($parMatiere[$idEleve] ?? [])->map(fn ($m) => [
+                'nom' => $m['nom'],
+                'coef' => $m['coef'],
+                'est_lv2' => $m['est_lv2'],
+                'moyenne' => array_sum($m['notes']) / count($m['notes']),
+            ])->all(),
         ]);
 
         $classes = $annuels->sortByDesc(fn ($a) => round($a['moyenne'], 2));

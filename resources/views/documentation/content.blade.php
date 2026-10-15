@@ -309,6 +309,12 @@
     <strong>rang annuel</strong> sur le bulletin du dernier trimestre ; en compositions mensuelles, cochez « Bulletin
     de fin d'année » avant d'imprimer. La réinscription s'en sert pour proposer le passage (5/10 au Fondamental I,
     10/20 ailleurs), et la fiche de l'élève l'affiche avec les moyennes de chaque période.</p>
+    <p><strong>Tendance d'orientation (secondaire général)</strong> : sur le dernier bulletin de l'année, la 10ème indique
+    la série de 11ème vers laquelle s'oriente l'élève (Sciences, SES ou LL), et la 11ème la série de 12ème de sa série
+    (Sciences : TExp ou TSE ; SES : TSS ou TSECO ; LL : LAT ou LL), d'après sa moyenne annuelle dans les matières de
+    chaque série. La série d'une classe de 11ème ou de 12ème se choisit dans la fiche de la classe ; les matières de
+    chaque série se règlent dans <strong>Classes → Matières des séries</strong>. C'est une indication : l'orientation
+    reste décidée par le conseil de classe.</p>
     <p><strong>Classes à deux maîtres (écoles franco-arabes)</strong> : dans la fiche de la classe, cochez
     <strong>Classe à deux maîtres</strong>, puis choisissez le maître de la partie arabe et celui de la partie
     française. Chaque matière est rangée dans un <strong>domaine</strong>, et chaque domaine appartient à une partie :

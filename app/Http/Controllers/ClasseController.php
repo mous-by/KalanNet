@@ -159,6 +159,7 @@ class ClasseController extends Controller
                 'ordreEnseignement' => $estSante ? null : $data['ordre_enseignement'],
                 'idEcole' => $idEcole,
                 'id_filiere' => $estSante ? $data['id_filiere'] : null,
+                'serie' => $this->serieValide($data),
             ] + $this->champsDeuxMaitres($data));
 
             $this->syncLignesClasse($classe, $data);
@@ -242,6 +243,7 @@ class ClasseController extends Controller
                 'nom_classe' => $data['nom_classe'],
                 'ordreEnseignement' => $estSante ? null : $data['ordre_enseignement'],
                 'id_filiere' => $estSante ? $data['id_filiere'] : null,
+                'serie' => $this->serieValide($data),
             ] + $this->champsDeuxMaitres($data));
 
             $dejaPresentes = $classe->ligneClasses()->pluck('id_matiere')->all();
@@ -289,6 +291,7 @@ class ClasseController extends Controller
             'id_enseignants.*' => 'nullable|integer|exists:enseignants,id_enseignant',
             'coefficient' => 'required|array|min:1',
             'coefficient.*' => 'required|numeric|min:0|max:5',
+            'serie' => ['nullable', Rule::in(array_keys(\App\Support\Series::SERIES))],
             'groupe' => 'nullable|array',
             'groupe.*' => 'nullable|in:principale,secondaire',
             'id_domaine' => 'nullable|array',
@@ -374,6 +377,18 @@ class ClasseController extends Controller
             'domaines' => $domaines,
             'francoArabe' => (bool) ($ecole->franco_arabe ?? false),
         ];
+    }
+
+    /** Série (11ème / 12ème du secondaire général) : seulement pour ces classes. */
+    protected function serieValide(array $data): ?string
+    {
+        $serie = $data['serie'] ?? null;
+        if (!$serie || !str_starts_with((string) ($data['ordre_enseignement'] ?? ''), 'secondairegenerale')) {
+            return null;
+        }
+        $niveau = \App\Support\ClasseSuivante::niveau($data['nom_classe'] ?? '');
+
+        return (\App\Support\Series::SERIES[$serie][1] ?? null) === $niveau ? $serie : null;
     }
 
     protected function champsDeuxMaitres(array $data): array

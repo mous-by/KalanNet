@@ -88,4 +88,8 @@ return [
     'suite_question' => 'Voulez-vous créer maintenant la classe suivante « :suivante » avec les mêmes matières que « :classe » ?',
     'suite_oui' => 'Oui, créer « :suivante »',
     'suite_non' => 'Non, merci',
+    'serie_label' => 'Série',
+    'serie_aucune' => '— Aucune —',
+    'serie_aide' => 'Sert à la tendance d\'orientation du bulletin.',
+    'serie_lien' => 'Matières des séries',
 ];

@@ -246,6 +246,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/pedagogie/parents/{id}/edit', [ParentController::class, 'edit'])->name('pedagogie.parents.edit');
     Route::put('/pedagogie/parents/{id}', [ParentController::class, 'update'])->name('pedagogie.parents.update');
     Route::delete('/pedagogie/parents/{id}', [ParentController::class, 'destroy'])->name('pedagogie.parents.destroy');
+    Route::get('/pedagogie/series', [\App\Http\Controllers\SerieController::class, 'index'])->name('pedagogie.series');
+    Route::post('/pedagogie/series', [\App\Http\Controllers\SerieController::class, 'update'])->name('pedagogie.series.update');
     Route::get('/pedagogie/domaines', [DomaineController::class, 'index'])->name('pedagogie.domaines');
     Route::post('/pedagogie/domaines', [DomaineController::class, 'store'])->name('pedagogie.domaines.store');
     Route::put('/pedagogie/domaines/{id}', [DomaineController::class, 'update'])->name('pedagogie.domaines.update');

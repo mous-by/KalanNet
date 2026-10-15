@@ -88,4 +88,8 @@ return [
     'suite_question' => 'هل تريد الآن إنشاء الفصل الموالي «:suivante» بنفس مواد «:classe»؟',
     'suite_oui' => 'نعم، أنشئ «:suivante»',
     'suite_non' => 'لا، شكراً',
+    'serie_label' => 'الشعبة',
+    'serie_aucune' => '— لا شيء —',
+    'serie_aide' => 'تُستعمل لتوجّه التلميذ في كشف الدرجات.',
+    'serie_lien' => 'مواد الشعب',
 ];

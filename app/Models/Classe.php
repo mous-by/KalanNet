@@ -23,6 +23,7 @@ class Classe extends Model
         'id_maitre_francais',
         'modele_bulletin',
         'note_classe_mode',
+        'serie',
     ];
 
     protected $casts = [

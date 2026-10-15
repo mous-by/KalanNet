@@ -88,4 +88,8 @@ return [
     'suite_question' => 'Do you want to create the next class “:suivante” now with the same subjects as “:classe”?',
     'suite_oui' => 'Yes, create “:suivante”',
     'suite_non' => 'No, thanks',
+    'serie_label' => 'Stream',
+    'serie_aucune' => '— None —',
+    'serie_aide' => 'Used for the guidance trend on the report card.',
+    'serie_lien' => 'Stream subjects',
 ];

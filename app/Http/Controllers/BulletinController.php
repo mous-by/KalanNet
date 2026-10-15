@@ -395,6 +395,8 @@ class BulletinController extends Controller
                 'libelle' => $resultatAnnuel['nb_periodes'].' '.($annuel->mensuel() ? 'composition(s) mensuelle(s)' : 'trimestre(s)'),
             ];
         }
+        // Secondaire général (10ème, 11ème) : tendance d'orientation vers une série.
+        $data['tendance'] = $data['annuel'] ? \App\Support\Series::tendance($classe, $data['annuel']['matieres'] ?? []) : null;
         $data['maitres'] = $this->maitres($classe);
         $data['annee_hegirienne'] = $this->anneeHegirienne($data['apercu']);
         $data['photo'] = $this->imageBase64($eleve->image);

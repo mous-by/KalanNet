@@ -159,6 +159,16 @@
                                 @endforeach
                             </select>
                         </div>
+                        <div class="col-md-6" id="serie-champ" style="display:none">
+                            <label class="form-label" for="serie">{{ __('classes.serie_label') }}</label>
+                            <select class="form-select" id="serie" name="serie">
+                                <option value="">{{ __('classes.serie_aucune') }}</option>
+                                @foreach(\App\Support\Series::SERIES as $code => [$libelleSerie, $niveauSerie])
+                                    <option value="{{ $code }}" data-niveau="{{ $niveauSerie }}" @selected(old('serie', $classe->serie) === $code)>{{ $libelleSerie }}</option>
+                                @endforeach
+                            </select>
+                            <small class="text-muted">{{ __('classes.serie_aide') }} <a href="{{ route('pedagogie.series') }}" target="_blank">{{ __('classes.serie_lien') }}</a></small>
+                        </div>
                         @if($francoArabe)
                             @php $deuxMaitres = (bool) old('deux_maitres', $classe->deux_maitres); @endphp
                             <div class="col-12">
@@ -355,6 +365,23 @@
             }
             if (ordreSelect) ordreSelect.addEventListener('change', afficherGroupes);
             afficherGroupes();
+
+            // Série : 11ème et 12ème du secondaire général ; seules les séries du niveau sont proposées.
+            const serieChamp = document.getElementById('serie-champ');
+            const serieSelect = document.getElementById('serie');
+            function afficherSerie() {
+                if (!serieChamp || !ordreSelect) return;
+                const niveau = parseInt((nomClasse.value.match(/^\s*(\d{1,2})/) || [])[1] || '0', 10);
+                const visible = ordreSelect.value === 'secondairegenerale' && (niveau === 11 || niveau === 12);
+                serieChamp.style.display = visible ? '' : 'none';
+                serieSelect.querySelectorAll('option[data-niveau]').forEach(option => {
+                    option.hidden = Number(option.dataset.niveau) !== niveau;
+                    if (option.hidden && option.selected) serieSelect.value = '';
+                });
+            }
+            if (ordreSelect) ordreSelect.addEventListener('change', afficherSerie);
+            nomClasse.addEventListener('input', afficherSerie);
+            afficherSerie();
 
             function domaineOptions(selectionne) {
                 return '<option value="">' + escapeHtml(i18n.sansDomaine) + '</option>' + domaines.map(function (domaine) {
