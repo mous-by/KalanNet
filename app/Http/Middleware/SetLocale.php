@@ -2,12 +2,12 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\SchemaExiste;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\View;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -20,7 +20,7 @@ class SetLocale
         $locale = $request->session()->get('locale', $request->cookie('locale', $fallback));
 
         $user = Auth::user();
-        if ($user && Schema::hasColumn($user->getTable(), 'locale_preference') && $user->locale_preference) {
+        if ($user && SchemaExiste::colonne($user->getTable(), 'locale_preference') && $user->locale_preference) {
             $locale = $user->locale_preference;
         }
 

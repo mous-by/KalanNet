@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\SchemaExiste;
 use App\Models\AnneeScolaire;
 use App\Models\AppelEpreuve;
 use App\Models\AppNotification;
@@ -19,7 +20,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Mail\AppelNotification;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Schema;
 
 class AppelEpreuveController extends Controller
 {
@@ -228,7 +228,7 @@ class AppelEpreuveController extends Controller
                 continue;
             }
 
-            if (Schema::hasTable('app_notifications')) {
+            if (SchemaExiste::table('app_notifications')) {
                 User::where('id_parent', $parent->id_parent)->get()->each(function (User $user) use ($message, $eleve) {
                     AppNotification::create([
                         'user_id' => $user->idUtilisateur,
@@ -260,7 +260,7 @@ class AppelEpreuveController extends Controller
 
     protected function schoolAllowsParentEmails(?int $schoolId): bool
     {
-        if (!$schoolId || !Schema::hasColumn('ecole', 'notification_email')) {
+        if (!$schoolId || !SchemaExiste::colonne('ecole', 'notification_email')) {
             return true;
         }
 

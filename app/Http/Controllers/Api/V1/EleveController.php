@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Support\SchemaExiste;
 use App\Http\Controllers\EleveController as WebEleveController;
 use App\Models\AnneeScolaire;
 use App\Models\Classe;
@@ -385,7 +386,7 @@ class EleveController extends WebEleveController
             'conduite' => 'required|string|max:255',
         ]);
 
-        if (!\Illuminate\Support\Facades\Schema::hasTable('transfert')) {
+        if (!SchemaExiste::table('transfert')) {
             return response()->json(['message' => 'La table des transferts n’est pas disponible.'], 422);
         }
 
@@ -428,11 +429,11 @@ class EleveController extends WebEleveController
                 'id_annee' => $data['id_annee'],
             ]);
 
-            if (\Illuminate\Support\Facades\Schema::hasTable('transfert')) {
+            if (SchemaExiste::table('transfert')) {
                 $latestTransfer = DB::table('transfert')
                     ->where('id_eleve', $eleve->id_eleve)
                     ->where('id_ecole', session('idEcole'))
-                    ->when(\Illuminate\Support\Facades\Schema::hasColumn('transfert', 'date_retour'), fn ($query) => $query->whereNull('date_retour'))
+                    ->when(SchemaExiste::colonne('transfert', 'date_retour'), fn ($query) => $query->whereNull('date_retour'))
                     ->orderByDesc('id_transfert')
                     ->first();
 

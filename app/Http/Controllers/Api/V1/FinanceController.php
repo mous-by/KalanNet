@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Support\SchemaExiste;
 use App\Http\Controllers\FinanceController as WebFinanceController;
 use App\Models\AnneeScolaire;
 use App\Models\Caisse;
@@ -16,7 +17,6 @@ use App\Support\Telephone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 class FinanceController extends WebFinanceController
@@ -370,8 +370,8 @@ class FinanceController extends WebFinanceController
                 'id_caisse' => $caisse->id_caisse,
                 'idUtilisateur' => Auth::id(),
                 'valide' => $shouldValidateNow ? 1 : 0,
-                'validated_by' => $shouldValidateNow && Schema::hasColumn('decaissement', 'validated_by') ? Auth::id() : null,
-                'validated_at' => $shouldValidateNow && Schema::hasColumn('decaissement', 'validated_at') ? now() : null,
+                'validated_by' => $shouldValidateNow && SchemaExiste::colonne('decaissement', 'validated_by') ? Auth::id() : null,
+                'validated_at' => $shouldValidateNow && SchemaExiste::colonne('decaissement', 'validated_at') ? now() : null,
             ], fn ($value) => $value !== null));
 
             if ($shouldValidateNow) {
@@ -417,10 +417,10 @@ class FinanceController extends WebFinanceController
             $caisse->save();
 
             $updates = ['valide' => 1];
-            if (Schema::hasColumn('decaissement', 'validated_by')) {
+            if (SchemaExiste::colonne('decaissement', 'validated_by')) {
                 $updates['validated_by'] = Auth::id();
             }
-            if (Schema::hasColumn('decaissement', 'validated_at')) {
+            if (SchemaExiste::colonne('decaissement', 'validated_at')) {
                 $updates['validated_at'] = now();
             }
             $decaissement->update($updates);

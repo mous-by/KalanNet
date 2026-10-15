@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\SchemaExiste;
 use App\Models\User;
 use App\Support\Telephone;
 use App\Support\SubscriptionGate;
@@ -10,7 +11,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Facades\Schema;
 
 class AuthController extends Controller
 {
@@ -156,7 +156,7 @@ class AuthController extends Controller
         }
 
         $locale = $request->session()->get('locale');
-        if ($locale && array_key_exists($locale, config('app.supported_locales', [])) && Schema::hasColumn($user->getTable(), 'locale_preference')) {
+        if ($locale && array_key_exists($locale, config('app.supported_locales', [])) && SchemaExiste::colonne($user->getTable(), 'locale_preference')) {
             $user->locale_preference = $locale;
         }
 

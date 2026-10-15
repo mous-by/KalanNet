@@ -4,13 +4,12 @@ namespace App\Support;
 
 use App\Models\Abonnement;
 use App\Models\User;
-use Illuminate\Support\Facades\Schema;
 
 class SubscriptionGate
 {
     public static function isBlocked(int $ecoleId): bool
     {
-        if ($ecoleId <= 0 || !Schema::hasTable('abonnements')) {
+        if ($ecoleId <= 0 || !SchemaExiste::table('abonnements')) {
             return false;
         }
 

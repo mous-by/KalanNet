@@ -2,11 +2,11 @@
 
 namespace App\Support\Territoire;
 
+use App\Support\SchemaExiste;
 use App\Models\Ecole;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 /**
  * Annonces de l'académie (publiées par le DAE) et du CAP (publiées par le
@@ -67,7 +67,7 @@ class AnnoncesTerritoire
     /** Marque comme lues toutes les annonces territoriales visibles non lues. */
     public static function marquerLues(User $user, ?int $schoolId): void
     {
-        if (!Schema::hasTable('annonces_lues')) {
+        if (!SchemaExiste::table('annonces_lues')) {
             return;
         }
 
@@ -83,7 +83,7 @@ class AnnoncesTerritoire
     public static function publiees(User $user): Collection
     {
         [$table, $colonne, $id] = self::tablePour($user);
-        if (!$table || !$id || !Schema::hasTable($table)) {
+        if (!$table || !$id || !SchemaExiste::table($table)) {
             return collect();
         }
 
@@ -121,7 +121,7 @@ class AnnoncesTerritoire
     private static function requete(string $source, string $colonne, int $id, array $cibles, User $user, bool $nonLuesSeulement): Collection
     {
         $table = 'annonces_'.$source;
-        if (!Schema::hasTable($table)) {
+        if (!SchemaExiste::table($table)) {
             return collect();
         }
 
@@ -133,8 +133,8 @@ class AnnoncesTerritoire
             ->leftJoin('utilisateurs as u', 'u.idUtilisateur', '=', 'a.id_utilisateur')
             ->where('a.'.$colonne, $id)
             ->whereIn('a.public_cible', $cibles)
-            ->when(Schema::hasColumn($table, 'statut_annonce'), fn ($q) => $q->where(fn ($s) => $s->whereNull('a.statut_annonce')->orWhere('a.statut_annonce', 'active')))
-            ->when($nonLuesSeulement && Schema::hasTable('annonces_lues'), fn ($q) => $q->whereNotExists(fn ($lues) => $lues->select(DB::raw(1))
+            ->when(SchemaExiste::colonne($table, 'statut_annonce'), fn ($q) => $q->where(fn ($s) => $s->whereNull('a.statut_annonce')->orWhere('a.statut_annonce', 'active')))
+            ->when($nonLuesSeulement && SchemaExiste::table('annonces_lues'), fn ($q) => $q->whereNotExists(fn ($lues) => $lues->select(DB::raw(1))
                 ->from('annonces_lues as l')
                 ->whereColumn('l.id_annonce', 'a.id_annonce')
                 ->where('l.id_utilisateur', $user->idUtilisateur)

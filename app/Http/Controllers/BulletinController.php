@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\SchemaExiste;
 use App\Models\Eleve;
 use App\Models\Classe;
 use App\Models\AnneeScolaire;
@@ -15,7 +16,6 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class BulletinController extends Controller
 {
@@ -319,7 +319,7 @@ class BulletinController extends Controller
             return back()->with('error', 'Sélectionnez la période à publier.');
         }
 
-        if (!Schema::hasTable('bulletin_publications')) {
+        if (!SchemaExiste::table('bulletin_publications')) {
             return back()->with('error', 'Le module de publication des bulletins n’est pas encore migré.');
         }
 
@@ -354,7 +354,7 @@ class BulletinController extends Controller
             'mois' => 'nullable|integer|between:1,12',
         ]);
 
-        if (Schema::hasTable('bulletin_publications')) {
+        if (SchemaExiste::table('bulletin_publications')) {
             DB::table('bulletin_publications')
                 ->where('id_ecole', $classe->idEcole)
                 ->where('id_classe', $classe->id_classe)
@@ -536,7 +536,7 @@ class BulletinController extends Controller
             abort(403);
         }
 
-        if (!Schema::hasTable('bulletin_publications')) {
+        if (!SchemaExiste::table('bulletin_publications')) {
             abort(403, 'Bulletin non publié.');
         }
 

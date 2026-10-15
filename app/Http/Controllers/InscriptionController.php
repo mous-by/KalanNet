@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\SchemaExiste;
 use App\Models\Eleve;
 use App\Models\Classe;
 use App\Models\AnneeScolaire;
@@ -16,7 +17,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -807,12 +807,12 @@ class InscriptionController extends Controller
                     'enrolement' => in_array($decision, ['passant', 'redoublant'], true) ? 1 : 0,
                     'moyenneGeneral' => $resultatNational?->moyenne ?? $moyenne,
                 ];
-                if (Schema::hasColumn('reinscription', 'statut_propose')) {
+                if (SchemaExiste::colonne('reinscription', 'statut_propose')) {
                     $insert['statut_propose'] = $examLevel
                         ? $this->proposeNationalExamDecision($resultatNational, $examLevel, $classes->get($targetClasseId))
                         : $this->proposeDecision($moyenne, $threshold);
                 }
-                if (Schema::hasColumn('reinscription', 'motif_decision')) {
+                if (SchemaExiste::colonne('reinscription', 'motif_decision')) {
                     $insert['motif_decision'] = $row['motif_decision'] ?? null;
                 }
 
@@ -1010,7 +1010,7 @@ class InscriptionController extends Controller
 
     private function resultatNational(int $idEleve, int $idClasse, int $idAnnee, string $niveau): ?object
     {
-        if (!Schema::hasTable('resultats_def_terminal')) {
+        if (!SchemaExiste::table('resultats_def_terminal')) {
             return null;
         }
 

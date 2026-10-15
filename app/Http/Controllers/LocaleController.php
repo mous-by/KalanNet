@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\SchemaExiste;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
-use Illuminate\Support\Facades\Schema;
 
 class LocaleController extends Controller
 {
@@ -18,7 +18,7 @@ class LocaleController extends Controller
         app()->setLocale($locale);
 
         $user = Auth::user();
-        if ($user && Schema::hasColumn($user->getTable(), 'locale_preference')) {
+        if ($user && SchemaExiste::colonne($user->getTable(), 'locale_preference')) {
             $user->locale_preference = $locale;
             $user->save();
         }

@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\SchemaExiste;
 use App\Models\AppNotification;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Schema;
 
 class AnnouncementController extends Controller
 {
@@ -20,7 +20,7 @@ class AnnouncementController extends Controller
         $isSupAdmin = $user->droit === 'SupAdmin';
 
         $annonces = collect();
-        if (($schoolId || $isSupAdmin) && Schema::hasTable('annonces_admin_gestionnaire')) {
+        if (($schoolId || $isSupAdmin) && SchemaExiste::table('annonces_admin_gestionnaire')) {
             $annonces = DB::table('annonces_admin_gestionnaire as annonces')
                 ->leftJoin('utilisateurs as users', 'users.idUtilisateur', '=', 'annonces.id_utilisateur')
                 ->where(function ($query) use ($schoolId, $isSupAdmin) {
@@ -51,7 +51,7 @@ class AnnouncementController extends Controller
         // Seul le SupAdmin peut diffuser une annonce à toutes les écoles à la fois.
         $isGlobal = $user->droit === 'SupAdmin' && $request->boolean('global');
 
-        if (!Schema::hasTable('annonces_admin_gestionnaire') || (!$isGlobal && !$schoolId)) {
+        if (!SchemaExiste::table('annonces_admin_gestionnaire') || (!$isGlobal && !$schoolId)) {
             return back()->with('error', 'Le module des annonces n’est pas encore disponible.');
         }
 
@@ -115,7 +115,7 @@ class AnnouncementController extends Controller
         $user = Auth::user();
         $schoolId = session('idEcole') ?: $user->idEcole;
 
-        if (!$schoolId || !Schema::hasTable('annonces_admin_gestionnaire')) {
+        if (!$schoolId || !SchemaExiste::table('annonces_admin_gestionnaire')) {
             return response()->json(['annonces' => [], 'fichiers' => []]);
         }
 
@@ -123,7 +123,7 @@ class AnnouncementController extends Controller
             ->leftJoin('utilisateurs as users', 'users.idUtilisateur', '=', 'annonces.id_utilisateur')
             ->select('annonces.*', 'users.nomPrenom as auteur');
 
-        if (Schema::hasTable('annonces_lues')) {
+        if (SchemaExiste::table('annonces_lues')) {
             $query->whereNotExists(function ($inner) use ($user) {
                 $inner->select(DB::raw(1))
                     ->from('annonces_lues as lues')
@@ -143,7 +143,7 @@ class AnnouncementController extends Controller
 
     public function markVisibleAsRead()
     {
-        if (!Schema::hasTable('annonces_lues')) {
+        if (!SchemaExiste::table('annonces_lues')) {
             return back();
         }
 
@@ -152,10 +152,10 @@ class AnnouncementController extends Controller
             $readPayload = [
                 'date_lecture' => now(),
             ];
-            if (Schema::hasColumn('annonces_lues', 'created_at')) {
+            if (SchemaExiste::colonne('annonces_lues', 'created_at')) {
                 $readPayload['created_at'] = now();
             }
-            if (Schema::hasColumn('annonces_lues', 'updated_at')) {
+            if (SchemaExiste::colonne('annonces_lues', 'updated_at')) {
                 $readPayload['updated_at'] = now();
             }
 
@@ -191,7 +191,7 @@ class AnnouncementController extends Controller
 
         $recipients = $this->announcementRecipients($annonce);
 
-        $readAt = Schema::hasTable('annonces_lues')
+        $readAt = SchemaExiste::table('annonces_lues')
             ? DB::table('annonces_lues')
                 ->where('id_annonce', $id)
                 ->where('type_annonce', 'admin_gestionnaire')
@@ -293,7 +293,7 @@ class AnnouncementController extends Controller
             File::delete(public_path($file->nom_fichier));
         }
 
-        if (Schema::hasTable('annonces_fichiers')) {
+        if (SchemaExiste::table('annonces_fichiers')) {
             DB::table('annonces_fichiers')
                 ->where('id_annonce', $id)
                 ->where('type_annonce', 'admin_gestionnaire')
@@ -340,7 +340,7 @@ class AnnouncementController extends Controller
      */
     protected function notifyAllAdmins(int $announcementId, string $titre): void
     {
-        if (!Schema::hasTable('app_notifications')) {
+        if (!SchemaExiste::table('app_notifications')) {
             return;
         }
 
@@ -403,7 +403,7 @@ class AnnouncementController extends Controller
 
     protected function insertAttachmentRows(int $announcementId, array $files): void
     {
-        if (empty($files) || !Schema::hasTable('annonces_fichiers')) {
+        if (empty($files) || !SchemaExiste::table('annonces_fichiers')) {
             return;
         }
 
@@ -421,7 +421,7 @@ class AnnouncementController extends Controller
 
     protected function filesByAnnouncement(array $ids)
     {
-        if (empty($ids) || !Schema::hasTable('annonces_fichiers')) {
+        if (empty($ids) || !SchemaExiste::table('annonces_fichiers')) {
             return collect();
         }
 
@@ -436,7 +436,7 @@ class AnnouncementController extends Controller
     protected function optionalAnnouncementColumns(array $values): array
     {
         return collect($values)
-            ->filter(fn ($value, $column) => Schema::hasColumn('annonces_admin_gestionnaire', $column))
+            ->filter(fn ($value, $column) => SchemaExiste::colonne('annonces_admin_gestionnaire', $column))
             ->all();
     }
 
@@ -444,12 +444,12 @@ class AnnouncementController extends Controller
     {
         $user = Auth::user();
         $schoolId = session('idEcole') ?: $user->idEcole;
-        if (!$schoolId || !Schema::hasTable('annonces_admin_gestionnaire')) {
+        if (!$schoolId || !SchemaExiste::table('annonces_admin_gestionnaire')) {
             return collect();
         }
 
         return $this->visibleAnnouncementQuery($user, $schoolId)
-            ->when(Schema::hasTable('annonces_lues'), function ($query) use ($user) {
+            ->when(SchemaExiste::table('annonces_lues'), function ($query) use ($user) {
                 $query->whereNotExists(function ($inner) use ($user) {
                     $inner->select(DB::raw(1))
                         ->from('annonces_lues as lues')
@@ -489,7 +489,7 @@ class AnnouncementController extends Controller
                     });
                 }
             })
-            ->when(Schema::hasColumn('annonces_admin_gestionnaire', 'statut_annonce'), fn ($query) => $query->where('annonces.statut_annonce', 'publie'))
+            ->when(SchemaExiste::colonne('annonces_admin_gestionnaire', 'statut_annonce'), fn ($query) => $query->where('annonces.statut_annonce', 'publie'))
             ->orderByDesc('annonces.date_publication')
             ->orderByDesc('annonces.id_annonce');
     }

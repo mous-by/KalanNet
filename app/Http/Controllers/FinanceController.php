@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\SchemaExiste;
 use App\Models\Caisse;
 use App\Models\Banque;
 use App\Models\AppNotification;
@@ -33,7 +34,6 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 class FinanceController extends Controller
@@ -1232,8 +1232,8 @@ class FinanceController extends Controller
                 'id_caisse' => $caisse->id_caisse,
                 'idUtilisateur' => Auth::id(),
                 'valide' => $shouldValidateNow ? 1 : 0,
-                'validated_by' => $shouldValidateNow && Schema::hasColumn('decaissement', 'validated_by') ? Auth::id() : null,
-                'validated_at' => $shouldValidateNow && Schema::hasColumn('decaissement', 'validated_at') ? now() : null,
+                'validated_by' => $shouldValidateNow && SchemaExiste::colonne('decaissement', 'validated_by') ? Auth::id() : null,
+                'validated_at' => $shouldValidateNow && SchemaExiste::colonne('decaissement', 'validated_at') ? now() : null,
             ], fn ($value) => $value !== null));
 
             if ($shouldValidateNow) {
@@ -1288,10 +1288,10 @@ class FinanceController extends Controller
                 $caisse->save();
 
                 $updates = ['valide' => 1];
-                if (Schema::hasColumn('decaissement', 'validated_by')) {
+                if (SchemaExiste::colonne('decaissement', 'validated_by')) {
                     $updates['validated_by'] = Auth::id();
                 }
-                if (Schema::hasColumn('decaissement', 'validated_at')) {
+                if (SchemaExiste::colonne('decaissement', 'validated_at')) {
                     $updates['validated_at'] = now();
                 }
                 $decaissement->update($updates);
@@ -1769,7 +1769,7 @@ class FinanceController extends Controller
 
     protected function notifyDecaissementValidators(Decaissement $decaissement): void
     {
-        if (!Schema::hasTable('app_notifications')) {
+        if (!SchemaExiste::table('app_notifications')) {
             return;
         }
 

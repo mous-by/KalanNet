@@ -2,18 +2,18 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\SchemaExiste;
 use App\Models\MaintenanceMode;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Schema;
 use Symfony\Component\HttpFoundation\Response;
 
 class CheckMaintenanceMode
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (!Schema::hasTable('maintenance_mode')) {
+        if (!SchemaExiste::table('maintenance_mode')) {
             return $next($request);
         }
 

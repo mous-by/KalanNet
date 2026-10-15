@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Support\SchemaExiste;
 use App\Http\Controllers\EvaluationController as WebEvaluationController;
 use App\Models\Classe;
 use App\Models\Evaluation;
@@ -10,7 +11,6 @@ use App\Models\Matiere;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 class EvaluationController extends WebEvaluationController
@@ -21,7 +21,7 @@ class EvaluationController extends WebEvaluationController
         $context = $this->evaluationContext();
         $filters = $request->only(['id_classe', 'id_matiere', 'id_annee_scolaire', 'id_trimestre', 'mois']);
 
-        $validationSelect = Schema::hasColumn('ligne_evaluation', 'validation_status')
+        $validationSelect = SchemaExiste::colonne('ligne_evaluation', 'validation_status')
             ? "MIN(COALESCE(ligne_evaluation.validation_status, 'valide')) as validation_status"
             : "'valide' as validation_status";
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\SchemaExiste;
 use App\Models\Eleve;
 use App\Models\Classe;
 use App\Models\AnneeScolaire;
@@ -15,7 +16,6 @@ use Endroid\QrCode\Writer\PngWriter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use App\Support\Ordres;
@@ -298,7 +298,7 @@ class EleveController extends Controller
             'conduite' => 'required|string|max:255',
         ]);
 
-        if (!Schema::hasTable('transfert')) {
+        if (!SchemaExiste::table('transfert')) {
             return back()->with('error', 'La table des transferts n’est pas disponible.');
         }
 
@@ -341,11 +341,11 @@ class EleveController extends Controller
                 'id_annee' => $data['id_annee'],
             ]);
 
-            if (Schema::hasTable('transfert')) {
+            if (SchemaExiste::table('transfert')) {
                 $latestTransfer = DB::table('transfert')
                     ->where('id_eleve', $eleve->id_eleve)
                     ->where('id_ecole', session('idEcole'))
-                    ->when(Schema::hasColumn('transfert', 'date_retour'), fn ($query) => $query->whereNull('date_retour'))
+                    ->when(SchemaExiste::colonne('transfert', 'date_retour'), fn ($query) => $query->whereNull('date_retour'))
                     ->orderByDesc('id_transfert')
                     ->first();
 
@@ -372,7 +372,7 @@ class EleveController extends Controller
 
     public function transferCertificate($id)
     {
-        if (!Schema::hasTable('transfert')) {
+        if (!SchemaExiste::table('transfert')) {
             abort(404);
         }
 
@@ -729,7 +729,7 @@ class EleveController extends Controller
 
     protected function studentRecentEvaluations(Eleve $eleve)
     {
-        if (!Schema::hasTable('ligne_evaluation')) {
+        if (!SchemaExiste::table('ligne_evaluation')) {
             return collect();
         }
 
@@ -747,7 +747,7 @@ class EleveController extends Controller
                 't.nom_trimestre',
             ]);
 
-        if (Schema::hasColumn('ligne_evaluation', 'id_annee_scolaire')) {
+        if (SchemaExiste::colonne('ligne_evaluation', 'id_annee_scolaire')) {
             $query->where('le.id_annee_scolaire', $eleve->id_annee);
         }
 
@@ -782,7 +782,7 @@ class EleveController extends Controller
 
     protected function studentTransfers(Eleve $eleve)
     {
-        if (!Schema::hasTable('transfert')) {
+        if (!SchemaExiste::table('transfert')) {
             return collect();
         }
 
@@ -795,12 +795,12 @@ class EleveController extends Controller
 
     protected function transferOptionalColumns(array $values): array
     {
-        if (!Schema::hasTable('transfert')) {
+        if (!SchemaExiste::table('transfert')) {
             return [];
         }
 
         return collect($values)
-            ->filter(fn ($value, $column) => Schema::hasColumn('transfert', $column))
+            ->filter(fn ($value, $column) => SchemaExiste::colonne('transfert', $column))
             ->all();
     }
 
@@ -841,7 +841,7 @@ class EleveController extends Controller
 
     private function studentLegacyPlanifications(Eleve $eleve)
     {
-        if (!Schema::hasTable('ligne_inscription') || !Schema::hasTable('planification')) {
+        if (!SchemaExiste::table('ligne_inscription') || !SchemaExiste::table('planification')) {
             return collect();
         }
 

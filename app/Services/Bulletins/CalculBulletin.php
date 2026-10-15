@@ -2,6 +2,7 @@
 
 namespace App\Services\Bulletins;
 
+use App\Support\SchemaExiste;
 use App\Models\AnneeScolaire;
 use App\Models\Classe;
 use App\Models\Ecole;
@@ -9,7 +10,6 @@ use App\Services\ConductNoteService;
 use App\Support\Domaines;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use App\Support\Ordres;
 
 /**
@@ -131,7 +131,7 @@ class CalculBulletin
             ->get(['le.id_eleve', 'le.id_matiere', 'le.id_evaluation', 'le.note', 'n.typeNote', 'n.codeNote'])
             ->groupBy('id_eleve');
 
-        $this->choixNoteClasse = Schema::hasTable('note_classe_choix')
+        $this->choixNoteClasse = SchemaExiste::table('note_classe_choix')
             ? DB::table('note_classe_choix')
                 ->where('id_classe', $this->classe->id_classe)
                 ->where('id_annee', $this->idAnnee)
@@ -450,7 +450,7 @@ class CalculBulletin
 
     private function filtrerNotesValidees(): bool
     {
-        return Schema::hasColumn('ligne_evaluation', 'validation_status')
+        return SchemaExiste::colonne('ligne_evaluation', 'validation_status')
             && strtolower(trim((string) $this->ecole->statut)) === 'prive';
     }
 }

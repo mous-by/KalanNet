@@ -2,10 +2,10 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\SchemaExiste;
 use App\Support\SubscriptionGate;
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema;
 use Symfony\Component\HttpFoundation\Response;
 
 class EnsureActiveSubscription
@@ -46,7 +46,7 @@ class EnsureActiveSubscription
             return false;
         }
 
-        if (!session()->has('idEcole') || !Schema::hasTable('abonnements')) {
+        if (!session()->has('idEcole') || !SchemaExiste::table('abonnements')) {
             return false;
         }
 

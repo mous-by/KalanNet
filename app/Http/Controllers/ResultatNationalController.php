@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\SchemaExiste;
 use App\Models\AnneeScolaire;
 use App\Models\Classe;
 use App\Models\Ecole;
@@ -10,7 +11,6 @@ use App\Support\ExamenNational;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -381,7 +381,7 @@ class ResultatNationalController extends Controller
             abort(403);
         }
 
-        if (!Schema::hasTable('resultats_def_terminal')) {
+        if (!SchemaExiste::table('resultats_def_terminal')) {
             abort(500, 'La table des résultats nationaux n’est pas disponible.');
         }
     }

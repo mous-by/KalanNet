@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\SchemaExiste;
 use App\Models\AnneeScolaire;
 use App\Models\AppNotification;
 use App\Models\Classe;
@@ -19,7 +20,6 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -570,7 +570,7 @@ class EmargementController extends Controller
 
     protected function notifyEmargementValidators(Emargement $emargement): void
     {
-        if (!Schema::hasTable('app_notifications')) {
+        if (!SchemaExiste::table('app_notifications')) {
             return;
         }
 

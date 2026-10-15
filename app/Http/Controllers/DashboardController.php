@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\SchemaExiste;
 use App\Models\Abonnement;
 use App\Models\AnneeScolaire;
 use App\Models\AppNotification;
@@ -22,7 +23,6 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class DashboardController extends Controller
 {
@@ -348,7 +348,7 @@ class DashboardController extends Controller
 
     protected function notifySchoolUsersSubscriptionUpdated(Abonnement $abonnement): void
     {
-        if (!Schema::hasTable('app_notifications')) {
+        if (!SchemaExiste::table('app_notifications')) {
             return;
         }
 
@@ -677,7 +677,7 @@ class DashboardController extends Controller
 
     private function parentAnnouncements(ParentModel $parent, ?int $schoolId)
     {
-        if (!$schoolId || !Schema::hasTable('annonces_admin_gestionnaire')) {
+        if (!$schoolId || !SchemaExiste::table('annonces_admin_gestionnaire')) {
             return collect();
         }
 
@@ -685,7 +685,7 @@ class DashboardController extends Controller
             ->leftJoin('utilisateurs as users', 'users.idUtilisateur', '=', 'annonces.id_utilisateur')
             ->where('annonces.id_ecole', $schoolId)
             ->whereIn('annonces.public_cible', ['tous', 'parents', 'parent'])
-            ->when(Schema::hasColumn('annonces_admin_gestionnaire', 'statut_annonce'), fn ($query) => $query->where('annonces.statut_annonce', 'publie'))
+            ->when(SchemaExiste::colonne('annonces_admin_gestionnaire', 'statut_annonce'), fn ($query) => $query->where('annonces.statut_annonce', 'publie'))
             ->select([
                 'annonces.id_annonce',
                 'annonces.titre',
@@ -703,7 +703,7 @@ class DashboardController extends Controller
 
     private function parentPublishedBulletins($children)
     {
-        if ($children->isEmpty() || !Schema::hasTable('bulletin_publications')) {
+        if ($children->isEmpty() || !SchemaExiste::table('bulletin_publications')) {
             return collect();
         }
 
@@ -810,7 +810,7 @@ class DashboardController extends Controller
 
     private function parentLegacyPlanifications(Eleve $child)
     {
-        if (!Schema::hasTable('ligne_inscription') || !Schema::hasTable('planification')) {
+        if (!SchemaExiste::table('ligne_inscription') || !SchemaExiste::table('planification')) {
             return collect();
         }
 

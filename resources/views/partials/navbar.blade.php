@@ -5,7 +5,7 @@
     $notifications = collect();
     $unreadNotificationsCount = 0;
     $subscriptionReminderState = null;
-    if ($user && \Illuminate\Support\Facades\Schema::hasTable('app_notifications')) {
+    if ($user && \App\Support\SchemaExiste::table('app_notifications')) {
         if ($idEcole && $user->droit !== 'SupAdmin') {
             $subscription = \App\Models\Abonnement::with('offre')
                 ->where('ecole_id', $idEcole)

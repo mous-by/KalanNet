@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\SchemaExiste;
 use App\Models\Evaluation;
 use App\Models\AppNotification;
 use App\Models\LigneEvaluation;
@@ -17,7 +18,6 @@ use App\Models\Trimestre;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -31,7 +31,7 @@ class EvaluationController extends Controller
         $context = $this->evaluationContext();
         $filters = $request->only(['id_classe', 'id_matiere', 'id_annee_scolaire', 'id_trimestre', 'mois']);
 
-        $validationSelect = Schema::hasColumn('ligne_evaluation', 'validation_status')
+        $validationSelect = SchemaExiste::colonne('ligne_evaluation', 'validation_status')
             ? "MIN(COALESCE(ligne_evaluation.validation_status, 'valide')) as validation_status"
             : "'valide' as validation_status";
 
@@ -325,7 +325,7 @@ class EvaluationController extends Controller
         DB::transaction(function () use ($evaluation) {
             LigneEvaluation::where('id_evaluation', $evaluation->id_evaluation)->delete();
             // Devoir retenu seul pour la note de classe : la matière revient à la moyenne des devoirs.
-            if (Schema::hasTable('note_classe_choix')) {
+            if (SchemaExiste::table('note_classe_choix')) {
                 DB::table('note_classe_choix')->where('id_evaluation', $evaluation->id_evaluation)->delete();
             }
             $evaluation->delete();
@@ -544,7 +544,7 @@ class EvaluationController extends Controller
     /** Ce que la page de saisie affiche du choix de la note de classe (null si ce n'est pas un devoir). */
     protected function noteClasseInfo(Evaluation $evaluation, LigneEvaluation $ligne): ?array
     {
-        if (!$this->estDevoir($ligne->noteType) || !Schema::hasTable('note_classe_choix')) {
+        if (!$this->estDevoir($ligne->noteType) || !SchemaExiste::table('note_classe_choix')) {
             return null;
         }
 
@@ -652,7 +652,7 @@ class EvaluationController extends Controller
 
     protected function validationColumns(string $status): array
     {
-        if (!Schema::hasColumn('ligne_evaluation', 'validation_status')) {
+        if (!SchemaExiste::colonne('ligne_evaluation', 'validation_status')) {
             return [];
         }
 
@@ -672,7 +672,7 @@ class EvaluationController extends Controller
 
     protected function notifyNoteValidators(Evaluation $evaluation): void
     {
-        if (!Schema::hasTable('app_notifications') || !Schema::hasColumn('ligne_evaluation', 'validation_status')) {
+        if (!SchemaExiste::table('app_notifications') || !SchemaExiste::colonne('ligne_evaluation', 'validation_status')) {
             return;
         }
 

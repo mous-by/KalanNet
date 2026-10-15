@@ -45,7 +45,7 @@
     // Licence à vie (offre ACHAT) : l'école n'a pas à gérer d'abonnement => on masque le menu (sauf SupAdmin).
     $hasLifetimeSubscription = $user->droit !== 'SupAdmin'
         && session('idEcole')
-        && \Illuminate\Support\Facades\Schema::hasTable('abonnements')
+        && \App\Support\SchemaExiste::table('abonnements')
         && \App\Models\Abonnement::where('ecole_id', session('idEcole'))->where('statut', 'actif')->whereNull('fin_at')->exists();
     $canOpenSubscriptions = ($user->droit === 'SupAdmin' || $user->userHasAnyPermission(['abonnements_apercu', 'abonnements_paiement', 'abonnements_configuration', 'abonnements_validation'])) && !$hasLifetimeSubscription;
     $studentsParentsMenuPermissions = [

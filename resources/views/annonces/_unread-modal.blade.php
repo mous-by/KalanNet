@@ -4,7 +4,7 @@
     $unreadAnnouncements = collect();
     $unreadAnnouncementFiles = collect();
 
-    if ($user && $schoolId && \Illuminate\Support\Facades\Schema::hasTable('annonces_admin_gestionnaire') && \Illuminate\Support\Facades\Schema::hasTable('annonces_lues')) {
+    if ($user && $schoolId && \App\Support\SchemaExiste::table('annonces_admin_gestionnaire') && \App\Support\SchemaExiste::table('annonces_lues')) {
         $unreadAnnouncements = \App\Http\Controllers\AnnouncementController::visibleAnnouncementQuery($user, (int) $schoolId)
             ->leftJoin('utilisateurs as users', 'users.idUtilisateur', '=', 'annonces.id_utilisateur')
             ->whereNotExists(function ($query) use ($user) {
@@ -18,7 +18,7 @@
             ->limit(5)
             ->get();
 
-        if ($unreadAnnouncements->isNotEmpty() && \Illuminate\Support\Facades\Schema::hasTable('annonces_fichiers')) {
+        if ($unreadAnnouncements->isNotEmpty() && \App\Support\SchemaExiste::table('annonces_fichiers')) {
             $unreadAnnouncementFiles = \Illuminate\Support\Facades\DB::table('annonces_fichiers')
                 ->whereIn('id_annonce', $unreadAnnouncements->pluck('id_annonce'))
                 ->where('type_annonce', 'admin_gestionnaire')
@@ -29,7 +29,7 @@
     }
 
     // Annonces de l'académie (DAE) et du CAP (DCAP) non lues.
-    if ($user && \Illuminate\Support\Facades\Schema::hasTable('annonces_lues')) {
+    if ($user && \App\Support\SchemaExiste::table('annonces_lues')) {
         $unreadAnnouncements = $unreadAnnouncements
             ->concat(\App\Support\Territoire\AnnoncesTerritoire::visibles($user, $schoolId ? (int) $schoolId : null, 5, true))
             ->sortByDesc('date_publication')

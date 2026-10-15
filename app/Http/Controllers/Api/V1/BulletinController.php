@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Support\SchemaExiste;
 use App\Http\Controllers\BulletinController as WebBulletinController;
 use App\Models\AnneeScolaire;
 use App\Models\Classe;
@@ -9,7 +10,6 @@ use App\Models\Eleve;
 use App\Models\Trimestre;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class BulletinController extends WebBulletinController
 {
@@ -128,7 +128,7 @@ class BulletinController extends WebBulletinController
             return response()->json(['message' => 'Sélectionnez la période à publier.'], 422);
         }
 
-        if (!Schema::hasTable('bulletin_publications')) {
+        if (!SchemaExiste::table('bulletin_publications')) {
             return response()->json(['message' => 'Le module de publication des bulletins n’est pas encore migré.'], 422);
         }
 
@@ -163,7 +163,7 @@ class BulletinController extends WebBulletinController
             'mois' => 'nullable|integer|between:1,12',
         ]);
 
-        if (Schema::hasTable('bulletin_publications')) {
+        if (SchemaExiste::table('bulletin_publications')) {
             DB::table('bulletin_publications')
                 ->where('id_ecole', $classe->idEcole)
                 ->where('id_classe', $classe->id_classe)
