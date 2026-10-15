@@ -78,6 +78,11 @@ class SuppressionEcole
                     ['indiscipline', ['id_eleve' => $ids['eleves']]],
                     ['note', ['id_ecole' => $e]],
                     ['ligneclasse', ['id_classe' => $ids['classes']]],
+                    ['classe_maitres', ['id_classe' => $ids['classes']]], // maîtres des classes du Jardin
+                    ['note_classe_choix', ['id_classe' => $ids['classes']]],
+                    ['domaines', ['id_ecole' => $e]],
+                    ['series_matieres', ['id_ecole' => $e]],
+                    ['evaluation_commune_accuses', ['id_ecole' => $e]],
                     // Inscriptions et élèves
                     ['ligne_inscription', ['id_classe' => $ids['classes'], 'id_eleve' => $ids['eleves']]],
                     ['ligne_reinscription', ['id_classe' => $ids['classes'], 'id_eleve' => $ids['eleves']]],
