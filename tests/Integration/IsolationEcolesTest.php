@@ -28,6 +28,20 @@ class IsolationEcolesTest extends IntegrationTestCase
             $this->assertContains($reponse->status(), [403, 404], "$url : {$reponse->status()}");
         }
 
+        // Écriture : supprimer l'évaluation d'une autre école est refusé (faille corrigée en octobre 2026).
+        $evaluationEtrangere = DB::table('ligne_evaluation as l')->join('classe as c', 'c.id_classe', '=', 'l.id_classe')
+            ->where('c.idEcole', '!=', 1)->where('l.id_evaluation', '>', 0)->value('l.id_evaluation');
+        $this->assertNotNull($evaluationEtrangere, 'il faut une évaluation d\'une autre école dans la base locale');
+        $evaluation = $evaluationEtrangere;
+        if ($evaluation) {
+            $notes = DB::table('ligne_evaluation')->where('id_evaluation', $evaluation)->count();
+            $this->actingAs($admin)->withSession(['idEcole' => 1])->delete("/evaluations/$evaluation")->assertNotFound();
+            $this->assertSame($notes, DB::table('ligne_evaluation')->where('id_evaluation', $evaluation)->count(), 'web : notes intactes');
+            $this->withToken($admin->createToken('test')->plainTextToken)->deleteJson("/api/v1/evaluations/$evaluation")->assertNotFound();
+            $this->assertSame($notes, DB::table('ligne_evaluation')->where('id_evaluation', $evaluation)->count(), 'API : notes intactes');
+            $this->assertTrue(DB::table('evaluation')->where('id_evaluation', $evaluation)->exists());
+        }
+
         $jeton = $admin->createToken('test')->plainTextToken;
         foreach (array_filter(["/api/v1/eleves/{$eleve->id_eleve}", $classe ? "/api/v1/classes/$classe" : null, $evaluation ? "/api/v1/evaluations/$evaluation" : null]) as $url) {
             $reponse = $this->withToken($jeton)->getJson($url);

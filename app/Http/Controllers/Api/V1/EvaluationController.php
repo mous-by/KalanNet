@@ -239,8 +239,7 @@ class EvaluationController extends WebEvaluationController
         $firstLine = LigneEvaluation::with('classe')->where('id_evaluation', $evaluation->id_evaluation)->first();
         if ($firstLine) {
             $this->authorizeEvaluationLines(collect([$firstLine]));
-        }
-        if ($firstLine?->classe) {
+            // Classe d'une autre école : filtrée (null) par BelongsToSchool, donc 404.
             $this->authorizeClasse($firstLine->classe);
         }
 
