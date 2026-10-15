@@ -301,12 +301,13 @@
                         </tbody>
                     </table>
                 </div>
-
-                <div class="d-flex justify-content-between align-items-center mt-4">
-                    <a href="{{ route('classes.index') }}" class="btn btn-light px-4">{{ __('classes.back') }}</a>
-                    <button type="submit" class="btn btn-primary px-4">{{ $isEdit ? __('classes.action_edit') : __('classes.save') }}</button>
-                </div>
             </div>
+        </div>
+
+        {{-- Hors de la carte des matières : reste visible au Jardin, qui n'a pas de matières. --}}
+        <div class="d-flex justify-content-between align-items-center mt-4">
+            <a href="{{ route('classes.index') }}" class="btn btn-light px-4">{{ __('classes.back') }}</a>
+            <button type="submit" class="btn btn-primary px-4">{{ $isEdit ? __('classes.action_edit') : __('classes.save') }}</button>
         </div>
     </form>
 
