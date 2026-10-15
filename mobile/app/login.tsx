@@ -57,7 +57,7 @@ export default function LoginScreen() {
     setError(null);
     setIsSubmitting(true);
     try {
-      await selectSchool(account.id_utilisateur, account.id_ecole!);
+      await selectSchool(account.id_utilisateur, account.id_ecole!, account.selection_token);
     } catch (err) {
       setError(isNetworkError(err) ? t('auth.network_error') : apiErrorMessage(err, t('auth.school_selection_error')));
     } finally {

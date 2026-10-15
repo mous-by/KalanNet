@@ -91,6 +91,12 @@ class AuthController extends Controller
 
         // Check if user has multiple schools
         if ($users->count() > 1) {
+            // Seuls ces comptes, dont le mot de passe vient d'être vérifié, pourront être choisis.
+            $request->session()->put('login_choix', [
+                'ids' => $users->pluck('idUtilisateur')->map(fn ($id) => (int) $id)->all(),
+                'expire' => now()->addMinutes(10)->timestamp,
+            ]);
+
             return view('auth.login', [
                 'ecoles_modal' => $users,
                 'selected_theme' => $request->input('theme_preference'),
@@ -115,10 +121,16 @@ class AuthController extends Controller
             'theme_preference' => ['nullable', 'string', 'in:bleu-sombre,light,dark,vert,violet,rouge,orange,ocean,ambre,ardoise,brume'],
         ]);
 
-        $user = User::withoutGlobalScopes()
+        // Le compte choisi doit faire partie de ceux dont le mot de passe vient d'être vérifié.
+        $choix = $request->session()->pull('login_choix');
+        $autorise = is_array($choix)
+            && ($choix['expire'] ?? 0) >= now()->timestamp
+            && in_array((int) $request->idUtilisateur, $choix['ids'] ?? [], true);
+
+        $user = $autorise ? User::withoutGlobalScopes()
                     ->where('idUtilisateur', $request->idUtilisateur)
                     ->where('idEcole', $request->idEcole)
-                    ->first();
+                    ->first() : null;
 
         if (!$user) {
             return redirect()->route('login')->with('error', __('messages.auth.school_selection_error'));

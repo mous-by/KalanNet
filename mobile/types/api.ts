@@ -40,6 +40,8 @@ export interface AccountChoice {
   id_ecole: number | null;
   nom_ecole: string | null;
   droit: Droit;
+  // Prouve au serveur que le mot de passe de ce compte a été vérifié (10 minutes).
+  selection_token?: string;
 }
 
 export interface LoginSuccess {

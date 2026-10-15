@@ -10,7 +10,7 @@ interface AuthContextValue {
   maintenanceMessage: string | null;
   pendingAccounts: AccountChoice[] | null;
   login: (identifier: string, pwd: string) => Promise<void>;
-  selectSchool: (idUtilisateur: number, idEcole: number) => Promise<void>;
+  selectSchool: (idUtilisateur: number, idEcole: number, selectionToken?: string) => Promise<void>;
   logout: () => Promise<void>;
   cancelSchoolSelection: () => void;
   refreshUser: () => Promise<void>;
@@ -87,10 +87,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setPendingAccounts(accounts);
   }, []);
 
-  const selectSchool = useCallback(async (idUtilisateur: number, idEcole: number) => {
+  const selectSchool = useCallback(async (idUtilisateur: number, idEcole: number, selectionToken?: string) => {
     const { data } = await api.post<LoginResponse>('/auth/select-school', {
       id_utilisateur: idUtilisateur,
       id_ecole: idEcole,
+      selection_token: selectionToken,
       device_name: 'mobile-app',
     });
     await applyLoginResult(data, setUser, setSubscriptionBlocked);

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Support\Facades\Crypt;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\UserResource;
 use App\Models\Ecole;
@@ -68,6 +70,12 @@ class AuthController extends Controller
                     'id_ecole' => $user->idEcole,
                     'nom_ecole' => $user->ecole->nomEcole ?? null,
                     'droit' => $user->droit,
+                    // À renvoyer à /auth/select-school : prouve que le mot de passe a été vérifié (10 minutes).
+                    'selection_token' => Crypt::encryptString(json_encode([
+                        'u' => (int) $user->idUtilisateur,
+                        'e' => (int) $user->idEcole,
+                        'exp' => now()->addMinutes(10)->timestamp,
+                    ])),
                 ])->all(),
             ]);
         }
@@ -91,7 +99,23 @@ class AuthController extends Controller
             'id_utilisateur' => 'required|exists:utilisateurs,idUtilisateur',
             'id_ecole' => 'required|exists:ecole,idEcole',
             'device_name' => ['nullable', 'string', 'max:100'],
+            'selection_token' => ['nullable', 'string'],
         ]);
+
+        // Le jeton reçu au login prouve que le mot de passe de ce compte a été vérifié.
+        try {
+            $jeton = json_decode(Crypt::decryptString((string) $request->input('selection_token')), true);
+        } catch (DecryptException) {
+            $jeton = null;
+        }
+        if (!is_array($jeton)
+            || ($jeton['u'] ?? null) !== (int) $request->input('id_utilisateur')
+            || ($jeton['e'] ?? null) !== (int) $request->input('id_ecole')
+            || ($jeton['exp'] ?? 0) < now()->timestamp) {
+            return response()->json([
+                'message' => 'Sélection expirée ou invalide. Reconnectez-vous ; si le problème persiste, mettez à jour l\'application.',
+            ], 422);
+        }
 
         $user = User::withoutGlobalScopes()
             ->where('idUtilisateur', $request->input('id_utilisateur'))

@@ -50,7 +50,8 @@ return [
     |
     */
 
-    'expiration' => null,
+    // Jetons de l'application mobile : 90 jours par défaut (en minutes).
+    'expiration' => env('SANCTUM_EXPIRATION', 60 * 24 * 90),
 
     /*
     |--------------------------------------------------------------------------
