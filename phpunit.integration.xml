@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Tests d'intégration KalanNet : ils tournent sur la base MySQL LOCALE du .env
+    (le schéma historique n'existe pas entièrement dans les migrations, donc pas
+    de SQLite), et chaque test est annulé par une transaction.
+
+    Lancement : KALANNET_TESTS_INTEGRATION=1 vendor/bin/phpunit -c phpunit.integration.xml
+
+    Garde-fous (tests/Integration/IntegrationTestCase.php) : refus si la variable
+    n'est pas définie, si APP_ENV vaut « production » ou si la base n'est pas locale.
+-->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true">
+    <testsuites>
+        <testsuite name="Integration">
+            <directory>tests/Integration</directory>
+        </testsuite>
+    </testsuites>
+    <php>
+        <env name="APP_ENV" value="testing" force="true"/>
+        <env name="BCRYPT_ROUNDS" value="4"/>
+        <env name="CACHE_STORE" value="array" force="true"/>
+        <env name="SESSION_DRIVER" value="array" force="true"/>
+        <env name="QUEUE_CONNECTION" value="sync" force="true"/>
+        <env name="MAIL_MAILER" value="array" force="true"/>
+    </php>
+</phpunit>
