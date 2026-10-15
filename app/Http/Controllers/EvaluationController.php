@@ -591,8 +591,11 @@ class EvaluationController extends Controller
         ])->values();
     }
 
-    protected function authorizeClasse(Classe $classe): void
+    protected function authorizeClasse(?Classe $classe): void
     {
+        // Classe invisible pour l'école active (autre école ou supprimée) : 404, comme les autres ressources.
+        abort_if($classe === null, 404);
+
         $user = Auth::user();
         if ($user->droit !== 'SupAdmin' && (int) $classe->idEcole !== (int) (session('idEcole') ?: $user->idEcole)) {
             abort(403);
