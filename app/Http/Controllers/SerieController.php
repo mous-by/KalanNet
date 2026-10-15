@@ -59,18 +59,32 @@ class SerieController extends Controller
         return redirect()->route('pedagogie.series')->with('success', 'Matières des séries enregistrées.');
     }
 
-    /** Matières enseignées dans les classes du secondaire général de l'école. */
+    /**
+     * Matières du secondaire général que l'école peut utiliser : le catalogue
+     * du secondaire (franco-arabe pour une école franco-arabe), ses propres
+     * matières du secondaire et celles déjà placées dans ses classes.
+     */
     private function matieresSecondaire(int $idEcole)
     {
-        return DB::table('ligneclasse as lc')
+        $ecole = \App\Models\Ecole::withoutGlobalScopes()->find($idEcole);
+
+        $catalogue = \App\Models\Matiere::withoutGlobalScopes()
+            ->visiblesPourEcole($ecole)
+            ->whereHas('ordres', fn ($q) => $q->where('ordre_enseignement', 'Secondaire Generale'))
+            ->get(['id_matiere', 'nom_matiere', 'est_lv2']);
+
+        $enClasse = DB::table('ligneclasse as lc')
             ->join('classe as c', 'c.id_classe', '=', 'lc.id_classe')
             ->join('matiere as m', 'm.id_matiere', '=', 'lc.id_matiere')
             ->where('c.idEcole', $idEcole)
             ->where('c.ordreEnseignement', 'secondairegenerale')
-            ->select('m.id_matiere', 'm.nom_matiere', 'm.est_lv2')
-            ->distinct()
-            ->orderBy('m.nom_matiere')
-            ->get();
+            ->get(['m.id_matiere', 'm.nom_matiere', 'm.est_lv2']);
+
+        return $catalogue->map(fn ($m) => (object) ['id_matiere' => (int) $m->id_matiere, 'nom_matiere' => $m->nom_matiere, 'est_lv2' => (bool) $m->est_lv2])
+            ->concat($enClasse->map(fn ($m) => (object) ['id_matiere' => (int) $m->id_matiere, 'nom_matiere' => $m->nom_matiere, 'est_lv2' => (bool) $m->est_lv2]))
+            ->unique('id_matiere')
+            ->sortBy(fn ($m) => \Illuminate\Support\Str::lower(\Illuminate\Support\Str::ascii($m->nom_matiere)))
+            ->values();
     }
 
     private function ecoleCourante(): int
