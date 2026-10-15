@@ -43,6 +43,7 @@ primaire ; 2 tables jamais utilisées (`roles`, `role_permission`) ; 0 doublon e
 | Moyenne | Tableau de bord : N+1 par classe et comptages répétés | Confirmé | Corrigé (`6c7dfa9`, `a6bf3d9`), déployé |
 | Moyenne | PDF des bulletins d'une classe : ~13 s pour 55 élèves (rendu dompdf) | Confirmé | Non traité : génération en tâche de fond recommandée |
 | Faible | Erreur 500 au lieu de 404 sur les évaluations d'une autre école | Confirmé | Corrigé (`8f0340b`), déployé |
+| Moyenne | Suppression d'une école incomplète : 5 tables oubliées (`classe_maitres`, `note_classe_choix`, `domaines`, `series_matieres`, `evaluation_commune_accuses`) | Confirmé (cycle génération / suppression) | Corrigé (`216ceb2`), à déployer avec la prochaine mise à jour |
 | Faible | Tables sans clé primaire, `user_permission` sans unicité | Confirmé | À décider |
 | Faible | Clés étrangères absentes sur les notes et quelques liaisons | Confirmé | À décider quand les données grandiront |
 | Faible | Test unitaire cassé (`MaliPhoneTest`) | Confirmé | Remplacé par `PaysPhoneTest` (`e1349a3`) |
