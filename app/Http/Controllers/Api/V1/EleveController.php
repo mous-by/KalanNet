@@ -221,6 +221,7 @@ class EleveController extends WebEleveController
 
     public function index(Request $request)
     {
+        $this->authorizePermission('eleves_apercu');
         $idEcole = session('idEcole');
 
         $query = Eleve::where('id_ecole', $idEcole)

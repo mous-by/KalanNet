@@ -110,6 +110,7 @@ class EvaluationController extends WebEvaluationController
 
         return response()->json([
             'evaluation' => $evaluation,
+            'note_classe' => $firstLine ? $this->noteClasseInfo($evaluation, $firstLine->loadMissing('noteType')) : null,
             'details' => $details,
             'matiere' => $firstLine?->matiere ?? new Matiere(['nom_matiere' => 'Non renseignée']),
             'classe' => $classe,
@@ -249,5 +250,15 @@ class EvaluationController extends WebEvaluationController
         });
 
         return response()->json(['success' => true]);
+    }
+
+    /** Note de classe de la matière pour la période de ce devoir (application mobile). */
+    public function noteClasseApi(Request $request, int $id)
+    {
+        $message = $this->appliquerNoteClasse($request, $id);
+        $evaluation = Evaluation::findOrFail($id);
+        $ligne = LigneEvaluation::with('noteType')->where('id_evaluation', $id)->first();
+
+        return response()->json(['message' => $message, 'note_classe' => $this->noteClasseInfo($evaluation, $ligne)]);
     }
 }

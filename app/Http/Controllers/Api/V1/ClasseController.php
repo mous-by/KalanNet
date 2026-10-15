@@ -11,6 +11,7 @@ class ClasseController extends WebClasseController
 {
     public function index()
     {
+        $this->authorizePermission('classes_apercu');
         $user = request()->user();
         $idEcole = session('idEcole');
 
@@ -46,6 +47,7 @@ class ClasseController extends WebClasseController
             'ordres' => $this->ordresDisponibles($user, $idEcole),
             'filieres' => $this->filieresDisponibles($idEcole),
             'est_sante' => $estSante,
+            'series' => collect(\App\Support\Series::SERIES)->map(fn ($s, $code) => ['code' => $code, 'libelle' => $s[0], 'niveau' => $s[1]])->values(),
         ]);
     }
 
@@ -67,6 +69,7 @@ class ClasseController extends WebClasseController
                 'ordreEnseignement' => $estSante ? null : $data['ordre_enseignement'],
                 'idEcole' => $idEcole,
                 'id_filiere' => $estSante ? $data['id_filiere'] : null,
+                'serie' => $this->serieValide($data),
             ]);
 
             $this->syncLignesClasse($classe, $data);
@@ -99,11 +102,14 @@ class ClasseController extends WebClasseController
                 'nom_classe' => $data['nom_classe'],
                 'ordreEnseignement' => $estSante ? null : $data['ordre_enseignement'],
                 'id_filiere' => $estSante ? $data['id_filiere'] : null,
-            ]);
+            ] + (array_key_exists('serie', $data) ? ['serie' => $this->serieValide($data)] : []));
 
+            // Domaine et groupe des matières : gardés si l'application ne les envoie pas.
             $dejaPresentes = $classe->ligneClasses()->pluck('id_matiere')->all();
+            $domainesPrecedents = $classe->ligneClasses()->pluck('id_domaine', 'id_matiere')->all();
+            $groupesPrecedents = $classe->ligneClasses()->pluck('groupe', 'id_matiere')->all();
             $classe->ligneClasses()->delete();
-            $this->syncLignesClasse($classe, $data, $dejaPresentes);
+            $this->syncLignesClasse($classe, $data, $dejaPresentes, $domainesPrecedents, $groupesPrecedents);
         });
 
         return response()->json($classe->fresh(['ligneClasses.matiere', 'ligneClasses.enseignant', 'filiere']));

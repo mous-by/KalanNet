@@ -30,10 +30,12 @@ interface FormOptions {
   // ClasseController::estSante() cote backend).
   filieres: Filiere[];
   est_sante: boolean;
+  // Séries du secondaire général (11ème : Sciences, SES, LL ; 12ème : TExp, TSE…).
+  series?: { code: string; libelle: string; niveau: number }[];
 }
 
 interface Props {
-  classe?: Classe & { ligneClasses?: Array<{ id_matiere: number; id_enseignants: number | null; coefficient: number }> };
+  classe?: Classe & { serie?: string | null; ligneClasses?: Array<{ id_matiere: number; id_enseignants: number | null; coefficient: number }> };
   onSaved: () => void;
 }
 
@@ -46,6 +48,7 @@ export default function ClasseForm({ classe, onSaved }: Props) {
   const [nomClasseDirty, setNomClasseDirty] = useState(!!classe?.nom_classe);
   const [ordre, setOrdre] = useState<string | null>(classe?.ordreEnseignement ?? null);
   const [idFiliere, setIdFiliere] = useState<number | null>(classe?.id_filiere ?? null);
+  const [serie, setSerie] = useState<string | null>(classe?.serie ?? null);
   const [lignes, setLignes] = useState<LigneForm[]>([{ id_matiere: null, id_enseignant: null, coefficient: '1' }]);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -65,8 +68,20 @@ export default function ClasseForm({ classe, onSaved }: Props) {
   }, [classe]);
 
   function updateLigne(index: number, patch: Partial<LigneForm>) {
-    setLignes((prev) => prev.map((l, i) => (i === index ? { ...l, ...patch } : l)));
+    setLignes((prev) =>
+      prev.map((l, i) => {
+        if (i === index) return { ...l, ...patch };
+        // Fondamental I (un seul maître) : l'enseignant choisi est repris pour
+        // les matières qui n'en ont pas encore ; il reste modifiable ensuite.
+        if (patch.id_enseignant && ordre === 'fondamentale1' && !l.id_enseignant) return { ...l, id_enseignant: patch.id_enseignant };
+        return l;
+      })
+    );
   }
+
+  // Série : seulement pour une 11ème ou une 12ème du secondaire général.
+  const niveauClasse = Number((nomClasse.match(/^\s*(\d{1,2})/) ?? [])[1] ?? 0);
+  const seriesProposees = ordre === 'secondairegenerale' ? (options?.series ?? []).filter((x) => x.niveau === niveauClasse) : [];
 
   function addLigne() {
     setLignes((prev) => [...prev, { id_matiere: null, id_enseignant: null, coefficient: '1' }]);
@@ -102,6 +117,7 @@ export default function ClasseForm({ classe, onSaved }: Props) {
       id_matiere: validLignes.map((l) => l.id_matiere),
       id_enseignants: validLignes.map((l) => l.id_enseignant),
       coefficient: validLignes.map((l) => Number(l.coefficient) || 0),
+      serie: seriesProposees.some((x) => x.code === serie) ? serie : null,
     };
     try {
       if (!isOnline) {
@@ -157,6 +173,14 @@ export default function ClasseForm({ classe, onSaved }: Props) {
       />
       {!estSante ? (
         <SelectField label={requiredLabel(t('classes.ordre_label'))} value={ordre} options={ordreOptions} onChange={(v) => setOrdre(v as string)} />
+      ) : null}
+      {seriesProposees.length ? (
+        <SelectField
+          label="Série"
+          value={serie}
+          options={[{ value: '', label: '— Aucune —' }, ...seriesProposees.map((x) => ({ value: x.code, label: x.libelle }))]}
+          onChange={(v) => setSerie((v as string) || null)}
+        />
       ) : null}
 
       <Text style={styles.sectionTitle}>{t('classes.subjects_title')}</Text>

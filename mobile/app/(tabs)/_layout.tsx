@@ -10,6 +10,8 @@ import NotificationBell from '@/components/NotificationBell';
 import ThemeMenuButton from '@/components/ThemeMenuButton';
 import ChangerMotDePasseObligatoire from '@/components/ChangerMotDePasseObligatoire';
 import UserAvatar from '@/components/UserAvatar';
+import { estSuperviseur } from '@/lib/menuSections';
+import { hasPermission } from '@/lib/permissions';
 import { useAuth } from '@/context/AuthContext';
 import { useLocale } from '@/context/LocaleContext';
 import { useAppTheme } from '@/context/ThemeContext';
@@ -25,6 +27,11 @@ export default function TabLayout() {
   // though some parent accounts carry stray eleves_dossier/parents_apercu
   // permissions — a raw, unfiltered classes or students list has no use for them.
   const hideForParent = user?.droit === 'parent';
+  // Onglets Élèves et Classes : mêmes permissions que le menu du site ; jamais
+  // pour les DAE / DCAP (le serveur leur refuse les écrans d'école).
+  const superviseur = estSuperviseur(user);
+  const voitEleves = !hideForParent && !superviseur && hasPermission(user, 'eleves_apercu');
+  const voitClasses = !hideForParent && !superviseur && hasPermission(user, 'classes_apercu');
 
   // Mot de passe temporaire : rien d'autre tant qu'il n'est pas remplacé.
   if (user?.doit_changer_mdp) {
@@ -69,7 +76,7 @@ export default function TabLayout() {
           options={{
             title: t('tabs.students'),
             headerShown: false,
-            href: hideForParent ? null : undefined,
+            href: voitEleves ? undefined : null,
             tabBarIcon: ({ color }) => (
               <SymbolView
                 name={{ ios: 'person.2.fill', android: 'people', web: 'people' }}
@@ -84,7 +91,7 @@ export default function TabLayout() {
           options={{
             title: t('tabs.classes'),
             headerShown: false,
-            href: hideForParent ? null : undefined,
+            href: voitClasses ? undefined : null,
             tabBarIcon: ({ color }) => (
               <SymbolView
                 name={{ ios: 'building.2.fill', android: 'school', web: 'school' }}

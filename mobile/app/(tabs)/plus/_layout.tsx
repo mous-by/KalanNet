@@ -49,6 +49,8 @@ export default function PlusLayout() {
       <Stack.Screen name="salaires/index" options={{ title: 'Salaires' }} />
 
       <Stack.Screen name="annonces/index" options={{ title: 'Annonces' }} />
+      <Stack.Screen name="territoire/effectifs" options={{ title: 'Effectifs' }} />
+      <Stack.Screen name="territoire/annonces" options={{ title: 'Annonces du territoire' }} />
       <Stack.Screen name="annonces/new" options={{ title: 'Nouvelle annonce' }} />
 
       <Stack.Screen name="resultats-nationaux/index" options={{ title: 'Résultats nationaux' }} />

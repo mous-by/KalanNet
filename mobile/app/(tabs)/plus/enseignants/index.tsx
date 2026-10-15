@@ -1,11 +1,14 @@
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { Button, FAB, Text } from 'react-native-paper';
 
 import OfflineBanner from '@/components/OfflineBanner';
 import PaginatedList from '@/components/PaginatedList';
 import { useAuth } from '@/context/AuthContext';
 import { useOffline } from '@/context/OfflineContext';
+import { apiErrorMessage } from '@/lib/api';
+import { downloadAndShare } from '@/lib/downloadFile';
 import { removeQueueItem } from '@/lib/offlineQueue';
 import { hasPermission } from '@/lib/permissions';
 import { usePaginatedApi } from '@/lib/useApi';
@@ -17,6 +20,20 @@ export default function EnseignantsScreen() {
   const list = usePaginatedApi<Enseignant>('/enseignants');
   const canManage = hasPermission(user, 'enseignants_creation');
   const queuedEnseignants = queue.filter((item) => item.kind === 'enseignant');
+  // Export Excel : administrateur / gestionnaire avec la permission (comme sur le web).
+  const canExport = user?.droit === 'SupAdmin' || (['Admin', 'Gestionnaire'].includes(user?.droit ?? '') && hasPermission(user, 'enseignants_exporter'));
+  const [isExporting, setIsExporting] = useState(false);
+
+  async function handleExport() {
+    setIsExporting(true);
+    try {
+      await downloadAndShare('/enseignants/exporter', 'Enseignants.xlsx');
+    } catch (err) {
+      Alert.alert('Export', apiErrorMessage(err, "Impossible d'exporter la liste des enseignants."));
+    } finally {
+      setIsExporting(false);
+    }
+  }
 
   return (
     <>
@@ -35,8 +52,13 @@ export default function EnseignantsScreen() {
         searchPlaceholder="Nom, email, téléphone…"
         emptyLabel="Aucun enseignant."
         header={
-          queuedEnseignants.length > 0 ? (
+          canExport || queuedEnseignants.length > 0 ? (
             <View style={styles.queuedSection}>
+              {canExport ? (
+                <Button mode="outlined" icon="microsoft-excel" loading={isExporting} onPress={handleExport} style={styles.exportButton}>
+                  Exporter en Excel
+                </Button>
+              ) : null}
               {queuedEnseignants.map((item) => (
                 <View key={item.id} style={[styles.row, item.status === 'conflict' ? styles.conflictRow : styles.queuedRow]}>
                   <Text style={styles.name}>{item.label}</Text>
@@ -66,6 +88,7 @@ export default function EnseignantsScreen() {
 }
 
 const styles = StyleSheet.create({
+  exportButton: { marginBottom: 8 },
   row: {
     borderWidth: 1,
     borderColor: 'rgba(128,128,128,0.25)',

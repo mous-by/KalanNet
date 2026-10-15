@@ -26,6 +26,15 @@ interface EvaluationContext {
   annees: AnneeScolaire[];
   notes: Note[];
   trimestres: Trimestre[];
+  // Administrateur / gestionnaire : l'évaluation est programmée au nom d'un enseignant.
+  choisirEnseignant?: boolean;
+  enseignants?: { id_enseignant: number; nom_prenom_enseignant: string }[];
+}
+
+interface MatiereClasse {
+  id_matiere: number;
+  nom_matiere: string;
+  id_enseignant?: number | null;
 }
 
 export default function NewEvaluationScreen() {
@@ -34,7 +43,8 @@ export default function NewEvaluationScreen() {
 
   const [idClasse, setIdClasse] = useState<number | null>(null);
   const [idMatiere, setIdMatiere] = useState<number | null>(null);
-  const [matieres, setMatieres] = useState<{ id_matiere: number; nom_matiere: string }[]>([]);
+  const [matieres, setMatieres] = useState<MatiereClasse[]>([]);
+  const [idEnseignant, setIdEnseignant] = useState<number | null>(null);
   const [idAnnee, setIdAnnee] = useState<number | null>(null);
   const [idTrimestre, setIdTrimestre] = useState<number | null>(null);
   const [mois, setMois] = useState<number | null>(null);
@@ -55,16 +65,22 @@ export default function NewEvaluationScreen() {
     }
     const cacheKey = `evaluations-matieres-${idClasse}`;
     api
-      .get<{ matiere: { id_matiere: number; nom_matiere: string }[] }>(`/evaluations/classes/${idClasse}/matieres`)
+      .get<{ matiere: MatiereClasse[] }>(`/evaluations/classes/${idClasse}/matieres`)
       .then(({ data }) => {
         setMatieres(data.matiere);
         setCached(cacheKey, data.matiere);
       })
       .catch(async () => {
-        const cached = await getCached<{ id_matiere: number; nom_matiere: string }[]>(cacheKey);
+        const cached = await getCached<MatiereClasse[]>(cacheKey);
         setMatieres(cached ?? []);
       });
   }, [idClasse]);
+
+  // L'enseignant de la matière dans la classe est proposé ; il reste modifiable.
+  useEffect(() => {
+    const matiere = matieres.find((m) => m.id_matiere === idMatiere);
+    setIdEnseignant(matiere?.id_enseignant ?? null);
+  }, [idMatiere, matieres]);
 
   const isValid = idClasse && idMatiere && idAnnee && idNote && libeller.trim() && dateEvaluation && heureDebut && heureFin;
 
@@ -86,6 +102,7 @@ export default function NewEvaluationScreen() {
       date_evaluation: dateEvaluation,
       heure_debut: heureDebut,
       heure_fin: heureFin,
+      ...(context?.choisirEnseignant && idEnseignant ? { id_enseignant: idEnseignant } : {}),
     };
     try {
       if (!isOnline) {
@@ -132,6 +149,14 @@ export default function NewEvaluationScreen() {
       <OfflineBanner />
       <SelectField label={requiredLabel('Classe')} value={idClasse} options={classeOptions} onChange={(v) => setIdClasse(v as number)} />
       <SelectField label={requiredLabel('Matière')} value={idMatiere} options={matiereOptions} onChange={(v) => setIdMatiere(v as number)} disabled={!idClasse} />
+      {context.choisirEnseignant ? (
+        <SelectField
+          label="Enseignant (proposé d'après la matière)"
+          value={idEnseignant}
+          options={(context.enseignants ?? []).map((e) => ({ value: e.id_enseignant, label: e.nom_prenom_enseignant }))}
+          onChange={(v) => setIdEnseignant(v as number)}
+        />
+      ) : null}
       <SelectField label={requiredLabel('Année scolaire')} value={idAnnee} options={anneeOptions} onChange={(v) => setIdAnnee(v as number)} />
       <SelectField label="Trimestre (ou mois ci-dessous)" value={idTrimestre} options={trimestreOptions} onChange={(v) => setIdTrimestre(v as number)} />
       <TextInput

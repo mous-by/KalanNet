@@ -65,7 +65,14 @@ Route::prefix('v1')->group(function () {
         Route::post('/eleves/{id}/reintegrer', [EleveController::class, 'reintegrate']);
         Route::delete('/eleves/{id}', [EleveController::class, 'destroy']);
 
+        // Espace DAE / DCAP (application mobile).
+        Route::get('/territoire', [\App\Http\Controllers\Api\V1\TerritoireController::class, 'resume']);
+        Route::get('/territoire/effectifs', [\App\Http\Controllers\Api\V1\TerritoireController::class, 'effectifsApi']);
+        Route::get('/territoire/annonces', [\App\Http\Controllers\Api\V1\TerritoireController::class, 'annoncesApi']);
+        Route::post('/territoire/annonces', [\App\Http\Controllers\Api\V1\TerritoireController::class, 'storeAnnonceApi']);
+        Route::delete('/territoire/annonces/{id}', [\App\Http\Controllers\Api\V1\TerritoireController::class, 'destroyAnnonceApi']);
         Route::get('/enseignants', [EnseignantController::class, 'index']);
+        Route::get('/enseignants/exporter', [EnseignantController::class, 'export']);
         Route::post('/enseignants', [EnseignantController::class, 'store']);
         Route::get('/enseignants/{id}', [EnseignantController::class, 'show']);
         Route::put('/enseignants/{id}', [EnseignantController::class, 'update']);
@@ -102,6 +109,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/evaluations', [EvaluationController::class, 'store']);
         Route::get('/evaluations/students', [EvaluationController::class, 'students']);
         Route::get('/evaluations/classes/{idClasse}/matieres', [EvaluationController::class, 'matieresByClasse']);
+        Route::post('/evaluations/{id}/note-classe', [EvaluationController::class, 'noteClasseApi']);
         Route::get('/evaluations/{id}', [EvaluationController::class, 'show']);
         Route::get('/evaluations/{id}/pdf', [EvaluationController::class, 'downloadNotesPdf']);
         Route::put('/evaluations/{id}/programme', [EvaluationController::class, 'updateProgramme']);

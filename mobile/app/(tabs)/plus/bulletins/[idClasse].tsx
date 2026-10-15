@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { FlatList, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, Button, Text } from 'react-native-paper';
+import { ActivityIndicator, Button, Checkbox, Text } from 'react-native-paper';
 
 import SelectField from '@/components/SelectField';
 import { useAuth } from '@/context/AuthContext';
@@ -12,10 +12,19 @@ import { hasPermission } from '@/lib/permissions';
 import { useApiGet } from '@/lib/useApi';
 import { AnneeScolaire, Trimestre } from '@/types/api';
 
+interface ModeleBulletin {
+  code: string;
+  nom: string;
+  format: string;
+  description: string;
+}
+
 interface BulletinOptions {
   annees: AnneeScolaire[];
   trimestres: Trimestre[];
   mois_options: Record<string, string>;
+  modeles?: ModeleBulletin[];
+  modele_actuel?: string;
 }
 
 interface Student {
@@ -38,6 +47,26 @@ export default function BulletinsClasseScreen() {
   const [mois, setMois] = useState<number | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
+  const [modele, setModele] = useState<string | null>(null);
+  // Compositions mensuelles : la moyenne annuelle n'est imprimée que sur les bulletins de fin d'année.
+  const [finAnnee, setFinAnnee] = useState(false);
+
+  useEffect(() => {
+    if (options?.modele_actuel) setModele(options.modele_actuel);
+  }, [options?.modele_actuel]);
+
+  async function choisirModele(code: string) {
+    const precedent = modele;
+    setModele(code);
+    try {
+      await api.post(`/bulletins/classes/${idClasse}/reglages`, { modele_bulletin: code });
+      setActionMessage('Modèle de bulletin enregistré pour la classe.');
+      reload();
+    } catch (err) {
+      setModele(precedent);
+      setActionMessage(apiErrorMessage(err, t('bulletins.action_error')));
+    }
+  }
 
   const canManage = hasPermission(user, 'bulletins_publication');
 
@@ -47,8 +76,9 @@ export default function BulletinsClasseScreen() {
     const params = new URLSearchParams({ id_annee: String(idAnnee) });
     if (periodMode === 'trimestre') params.set('id_trimestre', String(period));
     else params.set('mois', String(period));
+    if (periodMode === 'mois' && finAnnee) params.set('fin_annee', '1');
     return `/bulletins/classes/${idClasse}/students?${params.toString()}`;
-  }, [idClasse, idAnnee, period, periodMode]);
+  }, [idClasse, idAnnee, period, periodMode, finAnnee]);
 
   const { data: students, isLoading, error, reload } = useApiGet<Student[]>(studentsEndpoint, [studentsEndpoint]);
 
@@ -88,6 +118,14 @@ export default function BulletinsClasseScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.filters}>
+        {options?.modeles?.length ? (
+          <SelectField
+            label="Modèle de bulletin"
+            value={modele}
+            options={options.modeles.map((m) => ({ value: m.code, label: `${m.nom} (${m.format})` }))}
+            onChange={(v) => choisirModele(v as string)}
+          />
+        ) : null}
         <SelectField label={t('eleves.label_annee')} value={idAnnee} options={anneeOptions} onChange={(v) => setIdAnnee(v as number)} />
         <View style={styles.periodToggle}>
           <Button mode={periodMode === 'trimestre' ? 'contained' : 'outlined'} onPress={() => setPeriodMode('trimestre')} style={styles.toggleButton} compact>
@@ -100,7 +138,16 @@ export default function BulletinsClasseScreen() {
         {periodMode === 'trimestre' ? (
           <SelectField label={t('bulletins.trimestre_toggle')} value={idTrimestre} options={trimestreOptions} onChange={(v) => setIdTrimestre(v as number)} />
         ) : (
-          <SelectField label={t('bulletins.mois_toggle')} value={mois} options={moisOptions} onChange={(v) => setMois(v as number)} />
+          <>
+            <SelectField label={t('bulletins.mois_toggle')} value={mois} options={moisOptions} onChange={(v) => setMois(v as number)} />
+            <Checkbox.Item
+              label="Bulletin de fin d'année (avec la moyenne annuelle)"
+              status={finAnnee ? 'checked' : 'unchecked'}
+              onPress={() => setFinAnnee(!finAnnee)}
+              position="leading"
+              labelStyle={styles.finAnnee}
+            />
+          </>
         )}
 
         {canManage && idAnnee && period ? (
@@ -150,6 +197,7 @@ export default function BulletinsClasseScreen() {
 }
 
 const styles = StyleSheet.create({
+  finAnnee: { fontSize: 13, textAlign: 'left' },
   container: { flex: 1 },
   filters: { padding: 16, paddingBottom: 0 },
   periodToggle: { flexDirection: 'row', gap: 8, marginBottom: 12 },

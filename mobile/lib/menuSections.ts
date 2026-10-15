@@ -22,6 +22,15 @@ export interface MenuItem {
   // hasPermission()).
   hideForEcoleType?: string;
   onlyForEcoleType?: string;
+  // Espace DAE / DCAP : ces comptes ne voient que les éléments marqués ainsi
+  // (le serveur leur refuse les écrans d'école), et personne d'autre ne les voit.
+  superviseurs?: boolean;
+}
+
+export const ROLES_SUPERVISEURS = ['DAE', 'DCAP'];
+
+export function estSuperviseur(user: User | null | undefined): boolean {
+  return ROLES_SUPERVISEURS.includes(user?.droit ?? '');
 }
 
 export interface MenuSection {
@@ -30,6 +39,8 @@ export interface MenuSection {
 }
 
 export function isMenuItemVisible(user: User | null | undefined, item: MenuItem): boolean {
+  if (estSuperviseur(user) !== !!item.superviseurs) return false;
+  if (item.superviseurs) return true;
   if (item.hideForParent && user?.droit === 'parent') return false;
   if (user?.droit !== 'SupAdmin') {
     if (item.hideForEcoleType && user?.ecole?.type === item.hideForEcoleType) return false;
@@ -39,6 +50,13 @@ export function isMenuItemVisible(user: User | null | undefined, item: MenuItem)
 }
 
 export const MENU_SECTIONS: MenuSection[] = [
+  {
+    titleKey: 'plus.section_territoire',
+    items: [
+      { labelKey: 'plus.territoire_effectifs', icon: 'account-group-outline', href: '/plus/territoire/effectifs', superviseurs: true },
+      { labelKey: 'plus.territoire_annonces', icon: 'bullhorn-outline', href: '/plus/territoire/annonces', superviseurs: true },
+    ],
+  },
   {
     titleKey: 'plus.section_sync',
     items: [{ labelKey: 'plus.synchronisation', icon: 'cloud-sync-outline', href: '/plus/synchronisation' }],

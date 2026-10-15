@@ -36,8 +36,17 @@ interface EvaluationLine {
   trimestre?: Trimestre | null;
 }
 
+interface NoteClasse {
+  mode: 'moyenne' | 'unique';
+  ce_devoir: boolean;
+  devoir_retenu: string | null;
+  nb_devoirs: number;
+}
+
 interface EvaluationDetail {
   evaluation: { libeller: string; date_evaluation: string; heure_debut: string; heure_fin: string };
+  // Devoir seulement : note de classe de la matière pour la période (moyenne des devoirs ou ce devoir).
+  note_classe?: NoteClasse | null;
   details: EvaluationLine[];
   matiere?: Matiere;
   classe?: { nom_classe: string };
@@ -56,6 +65,21 @@ export default function EvaluationDetailScreen() {
   const [successVisible, setSuccessVisible] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [isDownloading, setIsDownloading] = useState(false);
+  const [noteClasseEnCours, setNoteClasseEnCours] = useState(false);
+
+  async function choisirNoteClasse(mode: 'moyenne' | 'unique') {
+    setNoteClasseEnCours(true);
+    try {
+      const { data: reponse } = await api.post<{ message: string }>(`/evaluations/${id}/note-classe`, { mode });
+      setSuccessMessage(reponse.message);
+      setSuccessVisible(true);
+      reload();
+    } catch (err) {
+      Alert.alert('Note de classe', apiErrorMessage(err, 'Impossible de modifier la note de classe.'));
+    } finally {
+      setNoteClasseEnCours(false);
+    }
+  }
 
   useEffect(() => {
     if (data?.details) {
@@ -191,6 +215,41 @@ export default function EvaluationDetailScreen() {
         <InfoRow label="Période" value={periode} last />
       </View>
 
+      {data.note_classe ? (
+        <View style={styles.noteClasseCard}>
+          <Text style={styles.noteClasseTitre}>Note de classe de {data.matiere?.nom_matiere ?? 'la matière'} pour cette période</Text>
+          <Text style={styles.noteClasseTexte}>
+            {data.note_classe.mode === 'moyenne'
+              ? `Moyenne de tous les devoirs (${data.note_classe.nb_devoirs} devoir(s)).`
+              : data.note_classe.ce_devoir
+                ? 'Ce devoir seulement : les autres devoirs de la période ne comptent pas.'
+                : `Un seul devoir : « ${data.note_classe.devoir_retenu ?? '—'} ».`}
+          </Text>
+          {canManage ? (
+            <View style={styles.actions}>
+              <Button
+                mode={data.note_classe.mode === 'moyenne' ? 'contained' : 'outlined'}
+                disabled={data.note_classe.mode === 'moyenne' || noteClasseEnCours}
+                onPress={() => choisirNoteClasse('moyenne')}
+                style={styles.actionButton}
+                compact
+              >
+                Moyenne des devoirs
+              </Button>
+              <Button
+                mode={data.note_classe.ce_devoir ? 'contained' : 'outlined'}
+                disabled={data.note_classe.ce_devoir || noteClasseEnCours}
+                onPress={() => choisirNoteClasse('unique')}
+                style={styles.actionButton}
+                compact
+              >
+                Ce devoir seulement
+              </Button>
+            </View>
+          ) : null}
+        </View>
+      ) : null}
+
       <View style={styles.actions}>
         <Button mode="outlined" icon="printer" loading={isDownloading} onPress={handleDownloadPdf} style={styles.actionButton}>
           Fiche PDF
@@ -285,6 +344,9 @@ const styles = StyleSheet.create({
   infoLabel: { opacity: 0.6 },
   infoValue: { fontWeight: '600' },
   actions: { flexDirection: 'row', gap: 10, marginTop: 20 },
+  noteClasseCard: { borderWidth: 1, borderColor: 'rgba(128,128,128,0.25)', borderLeftWidth: 4, borderRadius: 12, padding: 14, marginTop: 16 },
+  noteClasseTitre: { fontWeight: '700', marginBottom: 4 },
+  noteClasseTexte: { opacity: 0.75 },
   actionButton: { flex: 1 },
   studentRow: {
     flexDirection: 'row',

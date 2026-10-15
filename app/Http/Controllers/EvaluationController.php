@@ -495,6 +495,14 @@ class EvaluationController extends Controller
      */
     public function noteClasse(Request $request, int $id)
     {
+        $message = $this->appliquerNoteClasse($request, $id);
+
+        return redirect()->route('evaluations.edit', $id)->with('success', $message);
+    }
+
+    /** Enregistre le choix de la note de classe (web et application mobile) ; renvoie le message à afficher. */
+    protected function appliquerNoteClasse(Request $request, int $id): string
+    {
         $this->authorizePermission('evaluation_modification');
         $evaluation = Evaluation::findOrFail($id);
         $details = LigneEvaluation::with(['classe', 'noteType'])->where('id_evaluation', $evaluation->id_evaluation)->get();
@@ -528,7 +536,7 @@ class EvaluationController extends Controller
             $message = 'Note de classe : moyenne de tous les devoirs de la période.';
         }
 
-        return redirect()->route('evaluations.edit', $evaluation->id_evaluation)->with('success', $message);
+        return $message;
     }
 
     /** Ce que la page de saisie affiche du choix de la note de classe (null si ce n'est pas un devoir). */

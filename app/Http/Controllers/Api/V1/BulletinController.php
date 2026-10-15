@@ -43,6 +43,11 @@ class BulletinController extends WebBulletinController
             'annees' => AnneeScolaire::orderByDesc('date_debut')->get(),
             'trimestres' => Trimestre::orderBy('id_trimestre')->get(),
             'mois_options' => $this->moisOptions(),
+            // Modèles proposés à l'école et modèle retenu pour la classe (choix enregistré par /reglages).
+            'modeles' => collect(\App\Support\ModelesBulletin::disponibles((int) $classe->idEcole))
+                ->map(fn ($m, $code) => ['code' => $code, 'nom' => $m['nom'], 'format' => ($m['orientation'] ?? '') === 'landscape' ? 'A4 paysage · 2 exemplaires' : $m['format'], 'description' => $m['description']])
+                ->values(),
+            'modele_actuel' => \App\Support\ModelesBulletin::pourClasse($classe),
         ]);
     }
 
@@ -85,6 +90,9 @@ class BulletinController extends WebBulletinController
         $params = ['id_annee' => $data['id_annee']];
         if (!empty($data['mois'])) {
             $params['mois'] = $data['mois'];
+            if ($request->boolean('fin_annee')) {
+                $params['fin_annee'] = 1;
+            }
         } elseif (!empty($data['id_trimestre'])) {
             $params['id_trimestre'] = $data['id_trimestre'];
         }

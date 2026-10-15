@@ -6,6 +6,7 @@ import AdminDashboardView, { AdminDashboardData } from '@/components/dashboard/A
 import ParentDashboardView, { ParentDashboardData } from '@/components/dashboard/ParentDashboardView';
 import SupAdminDashboardView, { SupAdminDashboardData } from '@/components/dashboard/SupAdminDashboardView';
 import TeacherDashboardView, { TeacherDashboardData } from '@/components/dashboard/TeacherDashboardView';
+import TerritoireDashboardView, { TerritoireDashboardData } from '@/components/dashboard/TerritoireDashboardView';
 import UnreadAnnouncementsModal from '@/components/UnreadAnnouncementsModal';
 import { useAuth } from '@/context/AuthContext';
 import { api, apiErrorMessage } from '@/lib/api';
@@ -13,7 +14,9 @@ import { SURFACE } from '@/lib/themes';
 
 type DashboardData = Record<string, unknown>;
 
-const STAFF_ROLES = ['Admin', 'Gestionnaire', 'DAE', 'DCAP'];
+const STAFF_ROLES = ['Admin', 'Gestionnaire'];
+// DAE / DCAP : tableau de bord de leur territoire (académie ou CAP).
+const SUPERVISEURS = ['DAE', 'DCAP'];
 
 function humanizeKey(key: string): string {
   return key.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase());
@@ -58,7 +61,7 @@ export default function DashboardScreen() {
     if (!opts.silent) setIsLoading(true);
     setError(null);
     try {
-      const { data } = await api.get<DashboardData>('/dashboard');
+      const { data } = await api.get<DashboardData>(SUPERVISEURS.includes(user?.droit ?? '') ? '/territoire' : '/dashboard');
       setData(data);
     } catch (err) {
       setError(apiErrorMessage(err, 'Impossible de charger le tableau de bord.'));
@@ -66,7 +69,7 @@ export default function DashboardScreen() {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, []);
+  }, [user?.droit]);
 
   useEffect(() => {
     load();
@@ -81,6 +84,7 @@ export default function DashboardScreen() {
   const isStaff = user?.droit && STAFF_ROLES.includes(user.droit);
   const isTeacher = user?.droit === 'enseignant';
   const isParent = user?.droit === 'parent';
+  const isSuperviseur = SUPERVISEURS.includes(user?.droit ?? '');
 
   return (
     <ScrollView
@@ -116,6 +120,8 @@ export default function DashboardScreen() {
         <ActivityIndicator style={styles.spinner} size="large" />
       ) : error ? (
         <Text style={styles.error}>{error}</Text>
+      ) : isSuperviseur ? (
+        <TerritoireDashboardView data={data as unknown as TerritoireDashboardData} />
       ) : isSupAdmin ? (
         <SupAdminDashboardView data={data as unknown as SupAdminDashboardData} onReload={() => load({ silent: true })} />
       ) : isStaff ? (
