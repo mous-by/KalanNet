@@ -65,6 +65,16 @@ Route::prefix('v1')->group(function () {
         Route::post('/eleves/{id}/reintegrer', [EleveController::class, 'reintegrate']);
         Route::delete('/eleves/{id}', [EleveController::class, 'destroy']);
 
+        // Évaluations communes (DAE / DCAP et écoles).
+        Route::get('/evaluations-communes/territoire', [\App\Http\Controllers\Api\V1\EvaluationCommuneController::class, 'territoireIndex']);
+        Route::post('/evaluations-communes/territoire', [\App\Http\Controllers\Api\V1\EvaluationCommuneController::class, 'territoireStore']);
+        Route::get('/evaluations-communes/territoire/{id}', [\App\Http\Controllers\Api\V1\EvaluationCommuneController::class, 'territoireShow'])->whereNumber('id');
+        Route::post('/evaluations-communes/territoire/{id}/publier', [\App\Http\Controllers\Api\V1\EvaluationCommuneController::class, 'territoirePublier']);
+        Route::post('/evaluations-communes/territoire/{id}/corrige', [\App\Http\Controllers\Api\V1\EvaluationCommuneController::class, 'territoireCorrige']);
+        Route::post('/evaluations-communes/territoire/{id}/annuler', [\App\Http\Controllers\Api\V1\EvaluationCommuneController::class, 'territoireAnnuler']);
+        Route::get('/evaluations-communes/territoire/{id}/{piece}', [\App\Http\Controllers\Api\V1\EvaluationCommuneController::class, 'telechargerTerritoire'])->whereIn('piece', ['sujet', 'corrige']);
+        Route::get('/evaluations-communes', [\App\Http\Controllers\Api\V1\EvaluationCommuneController::class, 'ecoleListe']);
+        Route::get('/evaluations-communes/{id}/{piece}', [\App\Http\Controllers\Api\V1\EvaluationCommuneController::class, 'ecoleTelecharger'])->whereIn('piece', ['sujet', 'corrige']);
         // Espace DAE / DCAP (application mobile).
         Route::get('/territoire', [\App\Http\Controllers\Api\V1\TerritoireController::class, 'resume']);
         Route::get('/territoire/effectifs', [\App\Http\Controllers\Api\V1\TerritoireController::class, 'effectifsApi']);

@@ -50,6 +50,10 @@ export default function PlusLayout() {
 
       <Stack.Screen name="annonces/index" options={{ title: 'Annonces' }} />
       <Stack.Screen name="territoire/effectifs" options={{ title: 'Effectifs' }} />
+      <Stack.Screen name="evaluations-communes/index" options={{ title: 'Évaluations communes' }} />
+      <Stack.Screen name="evaluations-communes/territoire/index" options={{ title: 'Évaluations communes' }} />
+      <Stack.Screen name="evaluations-communes/territoire/new" options={{ title: 'Nouvelle évaluation commune' }} />
+      <Stack.Screen name="evaluations-communes/territoire/[id]" options={{ title: 'Évaluation commune' }} />
       <Stack.Screen name="territoire/annonces" options={{ title: 'Annonces du territoire' }} />
       <Stack.Screen name="annonces/new" options={{ title: 'Nouvelle annonce' }} />
 

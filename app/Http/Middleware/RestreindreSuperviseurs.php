@@ -30,7 +30,7 @@ class RestreindreSuperviseurs
     /** Chemins API permis (application mobile). */
     private const CHEMINS_API = [
         'api/v1/auth/*', 'api/v1/notifications', 'api/v1/notifications/*', 'api/v1/dashboard',
-        'api/v1/territoire', 'api/v1/territoire/*',
+        'api/v1/territoire', 'api/v1/territoire/*', 'api/v1/evaluations-communes/territoire', 'api/v1/evaluations-communes/territoire/*',
     ];
 
     public function handle(Request $request, Closure $next): Response

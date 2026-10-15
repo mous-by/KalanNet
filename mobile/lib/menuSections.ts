@@ -25,6 +25,8 @@ export interface MenuItem {
   // Espace DAE / DCAP : ces comptes ne voient que les éléments marqués ainsi
   // (le serveur leur refuse les écrans d'école), et personne d'autre ne les voit.
   superviseurs?: boolean;
+  // Rôles autorisés (en plus des permissions) ; le SupAdmin passe toujours.
+  roles?: string[];
 }
 
 export const ROLES_SUPERVISEURS = ['DAE', 'DCAP'];
@@ -40,7 +42,8 @@ export interface MenuSection {
 
 export function isMenuItemVisible(user: User | null | undefined, item: MenuItem): boolean {
   if (estSuperviseur(user) !== !!item.superviseurs) return false;
-  if (item.superviseurs) return true;
+  if (item.roles && user?.droit !== 'SupAdmin' && !item.roles.includes(user?.droit ?? '')) return false;
+  if (item.superviseurs) return !item.permissions || hasAnyPermission(user, item.permissions);
   if (item.hideForParent && user?.droit === 'parent') return false;
   if (user?.droit !== 'SupAdmin') {
     if (item.hideForEcoleType && user?.ecole?.type === item.hideForEcoleType) return false;
@@ -55,6 +58,14 @@ export const MENU_SECTIONS: MenuSection[] = [
     items: [
       { labelKey: 'plus.territoire_effectifs', icon: 'account-group-outline', href: '/plus/territoire/effectifs', superviseurs: true },
       { labelKey: 'plus.territoire_annonces', icon: 'bullhorn-outline', href: '/plus/territoire/annonces', superviseurs: true },
+      // Module masqué tant que le SupAdmin n'a pas accordé la permission.
+      {
+        labelKey: 'plus.evaluations_communes',
+        icon: 'file-lock-outline',
+        href: '/plus/evaluations-communes/territoire',
+        superviseurs: true,
+        permissions: ['evaluations_communes_apercu'],
+      },
     ],
   },
   {
@@ -79,6 +90,13 @@ export const MENU_SECTIONS: MenuSection[] = [
         permissions: ['classes_apercu', 'enseignants_emploi', 'planning_apercu'],
       },
       { labelKey: 'plus.evaluations', icon: 'clipboard-text', href: '/plus/evaluations', permissions: ['evaluation_apercu'] },
+      {
+        labelKey: 'plus.evaluations_communes',
+        icon: 'file-lock-outline',
+        href: '/plus/evaluations-communes',
+        permissions: ['evaluations_communes_apercu'],
+        roles: ['Admin', 'Gestionnaire'],
+      },
       { labelKey: 'plus.emargements', icon: 'notebook-check', href: '/plus/emargements', permissions: ['emargement_faire'] },
       { labelKey: 'plus.presences', icon: 'account-check', href: '/plus/presences', permissions: ['presence_apercu'] },
       {

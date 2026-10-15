@@ -41,6 +41,14 @@ class EvaluationCommuneController extends Controller
 
     public function store(Request $request)
     {
+        [$id, $message] = $this->creer($request);
+
+        return redirect()->route('territoire.evaluations.show', $id)->with('success', $message);
+    }
+
+    /** Crée l'évaluation commune (site et application mobile) : [id, message]. */
+    protected function creer(Request $request): array
+    {
         $user = $this->superviseur();
         $data = $request->validate([
             'titre' => 'required|string|max:255',
@@ -63,14 +71,14 @@ class EvaluationCommuneController extends Controller
         $ordre = DB::table('classes_officielles')->where('id_classe_officielle', $data['id_classe_officielle'])->value('ordre_enseignement');
         $fondamental = in_array($ordre, EvaluationsCommunes::ORDRES_FONDAMENTAL, true);
         if ($user->droit === 'DCAP' && !$fondamental) {
-            return back()->withInput()->withErrors(['id_classe_officielle' => "Un CAP n'organise que des évaluations du fondamental."]);
+            throw \Illuminate\Validation\ValidationException::withMessages(['id_classe_officielle' => "Un CAP n'organise que des évaluations du fondamental."]);
         }
         $capsVises = [];
         if ($user->droit === 'DAE' && $fondamental) {
             // Fondamental : adressé aux CAP cochés, ou à tous les CAP de l'académie.
             $capsVises = array_values(array_unique($data['caps'] ?? [])) ?: DB::table('cap')->where('id_academie', $user->id_academie)->pluck('id_cap')->all();
             if (!$capsVises) {
-                return back()->withInput()->withErrors(['caps' => "Votre académie n'a aucun CAP enregistré."]);
+                throw \Illuminate\Validation\ValidationException::withMessages(['caps' => "Votre académie n'a aucun CAP enregistré."]);
             }
         }
 
@@ -118,7 +126,7 @@ class EvaluationCommuneController extends Controller
             default => "Évaluation envoyée aux établissements du secondaire de l'académie.",
         };
 
-        return redirect()->route('territoire.evaluations.show', $id)->with('success', $message);
+        return [$id, $message];
     }
 
     public function show(int $id)
@@ -226,7 +234,7 @@ class EvaluationCommuneController extends Controller
         return $user && ($user->droit === 'SupAdmin' || $user->userHasPermission('evaluations_communes_apercu'));
     }
 
-    private function superviseur()
+    protected function superviseur()
     {
         $user = Auth::user();
         abort_unless(
@@ -237,7 +245,7 @@ class EvaluationCommuneController extends Controller
         return $user;
     }
 
-    private function gerable(int $id): object
+    protected function gerable(int $id): object
     {
         $user = $this->superviseur();
         $evaluation = EvaluationsCommunes::pourTerritoire($user)->firstWhere('id', $id);
@@ -247,7 +255,7 @@ class EvaluationCommuneController extends Controller
     }
 
     /** Sujet confidentiel : réservé à l'Admin et au Gestionnaire de l'école. */
-    private function ecoleAutorisee(): int
+    protected function ecoleAutorisee(): int
     {
         $user = Auth::user();
         $idEcole = (int) (session('idEcole') ?: $user->idEcole);
@@ -263,7 +271,7 @@ class EvaluationCommuneController extends Controller
         return ['chemin' => $fichier->storeAs(EvaluationsCommunes::DOSSIER, $nom), 'nom' => $fichier->getClientOriginalName()];
     }
 
-    private function servir(object $evaluation, string $piece)
+    protected function servir(object $evaluation, string $piece)
     {
         abort_unless(in_array($piece, ['sujet', 'corrige'], true), 404);
         $chemin = $piece === 'sujet' ? $evaluation->sujet_fichier : $evaluation->corrige_fichier;
