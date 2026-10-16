@@ -293,4 +293,6 @@ return [
     'annuler_paiement_motif' => 'Motif de l’annulation',
     'annuler_paiement_confirmer' => 'Annuler ce paiement',
     'paiement_annule' => 'Paiement annulé : le montant a été retiré de la caisse.',
+    'print_receipt_hash' => 'Imprimer le reçu #:id',
+    'print_thermal_hash' => 'Imprimer (thermique) #:id',
 ];

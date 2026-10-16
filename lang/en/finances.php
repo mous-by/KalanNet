@@ -293,4 +293,6 @@ return [
     'annuler_paiement_motif' => 'Reason for cancellation',
     'annuler_paiement_confirmer' => 'Cancel this payment',
     'paiement_annule' => 'Payment cancelled: the amount was removed from the cash register.',
+    'print_receipt_hash' => 'Print receipt #:id',
+    'print_thermal_hash' => 'Print (thermal) #:id',
 ];

@@ -293,4 +293,6 @@ return [
     'annuler_paiement_motif' => 'سبب الإلغاء',
     'annuler_paiement_confirmer' => 'إلغاء هذه الدفعة',
     'paiement_annule' => 'أُلغيت الدفعة: سُحب المبلغ من الصندوق.',
+    'print_receipt_hash' => 'طباعة الإيصال #:id',
+    'print_thermal_hash' => 'طباعة التذكرة #:id',
 ];

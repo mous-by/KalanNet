@@ -1514,7 +1514,8 @@ class FinanceController extends Controller
 
         return $this->reportService
             ->receiptPdf($paiement)
-            ->download('Recu_Paiement_' . $paiement->numero_recu . '.pdf');
+            // ?imprimer=1 : affiché dans la page pour être imprimé directement.
+            ->{request()->boolean('imprimer') ? 'stream' : 'download'}('Recu_Paiement_' . $paiement->numero_recu . '.pdf');
     }
 
     public function downloadRecuThermique($id)
@@ -1527,7 +1528,8 @@ class FinanceController extends Controller
 
         return $this->reportService
             ->thermalReceiptPdf($paiement)
-            ->download('Recu_Thermique_' . $paiement->numero_recu . '.pdf');
+            // ?imprimer=1 : affiché dans la page pour être imprimé directement.
+            ->{request()->boolean('imprimer') ? 'stream' : 'download'}('Recu_Thermique_' . $paiement->numero_recu . '.pdf');
     }
 
     public function historiquePaiements(Request $request)

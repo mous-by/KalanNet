@@ -43,18 +43,54 @@
         <div class="alert alert-success">
         <div>{{ session('success') }}</div>
         @if(session('created_payment_ids'))
-            <div class="mt-2 d-flex flex-wrap gap-2">
-                @foreach(session('created_payment_ids') as $paymentId)
-                    <a href="{{ route('finances.paiements.download', $paymentId) }}" class="btn btn-sm btn-outline-success">
-                        {{ __('finances.receipt_hash', ['id' => $paymentId]) }}
-                    </a>
-                    <a href="{{ route('finances.paiements.thermique', $paymentId) }}" class="btn btn-sm btn-outline-success">
-                        {{ __('finances.thermal_hash', ['id' => $paymentId]) }}
-                    </a>
+            @php $recusCrees = session('created_payment_ids'); @endphp
+            <div class="mt-2 d-flex flex-wrap gap-2" id="recusCrees" data-auto="{{ count($recusCrees) === 1 ? 1 : 0 }}">
+                @foreach($recusCrees as $paymentId)
+                    <button type="button" class="btn btn-sm btn-success imprimer-recu" data-format="a4" data-url="{{ route('finances.paiements.download', ['id' => $paymentId, 'imprimer' => 1]) }}">
+                        <i class="bi bi-printer me-1"></i>{{ __('finances.print_receipt_hash', ['id' => $paymentId]) }}
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-success imprimer-recu" data-format="thermique" data-url="{{ route('finances.paiements.thermique', ['id' => $paymentId, 'imprimer' => 1]) }}">
+                        <i class="bi bi-printer me-1"></i>{{ __('finances.print_thermal_hash', ['id' => $paymentId]) }}
+                    </button>
                 @endforeach
             </div>
         @endif
     </div>
+    @if(session('created_payment_ids'))
+        <script>
+            // Reçu imprimé directement (sans téléchargement) : le PDF est chargé dans un cadre caché puis imprimé.
+            document.addEventListener('DOMContentLoaded', function () {
+                const zone = document.getElementById('recusCrees');
+                if (!zone) return;
+                const imprimer = function (bouton) {
+                    let cadre = document.getElementById('cadreImpressionRecu');
+                    if (cadre) cadre.remove();
+                    cadre = document.createElement('iframe');
+                    cadre.id = 'cadreImpressionRecu';
+                    cadre.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+                    cadre.onload = function () {
+                        setTimeout(function () {
+                            try { cadre.contentWindow.focus(); cadre.contentWindow.print(); }
+                            catch (e) { window.open(bouton.dataset.url, '_blank'); }
+                        }, 300);
+                    };
+                    cadre.src = bouton.dataset.url;
+                    document.body.appendChild(cadre);
+                    try { localStorage.setItem('kalannet_format_recu', bouton.dataset.format); } catch (e) {}
+                };
+                zone.querySelectorAll('.imprimer-recu').forEach(function (bouton) {
+                    bouton.addEventListener('click', function () { imprimer(bouton); });
+                });
+                // Un seul paiement : impression lancée tout de suite, au format choisi la dernière fois.
+                if (zone.dataset.auto === '1') {
+                    let format = 'a4';
+                    try { format = localStorage.getItem('kalannet_format_recu') || 'a4'; } catch (e) {}
+                    const bouton = zone.querySelector('.imprimer-recu[data-format="' + format + '"]') || zone.querySelector('.imprimer-recu');
+                    imprimer(bouton);
+                }
+            });
+        </script>
+    @endif
 @endif
 @if(session('error'))
     <div class="alert alert-danger">{{ session('error') }}</div>
