@@ -40,6 +40,14 @@
     <link href="{{ asset('assets/plugins/datatable/css/dataTables.bootstrap5.min.css') }}" rel="stylesheet" />
     <link href="{{ asset('assets/plugins/select2/css/select2.min.css') }}" rel="stylesheet" />
     <link href="{{ asset('assets/plugins/select2/css/select2-bootstrap4.css') }}" rel="stylesheet" />
+    <style>
+        /* Listes avec recherche (assets/js/selects-recherche.js) : même gabarit que les listes Bootstrap. */
+        .select2-container--bootstrap4 .select2-selection--single { height: calc(1.5em + .75rem + 2px); }
+        .select2-container--bootstrap4.select2-sm .select2-selection--single { height: calc(1.5em + .5rem + 2px); font-size: .875rem; }
+        .select2-container--bootstrap4.select2-sm .select2-selection--single .select2-selection__rendered { line-height: calc(1.5em + .3rem); }
+        .select2-container--bootstrap4 .select2-dropdown { z-index: 1060; }
+        .select2-container--open .select2-dropdown { min-width: 12rem; }
+    </style>
 
     <!-- Bootstrap CSS -->
     <link href="{{ asset('assets/css/bootstrap.min.css') }}" rel="stylesheet" />
@@ -133,6 +141,7 @@
     <script src="{{ asset('assets/plugins/metismenu/js/metisMenu.min.js') }}"></script>
     <script src="{{ asset('assets/plugins/perfect-scrollbar/js/perfect-scrollbar.js') }}"></script>
     <script src="{{ asset('assets/plugins/select2/js/select2.min.js') }}"></script>
+    <script src="{{ asset('assets/js/selects-recherche.js') }}?v={{ filemtime(public_path('assets/js/selects-recherche.js')) }}"></script>
     <script src="{{ asset('assets/plugins/datatable/js/jquery.dataTables.min.js') }}"></script>
     <script src="{{ asset('assets/plugins/datatable/js/dataTables.bootstrap5.min.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
