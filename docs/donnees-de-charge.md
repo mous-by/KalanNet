@@ -6,7 +6,7 @@ Elle refuse de tourner en production ou sur une base qui n'est pas locale.
 
 ```bash
 php artisan kalannet:donnees-charge                       # 110 écoles, 25 élèves par classe (≈ 1,5 million de lignes)
-php artisan kalannet:donnees-charge --ecoles=1200 --eleves=100   # ≈ 1 million d'élèves, année complète de notes (plusieurs heures)
+php artisan kalannet:donnees-charge --ecoles=1200 --eleves=100   # ≈ 1,1 million d'élèves, année complète de notes (environ 1 heure)
 php artisan kalannet:donnees-charge --reprendre --ecoles=1200 --eleves=100   # reprend une génération interrompue
 php artisan kalannet:donnees-charge --supprimer           # retire tout ce que la commande a créé
 ```
@@ -38,7 +38,7 @@ php artisan kalannet:donnees-charge --supprimer           # retire tout ce que l
 
 ## Connexion
 
-`admin1@charge.kalannet.test` … `admin110@charge.kalannet.test`, mot de passe
+`admin1@charge.kalannet.test` … `adminN@charge.kalannet.test` (N = nombre d'écoles), mot de passe
 `KalanNet2026` (modifiable par `--mot-de-passe=`). Les adresses
 `@charge.kalannet.test` n'existent pas.
 
@@ -49,3 +49,16 @@ suppression ne touche que ces écoles (et vérifie leur adresse
 `@charge.kalannet.test`) : vos autres données ne sont pas modifiées. Vérifié :
 après génération puis suppression, chaque table retrouve exactement son
 nombre de lignes d'origine.
+
+## Après un `git clone`
+
+Les données ne sont pas dans git (plusieurs Go) : `php artisan migrate` crée
+seulement les tables. Deux façons d'obtenir la même base :
+
+1. **La régénérer** (même noms et mêmes notes à chaque fois) :
+   `php artisan migrate` puis
+   `php artisan kalannet:donnees-charge --ecoles=1200 --eleves=100`.
+2. **La copier** depuis une machine qui l'a déjà :
+   `mysqldump --single-transaction --quick db_kalannet | gzip > kalannet.sql.gz`,
+   puis sur la nouvelle machine
+   `gunzip < kalannet.sql.gz | mysql db_kalannet`.
