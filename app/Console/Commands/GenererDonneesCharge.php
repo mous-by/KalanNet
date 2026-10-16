@@ -12,7 +12,8 @@ use Illuminate\Support\Facades\Hash;
 
 /**
  * Remplit la base LOCALE de données fictives pour les tests de charge :
- * écoles de tous les types et de tous les ordres (Jardin, Fondamental I et II,
+ * écoles surtout maliennes, mais aussi d'Afrique, d'Europe et d'Amérique
+ * (noms inventés, villes, téléphones et monnaie du pays), de tous les types et ordres (Jardin, Fondamental I et II,
  * secondaire général et technique, complexes, franco-arabes, santé), avec
  * classes, enseignants, élèves, parents, notes de l'année 2025-2026,
  * absences, paiements, emplois du temps et présences.
@@ -30,7 +31,8 @@ class GenererDonneesCharge extends Command
         {--ecoles=110 : Nombre d\'écoles (100 au minimum conseillé)}
         {--eleves=25 : Élèves par classe (Jardin : 70 %)}
         {--mot-de-passe=KalanNet2026 : Mot de passe des comptes Admin générés}
-        {--supprimer : Supprime les écoles créées par cette commande}';
+        {--supprimer : Supprime les écoles créées par cette commande}
+        {--reprendre : Continue une génération interrompue (mêmes options)}';
 
     protected $description = 'Remplit la base locale de données fictives (écoles de tous les ordres, ~1 million de lignes)';
 
@@ -68,13 +70,55 @@ class GenererDonneesCharge extends Command
         'sante' => ['École de Santé', 8],
     ];
 
+    private const PRENOMS_F_PLUS = ['Mariétou', 'Kadidiatou', 'Fatoumata Binta', 'Nènè', 'Hadja', 'Sali', 'Tenin', 'Massitan', 'Fanta', 'Djénéba', 'Mamou', 'Saran', 'Bintou', 'Koumba', 'Aïchata', 'Adiaratou', 'Kani', 'Yah', 'Ténimba', 'Habibatou'];
+
+    private const PRENOMS_M_PLUS = ['Siaka', 'Bréhima', 'Tiémoko', 'Fousseyni', 'Daouda', 'Lassana', 'Mamadou Lamine', 'Oumarou', 'Moctar', 'Hamidou', 'Alassane', 'Kalifa', 'Yaya', 'Bassirou', 'Zoumana', 'Sory', 'Madou', 'Nouhoum', 'Abdramane', 'Ousmane'];
+
     private const PRENOMS_F = ['Aminata', 'Fatoumata', 'Mariam', 'Kadiatou', 'Awa', 'Oumou', 'Salimata', 'Djeneba', 'Assitan', 'Hawa', 'Ramatou', 'Bintou', 'Aïssata', 'Nana', 'Korotoumou', 'Sitan', 'Maimouna', 'Fanta', 'Rokia', 'Safiatou'];
 
     private const PRENOMS_M = ['Moussa', 'Ibrahim', 'Oumar', 'Seydou', 'Bakary', 'Adama', 'Mamadou', 'Souleymane', 'Boubacar', 'Modibo', 'Drissa', 'Lassina', 'Abdoulaye', 'Sekou', 'Yacouba', 'Issa', 'Mahamadou', 'Cheick', 'Sidiki', 'Amadou'];
 
-    private const NOMS = ['Traoré', 'Coulibaly', 'Diarra', 'Keita', 'Konaté', 'Sangaré', 'Diallo', 'Touré', 'Dembélé', 'Sissoko', 'Camara', 'Koné', 'Cissé', 'Maïga', 'Samaké', 'Doumbia', 'Kanté', 'Fofana', 'Sidibé', 'Bagayoko', 'Sacko', 'Haïdara', 'Guindo', 'Togola', 'Dicko'];
 
-    private const VILLES = ['Bamako', 'Kayes', 'Sikasso', 'Ségou', 'Mopti', 'Koulikoro', 'Gao', 'Tombouctou', 'Kita', 'Koutiala'];
+
+    /** Pays des écoles fictives (pour 110 écoles) : villes, quartiers, noms, monnaie (facteur par rapport au FCFA). */
+    private const PAYS = [
+        'ML' => ['n' => 80, 'facteur' => 1, 'groupe' => 'sahel',
+            'villes' => ['Bamako', 'Kayes', 'Sikasso', 'Ségou', 'Mopti', 'Koulikoro', 'Gao', 'Tombouctou', 'Kita', 'Koutiala', 'San', 'Bougouni', 'Kati', 'Nioro du Sahel', 'Kidal', 'Ménaka', 'Taoudénit', 'Bandiagara', 'Djenné', 'Dioïla', 'Nara', 'Bafoulabé', 'Kolokani', 'Kangaba', 'Yanfolila', 'Kadiolo', 'Fana', 'Bla', 'Macina', 'Niono', 'Douentza', 'Bourem', 'Ansongo', 'Diré', 'Goundam', 'Tominian', 'Yorosso', 'Kéniéba', 'Diéma', 'Banamba'],
+            'quartiers' => ['Badalabougou', 'Hamdallaye', 'Lafiabougou', 'Missira', 'Sogoniko', 'Kalaban Coura', 'Djélibougou', 'Niamakoro', 'Sébénikoro', 'Magnambougou', 'Banconi', 'Torokorobougou', 'Médina Coura', 'Bacodjicoroni', 'Faladié', 'Sabalibougou', 'Daoudabougou', 'Kalabancoro', 'Sotuba', 'Boulkassoumbougou', 'Kanadjiguila', 'Yirimadio', 'Senou', 'Kouloubleni', 'Dravéla', 'Bagadadji', 'Niaréla', 'Quinzambougou', 'Djicoroni Para', 'Samé', 'Kalaban Koro', 'Sirakoro', 'Garantiguibougou', 'Baco-Djicoroni ACI', 'Hippodrome', 'Korofina', 'Doumanzana', 'Titibougou', 'Moribabougou', 'Kati Coco'],
+            'noms' => ['Traoré', 'Coulibaly', 'Diarra', 'Keita', 'Konaté', 'Sangaré', 'Diallo', 'Touré', 'Dembélé', 'Sissoko', 'Camara', 'Koné', 'Cissé', 'Maïga', 'Samaké', 'Doumbia', 'Kanté', 'Fofana', 'Sidibé', 'Bagayoko', 'Sacko', 'Haïdara', 'Guindo', 'Togola', 'Dicko', 'Bouaré', 'Dao', 'Mariko', 'Tangara', 'Kéita', 'Sanogo', 'Bengaly', 'Goïta', 'Dolo', 'Tembely', 'Sow', 'Ba', 'Cissoko', 'Kouyaté', 'Diabaté', 'Soumaré', 'Niaré', 'Berthé', 'Kassogué', 'Ongoïba', 'Boré', 'Dagnon', 'Mallé', 'Konaré', 'Dramé']],
+        'SN' => ['n' => 6, 'facteur' => 1, 'groupe' => 'sahel', 'villes' => ['Dakar', 'Thiès', 'Saint-Louis', 'Ziguinchor', 'Kaolack', 'Mbour'], 'quartiers' => ['Médina', 'Le Plateau', 'Grand Yoff', 'Pikine', 'Les Almadies', 'Ouakam'],
+            'noms' => ['Diop', 'Ndiaye', 'Fall', 'Sow', 'Ba', 'Gueye', 'Sarr', 'Faye', 'Diouf', 'Mbaye', 'Seck', 'Cissé']],
+        'CI' => ['n' => 6, 'facteur' => 1, 'groupe' => 'cotier', 'villes' => ['Abidjan', 'Bouaké', 'Yamoussoukro', 'Daloa', 'San-Pédro', 'Korhogo'], 'quartiers' => ['Cocody', 'Yopougon', 'Abobo', 'Treichville', 'Marcory', 'Le Plateau'],
+            'noms' => ['Kouassi', 'Koné', 'Yao', 'Kouadio', 'Bamba', 'Ouattara', 'N’Guessan', 'Koffi', 'Konan', 'Touré']],
+        'BF' => ['n' => 5, 'facteur' => 1, 'groupe' => 'sahel', 'villes' => ['Ouagadougou', 'Bobo-Dioulasso', 'Koudougou', 'Banfora'], 'quartiers' => ['Gounghin', 'Dapoya', 'Ouaga 2000', 'Pissy'],
+            'noms' => ['Ouédraogo', 'Sawadogo', 'Compaoré', 'Zongo', 'Kaboré', 'Ilboudo', 'Traoré', 'Sanou']],
+        'GN' => ['n' => 3, 'facteur' => 15, 'groupe' => 'sahel', 'villes' => ['Conakry', 'Kankan', 'Labé'], 'quartiers' => ['Kaloum', 'Ratoma', 'Matoto', 'Dixinn'],
+            'noms' => ['Barry', 'Bah', 'Diallo', 'Camara', 'Sylla', 'Soumah', 'Condé', 'Keïta']],
+        'NE' => ['n' => 2, 'facteur' => 1, 'groupe' => 'sahel', 'villes' => ['Niamey', 'Zinder'], 'quartiers' => ['Le Plateau', 'Lazaret', 'Yantala'],
+            'noms' => ['Issoufou', 'Moussa', 'Abdou', 'Hama', 'Garba', 'Mahamadou', 'Ibrahim']],
+        'CM' => ['n' => 3, 'facteur' => 1, 'groupe' => 'cotier', 'villes' => ['Yaoundé', 'Douala', 'Bafoussam'], 'quartiers' => ['Bastos', 'Akwa', 'Bonapriso', 'Mvog-Mbi'],
+            'noms' => ['Mballa', 'Ngono', 'Fotso', 'Tchoumi', 'Kamga', 'Nkoulou', 'Essomba', 'Mbarga']],
+        'FR' => ['n' => 2, 'facteur' => 1 / 600, 'groupe' => 'europe', 'villes' => ['Paris', 'Lyon', 'Marseille', 'Toulouse', 'Lille'], 'quartiers' => ['Belleville', 'Croix-Rousse', 'Le Panier', 'Saint-Cyprien', 'Wazemmes'],
+            'noms' => ['Martin', 'Bernard', 'Dubois', 'Petit', 'Durand', 'Leroy', 'Moreau', 'Laurent', 'Garcia', 'Diallo']],
+        'BE' => ['n' => 1, 'facteur' => 1 / 600, 'groupe' => 'europe', 'villes' => ['Bruxelles', 'Liège', 'Namur'], 'quartiers' => ['Ixelles', 'Schaerbeek', 'Outremeuse'],
+            'noms' => ['Peeters', 'Janssens', 'Dubois', 'Lambert', 'Dupont', 'Maes']],
+        'CA' => ['n' => 1, 'facteur' => 1 / 450, 'groupe' => 'amerique', 'villes' => ['Montréal', 'Québec', 'Ottawa', 'Sherbrooke'], 'quartiers' => ['Le Plateau-Mont-Royal', 'Limoilou', 'Vanier', 'Fleurimont'],
+            'noms' => ['Tremblay', 'Gagnon', 'Roy', 'Côté', 'Bouchard', 'Gauthier', 'Morin']],
+        'US' => ['n' => 1, 'facteur' => 1 / 600, 'groupe' => 'amerique', 'villes' => ['New York', 'Atlanta', 'Houston', 'Washington'], 'quartiers' => ['Harlem', 'Midtown', 'Montrose', 'Georgetown'],
+            'noms' => ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Davis', 'Miller', 'Wilson']],
+    ];
+
+    private const PRENOMS = [
+        'sahel' => [[...self::PRENOMS_F, ...self::PRENOMS_F_PLUS], [...self::PRENOMS_M, ...self::PRENOMS_M_PLUS]],
+        'cotier' => [['Aya', 'Adjoua', 'Amenan', 'Grâce', 'Estelle', 'Christelle', 'Mireille', 'Nadège', 'Fatou', 'Awa'], ['Kouamé', 'Yao', 'Serge', 'Didier', 'Hervé', 'Arnaud', 'Patrick', 'Jean-Marc', 'Ibrahim', 'Samuel']],
+        'europe' => [['Emma', 'Léa', 'Chloé', 'Manon', 'Camille', 'Inès', 'Jade', 'Louise', 'Aïcha', 'Sarah'], ['Lucas', 'Hugo', 'Louis', 'Gabriel', 'Arthur', 'Nathan', 'Jules', 'Adam', 'Moussa', 'Yanis']],
+        'amerique' => [['Olivia', 'Emma', 'Ava', 'Sophia', 'Mia', 'Charlotte', 'Florence', 'Alice', 'Aminata', 'Grace'], ['Liam', 'Noah', 'James', 'William', 'Ethan', 'Logan', 'Félix', 'Thomas', 'Samuel', 'Daniel']],
+    ];
+
+    /** Noms d'écoles (inventés : aucune école réelle). */
+    private const MOTS = ['Les Étoiles', 'Le Savoir', 'Espoir', 'Avenir', 'Excellence', 'La Réussite', 'Les Pionniers', 'Lumière', 'Les Bâtisseurs', 'Horizon', 'La Source', 'Les Lauréats', 'Sabali', 'Benkadi', 'Jiguiya', 'Danaya', 'Nyeta', 'Hèrè', 'Badenya', 'Kalanso', 'Dème', 'Sininyesigi', 'Tilé', 'Nyèsigi', 'Les Flamboyants', 'Les Baobabs', 'Le Fleuve', 'La Colombe', 'L’Union', 'La Persévérance', 'Le Progrès', 'Les Jeunes Talents', 'La Clé du Savoir', 'Le Phare', 'Les Cèdres', 'Le Niger'];
+
+    private const MOTS_EN = ['Riverside', 'Oak Hill', 'Maple Grove', 'Sunrise', 'Lakeview', 'Greenwood', 'Westbrook', 'Cedar Park'];
 
     public function handle(): int
     {
@@ -90,8 +134,9 @@ class GenererDonneesCharge extends Command
 
     private function generer(): int
     {
-        if ($this->manifeste() !== []) {
-            $this->error('Des données de charge existent déjà : lancez d\'abord « php artisan kalannet:donnees-charge --supprimer ».');
+        $dejaCreees = $this->manifeste();
+        if ($dejaCreees !== [] && !$this->option('reprendre')) {
+            $this->error('Des données de charge existent déjà : « --reprendre » pour continuer, ou « --supprimer » pour tout retirer.');
 
             return self::FAILURE;
         }
@@ -104,25 +149,24 @@ class GenererDonneesCharge extends Command
         $mali = (int) DB::table('pays')->where('code_iso', 'ML')->value('id');
         $caps = DB::table('cap as c')->join('academie as a', 'a.id_academie', '=', 'c.id_academie')
             ->where('a.id_pays', $mali)->get(['c.id_cap', 'c.nom_cap', 'a.id_academie', 'a.nom_academie'])->all();
+        $pays = DB::table('pays')->whereIn('code_iso', array_keys(self::PAYS))->get()->keyBy('code_iso');
         $offre = DB::table('abonnement_offres')->where('code', 'annuel')->value('id') ?? DB::table('abonnement_offres')->where('actif', 1)->value('id');
         $matieres = $this->matieresCommunes();
         $mdpAdmin = Hash::make((string) $this->option('mot-de-passe'));
         $mdpParent = Hash::make('Parent2026');
 
-        // Répartition des types, proportionnelle pour un autre nombre d'écoles.
-        $plan = [];
-        foreach (self::TYPES as [$type, $ordres, $n]) {
-            for ($i = 0; $i < max(1, (int) round($n * $nbEcoles / 110)); $i++) {
-                $plan[] = [$type, $ordres];
-            }
-        }
+        $plan = $this->profils($nbEcoles, $pays, $caps);
 
         DB::statement('CREATE TEMPORARY TABLE IF NOT EXISTS chg_evaluations (id_evaluation INT, id_classe INT, id_matiere INT, id_enseignant INT, id_trimestre INT NULL, mois INT NULL, id_note INT, sur INT, KEY (id_classe))');
 
         $barre = $this->output->createProgressBar(count($plan));
-        $creees = [];
-        foreach ($plan as $n => [$type, $ordres]) {
-            $creees[] = $this->creerEcole($n + 1, $type, $ordres, $parClasse, $caps[$n % count($caps)], $mali, $offre, $matieres, $mdpAdmin, $mdpParent);
+        $creees = $dejaCreees;
+        $barre->advance(count($creees));
+        foreach ($plan as $n => $profil) {
+            if ($n < count($dejaCreees)) {
+                continue; // déjà créée lors d'une génération interrompue
+            }
+            $creees[] = $this->creerEcole($n + 1, $profil, $parClasse, $offre, $matieres, $mdpAdmin, $mdpParent);
             $this->enregistrerManifeste($creees);
             $barre->advance();
         }
@@ -132,6 +176,106 @@ class GenererDonneesCharge extends Command
         $this->bilan($creees, microtime(true) - $debut);
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Une école par profil : pays (surtout le Mali, puis l'Afrique, l'Europe et
+     * l'Amérique), type et ordres, ville, quartier, nom inventé et unique.
+     */
+    private function profils(int $nbEcoles, $pays, array $caps): array
+    {
+        $profils = []; $noms = [];
+        $typesMali = [];
+        foreach (self::TYPES as [$type, $ordres, $n]) {
+            for ($i = 0; $i < max(1, (int) round($n * self::PAYS['ML']['n'] / 110)); $i++) {
+                $typesMali[] = [$type, $ordres];
+            }
+        }
+        mt_srand(110);
+        shuffle($typesMali);
+        // Hors Mali : types proposés à la création d'école (Primaire, Secondaire Générale, Complexe).
+        $typesAutres = [
+            ['Primaire', ['jardin', 'fondamentale1']],
+            ['Secondaire Generale', ['fondamentale2', 'secondairegenerale']],
+            ['Complexe Scolaire', ['jardin', 'fondamentale1', 'fondamentale2', 'secondairegenerale']],
+        ];
+
+        $global = 0;
+        foreach (self::PAYS as $code => $conf) {
+            if (!isset($pays[$code])) {
+                continue;
+            }
+            $nombre = max(1, (int) round($conf['n'] * $nbEcoles / 110));
+            for ($i = 0; $i < $nombre; $i++) {
+                [$type, $ordres] = $code === 'ML' ? $typesMali[$i % count($typesMali)] : $typesAutres[$i % count($typesAutres)];
+                // Une école sur trois dans la capitale (quartiers), les autres réparties dans les villes.
+                $ville = $i % 3 === 0 ? $conf['villes'][0] : $conf['villes'][1 + intdiv($i, 3) % (count($conf['villes']) - 1)];
+                $quartier = $conf['quartiers'][intdiv($i, 7) % count($conf['quartiers'])];
+                $nom = $this->nomEcole($code, $conf['groupe'], $type, $ville, $quartier, $global++, $noms);
+                $capitale = $ville === $conf['villes'][0];
+                $profils[] = [
+                    'code' => $code, 'pays' => $pays[$code], 'conf' => $conf, 'type' => $type, 'ordres' => $ordres,
+                    'ville' => $ville, 'quartier' => $quartier, 'nom' => $nom,
+                    // Le quartier n'a de sens que dans la capitale.
+                    'adresse' => ($capitale ? $quartier.', ' : '').$ville,
+                    'cap' => $code === 'ML' ? $caps[$i % count($caps)] : null,
+                    'fa' => $code === 'ML' && in_array($type, ['Fondamentale I', 'Fondamentale II', 'Collège', 'Complexe Scolaire', 'Secondaire Generale'], true) && $i % 4 === 3 ? 1 : 0,
+                    'prive' => $type === 'Complexe Scolaire' || $i % 3 === 0,
+                ];
+            }
+        }
+
+        return $profils;
+    }
+
+    private function nomEcole(string $code, string $groupe, string $type, string $ville, string $quartier, int $i, array &$deja): string
+    {
+        $mot = self::MOTS[$i % count(self::MOTS)];
+        // Dans la capitale, l'école porte le nom de son quartier.
+        $lieu = $ville === (self::PAYS[$code]['villes'][0] ?? $ville) ? $quartier : $ville;
+        $motEn = self::MOTS_EN[$i % count(self::MOTS_EN)];
+        $nom = match (true) {
+            $code === 'US' => match ($type) {
+                'Primaire' => "$motEn Elementary School",
+                'Secondaire Generale' => "$motEn High School",
+                default => "$motEn Academy",
+            },
+            $type === 'Fondamentale I' => "École Fondamentale $mot de $lieu",
+            $type === 'Fondamentale II' => "École Fondamentale $mot de $lieu",
+            $type === 'Collège' => "Collège $mot de $lieu",
+            $type === 'Secondaire Technique et Professionnel' => "Lycée Technique $mot de $lieu",
+            $type === 'École de Santé' => "École de Santé $mot de $lieu",
+            $type === 'Complexe Scolaire' => "Complexe Scolaire $mot de $lieu",
+            $type === 'Primaire' => match ($groupe) {
+                'europe' => "École élémentaire $mot de $lieu",
+                'amerique' => "École primaire $mot de $lieu",
+                default => "École Primaire $mot de $lieu",
+            },
+            $type === 'Secondaire Generale' && $groupe === 'amerique' => "École secondaire $mot de $lieu",
+            default => "Lycée $mot de $lieu",
+        };
+        $nom = preg_replace(["/ de Le /u", "/ de Les /u", "/ de ([AEIOUYÉÈHaeiouyéè])/u"], [' du ', ' des ', ' d’$1'], $nom);
+        // Deux écoles ne portent jamais le même nom.
+        $base = $nom;
+        for ($k = 2; isset($deja[$nom]); $k++) {
+            $nom = "$base ($quartier".($k > 2 ? " $k" : '').')';
+        }
+        $deja[$nom] = true;
+
+        return $nom;
+    }
+
+    /** Numéro au format du pays (longueur nationale), toujours différent selon $graine. */
+    private function telephone(object $pays, int $graine): string
+    {
+        $longueur = max(8, (int) ($pays->telephone_longueur ?: 8));
+
+        return '7'.str_pad((string) ($graine % (10 ** ($longueur - 1))), $longueur - 1, '0', STR_PAD_LEFT);
+    }
+
+    private function montant(float $fcfa, array $conf): float
+    {
+        return max(5, round($fcfa * $conf['facteur'] / 5) * 5);
     }
 
     /** Matières communes (id_ecole null) : [ordre][franco-arabe 0|1] => [id, nom]. */
@@ -150,21 +294,23 @@ class GenererDonneesCharge extends Command
         return $liste;
     }
 
-    private function creerEcole(int $n, string $type, array $ordres, int $parClasse, object $cap, int $mali, ?int $offre, array $matieres, string $mdpAdmin, string $mdpParent): int
+    private function creerEcole(int $n, array $profil, int $parClasse, ?int $offre, array $matieres, string $mdpAdmin, string $mdpParent): int
     {
-        $fa = in_array($type, ['Fondamentale I', 'Fondamentale II', 'Collège', 'Complexe Scolaire', 'Secondaire Generale'], true) && $n % 4 === 0 ? 1 : 0;
-        $prive = $type === 'Complexe Scolaire' || $n % 3 === 0;
-        $ville = self::VILLES[$n % count(self::VILLES)];
-        $nom = ($type === 'Complexe Scolaire' ? 'Complexe Scolaire' : ($type === 'École de Santé' ? 'École de Santé' : 'École')).' Charge '.str_pad((string) $n, 3, '0', STR_PAD_LEFT).($fa ? ' (franco-arabe)' : '');
+        ['type' => $type, 'ordres' => $ordres, 'fa' => $fa, 'prive' => $prive, 'ville' => $ville, 'nom' => $nom, 'cap' => $cap, 'pays' => $pays, 'conf' => $conf] = $profil;
+        $mali = $profil['code'] === 'ML';
+        [$prenomsF, $prenomsM] = self::PRENOMS[$conf['groupe']];
+        $nomsFamille = $conf['noms'];
+        $lieux = $conf['villes'];
 
-        return DB::transaction(function () use ($n, $type, $ordres, $parClasse, $cap, $mali, $offre, $matieres, $mdpAdmin, $mdpParent, $fa, $prive, $ville, $nom) {
+        return DB::transaction(function () use ($n, $type, $ordres, $parClasse, $cap, $mali, $pays, $conf, $offre, $matieres, $mdpAdmin, $mdpParent, $fa, $prive, $ville, $nom, $profil, $prenomsF, $prenomsM, $nomsFamille, $lieux) {
+            $mot = preg_replace('/^.*? (de|des|du) /u', '', $nom);
             $idEcole = DB::table('ecole')->insertGetId([
                 'nomEcole' => $nom, 'typeEcole' => $type, 'statut' => $prive ? 'prive' : 'public', 'franco_arabe' => $fa,
-                'id_pays' => $mali, 'id_academie' => $cap->id_academie, 'academie' => $cap->nom_academie, 'id_cap' => $cap->id_cap, 'cap' => $cap->nom_cap,
+                'id_pays' => $pays->id, 'id_academie' => $cap?->id_academie, 'academie' => $cap?->nom_academie ?? '', 'id_cap' => $cap?->id_cap, 'cap' => $cap?->nom_cap,
                 'nomComplexe' => $type === 'Complexe Scolaire' ? $nom : null,
-                'nomFondamental' => $type === 'Complexe Scolaire' ? 'École fondamentale Charge '.$n : null,
-                'nomLycee' => $type === 'Complexe Scolaire' ? 'Lycée Charge '.$n : null,
-                'adresse' => $ville.', Mali', 'telephone' => (string) (70000000 + $n), 'email' => "ecole$n@charge.kalannet.test",
+                'nomFondamental' => $type === 'Complexe Scolaire' ? 'École fondamentale '.$ville : null,
+                'nomLycee' => $type === 'Complexe Scolaire' ? 'Lycée '.$ville : null,
+                'adresse' => $profil['adresse'].', '.$pays->nom, 'telephone' => $this->telephone($pays, 1000 + $n), 'email' => "ecole$n@charge.kalannet.test",
                 'notification_sms' => 0, 'notification_email' => 0, 'created_at' => now(), 'updated_at' => now(),
             ]);
 
@@ -176,7 +322,9 @@ class GenererDonneesCharge extends Command
                 DB::table('abonnements')->insert(['ecole_id' => $idEcole, 'offre_id' => $offre, 'statut' => 'actif', 'debut_at' => now(), 'fin_at' => now()->addYear(), 'created_at' => now(), 'updated_at' => now()]);
             }
             $admin = User::withoutGlobalScopes()->create([
-                'nomPrenom' => 'Admin Charge '.$n, 'email' => "admin$n@charge.kalannet.test", 'fonction' => 'Directeur', 'telephone' => (string) (71000000 + $n),
+                'nomPrenom' => $prenomsM[$n % count($prenomsM)].' '.$nomsFamille[$n % count($nomsFamille)], 'email' => "admin$n@charge.kalannet.test", 'fonction' => 'Directeur',
+                // Colonne entière : numéros à 10 chiffres impossibles ; connexion par e-mail.
+                'telephone' => $mali ? (int) $this->telephone($pays, 2000 + $n) : null,
                 'genre' => 'Masculin', 'droit' => 'Admin', 'idEcole' => $idEcole, 'statut' => 1, 'image' => 'default.png', 'pwd' => $mdpAdmin, 'doit_changer_mdp' => false,
             ]);
             app(ConfigurationController::class)->syncDefaultPermissions($admin, 1);
@@ -201,8 +349,8 @@ class GenererDonneesCharge extends Command
             for ($i = 1; $i <= $nbMaitres + $nbProfs; $i++) {
                 $f = $i % 2 === 0;
                 $lignes[] = [
-                    'nom_prenom_enseignant' => ($f ? self::PRENOMS_F[$i % 20] : self::PRENOMS_M[$i % 20]).' '.self::NOMS[($i * 7 + $n) % 25],
-                    'genre_enseignant' => $f ? 'Féminin' : 'Masculin', 'telephone_enseignant' => (string) (72000000 + $n * 100 + $i),
+                    'nom_prenom_enseignant' => ($f ? $prenomsF[$i % count($prenomsF)] : $prenomsM[$i % count($prenomsM)]).' '.$nomsFamille[($i * 7 + $n) % count($nomsFamille)],
+                    'genre_enseignant' => $f ? 'Féminin' : 'Masculin', 'telephone_enseignant' => $this->telephone($pays, 300000 + $n * 100 + $i),
                     'email_enseignant' => "prof$i.ecole$n@charge.kalannet.test", 'matricule' => "CHG$n-ENS$i", 'id_ecole' => $idEcole,
                     'type_contrat_enseignant' => ['CDI', 'CDD', 'VCT', 'FONCTIONNAIRE'][$i % 4], 'salaire_enseignant' => 75000 + ($i % 5) * 15000,
                     'salaire_mois_mode' => 12, 'is_deleted' => 0,
@@ -243,7 +391,7 @@ class GenererDonneesCharge extends Command
             $formules = [];
             if ($prive) {
                 foreach ($classes as $classe) {
-                    $montant = ['jardin' => 60000, 'fondamentale1' => 75000, 'fondamentale2' => 90000, 'secondairegenerale' => 120000, 'secondairetechniqueetprofessionnel' => 150000, 'sante' => 250000][$classe['ordre']];
+                    $montant = $this->montant(['jardin' => 60000, 'fondamentale1' => 75000, 'fondamentale2' => 90000, 'secondairegenerale' => 120000, 'secondairetechniqueetprofessionnel' => 150000, 'sante' => 250000][$classe['ordre']], $conf);
                     $formules[$classe['id']] = [DB::table('planification')->insertGetId(['motif' => 'annuelle', 'id_classe' => $classe['id'], 'id_annee' => self::ANNEE, 'date_debut' => '2025-10-01', 'date_fin' => '2026-06-30', 'montant_planification' => $montant]), $montant];
                 }
             }
@@ -258,16 +406,16 @@ class GenererDonneesCharge extends Command
                 for ($i = 0; $i < $nb; $i++) {
                     $sequence++;
                     $fille = mt_rand(0, 1) === 1;
-                    $famille = self::NOMS[mt_rand(0, 24)];
+                    $famille = $nomsFamille[mt_rand(0, count($nomsFamille) - 1)];
                     $eleves[] = [
-                        'prenom_eleve' => $fille ? self::PRENOMS_F[mt_rand(0, 19)] : self::PRENOMS_M[mt_rand(0, 19)], 'nom_eleve' => $famille,
+                        'prenom_eleve' => $fille ? $prenomsF[mt_rand(0, count($prenomsF) - 1)] : $prenomsM[mt_rand(0, count($prenomsM) - 1)], 'nom_eleve' => $famille,
                         'genre_eleve' => $fille ? 'Féminin' : 'Masculin', 'date_naissance' => (2025 - $age).'-'.sprintf('%02d-%02d', mt_rand(1, 12), mt_rand(1, 28)),
-                        'lieu_naiss' => self::VILLES[mt_rand(0, 9)], 'adresse_eleve' => $ville, 'matricule' => "CHG$n-$sequence",
+                        'lieu_naiss' => $lieux[mt_rand(0, count($lieux) - 1)], 'adresse_eleve' => $profil['adresse'], 'matricule' => "CHG$n-$sequence",
                         'id_classe' => $classe['id'], 'id_annee' => self::ANNEE, 'id_ecole' => $idEcole, 'cas_social' => 'normal', 'statut_paiement' => 'normal',
                         'etat_dossier' => mt_rand(1, 100) <= 2 ? 2 : 0, 'image' => 'assets/images/avatars/avatar-1.png', 'date_inscription' => '2025-10-01',
                     ];
                     if ($sequence % 3 !== 0) {
-                        $parents[$sequence] = ['nom_prenom_parent' => self::PRENOMS_M[mt_rand(0, 19)].' '.$famille, 'email_parent' => "parent$sequence.ecole$n@charge.kalannet.test", 'telephone_parent' => (string) (73000000 + $n * 1000 + $sequence), 'genre' => 'Masculin', 'idEcole' => $idEcole, 'pwd' => $mdpParent];
+                        $parents[$sequence] = ['nom_prenom_parent' => $prenomsM[mt_rand(0, count($prenomsM) - 1)].' '.$famille, 'email_parent' => "parent$sequence.ecole$n@charge.kalannet.test", 'telephone_parent' => $this->telephone($pays, 400000 + $n * 1000 + $sequence), 'genre' => 'Masculin', 'idEcole' => $idEcole, 'pwd' => $mdpParent];
                     }
                 }
             }
@@ -296,7 +444,7 @@ class GenererDonneesCharge extends Command
                         $recu++;
                         $paiements[] = ['montant' => $montant / 2, 'montant_paye' => $montant / 2, 'date_paiement' => $t === 1 ? '2025-10-15' : '2026-01-15', 'mode_reglement' => 'especes', 'statut' => 'valide', 'motif' => 'annuelle',
                             'id_classe' => $e->id_classe, 'id_annee' => self::ANNEE, 'id_trimestre' => $t, 'reference' => "CHG$n-PAI$recu", 'idEcole' => $idEcole, 'id_eleve' => $e->id_eleve,
-                            'parent' => 'Père', 'nom_payeur' => 'Parent de '.$e->prenom_eleve.' '.$e->nom_eleve, 'telephone' => (string) (74000000 + $recu), 'id_utilisateur' => $admin->idUtilisateur,
+                            'parent' => 'Père', 'nom_payeur' => 'Parent de '.$e->prenom_eleve.' '.$e->nom_eleve, 'telephone' => $this->telephone($pays, 500000 + $n * 1000 + $recu), 'id_utilisateur' => $admin->idUtilisateur,
                             'id_caisse' => $idCaisse, 'numero_recu' => $recu, 'id_planification' => $idFormule];
                     }
                 }
@@ -437,13 +585,15 @@ class GenererDonneesCharge extends Command
 
     private function bilan(array $ids, float $secondes): void
     {
-        $classes = DB::table('classe')->whereIn('idEcole', $ids)->pluck('id_classe');
-        $eleves = DB::table('eleve')->whereIn('id_ecole', $ids)->pluck('id_eleve');
+        // Sous-requêtes : jamais la liste des élèves en paramètres (un million d'identifiants).
+        $classes = DB::table('classe')->select('id_classe')->whereIn('idEcole', $ids);
+        $eleves = DB::table('eleve')->select('id_eleve')->whereIn('id_ecole', $ids);
+        $paiements = DB::table('paiement')->select('id_paiement')->whereIn('idEcole', $ids);
         $tables = [
             'ecole' => count($ids),
-            'classe' => $classes->count(),
+            'classe' => DB::table('classe')->whereIn('idEcole', $ids)->count(),
             'enseignants' => DB::table('enseignants')->whereIn('id_ecole', $ids)->count(),
-            'eleve' => $eleves->count(),
+            'eleve' => DB::table('eleve')->whereIn('id_ecole', $ids)->count(),
             'parents' => DB::table('parents')->whereIn('idEcole', $ids)->count(),
             'ligneparents_eleves' => DB::table('ligneparents_eleves')->whereIn('id_eleve', $eleves)->count(),
             'ligne_inscription' => DB::table('ligne_inscription')->whereIn('id_eleve', $eleves)->count(),
@@ -455,11 +605,12 @@ class GenererDonneesCharge extends Command
             'presences' => DB::table('presences')->whereIn('id_ecole', $ids)->count(),
             'paiement' => DB::table('paiement')->whereIn('idEcole', $ids)->count(),
             'ligne_paiement_eleve' => DB::table('ligne_paiement_eleve')->whereIn('idEcole', $ids)->count(),
-            'encaissement' => DB::table('encaissement')->whereIn('paiement_id', DB::table('paiement')->whereIn('idEcole', $ids)->pluck('id_paiement'))->count(),
+            'encaissement' => DB::table('encaissement')->whereIn('paiement_id', $paiements)->count(),
             'utilisateurs' => DB::table('utilisateurs')->whereIn('idEcole', $ids)->count(),
         ];
         $this->table(['Table', 'Lignes créées'], collect($tables)->map(fn ($n, $t) => [$t, number_format($n, 0, ',', ' ')])->values()->all());
         $this->info('Total : '.number_format(array_sum($tables), 0, ',', ' ').' lignes en '.round($secondes).' s.');
+        $this->line('Pays : '.DB::table('ecole as e')->join('pays as p', 'p.id', '=', 'e.id_pays')->whereIn('e.idEcole', $ids)->groupBy('p.nom')->selectRaw('p.nom, count(*) n')->orderByDesc('n')->get()->map(fn ($r) => "$r->nom $r->n")->implode(' · '));
         $this->line('Types : '.DB::table('ecole')->whereIn('idEcole', $ids)->groupBy('typeEcole')->selectRaw('typeEcole, count(*) n')->get()->map(fn ($r) => "$r->typeEcole $r->n")->implode(' · '));
         $this->line('Connexion : admin1@charge.kalannet.test … admin'.count($ids).'@charge.kalannet.test, mot de passe « '.$this->option('mot-de-passe').' ».');
     }

@@ -6,16 +6,24 @@ Elle refuse de tourner en production ou sur une base qui n'est pas locale.
 
 ```bash
 php artisan kalannet:donnees-charge                       # 110 écoles, 25 élèves par classe (≈ 1,5 million de lignes)
-php artisan kalannet:donnees-charge --ecoles=150 --eleves=30
+php artisan kalannet:donnees-charge --ecoles=1200 --eleves=100   # ≈ 1 million d'élèves, année complète de notes (plusieurs heures)
+php artisan kalannet:donnees-charge --reprendre --ecoles=1200 --eleves=100   # reprend une génération interrompue
 php artisan kalannet:donnees-charge --supprimer           # retire tout ce que la commande a créé
 ```
 
 ## Contenu
 
-- **Écoles** (pour 110) : 22 Fondamental I, 14 Fondamental II, 22 Collèges,
-  16 Secondaire général, 8 Secondaire technique, 22 Complexes scolaires (tous les
-  ordres), 6 Écoles de santé. Une sur quatre (hors technique et santé) est
-  franco-arabe ; les complexes et une école sur trois sont privés.
+- **Pays** : environ 73 % au Mali, 23 % dans d'autres pays d'Afrique (Sénégal,
+  Côte d'Ivoire, Burkina Faso, Guinée, Niger, Cameroun), 4 % en Europe et en
+  Amérique (France, Belgique, Canada, États-Unis). Noms d'écoles inventés
+  (« École Fondamentale Benkadi de Lafiabougou », « Lycée Le Savoir de Kayes »…),
+  villes et quartiers, prénoms et noms de la région, téléphones au format du
+  pays, montants dans la monnaie du pays.
+- **Types** au Mali : Fondamental I, Fondamental II, Collège, Secondaire
+  général, technique, Complexes scolaires (tous les ordres), Écoles de santé ;
+  hors Mali : Primaire, Secondaire général, Complexe scolaire. Une école
+  malienne sur quatre (hors technique et santé) est franco-arabe ; les
+  complexes et une école sur trois sont privés.
 - **Ordres** : Jardin (Petite et Grande section, avec leur maître), Fondamental I
   (1ère à 6ème), Fondamental II (7ème à 9ème), Secondaire général (10ème commune,
   11ème Sciences / SES, 12ème TSE / TSS), Technique (Génie civil), Santé
