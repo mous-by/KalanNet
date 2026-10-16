@@ -144,6 +144,33 @@ class AccesAssistanceTest extends IntegrationTestCase
         $this->actingAs($sup)->get(route('assistance.attente', $demande->id, false))->assertOk()->assertSee(__('assistance.demande_envoyee', ['nom' => $cible->nomPrenom]));
     }
 
+    /** Application mobile : l'Admin voit la demande et répond par l'API. */
+    public function test_reponse_depuis_l_application_mobile(): void
+    {
+        $sup = $this->compte('SupAdmin');
+        $cible = $this->compte('Admin', 1);
+        $this->demander($sup, $cible);
+        $id = (int) $this->derniereDemande()->id;
+
+        $admin = $this->compte('Admin', 1);
+        $jeton = $admin->createToken('mobile')->plainTextToken;
+        // Téléphone : aucune session web (celle du SupAdmin ci-dessus primerait sur le jeton).
+        $this->app['auth']->forgetGuards();
+        $this->flushSession();
+        $this->withToken($jeton)->getJson('/api/v1/assistance/demande')->assertOk()
+            ->assertJsonPath('demande.id', $id)->assertJsonPath('demande.motif', 'Le client ne voit pas ses bulletins');
+        $this->withToken($jeton)->postJson("/api/v1/assistance/$id/repondre", ['decision' => 'accepter'])->assertOk()->assertJsonPath('ok', true);
+        $this->assertSame(['accepte', $admin->idUtilisateur], [$this->derniereDemande()->statut, (int) $this->derniereDemande()->decide_par]);
+        $this->withToken($jeton)->postJson("/api/v1/assistance/$id/repondre", ['decision' => 'refuser'])->assertStatus(409);
+
+        // Un enseignant ne voit aucune demande.
+        $enseignant = User::withoutGlobalScopes()->where('idEcole', 1)->where('droit', 'enseignant')->where('statut', 1)->first();
+        $this->demander($sup, $cible);
+        $this->app['auth']->forgetGuards();
+        $this->flushSession();
+        $this->withToken($enseignant->createToken('mobile')->plainTextToken)->getJson('/api/v1/assistance/demande')->assertOk()->assertJsonPath('demande', null);
+    }
+
     /** Cas réel : l'Admin accepte dans le même navigateur, ce qui remplace la session SupAdmin. */
     public function test_meme_navigateur_message_clair_sans_404(): void
     {

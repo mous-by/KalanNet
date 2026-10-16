@@ -7,6 +7,7 @@ import SelectField from '@/components/SelectField';
 import SuccessSnackbar from '@/components/SuccessSnackbar';
 import { useAuth } from '@/context/AuthContext';
 import { api, apiErrorMessage } from '@/lib/api';
+import { downloadAndPrint, downloadAndShare } from '@/lib/downloadFile';
 import { hasPermission } from '@/lib/permissions';
 import { useApiGet } from '@/lib/useApi';
 import { AnneeScolaire, Classe, Enseignant, LigneClasse, Matiere } from '@/types/api';
@@ -28,6 +29,20 @@ interface TimetableData {
   annees: AnneeScolaire[];
   lignes_classe: LigneClasse[];
   timetable: Record<string, Course[]>;
+  // Horaires des lignes et récréations de la classe (serveur ≥ octobre 2026).
+  grille?: { horaires: Record<string, { debut: string; fin: string }>; recreations: Record<string, number> } | null;
+}
+
+interface Recreation {
+  debut: string;
+  fin: string;
+  minutes: number;
+}
+
+function ajouterMinutes(heure: string, minutes: number): string {
+  const [h, m] = heure.split(':').map(Number);
+  const total = (h || 0) * 60 + (m || 0) + minutes;
+  return `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
 }
 
 interface SlotForm {
@@ -58,6 +73,36 @@ export default function TimetableScreen() {
   }, [idClasse, idAnnee]);
 
   const { data, isLoading, error: loadError, reload } = useApiGet<TimetableData>(endpoint, [endpoint]);
+  const [pdfEnCours, setPdfEnCours] = useState<'imprimer' | 'partager' | null>(null);
+
+  // Récréations de la classe : après la ligne indiquée, pendant la durée enregistrée.
+  const recreations = useMemo<Recreation[]>(() => {
+    const grille = data?.grille;
+    if (!grille) return [];
+    return Object.entries(grille.recreations ?? {})
+      .map(([cle, minutes]) => {
+        const debut = grille.horaires?.[cle]?.fin;
+        return debut && minutes > 0 ? { debut, fin: ajouterMinutes(debut, minutes), minutes } : null;
+      })
+      .filter((r): r is Recreation => r !== null)
+      .sort((a, b) => a.debut.localeCompare(b.debut));
+  }, [data?.grille]);
+
+  async function handlePdf(action: 'imprimer' | 'partager') {
+    if (!idClasse || !idAnnee) return;
+    const nom = (data?.classes ?? []).find((c) => c.id_classe === idClasse)?.nom_classe ?? 'classe';
+    const chemin = `/timetable/download-pdf?id_classe=${idClasse}&id_annee=${idAnnee}`;
+    const fichier = `Emploi_du_temps_${nom.replace(/[^\p{L}\p{N}]+/gu, '_')}.pdf`;
+    setPdfEnCours(action);
+    try {
+      await (action === 'imprimer' ? downloadAndPrint(chemin, fichier) : downloadAndShare(chemin, fichier));
+    } catch (err) {
+      setSuccessMessage(apiErrorMessage(err, 'Impossible de préparer le PDF de l’emploi du temps.'));
+      setSuccessVisible(true);
+    } finally {
+      setPdfEnCours(null);
+    }
+  }
   const canManage = user?.droit !== 'enseignant' && hasPermission(user, 'planning_creation');
 
   async function handleDeleteSlot(id: number) {
@@ -143,15 +188,38 @@ export default function TimetableScreen() {
         ) : !idClasse || !idAnnee ? (
           <Text style={styles.empty}>Choisissez une classe et une année pour voir l'emploi du temps.</Text>
         ) : (
-          JOURS.map((jour) => {
+          <>
+          <View style={styles.pdfActions}>
+            <Button mode="contained" icon="printer" onPress={() => handlePdf('imprimer')} loading={pdfEnCours === 'imprimer'} disabled={pdfEnCours !== null} style={styles.pdfButton}>
+              Imprimer
+            </Button>
+            <Button mode="outlined" icon="share-variant" onPress={() => handlePdf('partager')} loading={pdfEnCours === 'partager'} disabled={pdfEnCours !== null} style={styles.pdfButton}>
+              Partager le PDF
+            </Button>
+          </View>
+          {JOURS.map((jour) => {
             const courses = (data?.timetable?.[jour] ?? []).slice().sort((a, b) => a.heure_debut.localeCompare(b.heure_debut));
+            // Récréations comprises entre le premier et le dernier cours de la journée.
+            const debutJour = courses[0]?.heure_debut.slice(0, 5);
+            const finJour = courses.length ? courses.map((c) => c.heure_fin.slice(0, 5)).sort().slice(-1)[0] : undefined;
+            const pauses = debutJour && finJour ? recreations.filter((r) => r.debut >= debutJour && r.fin <= finJour) : [];
+            const elements = [
+              ...courses.map((course) => ({ type: 'cours' as const, debut: course.heure_debut.slice(0, 5), course })),
+              ...pauses.map((pause) => ({ type: 'pause' as const, debut: pause.debut, pause })),
+            ].sort((a, b) => a.debut.localeCompare(b.debut) || (a.type === 'pause' ? 1 : -1));
             return (
               <View key={jour} style={styles.dayBlock}>
                 <Text style={styles.dayTitle}>{jour}</Text>
                 {courses.length === 0 ? (
                   <Text style={styles.emptyDay}>Aucun cours</Text>
                 ) : (
-                  courses.map((course) => (
+                  elements.map((element) => element.type === 'pause' ? (
+                    <View key={`pause-${element.pause.debut}`} style={styles.recessRow}>
+                      <Text style={styles.recessText}>
+                        Récréation · {element.pause.debut} – {element.pause.fin} ({element.pause.minutes} min)
+                      </Text>
+                    </View>
+                  ) : ((course) => (
                     <View key={course.id} style={styles.courseRow}>
                       <View style={styles.courseInfo}>
                         <Text style={styles.courseTime}>
@@ -167,11 +235,12 @@ export default function TimetableScreen() {
                         </View>
                       ) : null}
                     </View>
-                  ))
+                  ))(element.course))
                 )}
               </View>
             );
-          })
+          })}
+          </>
         )}
       </ScrollView>
 
@@ -255,4 +324,16 @@ const styles = StyleSheet.create({
   courseSubject: { marginTop: 2 },
   meta: { opacity: 0.6, marginTop: 2 },
   fab: { position: 'absolute', right: 16, bottom: 16 },
+  pdfActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+  pdfButton: { flexGrow: 1 },
+  recessRow: {
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    marginBottom: 8,
+    backgroundColor: 'rgba(245,158,11,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,158,11,0.45)',
+  },
+  recessText: { fontWeight: '600', textAlign: 'center' },
 });

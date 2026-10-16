@@ -9,6 +9,7 @@ import MenuDrawer from '@/components/MenuDrawer';
 import NotificationBell from '@/components/NotificationBell';
 import ThemeMenuButton from '@/components/ThemeMenuButton';
 import ChangerMotDePasseObligatoire from '@/components/ChangerMotDePasseObligatoire';
+import DemandeAssistanceModal from '@/components/DemandeAssistanceModal';
 import UserAvatar from '@/components/UserAvatar';
 import { estSuperviseur } from '@/lib/menuSections';
 import { hasPermission } from '@/lib/permissions';
@@ -125,6 +126,8 @@ export default function TabLayout() {
       </Tabs>
 
       <MenuDrawer visible={menuOpen} onClose={() => setMenuOpen(false)} />
+      {/* Admin : accord des demandes d'accès d'assistance du support KalanNet. */}
+      <DemandeAssistanceModal />
     </View>
   );
 }

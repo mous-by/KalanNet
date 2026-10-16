@@ -47,6 +47,12 @@ Route::prefix('v1')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index']);
         Route::put('/dashboard/abonnements/{abonnement}/dates', [DashboardController::class, 'updateSubscriptionDates']);
 
+        // Accès d'assistance : demande en attente et réponse d'un Admin de l'école (application mobile).
+
+        Route::get('/assistance/demande', [\App\Http\Controllers\AssistanceController::class, 'demandeEnAttente']);
+
+        Route::post('/assistance/{id}/repondre', [\App\Http\Controllers\AssistanceController::class, 'repondre'])->whereNumber('id');
+
         Route::get('/notifications', [NotificationController::class, 'index']);
         Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
         Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);

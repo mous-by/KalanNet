@@ -69,7 +69,7 @@ class TimetableController extends WebTimetableController
             'lignes_classe' => $lignesClasse,
             'timetable' => $timetable,
             // Horaires des lignes et récréations de la classe (nouvelle clé, ignorée par les anciennes versions).
-            'grille' => $idClasse && $idAnnee ? GrilleEmploiDuTemps::lire((int) $idClasse, (int) $idAnnee, EmploiDuTemps::where('id_classe', $idClasse)->where('id_annee_scolaire', $idAnnee)->get(['heure_debut', 'heure_fin'])) : null,
+            'grille' => $idClasse && $idAnnee ? collect(GrilleEmploiDuTemps::disposer((int) $idClasse, (int) $idAnnee, collect($timetable)->flatten(1)))->only(['horaires', 'recreations'])->all() : null,
         ]);
     }
 

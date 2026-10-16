@@ -102,6 +102,10 @@ class EmploiDuTempsGrilleTest extends IntegrationTestCase
         $this->assertSame(2, count(array_filter($m, fn ($x) => $x[1] === 'Mardi')), 'les deux cours de mardi (même heure) visibles');
         $this->assertStringContainsString('13:30 - 15:00', $html);
 
+        // Application mobile : les récréations sont transmises avec l'emploi du temps.
+        $this->withToken($jeton)->getJson("/api/v1/timetable?id_classe={$this->classe}&id_annee={$this->annee}")->assertOk()
+            ->assertJsonPath('grille.recreations', fn ($r) => array_values($r) === [15]);
+
         $disposition = GrilleEmploiDuTemps::disposer($this->classe, $this->annee, \App\Models\EmploiDuTemps::where('id_classe', $this->classe)->where('id_annee_scolaire', $this->annee)->get());
         $this->assertSame(0, $disposition['non_places']);
         $this->assertSame(15, collect($disposition['recreations'])->first(), 'la récréation suit sa ligne');
