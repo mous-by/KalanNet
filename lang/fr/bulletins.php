@@ -136,4 +136,5 @@ return [
     'gen_deux_par_feuille_title' => 'Mise en page 2 par feuille A4…',
     'modele_a4_paysage' => 'A4 paysage · 2 exemplaires',
     'fin_annee_label' => 'Bulletin de fin d\'année (avec la moyenne annuelle)',
+    'notes_en_attente' => 'Aucun bulletin pour l’instant : :n note(s) de cette période attendent leur validation. Validez-les dans Évaluations pour générer les bulletins.',
 ];

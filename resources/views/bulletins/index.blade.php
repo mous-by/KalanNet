@@ -214,6 +214,7 @@
             'exaequoSuffix' => __('bulletins.exaequo_suffix'),
             'apercuChoisirPeriode' => __('bulletins.apercu_choisir_periode'),
             'apercuAucunEleve' => __('bulletins.apercu_aucun_eleve'),
+            'notesEnAttente' => __('bulletins.notes_en_attente'),
             'modeles' => collect($modeles)->map(fn ($m) => $m['nom']),
         ];
     @endphp
@@ -239,6 +240,7 @@
             const unpublishForm = document.getElementById('unpublish-bulletins-form');
 
             let premierEleve = null;
+            let messageVide = null;
             const reglagesUrl = "{{ route('pedagogie.bulletins.reglages', $classe->id_classe) }}";
             const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
             const enregistre = document.getElementById('modele-enregistre');
@@ -295,7 +297,7 @@
                         return;
                     }
                     if (!premierEleve) {
-                        avertir(i18n.apercuAucunEleve, 'info');
+                        avertir(messageVide || i18n.apercuAucunEleve, 'info');
                         return;
                     }
                     const params = new URLSearchParams({id_annee: annee.value, modele: bouton.dataset.modele});
@@ -350,11 +352,13 @@
                 else params.set('id_trimestre', idTrimestre);
 
                 body.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>' + i18n.loadingBulletins + '</td></tr>';
+                let enAttente = 0;
                 fetch("{{ route('pedagogie.bulletins.data', $classe->id_classe) }}?" + params.toString())
                     .then(response => {
                         if (!response.ok) {
                             throw new Error(i18n.loadError);
                         }
+                        enAttente = parseInt(response.headers.get('X-Notes-En-Attente') || '0', 10);
                         return response.json();
                     })
                     .then(rows => {
@@ -373,7 +377,8 @@
                                 '<td>' + rangLabel(row) + '</td>' +
                                 '<td class="text-center"><a class="btn btn-light btn-sm p-2" target="_blank" href="{{ url('/pedagogie/bulletins') }}/' + row.id_eleve + '/download?' + printParams.toString() + '"><i class="bi bi-printer text-primary"></i></a></td>' +
                             '</tr>';
-                        }).join('') || '<tr><td colspan="7" class="text-center py-4 text-muted">' + i18n.emptyBulletinsPeriod + '</td></tr>';
+                        }).join('') || '<tr><td colspan="7" class="text-center py-4 text-muted">' + (enAttente > 0 ? i18n.notesEnAttente.replace(':n', enAttente) : i18n.emptyBulletinsPeriod) + '</td></tr>';
+                        messageVide = enAttente > 0 ? i18n.notesEnAttente.replace(':n', enAttente) : i18n.apercuAucunEleve;
                         printAll.disabled = rows.length === 0;
                         selectAll.disabled = rows.length === 0;
                         syncPublicationButtons(rows.length > 0);

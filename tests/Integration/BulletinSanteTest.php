@@ -48,6 +48,23 @@ class BulletinSanteTest extends IntegrationTestCase
         }
     }
 
+    /** Fondamental I (compositions mensuelles sur 10) avec le modèle principales / secondaires : la note du mois compte. */
+    public function test_principales_en_compositions_mensuelles(): void
+    {
+        $ligne = DB::table('ligne_evaluation as le')->join('eleve as el', 'el.id_eleve', '=', 'le.id_eleve')->join('classe as c', 'c.id_classe', '=', 'el.id_classe')
+            ->where('c.ordreEnseignement', 'fondamentale1')->whereNotNull('le.mois')->where('le.note', '>', 0)
+            ->select('c.id_classe', 'le.id_annee_scolaire', 'le.mois')->first();
+        if (!$ligne) {
+            $this->markTestSkipped('Aucune composition mensuelle en Fondamental I.');
+        }
+        $classe = Classe::find($ligne->id_classe);
+        $standard = \App\Services\Bulletins\CalculBulletin::pour($classe, (int) $ligne->id_annee_scolaire, null, (int) $ligne->mois, 'standard')->resultats();
+        $principales = \App\Services\Bulletins\CalculBulletin::pour($classe, (int) $ligne->id_annee_scolaire, null, (int) $ligne->mois, 'principales')->resultats();
+
+        $this->assertGreaterThan(0, $principales->filter(fn ($r) => $r['moyenne_periode'] > 0)->count(), 'des élèves classés');
+        $this->assertSame($standard->filter(fn ($r) => $r['moyenne_periode'] > 0)->count(), $principales->filter(fn ($r) => $r['moyenne_periode'] > 0)->count());
+    }
+
     public function test_signataire_selon_l_ordre(): void
     {
         $ecole = (object) ['typeEcole' => 'Complexe Scolaire'];

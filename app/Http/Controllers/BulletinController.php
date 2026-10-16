@@ -113,7 +113,8 @@ class BulletinController extends Controller
         $compte = $ranked->countBy('rang');
         $ranked = $ranked->map(fn ($row) => $row + ['exaequo' => $compte[$row['rang']] > 1]);
 
-        return response()->json($ranked);
+        // Liste vide parce que les notes attendent leur validation : la page le dit.
+        return response()->json($ranked)->header('X-Notes-En-Attente', $ranked->isEmpty() ? $calcul->notesEnAttente() : 0);
     }
 
     public function generatorPage(int $idClasse, Request $request)

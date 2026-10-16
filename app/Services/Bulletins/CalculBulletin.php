@@ -229,6 +229,10 @@ class CalculBulletin
         } elseif (Ordres::surDix($this->ordre) && $this->calcul !== 'principales') {
             $matiere->M_Gle = (float) $matiere->NT10;
             $matiere->M_Coef = $matiere->M_Gle;
+        } elseif ($noteClasse === null && $noteCompo === null && $nt10->isNotEmpty()) {
+            // Compositions mensuelles (Fondamental I) avec un modèle à coefficients : la note du mois.
+            $matiere->M_Gle = (float) $nt10->avg();
+            $matiere->M_Coef = $matiere->M_Gle * $matiere->coef;
         } else {
             $matiere->M_Gle = ($matiere->M_Class + $matiere->M_Compo) / 3;
             $matiere->M_Coef = $matiere->M_Gle * $matiere->coef;
@@ -447,6 +451,24 @@ class CalculBulletin
     private function estType(object $note, string $type, array $codes): bool
     {
         return strtolower((string) $note->typeNote) === $type || in_array(strtolower((string) $note->codeNote), $codes, true);
+    }
+
+    /** Notes de la période encore en attente de validation (écoles privées : elles ne comptent pas encore). */
+    public function notesEnAttente(): int
+    {
+        $periodeCol = $this->mois ? 'mois' : 'id_trimestre';
+        $periodeVal = $this->mois ?: $this->idTrimestre;
+        if (!$periodeVal || !$this->filtrerNotesValidees()) {
+            return 0;
+        }
+
+        return DB::table('ligne_evaluation as le')
+            ->join('eleve as el', 'el.id_eleve', '=', 'le.id_eleve')
+            ->where('el.id_classe', $this->classe->id_classe)
+            ->where('le.id_annee_scolaire', $this->idAnnee)
+            ->where('le.'.$periodeCol, $periodeVal)
+            ->where('le.validation_status', '!=', 'valide')
+            ->count();
     }
 
     private function filtrerNotesValidees(): bool

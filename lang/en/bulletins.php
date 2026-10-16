@@ -136,4 +136,5 @@ return [
     'gen_deux_par_feuille_title' => 'Laying out 2 per A4 sheet…',
     'modele_a4_paysage' => 'A4 landscape · 2 copies',
     'fin_annee_label' => 'End-of-year report card (with the yearly average)',
+    'notes_en_attente' => 'No report cards yet: :n mark(s) for this period are awaiting validation. Validate them in Evaluations to generate the report cards.',
 ];
