@@ -89,6 +89,15 @@
                     </li>
                 </ul>
                 
+                @if($selectedClasse && $selectedAnnee && $canEditTimetable && $matieresForGrid->isEmpty())
+                    <div class="alert alert-warning w-100 mb-0 no-print">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        Aucune matière n'est attribuée à la classe {{ $selectedClasse->nom_classe }}{{ $isTeacher ? ' pour vous' : '' }} : l'emploi du temps ne propose que les matières de la classe.
+                        @unless($isTeacher)
+                            <a href="{{ route('classes.edit', $selectedClasse->id_classe) }}" class="alert-link">Ajouter les matières de la classe</a>
+                        @endunless
+                    </div>
+                @endif
                 @if($selectedClasse && $selectedAnnee && $canEditTimetable)
                     <div class="d-flex align-items-center gap-3">
                         {{-- Mode Toggle --}}

@@ -95,12 +95,14 @@ class TimetableController extends Controller
                 ->orderBy('id_ligneclasse')
                 ->get();
 
+            // Seulement les matières de la classe (rien d'autre si elle n'en a pas encore).
+            $matieresForGrid = $lignesClasse
+                ->pluck('matiere')
+                ->filter()
+                ->unique('id_matiere')
+                ->values();
+
             if ($lignesClasse->isNotEmpty()) {
-                $matieresForGrid = $lignesClasse
-                    ->pluck('matiere')
-                    ->filter()
-                    ->unique('id_matiere')
-                    ->values();
 
                 $teacherSuggestionMap = $lignesClasse
                     ->filter(fn ($ligne) => $ligne->id_matiere && $ligne->id_enseignants)
@@ -126,6 +128,12 @@ class TimetableController extends Controller
                 ->where('id_annee_scolaire', $id_annee)
                 ->when($isTeacher, fn ($query) => $query->where('id_enseignant', $user->id_enseignant))
                 ->get();
+        }
+
+        // Un cours déjà placé garde sa matière dans la liste (même retirée depuis de la classe),
+        // sinon l'enregistrement de la grille l'effacerait.
+        if ($selectedClasse) {
+            $matieresForGrid = $matieresForGrid->merge($coursesList->pluck('matiere')->filter())->unique('id_matiere')->values();
         }
 
         // Grille : horaires des lignes et récréations enregistrés en base, et une case pour chaque cours
@@ -234,6 +242,7 @@ class TimetableController extends Controller
         $this->authorizeClasseForTimetable((int) $id_classe);
 
         $slots = $request->input('slots', []);
+        \App\Support\MatiereClasse::verifierGrille((int) $id_classe, (int) $id_annee, (array) $slots);
 
         $hourRows = [];
 

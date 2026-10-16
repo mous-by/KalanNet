@@ -24,4 +24,27 @@ class MatiereClasse
             ]);
         }
     }
+
+    /**
+     * Grille d'emploi du temps : chaque matière choisie doit être une matière
+     * de la classe. Une matière déjà placée dans la grille (avant d'être
+     * retirée de la classe) reste acceptée, pour ne pas bloquer l'enregistrement.
+     */
+    public static function verifierGrille(int $classeId, int $anneeId, array $slots): void
+    {
+        $permises = LigneClasse::where('id_classe', $classeId)->pluck('id_matiere')
+            ->merge(\App\Models\EmploiDuTemps::where('id_classe', $classeId)->where('id_annee_scolaire', $anneeId)->pluck('id_matiere'))
+            ->map(fn ($id) => (int) $id)->flip();
+
+        foreach ($slots as $heures) {
+            foreach ((array) $heures as $case) {
+                $idMatiere = (int) ($case['id_matiere'] ?? 0);
+                if ($idMatiere && !$permises->has($idMatiere)) {
+                    throw ValidationException::withMessages([
+                        'id_matiere' => "Une matière choisie n'est pas enseignée dans cette classe. Ajoutez-la d'abord aux matières de la classe.",
+                    ]);
+                }
+            }
+        }
+    }
 }

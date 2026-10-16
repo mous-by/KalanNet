@@ -131,4 +131,36 @@ class EmploiDuTempsGrilleTest extends IntegrationTestCase
         $this->assertSame(['08:00'], array_keys($grille['horaires']));
         $this->assertSame(['09:00' => 15], $grille['recreations']);
     }
+
+    public function test_seules_les_matieres_de_la_classe_sont_proposees_et_acceptees(): void
+    {
+        $admin = $this->adminComplet(1);
+        $session = ['idEcole' => 1, 'timetable_id_classe' => $this->classe, 'timetable_id_annee' => $this->annee];
+        $deLaClasse = DB::table('ligneclasse')->where('id_classe', $this->classe)->pluck('id_matiere')->map(fn ($id) => (string) $id)->unique()->sort()->values()->all();
+        $autre = (int) DB::table('matiere')->whereNotIn('id_matiere', $deLaClasse)->value('id_matiere');
+
+        // Grille : uniquement les matières de la classe.
+        $html = $this->actingAs($admin)->withSession($session)->get('/pedagogie/timetable')->assertOk()->getContent();
+        preg_match('#<select name="slots\[Lundi\]\[08:00\]\[id_matiere\]".*?</select>#s', $html, $select);
+        preg_match_all('#<option value="(\d+)"#', $select[0], $options);
+        $this->assertEqualsCanonicalizing($deLaClasse, array_values(array_unique($options[1])));
+
+        // Enregistrement : une autre matière est refusée (web et mobile), rien n'est créé.
+        $this->actingAs($admin)->withSession($session)->post('/pedagogie/timetable/save-grid', [
+            'slots' => ['Lundi' => ['08:00' => ['id_matiere' => $autre, 'heure_debut' => '08:00', 'heure_fin' => '09:00']]],
+        ])->assertSessionHasErrors('id_matiere');
+        $this->withToken($admin->createToken('test')->plainTextToken)->postJson('/api/v1/timetable/save-grid', [
+            'id_classe' => $this->classe, 'id_annee' => $this->annee,
+            'slots' => ['Lundi' => ['08:00' => ['id_matiere' => $autre, 'heure_debut' => '08:00', 'heure_fin' => '09:00']]],
+        ])->assertStatus(422);
+        $this->assertSame(0, DB::table('emploi_du_temps')->where('id_classe', $this->classe)->where('id_annee_scolaire', $this->annee)->count());
+
+        // Classe sans matière : aucune matière proposée, et un message.
+        DB::table('ligneclasse')->where('id_classe', $this->classe)->delete();
+        $this->flushSession();
+        $html = $this->actingAs($admin)->withSession($session)->get('/pedagogie/timetable')->assertOk()->getContent();
+        preg_match('#<select name="slots\[Lundi\]\[08:00\]\[id_matiere\]".*?</select>#s', $html, $select);
+        $this->assertDoesNotMatchRegularExpression('#<option value="\d+"#', $select[0]);
+        $this->assertStringContainsString('Aucune matière n\'est attribuée à la classe', $html);
+    }
 }

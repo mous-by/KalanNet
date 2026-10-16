@@ -147,6 +147,7 @@ class TimetableController extends WebTimetableController
         $this->authorizeClasseForTimetable((int) $id_classe);
 
         $slots = $request->input('slots', []);
+        \App\Support\MatiereClasse::verifierGrille((int) $id_classe, (int) $id_annee, (array) $slots);
         $hourRows = [];
 
         foreach ($slots as $jour => $heuresData) {
