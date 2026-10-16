@@ -257,7 +257,7 @@
 
     <table class="signature-table">
         <tr>
-            <td><strong>{{ __('bulletins.pdf_avis_directeur') }}</strong></td>
+            <td><strong>{{ str_starts_with((string) $ordre, 'secondaire') ? __('bulletins.pdf_avis_proviseur') : __('bulletins.pdf_avis_directeur') }}</strong></td>
             <td><strong>{{ __('bulletins.pdf_le_tuteur') }}</strong></td>
         </tr>
     </table>

@@ -229,6 +229,9 @@ class Permission extends Model
      */
     public const JAMAIS_PAR_DEFAUT = [
         'evaluations_communes_apercu',
+        // Annuler un paiement de frais scolaires : le SupAdmin l'accorde à
+        // l'Admin qui le demande, qui peut ensuite la donner à son gestionnaire.
+        'paiements_annuler',
     ];
 
     public const RESERVEES = [
@@ -258,6 +261,7 @@ class Permission extends Model
         'abonnements_validation' => [],
         // Module Évaluations communes : tous les rôles sauf les parents.
         'evaluations_communes_apercu' => ['Admin', 'Gestionnaire', 'enseignant', 'DAE', 'DCAP'],
+        'paiements_annuler' => ['Admin', 'Gestionnaire'],
     ];
 
     public static function accessiblePourRole(string $name, ?string $droit): bool

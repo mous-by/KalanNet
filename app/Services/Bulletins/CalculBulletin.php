@@ -434,6 +434,7 @@ class CalculBulletin
 
         return array_filter([
             'nom_classe' => $this->classe->nom_classe,
+            'nom_filiere' => $this->classe->id_filiere ? DB::table('filieres')->where('id_filiere', $this->classe->id_filiere)->value('nom_filiere') : null,
             'ordreEnseignement' => $this->ordre,
             'annee' => $annee?->annee,
             'annee_debut' => $annee?->date_debut,

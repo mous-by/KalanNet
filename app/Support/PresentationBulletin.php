@@ -56,7 +56,18 @@ class PresentationBulletin
             'rangTexte' => $rang ? $rang.($rang === 1 ? 'er' : 'e').(($bulletin['exaequo'] ?? false) ? ' ex' : '') : '-',
             'surDix' => Ordres::surDix($ordre),
             'telephone' => $ecole->telephone ?? null,
+            'signataire' => self::signataire($ecole, $ordre),
         ];
+    }
+
+    /** Qui signe le bulletin : le proviseur au secondaire, le directeur des études en école de santé, sinon le directeur. */
+    public static function signataire(object $ecole, ?string $ordre): string
+    {
+        return match (true) {
+            ModelesBulletin::estEcoleSante($ecole->typeEcole ?? null) => 'Le Directeur des Études',
+            str_starts_with((string) $ordre, 'secondaire') => 'Le Proviseur',
+            default => 'Le Directeur',
+        };
     }
 
     /** Note formatée « 12,50 » ; « - » sans note. */

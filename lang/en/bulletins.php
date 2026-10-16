@@ -79,6 +79,7 @@ return [
     'pdf_rang_label' => 'Rank:',
     'pdf_moyenne_premier_label' => 'Top student average:',
     'pdf_avis_directeur' => 'PRINCIPAL\'S REMARK',
+    'pdf_avis_proviseur' => 'PRINCIPAL\'S REMARK',
     'pdf_le_tuteur' => 'GUARDIAN',
 
     // generator.blade.php (bulk generation popup)

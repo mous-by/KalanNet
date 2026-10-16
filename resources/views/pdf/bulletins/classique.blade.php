@@ -147,7 +147,7 @@
         <tr>
             <td>Le maître / professeur principal</td>
             <td>Le parent ou tuteur</td>
-            <td>Le directeur</td>
+            <td>{{ $signataire }}</td>
         </tr>
     </table>
 

@@ -55,6 +55,12 @@ class ModelesBulletin
             'calcul' => 'principales',
             'description' => 'Modèle du secondaire : matières principales puis secondaires, chacune avec son total et sa moyenne partielle ; moyenne générale = moyenne des deux moyennes partielles ; rang et moyenne du premier. Deux exemplaires A5 côte à côte sur une feuille A4 paysage.',
         ],
+        'sante' => [
+            'nom' => 'École de santé',
+            'format' => 'A4',
+            'calcul' => 'standard',
+            'description' => 'Modèle des écoles de santé : filière et année d’étude, moyenne de classe, note de composition, moyenne (a + 2b) / 3, coefficient, notes coefficientées et appréciation ; total général, moyenne obtenue, moyenne du premier et rang. Signé par le Directeur des Études.',
+        ],
     ];
 
     /** Au-delà, un bulletin A5 déborde sur une seconde page : on conseille l'équivalent A4. */
@@ -73,12 +79,13 @@ class ModelesBulletin
         return $code !== null && isset(self::MODELES[$code]);
     }
 
-    /** Les modèles « par domaines » sont réservés aux écoles franco-arabes. */
+    /** Les modèles « par domaines » sont réservés aux écoles franco-arabes, le modèle « École de santé » aux écoles de santé. */
     public static function disponibles(?int $idEcole): array
     {
-        return self::estFrancoArabe($idEcole)
-            ? self::MODELES
-            : array_filter(self::MODELES, fn ($m) => $m['calcul'] !== 'domaines');
+        $francoArabe = self::estFrancoArabe($idEcole);
+        $sante = self::estSante($idEcole);
+
+        return array_filter(self::MODELES, fn ($m, $code) => ($francoArabe || $m['calcul'] !== 'domaines') && ($sante || $code !== 'sante'), ARRAY_FILTER_USE_BOTH);
     }
 
     public static function disponible(?string $code, ?int $idEcole): bool
@@ -87,14 +94,17 @@ class ModelesBulletin
     }
 
     /**
-     * Modèle par défaut : Par domaines bilingue pour les classes du fondamental
-     * d'une école franco-arabe, Standard pour toutes les autres.
+     * Modèle par défaut : École de santé dans les écoles de santé, Par domaines
+     * bilingue pour les classes du fondamental d'une école franco-arabe,
+     * Standard pour toutes les autres.
      */
     public static function parDefaut(Classe $classe): string
     {
-        return self::estFrancoArabe((int) $classe->idEcole) && in_array($classe->ordreEnseignement, ['fondamentale1', 'fondamentale2'], true)
-            ? 'domaines'
-            : 'standard';
+        return match (true) {
+            self::estSante((int) $classe->idEcole) => 'sante',
+            self::estFrancoArabe((int) $classe->idEcole) && in_array($classe->ordreEnseignement, ['fondamentale1', 'fondamentale2'], true) => 'domaines',
+            default => 'standard',
+        };
     }
 
     /** Modèle retenu pour la classe : le dernier choisi (s'il est permis à l'école), sinon celui par défaut. */
@@ -110,6 +120,23 @@ class ModelesBulletin
         }
 
         return self::$francoArabe[$idEcole] ??= (bool) Ecole::withoutGlobalScopes()->whereKey($idEcole)->value('franco_arabe');
+    }
+
+    private static array $sante = [];
+
+    public static function estSante(?int $idEcole): bool
+    {
+        if (!$idEcole) {
+            return false;
+        }
+
+        return self::$sante[$idEcole] ??= self::estEcoleSante(Ecole::withoutGlobalScopes()->whereKey($idEcole)->value('typeEcole'));
+    }
+
+    /** Type d'école « École de Santé » (quelle que soit l'écriture). */
+    public static function estEcoleSante(?string $typeEcole): bool
+    {
+        return str_contains(\Illuminate\Support\Str::lower(\Illuminate\Support\Str::ascii((string) $typeEcole)), 'sante');
     }
 
     public static function calcul(string $code): string

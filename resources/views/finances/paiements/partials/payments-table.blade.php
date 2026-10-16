@@ -18,7 +18,7 @@
                     <td><span class="badge bg-{{ $p->statut === 'annule' ? 'danger' : 'success' }}">{{ $p->statut ?? 'valide' }}</span></td>
                     <td class="text-end px-4">
                         <a href="{{ route('finances.paiements.download', $p->id_paiement) }}" class="btn btn-light btn-sm"><i class="bi bi-printer"></i></a>
-                        @if($canPay && ($p->statut ?? 'valide') !== 'annule')
+                        @if(auth()->user()->userHasPermission('paiements_annuler') && ($p->statut ?? 'valide') !== 'annule')
                             <form method="POST" action="{{ route('finances.paiements.cancel', $p->id_paiement) }}" class="d-inline">
                                 @csrf @method('DELETE')
                                 <input type="hidden" name="motif_annulation" value="Annulation demandée depuis le module paiement">

@@ -90,7 +90,7 @@
     <table class="signatures">
         <tr>
             <td>Le parent ou tuteur</td>
-            <td class="d">Le directeur</td>
+            <td class="d">{{ $signataire }}</td>
         </tr>
     </table>
 </div>

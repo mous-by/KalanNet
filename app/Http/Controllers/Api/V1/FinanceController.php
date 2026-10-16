@@ -267,7 +267,7 @@ class FinanceController extends WebFinanceController
 
     public function cancelPaiement(Request $request, $id)
     {
-        $this->ensurePermission('paiements_faire');
+        $this->ensurePermission('paiements_annuler');
         $data = $request->validate(['motif_annulation' => 'required|string|max:255']);
 
         $paiement = Paiement::where('idEcole', session('idEcole'))->findOrFail($id);

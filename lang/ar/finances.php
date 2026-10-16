@@ -288,4 +288,9 @@ return [
     'subvention_reliquat' => 'المتبقي غير الموزع: :montant.',
     'eleve_pris_en_charge_etat_erreur' => 'هذا التلميذ مدعوم: تدفع الدولة رسومه (انظر إعانات الدولة).',
     'pris_en_charge_etat' => 'تتكفل به الدولة',
+    'annuler_paiement' => 'إلغاء الدفعة',
+    'annuler_paiement_aide' => 'سيُسحب المبلغ من الصندوق وتُعلَّم الدفعة «ملغاة». لا يمكن التراجع عن هذا الإجراء.',
+    'annuler_paiement_motif' => 'سبب الإلغاء',
+    'annuler_paiement_confirmer' => 'إلغاء هذه الدفعة',
+    'paiement_annule' => 'أُلغيت الدفعة: سُحب المبلغ من الصندوق.',
 ];

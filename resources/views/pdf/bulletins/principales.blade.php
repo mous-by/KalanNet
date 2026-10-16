@@ -79,6 +79,6 @@
     @include('pdf.bulletins._annuel', ['taille' => '9px'])
 
     <table class="signatures">
-        <tr><td>Le parent ou tuteur</td><td class="d">Le directeur / proviseur</td></tr>
+        <tr><td>Le parent ou tuteur</td><td class="d">{{ $signataire }}</td></tr>
     </table>
 </div>

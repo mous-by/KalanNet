@@ -78,6 +78,7 @@ return [
     'pdf_rang_label' => 'الرتبة:',
     'pdf_moyenne_premier_label' => 'معدل الأول:',
     'pdf_avis_directeur' => 'رأي المدير العام',
+    'pdf_avis_proviseur' => 'رأي مدير الثانوية',
     'pdf_le_tuteur' => 'الولي',
 
     // generator.blade.php (نافذة الإنشاء الجماعي)

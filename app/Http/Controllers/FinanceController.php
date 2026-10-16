@@ -901,7 +901,7 @@ class FinanceController extends Controller
 
     public function cancelPaiement(Request $request, $id)
     {
-        $this->ensurePermission('paiements_faire');
+        $this->ensurePermission('paiements_annuler');
         $data = $request->validate([
             'motif_annulation' => 'required|string|max:255',
         ]);
@@ -913,10 +913,10 @@ class FinanceController extends Controller
         } catch (ValidationException $exception) {
             throw $exception;
         } catch (\Throwable) {
-            return redirect()->route('finances.paiements')->with('error', 'Impossible d’annuler ce paiement.');
+            return back()->with('error', 'Impossible d’annuler ce paiement.');
         }
 
-        return redirect()->route('finances.paiements')->with('success', 'Paiement annulé comptablement.');
+        return back()->with('success', __('finances.paiement_annule'));
     }
 
     public function showCaisse()

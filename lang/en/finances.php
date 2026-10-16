@@ -288,4 +288,9 @@ return [
     'subvention_reliquat' => 'Unallocated remainder: :montant.',
     'eleve_pris_en_charge_etat_erreur' => 'This student is subsidised: fees are paid by the State (see State subsidies).',
     'pris_en_charge_etat' => 'Paid by the State',
+    'annuler_paiement' => 'Cancel payment',
+    'annuler_paiement_aide' => 'The amount will be removed from the cash register and the payment marked “Cancelled”. This cannot be undone.',
+    'annuler_paiement_motif' => 'Reason for cancellation',
+    'annuler_paiement_confirmer' => 'Cancel this payment',
+    'paiement_annule' => 'Payment cancelled: the amount was removed from the cash register.',
 ];

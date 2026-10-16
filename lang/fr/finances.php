@@ -288,4 +288,9 @@ return [
     'subvention_reliquat' => 'Reliquat non affecté : :montant.',
     'eleve_pris_en_charge_etat_erreur' => 'Cet élève est subventionné : ses frais sont payés par l\'État (voir Subventions État).',
     'pris_en_charge_etat' => 'Pris en charge par l\'État',
+    'annuler_paiement' => 'Annuler le paiement',
+    'annuler_paiement_aide' => 'Le montant sera retiré de la caisse et le paiement marqué « Annulé ». Cette action est définitive.',
+    'annuler_paiement_motif' => 'Motif de l’annulation',
+    'annuler_paiement_confirmer' => 'Annuler ce paiement',
+    'paiement_annule' => 'Paiement annulé : le montant a été retiré de la caisse.',
 ];

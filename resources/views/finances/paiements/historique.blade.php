@@ -25,6 +25,11 @@
 </div>
 
 <div class="col-12 col-md-9 pt-4 pt-md-0 p-md-3">
+@php
+    // Accordée par le SupAdmin seulement (voir Permission::JAMAIS_PAR_DEFAUT).
+    $peutAnnuler = auth()->user()->userHasPermission('paiements_annuler');
+@endphp
+@include('finances.paiements.partials.alerts')
 <form method="POST" action="{{ route('finances.paiements.historique') }}" class="card theme-card mb-4" id="historyFilterForm" data-auto-filter="true">
     @csrf
     <div class="card-body row g-3 align-items-end">
@@ -97,6 +102,16 @@
                             <a href="{{ route('finances.paiements.thermique', $paiement->id_paiement) }}" class="btn btn-sm history-action-btn history-action-print" title="{{ __('finances.receipt_thermal_title') }}" aria-label="{{ __('finances.receipt_thermal_title') }}">
                                 <i class="bi bi-printer"></i>
                             </a>
+                            @if($paiement->statut === 'annule')
+                                <span class="badge bg-danger align-self-center ms-1" title="{{ $paiement->motif_annulation }}">{{ __('finances.statut_annule') }}</span>
+                            @elseif($peutAnnuler)
+                                <button type="button" class="btn btn-sm history-action-btn history-action-cancel" title="{{ __('finances.annuler_paiement') }}" aria-label="{{ __('finances.annuler_paiement') }}"
+                                    data-bs-toggle="modal" data-bs-target="#annulerPaiementModal"
+                                    data-action="{{ route('finances.paiements.cancel', $paiement->id_paiement) }}"
+                                    data-libelle="{{ $paiement->eleve?->prenom_eleve }} {{ $paiement->eleve?->nom_eleve }} — @devise((float) ($paiement->montant_paye ?? $paiement->montant)) — {{ __('finances.th_recu') }} {{ $paiement->numero_recu }}">
+                                    <i class="bi bi-x-circle"></i>
+                                </button>
+                            @endif
                         </div>
                     </td>
                 </tr>
@@ -112,6 +127,30 @@
 </div>
 </div>
 </div>
+
+@if($peutAnnuler)
+<div class="modal fade" id="annulerPaiementModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="POST" class="modal-content" id="annulerPaiementForm">
+            @csrf @method('DELETE')
+            <div class="modal-header">
+                <h5 class="modal-title">{{ __('finances.annuler_paiement') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('configuration.fermer') }}"></button>
+            </div>
+            <div class="modal-body">
+                <p class="fw-semibold mb-2" id="annulerPaiementLibelle"></p>
+                <p class="small text-muted">{{ __('finances.annuler_paiement_aide') }}</p>
+                <label class="form-label" for="motif_annulation">{{ __('finances.annuler_paiement_motif') }}</label>
+                <textarea class="form-control" name="motif_annulation" id="motif_annulation" rows="2" maxlength="255" required minlength="5"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">{{ __('configuration.fermer') }}</button>
+                <button type="submit" class="btn btn-danger">{{ __('finances.annuler_paiement_confirmer') }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+@endif
 
 @push('styles')
 <style>
@@ -129,6 +168,9 @@
     }
     .history-action-print i {
         color: #1d4ed8 !important;
+    }
+    .history-action-cancel i {
+        color: #dc2626 !important;
     }
     .history-action-receipt:hover,
     .history-action-receipt:focus {
@@ -155,6 +197,13 @@ document.addEventListener('DOMContentLoaded', function () {
         field.addEventListener('change', function () {
             form.submit();
         });
+    });
+    const modal = document.getElementById('annulerPaiementModal');
+    modal?.addEventListener('show.bs.modal', function (event) {
+        const bouton = event.relatedTarget;
+        document.getElementById('annulerPaiementForm').action = bouton.dataset.action;
+        document.getElementById('annulerPaiementLibelle').textContent = bouton.dataset.libelle;
+        document.getElementById('motif_annulation').value = '';
     });
 });
 </script>

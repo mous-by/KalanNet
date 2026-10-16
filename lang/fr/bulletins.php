@@ -79,6 +79,7 @@ return [
     'pdf_rang_label' => 'Rang :',
     'pdf_moyenne_premier_label' => 'Moyenne du premier :',
     'pdf_avis_directeur' => 'AVIS DU DIRECTEUR GÉNÉRAL',
+    'pdf_avis_proviseur' => 'AVIS DU PROVISEUR',
     'pdf_le_tuteur' => 'LE TUTEUR',
 
     // generator.blade.php (popup de generation en masse)
