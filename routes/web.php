@@ -314,6 +314,7 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/configuration/caps/{id}', [ConfigurationController::class, 'destroyCap'])->name('configuration.caps.destroy');
     Route::get('/configuration/annees', [ConfigurationController::class, 'annees'])->name('configuration.annees');
     Route::post('/configuration/annees', [ConfigurationController::class, 'storeAnnee'])->name('configuration.annees.store');
+    Route::delete('/configuration/annees/{id}', [ConfigurationController::class, 'destroyAnnee'])->name('configuration.annees.destroy');
     Route::get('/configuration/utilisateurs', [ConfigurationController::class, 'utilisateurs'])->name('configuration.utilisateurs');
     Route::get('/configuration/utilisateurs/create', [ConfigurationController::class, 'createUtilisateur'])->name('configuration.utilisateurs.create');
     Route::post('/configuration/utilisateurs', [ConfigurationController::class, 'storeUtilisateur'])->name('configuration.utilisateurs.store');

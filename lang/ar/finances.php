@@ -51,6 +51,7 @@ return [
     'payer_name_placeholder' => 'اسم الدافع',
     'payer_phone_placeholder' => 'الهاتف',
     'empty_coop_students' => 'لا يوجد تلميذ لعرضه للتعاونية.',
+    'cooperative_not_configured' => 'لم يتم إعداد تعاونية لهذا الفصل والسنة الدراسية. قم بإعدادها لعرض التلاميذ المستحق عليهم الدفع.',
     'empty_type_students' => 'لا يوجد تلميذ لعرضه لهذا النوع من الصيغة.',
     'print_payment_list' => 'طباعة قائمة المدفوعات',
     'validate_payments' => 'تأكيد المدفوعات',

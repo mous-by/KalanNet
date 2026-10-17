@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\V1\TimetableController;
 use App\Http\Controllers\AssistantController;
 use App\Http\Controllers\BulletinController as WebBulletinController;
 use App\Http\Controllers\EleveController as WebEleveController;
+use App\Http\Controllers\FinanceController as WebFinanceController;
 use App\Http\Controllers\ProgrammeController as WebProgrammeController;
 use App\Http\Controllers\TeacherSalaryController as WebTeacherSalaryController;
 use App\Http\Middleware\Api\BridgeSanctumAuth;
@@ -61,7 +62,9 @@ Route::prefix('v1')->group(function () {
         Route::post('/eleves', [EleveController::class, 'store']);
         Route::get('/eleves/inscription-options', [EleveController::class, 'inscriptionOptions']);
         Route::get('/eleves/cartes-scolaires', [EleveController::class, 'cartes']);
-        Route::post('/eleves/cartes-scolaires/pdf', [WebEleveController::class, 'downloadCartesPdf']);
+        // Mobile : les PDF se téléchargent en GET (le téléchargement du mobile ne sait pas envoyer de formulaire).
+        Route::match(['get', 'post'], '/eleves/cartes-scolaires/pdf', [WebEleveController::class, 'downloadCartesPdf']);
+        Route::get('/eleves/cartes-scolaires/apercu', [WebEleveController::class, 'apercuCartes']);
         Route::post('/eleves/liste/pdf', [WebEleveController::class, 'downloadListPdf']);
         Route::post('/eleves/liste/excel', [WebEleveController::class, 'downloadListExcel']);
         Route::get('/eleves/transferts/{id}/fiche', [WebEleveController::class, 'transferCertificate']);
@@ -172,6 +175,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/finances/paiements/groupes', [FinanceController::class, 'storePaiementsGroupes']);
         Route::put('/finances/paiements/{id}', [FinanceController::class, 'updatePaiement']);
         Route::post('/finances/paiements/{id}/cancel', [FinanceController::class, 'cancelPaiement']);
+        Route::get('/finances/paiements/{id}/recu', [WebFinanceController::class, 'downloadRecu']);
+        Route::get('/finances/paiements/{id}/thermique', [WebFinanceController::class, 'downloadRecuThermique']);
         Route::get('/finances/eleves/{id}/contexte', [FinanceController::class, 'contexteEleve']);
 
         Route::get('/finances/caisse', [FinanceController::class, 'caisse']);

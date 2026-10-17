@@ -51,6 +51,7 @@ return [
     'payer_name_placeholder' => "Payer's name",
     'payer_phone_placeholder' => 'Phone',
     'empty_coop_students' => 'No student to show for the cooperative.',
+    'cooperative_not_configured' => 'No cooperative is configured for this class and school year. Configure one to display students with payments due.',
     'empty_type_students' => 'No student to show for this payment plan type.',
     'print_payment_list' => 'Print the payment list',
     'validate_payments' => 'Confirm the payments',

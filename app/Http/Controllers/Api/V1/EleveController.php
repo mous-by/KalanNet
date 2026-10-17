@@ -368,10 +368,23 @@ class EleveController extends WebEleveController
             $eleves = $this->filteredEleves($request)->get();
         }
 
+        $ecole = \App\Models\Ecole::withoutGlobalScopes()->with('pays')->find($idEcole);
+
         return response()->json([
             'classes' => Classe::where('idEcole', $idEcole)->orderBy('nom_classe')->get(),
             'annees' => AnneeScolaire::orderByDesc('id_anneeScolaire')->get(),
             'eleves' => $eleves,
+            // Modèles de carte (application mobile ≥ vc19) : nom, description, couleurs, vignette.
+            'modeles' => collect(\App\Support\ModelesCarte::MODELES)->map(fn ($m, $code) => [
+                'code' => $code,
+                'nom' => __('cartes.modele_'.$code),
+                'description' => __('cartes.modele_'.$code.'_desc'),
+                'couleurs' => $m['couleurs'],
+                'vignette' => asset('assets/images/cartes/'.$code.'.png'),
+            ])->values(),
+            'modele_defaut' => \App\Support\ModelesCarte::parDefaut($ecole),
+            'entete_gauche' => $ecole?->pays?->entete_document_gauche,
+            'entete_droite' => $ecole?->pays?->entete_document_droite,
         ]);
     }
 

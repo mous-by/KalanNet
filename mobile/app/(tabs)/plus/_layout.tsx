@@ -18,6 +18,7 @@ export default function PlusLayout() {
       <Stack.Screen name="enseignants/[id]/edit" options={{ title: 'Modifier' }} />
 
       <Stack.Screen name="timetable/index" options={{ title: 'Emploi du temps' }} />
+      <Stack.Screen name="cartes/index" options={{ title: t('plus.cartes') }} />
 
       <Stack.Screen name="parents/index" options={{ title: "Parents d'élèves" }} />
       <Stack.Screen name="parents/new" options={{ title: 'Nouveau parent' }} />

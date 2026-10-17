@@ -51,6 +51,7 @@ return [
     'payer_name_placeholder' => 'Nom du payeur',
     'payer_phone_placeholder' => 'Téléphone',
     'empty_coop_students' => 'Aucun élève à afficher pour la coopérative.',
+    'cooperative_not_configured' => 'Aucune coopérative n’est configurée pour cette classe et cette année scolaire. Configurez-la pour afficher les élèves à payer.',
     'empty_type_students' => 'Aucun élève à afficher pour ce type de planification.',
     'print_payment_list' => 'Imprimer la liste des paiements',
     'validate_payments' => 'valide les paiements',

@@ -47,8 +47,12 @@
                             <thead>
                                 <tr>
                                     <th>{{ __('configuration.th_annee') }}</th>
+                                    <th>{{ __('configuration.annees_th_origine') }}</th>
                                     <th>{{ __('configuration.annees_th_date_debut') }}</th>
                                     <th>{{ __('configuration.annees_th_date_fin') }}</th>
+                                    @if(auth()->user()->droit === 'SupAdmin')
+                                        <th>{{ __('configuration.annees_th_action') }}</th>
+                                    @endif
                                 </tr>
                             </thead>
                             <tbody>
@@ -61,11 +65,28 @@
                                                 <span class="badge bg-success ms-2">{{ __('configuration.annees_en_cours') }}</span>
                                             @endif
                                         </td>
+                                        <td>{{ $annee->id_ecole === null ? __('configuration.annees_origine_auto') : ($annee->ecole?->nomEcole ?? __('configuration.annees_origine_ecole')) }}</td>
                                         <td>{{ $annee->date_debut ?? 'N/A' }}</td>
                                         <td>{{ $annee->date_fin ?? 'N/A' }}</td>
+                                        @if(auth()->user()->droit === 'SupAdmin')
+                                            <td class="text-center">
+                                                @if($annee->id_ecole !== null)
+                                                        <form action="{{ route('configuration.annees.destroy', $annee->id_anneeScolaire) }}" method="POST" class="d-inline annee-delete-form"
+                                                            data-confirm-title="{{ __('configuration.annees_delete_confirm') }}"
+                                                            data-confirm-button="{{ __('configuration.annees_delete') }}"
+                                                            data-cancel-button="{{ __('configuration.annuler') }}">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="{{ __('configuration.annees_delete') }}" title="{{ __('configuration.annees_delete') }}">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                @endif
+                                            </td>
+                                        @endif
                                     </tr>
                                 @empty
-                                    <tr><td colspan="3" class="text-center py-4 text-muted">{{ __('configuration.annees_empty_list') }}</td></tr>
+                                    <tr><td colspan="{{ auth()->user()->droit === 'SupAdmin' ? 5 : 4 }}" class="text-center py-4 text-muted">{{ __('configuration.annees_empty_list') }}</td></tr>
                                 @endforelse
                             </tbody>
                         </table>
@@ -115,3 +136,31 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.annee-delete-form').forEach(function (form) {
+        form.addEventListener('submit', async function (event) {
+            if (form.dataset.confirmed === 'true') return;
+
+            event.preventDefault();
+            const result = await Swal.fire({
+                title: form.dataset.confirmTitle,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: form.dataset.confirmButton,
+                cancelButtonText: form.dataset.cancelButton,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+            });
+
+            if (result.isConfirmed) {
+                form.dataset.confirmed = 'true';
+                form.requestSubmit();
+            }
+        });
+    });
+});
+</script>
+@endpush

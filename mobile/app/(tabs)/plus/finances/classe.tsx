@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Checkbox, Chip, Text, TextInput } from 'react-native-paper';
 
 import DateField from '@/components/DateField';
+import ImpressionRecusDialog, { RecuAImprimer } from '@/components/ImpressionRecusDialog';
 import OfflineBanner from '@/components/OfflineBanner';
 import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
@@ -82,6 +83,7 @@ export default function PaiementClasseScreen() {
   const [entries, setEntries] = useState<Record<number, RowEntry>>({});
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [recus, setRecus] = useState<RecuAImprimer[] | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const endpoint = useMemo(() => {
@@ -168,6 +170,9 @@ export default function PaiementClasseScreen() {
         return;
       }
       const { data: response } = await api.post('/finances/paiements/groupes', payload);
+      // Reçus des paiements créés, proposés à l'impression (serveur : created_payment_ids).
+      const ids: number[] = response.created_payment_ids ?? [];
+      if (ids.length) setRecus(ids.map((id) => ({ id, libelle: t('recu.numero').replace(':id', String(id)) })));
       setSuccess(
         t('finances.online_success').replace(':count', String(response.created)) +
           (response.errors?.length ? t('finances.ignored_lines_suffix').replace(':count', String(response.errors.length)) : '')
@@ -297,6 +302,7 @@ export default function PaiementClasseScreen() {
           <SubmitButton label={t('finances.valider_paiements')} onPress={handleSubmit} loading={isSubmitting} disabled={!data?.caisse} />
         </>
       )}
+      <ImpressionRecusDialog recus={recus} onClose={() => setRecus(null)} />
     </ScrollView>
   );
 }

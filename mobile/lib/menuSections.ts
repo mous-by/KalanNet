@@ -82,6 +82,13 @@ export const MENU_SECTIONS: MenuSection[] = [
         permissions: ['enseignants_apercu', 'enseignants_creation', 'emargement_faire', 'presence_apercu', 'paiements_faire'],
       },
       { labelKey: 'plus.parents', icon: 'account-heart-outline', href: '/plus/parents', permissions: ['parents_apercu'], hideForParent: true },
+      {
+        labelKey: 'plus.cartes',
+        icon: 'card-account-details-outline',
+        href: '/plus/cartes',
+        permissions: ['eleves_dossier', 'dossiers_eleves_apercu'],
+        hideForParent: true,
+      },
       { labelKey: 'plus.subjects', icon: 'book-open-variant', href: '/plus/matieres', permissions: ['matieres_apercu'] },
       {
         labelKey: 'plus.timetable',

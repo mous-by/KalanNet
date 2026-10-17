@@ -179,6 +179,10 @@
     </div>
 </div>
 
+@if($isPublicSchool && !empty($filters['id_classe']) && !$cooperativeConfigured)
+    <div class="alert alert-warning mt-3">{{ __('finances.cooperative_not_configured') }}</div>
+@endif
+
 <form method="POST" action="{{ route('finances.paiements.groupes.store') }}" id="formValidationExamples" novalidate>
     @csrf
     <input type="hidden" name="id_classe" value="{{ $filters['id_classe'] ?? '' }}">

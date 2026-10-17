@@ -98,14 +98,20 @@ class FinanceController extends Controller
         $caisse = Caisse::where('id_ecole', $idEcole)->where('status', 1)->first();
         $ecole = Ecole::find($idEcole);
         $isPublicSchool = $this->isPublicSchool($ecole);
+        $cooperativeConfigured = false;
         $paymentRows = collect();
 
         if (!empty($filters['id_classe']) && !empty($filters['id_annee'])) {
             Classe::where('idEcole', $idEcole)->findOrFail($filters['id_classe']);
+            $cooperativeConfigured = !$isPublicSchool || Planification::where('id_classe', $filters['id_classe'])
+                ->where('id_annee', $filters['id_annee'])
+                ->whereRaw('LOWER(motif) = ?', ['cooperative'])
+                ->exists();
             $paymentRows = $this->legacyPaymentRows(
                 (int) $filters['id_classe'],
                 (int) $filters['id_annee'],
-                (string) ($filters['type_planification'] ?? '')
+                (string) ($filters['type_planification'] ?? ''),
+                $isPublicSchool
             );
         }
         $newRef = $this->nextPaiementReference();
@@ -120,6 +126,7 @@ class FinanceController extends Controller
             'isPublicSchool',
             'filters',
             'paymentRows',
+            'cooperativeConfigured',
             'newRef'
         ));
     }
@@ -207,13 +214,10 @@ class FinanceController extends Controller
         $classes = Classe::where('idEcole', $idEcole)->orderBy('nom_classe')->get();
         $ecole = Ecole::find($idEcole);
         $isPublicSchool = $this->isPublicSchool($ecole);
-        $annees = AnneeScolaire::whereDate('date_debut', '<=', now())
-            ->whereDate('date_fin', '>=', now())
+        $annees = AnneeScolaire::query()
+            ->orderByDesc('date_debut')
             ->orderByDesc('id_anneeScolaire')
             ->get();
-        if ($annees->isEmpty()) {
-            $annees = AnneeScolaire::orderByDesc('id_anneeScolaire')->get();
-        }
 
         return view('finances.planifications.create', compact('classes', 'annees', 'isPublicSchool'));
     }
@@ -1576,7 +1580,7 @@ class FinanceController extends Controller
         return $this->reportService->legacyXlsx($paiements);
     }
 
-    protected function legacyPaymentRows(int $classeId, int $anneeId, string $typePlanification = '')
+    protected function legacyPaymentRows(int $classeId, int $anneeId, string $typePlanification = '', bool $isPublicSchool = false)
     {
         $idEcole = (int) session('idEcole');
         $planifications = Planification::with('tranches')
@@ -1584,6 +1588,9 @@ class FinanceController extends Controller
             ->where('id_annee', $anneeId)
             ->get()
             ->keyBy('id_planification');
+        $cooperativePlanification = $isPublicSchool
+            ? $planifications->first(fn ($planification) => $this->legacyPlanType($planification->motif) === 'cooperative')
+            : null;
         $trancheService = app(PlanificationTrancheService::class);
         $students = Eleve::with('parents')
             ->where('id_ecole', $idEcole)
@@ -1601,9 +1608,12 @@ class FinanceController extends Controller
             ->keyBy('id_eleve');
         $subventionnes = \App\Support\SubventionEtat::elevesPrisEnCharge($anneeId, $students->pluck('id_eleve')->map(fn ($id) => (int) $id)->all());
 
-        return $students->map(function ($student) use ($inscriptions, $planifications, $typePlanification, $anneeId, $trancheService, $subventionnes) {
+        return $students->map(function ($student) use ($inscriptions, $planifications, $cooperativePlanification, $isPublicSchool, $typePlanification, $anneeId, $trancheService, $subventionnes) {
             $inscription = $inscriptions->get($student->id_eleve);
             $planification = $inscription ? $planifications->get($inscription->id_planification) : null;
+            if (!$planification && $isPublicSchool) {
+                $planification = $cooperativePlanification;
+            }
             if (!$planification || !$this->legacyPlanMatchesType($planification->motif, $typePlanification)) {
                 return null;
             }

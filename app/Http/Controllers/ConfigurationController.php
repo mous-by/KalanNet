@@ -26,6 +26,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -392,9 +393,9 @@ class ConfigurationController extends Controller
         $this->ensureCurrentAcademicYearExists();
         $anneeEnCours = $this->currentAcademicYear();
 
-        $annees = $this->anneeScope(AnneeScolaire::query(), $user, $idEcole)
-            ->when($anneeEnCours, fn ($query) => $query->where('id_anneeScolaire', $anneeEnCours->id_anneeScolaire))
+        $annees = $this->anneeScope(AnneeScolaire::with('ecole'), $user, $idEcole)
             ->when($search, fn ($query) => $query->where('annee', 'like', "%{$search}%"))
+            ->orderByRaw('CASE WHEN id_ecole IS NULL THEN 0 ELSE 1 END ASC')
             ->orderByDesc('date_debut')
             ->orderByDesc('id_anneeScolaire')
             ->paginate(15)
@@ -419,6 +420,27 @@ class ConfigurationController extends Controller
         AnneeScolaire::create($data);
 
         return redirect()->route('configuration.annees')->with('success', 'Année scolaire ajoutée avec succès.');
+    }
+
+    public function destroyAnnee(int $id)
+    {
+        $this->authorizeSupAdminOnly();
+
+        $annee = AnneeScolaire::withoutGlobalScopes()->findOrFail($id);
+        if ($annee->id_ecole === null) {
+            return redirect()->route('configuration.annees')
+                ->with('error', __('configuration.annees_delete_auto_error'));
+        }
+
+        if ($this->anneeEstUtilisee((int) $annee->id_anneeScolaire)) {
+            return redirect()->route('configuration.annees')
+                ->with('error', __('configuration.annees_delete_used_error'));
+        }
+
+        $annee->delete();
+
+        return redirect()->route('configuration.annees')
+            ->with('success', __('configuration.annees_delete_success'));
     }
 
     public function utilisateurs(Request $request)
@@ -1227,6 +1249,28 @@ class ConfigurationController extends Controller
             ->orderByRaw('id_ecole IS NOT NULL')
             ->orderByDesc('date_debut')
             ->first();
+    }
+
+    private function anneeEstUtilisee(int $anneeId): bool
+    {
+        $colonnesAnnee = ['id_annee', 'id_anneeScolaire', 'id_annee_scolaire', 'annee_scolaire_id'];
+        $database = DB::connection()->getDatabaseName();
+
+        foreach (Schema::getTables() as $table) {
+            $tableName = $table['name'] ?? null;
+            if (($table['schema'] ?? null) !== $database || !$tableName || $tableName === 'anneescolaire') {
+                continue;
+            }
+
+            foreach (Schema::getColumnListing($tableName) as $column) {
+                if (in_array($column, $colonnesAnnee, true)
+                    && DB::table($tableName)->where($column, $anneeId)->exists()) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     protected function authorizeUserCreation(User $authUser, int $type, array $data): void

@@ -4,6 +4,7 @@ import { ScrollView, StyleSheet } from 'react-native';
 import { ActivityIndicator, Text, TextInput } from 'react-native-paper';
 
 import DateField from '@/components/DateField';
+import ImpressionRecusDialog, { RecuAImprimer } from '@/components/ImpressionRecusDialog';
 import OfflineBanner from '@/components/OfflineBanner';
 import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
@@ -63,6 +64,8 @@ export default function NewPaiementScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
   const [successMessage, setSuccessMessage] = useState(t('finances.paiement_enregistre'));
+  // Reçu proposé à l'impression juste après l'enregistrement (comme sur le site).
+  const [recus, setRecus] = useState<RecuAImprimer[] | null>(null);
 
   const isValid = echeanceId && montant && modeReglement && date;
 
@@ -97,7 +100,11 @@ export default function NewPaiementScreen() {
         setTimeout(() => router.back(), 900);
         return;
       }
-      await api.post('/finances/paiements', payload);
+      const { data: paiement } = await api.post<{ id_paiement?: number }>('/finances/paiements', payload);
+      if (paiement?.id_paiement) {
+        setRecus([{ id: paiement.id_paiement, libelle: context?.eleve.nom ?? '' }]);
+        return;
+      }
       setSuccessMessage(t('finances.paiement_enregistre'));
       setSuccessVisible(true);
       setTimeout(() => router.back(), 900);
@@ -139,6 +146,13 @@ export default function NewPaiementScreen() {
       <SubmitButton label={t('finances.enregistrer_paiement')} onPress={handleSubmit} loading={isSubmitting} />
 
       <SuccessSnackbar visible={successVisible} message={successMessage} onDismiss={() => setSuccessVisible(false)} />
+      <ImpressionRecusDialog
+        recus={recus}
+        onClose={() => {
+          setRecus(null);
+          router.back();
+        }}
+      />
     </ScrollView>
   );
 }
