@@ -15,7 +15,7 @@ class PresentationBulletin
         $apercu = $bulletin['apercu'];
 
         $academie = NomAcademie::sansPrefixe($ecole->academieRef->nom_academie ?? $ecole->academie ?? '');
-        $cap = trim(preg_replace('/^\s*cap\s+(d[’\']?|de)?\s*/iu', '', (string) ($ecole->capRef->nom_cap ?? $ecole->cap ?? '')));
+        $cap = NomAcademie::capSansPrefixe($ecole->capRef->nom_cap ?? $ecole->cap ?? '');
 
         $estFondamental = Ordres::sousCap($ordre);
         $estTechnique = str_starts_with((string) $ordre, 'secondairetechnique');

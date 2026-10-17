@@ -415,7 +415,10 @@ class EleveController extends Controller
         [$couleur1, $couleur2] = \App\Support\ModelesCarte::couleurs($modeleActuel);
         $couleur1 = $request->input('primary_color', $couleur1);
         $couleur2 = $request->input('secondary_color', $couleur2);
-        $donnees = compact('classes', 'annees', 'eleves', 'showList', 'modeleDefaut', 'modeleActuel', 'couleur1', 'couleur2');
+        $pays = Ecole::withoutGlobalScopes()->with('pays')->find($idEcole)?->pays;
+        $enteteGauche = $request->input('entete_gauche', $pays?->entete_document_gauche);
+        $enteteDroite = $request->input('entete_droite', $pays?->entete_document_droite);
+        $donnees = compact('classes', 'annees', 'eleves', 'showList', 'modeleDefaut', 'modeleActuel', 'couleur1', 'couleur2', 'enteteGauche', 'enteteDroite');
 
         // Classe, année ou recherche changées : seule la liste est renvoyée (la page n'est pas rechargée).
         if ($request->header('X-Cartes-Liste')) {
@@ -612,6 +615,8 @@ class EleveController extends Controller
             'primary_color' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
             'secondary_color' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
             'card_title' => 'nullable|string|max:80',
+            'entete_gauche' => 'nullable|string|max:200',
+            'entete_droite' => 'nullable|string|max:200',
             'signature_label' => 'nullable|string|max:80',
             'signature_image' => 'nullable|string|max:500000|regex:/^data:image\/png;base64,/',
             'show_mali_flag' => 'nullable|boolean',
@@ -628,6 +633,9 @@ class EleveController extends Controller
             'primary_color' => $data['primary_color'] ?? $couleur1,
             'secondary_color' => $data['secondary_color'] ?? $couleur2,
             'card_title' => $data['card_title'] ?? 'CARTE D’IDENTITÉ SCOLAIRE',
+            // En-tête officiel : textes de la carte s'ils sont saisis, sinon ceux du pays (Configuration → Pays).
+            'entete_gauche' => $data['entete_gauche'] ?? null,
+            'entete_droite' => $data['entete_droite'] ?? null,
             'signature_label' => $data['signature_label'] ?? 'Directeur',
             'signature_image' => $data['signature_image'] ?? null,
             'show_mali_flag' => (bool) ($data['show_mali_flag'] ?? true),

@@ -84,6 +84,15 @@
                     <label class="form-label">{{ __('cartes.card_title_label') }}</label>
                     <input type="text" name="card_title" class="form-control card-config" value="{{ request('card_title', __('cartes.card_title_default')) }}">
                 </div>
+                <div class="col-md-6">
+                    <label class="form-label">{{ __('cartes.entete_gauche_label') }}</label>
+                    <textarea name="entete_gauche" rows="2" class="form-control card-config" placeholder="{{ __('cartes.entete_gauche_placeholder') }}">{{ $enteteGauche }}</textarea>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">{{ __('cartes.entete_droite_label') }}</label>
+                    <textarea name="entete_droite" rows="2" class="form-control card-config" placeholder="{{ __('cartes.entete_droite_placeholder') }}">{{ $enteteDroite }}</textarea>
+                </div>
+                <div class="col-12 small text-muted mt-1">{{ __('cartes.entete_aide') }}</div>
                 <div class="col-md-3">
                     <label class="form-label">{{ __('cartes.signature_label_label') }}</label>
                     <input type="text" name="signature_label" class="form-control card-config" value="{{ request('signature_label', __('cartes.signature_label_default')) }}">

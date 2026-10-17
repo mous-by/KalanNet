@@ -65,4 +65,9 @@ return [
     'modele_primaire_desc' => 'Coloré, soleil et crayons : pour les plus jeunes.',
     'modele_recto_verso' => 'Recto / verso',
     'modele_recto_verso_desc' => 'Carte verticale avec un dos (téléphone, adresse, contact du parent). 9 cartes par page : les rectos, puis les versos sur la page suivante ; imprimez en recto verso, bord long.',
+    'entete_gauche_label' => 'En-tête à gauche',
+    'entete_gauche_placeholder' => 'Ex. : MINISTÈRE DE L’ÉDUCATION NATIONALE',
+    'entete_droite_label' => 'En-tête à droite',
+    'entete_droite_placeholder' => 'Ex. : RÉPUBLIQUE DU MALI (puis la devise à la ligne)',
+    'entete_aide' => 'Prérempli avec l’en-tête du pays (Configuration → Pays), modifiable ici pour les cartes. Une ligne par retour à la ligne. L’académie et le CAP de l’école s’ajoutent automatiquement sous le texte de gauche.',
 ];

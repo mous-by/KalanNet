@@ -119,7 +119,7 @@
 <body>
     @php
         $academyName = \App\Support\NomAcademie::sansPrefixe($ecole?->academieRef?->nom_academie ?? $ecole?->academie);
-        $capName = trim(preg_replace('/^\s*cap\s+(d[’\']?|de)?\s*/iu', '', (string) ($ecole?->cap ?? '')));
+        $capName = \App\Support\NomAcademie::capSansPrefixe($ecole?->cap ?? '');
         $fullName = trim($eleve->prenom_eleve . ' ' . $eleve->nom_eleve);
     @endphp
 

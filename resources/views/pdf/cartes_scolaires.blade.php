@@ -11,9 +11,19 @@
     $decor = $rectoVerso ? DecorCarte::vertical(false, $c1, $c2, $filigrane) : DecorCarte::recto($modele, $c1, $c2, $filigrane);
     $decorVerso = $rectoVerso ? DecorCarte::vertical(true, $c1, $c2) : null;
 
-    // En-tête officiel du pays (ex. « RÉPUBLIQUE DU MALI · Un Peuple - Un But - Une Foi ») sur une ligne.
-    $entete = collect(preg_split('/\R/', (string) ($ecole?->pays?->entete_document_droite ?? '')))->map(fn ($l) => trim($l))->filter()->implode(' · ');
+    // En-tête officiel, comme les bulletins : à gauche le ministère (texte du pays ou celui saisi
+    // pour les cartes), l'académie et le CAP de l'école ; à droite la république et sa devise.
+    $lignes = fn ($texte) => collect(preg_split('/\R/', (string) $texte))->map(fn ($l) => trim($l))->filter()->values()->all();
+    $nomAcademie = \App\Support\NomAcademie::sansPrefixe($ecole?->academieRef?->nom_academie ?? $ecole?->academie ?? '');
+    $nomCap = \App\Support\NomAcademie::capSansPrefixe($ecole?->capRef?->nom_cap ?? $ecole?->cap ?? '');
+    $officielGauche = array_values(array_filter(array_merge(
+        $lignes($config['entete_gauche'] ?? $ecole?->pays?->entete_document_gauche),
+        [$nomAcademie !== '' ? __('bulletins.academie_de', ['name' => $nomAcademie]) : null],
+        [$nomCap !== '' && \App\Support\Ordres::sousCap($classe->ordreEnseignement ?? null) ? __('bulletins.cap_de', ['name' => $nomCap]) : null],
+    )));
+    $officielDroite = $lignes($config['entete_droite'] ?? $ecole?->pays?->entete_document_droite);
     $nomEcole = ArabePdf::texte($schoolName);
+    $nomLong = mb_strlen((string) $schoolName) > 44;
     $titre = $config['card_title'];
     $logo = $config['show_school_logo'] ? $schoolLogoPath : null;
     $filiere = $classe->filiere?->nom_filiere ?? null;
@@ -32,7 +42,7 @@
     <style>
         @page { margin: {{ $rectoVerso ? '0' : '5mm 12mm' }}; }
         /* Recto / verso : cartes placées au millimètre, grille centrée (mêmes marges des deux côtés). */
-        .feuille { position: relative; width: 210mm; height: 296mm; overflow: hidden; }
+        .feuille { position: relative; width: 210mm; height: 290mm; overflow: hidden; }
         .feuille .place { position: absolute; }
         .feuille .consigne { position: absolute; left: 0; width: 210mm; bottom: 4mm; text-align: center; font-size: 6.5pt; color: #9ca3af; }
         * { box-sizing: border-box; }
@@ -48,14 +58,19 @@
         .carte.verticale .fond { width: 54mm; height: 85.6mm; }
         .abs { position: absolute; }
 
-        .tete { left: 3mm; top: 2.2mm; width: 79.6mm; height: 13.4mm; overflow: hidden; }
-        .tete .logo { position: absolute; left: 0; top: 0.4mm; width: 10.5mm; height: 10.5mm; }
-        .tete .textes { position: absolute; left: 12.5mm; top: 0; width: 63mm; }
+        .officiel { left: 3mm; top: 1.6mm; width: 79.6mm; height: 6.6mm; overflow: hidden; font-size: 3.6pt; line-height: 1.12; color: #374151; text-transform: uppercase; }
+        .officiel .og { position: absolute; left: 0; top: 0; width: 36.5mm; text-align: center; }
+        .officiel .od { position: absolute; right: 0; top: 0; width: 36.5mm; text-align: center; }
+        .officiel .fort { font-weight: bold; }
+        .officiel .drapeau { position: absolute; left: 37.4mm; top: 0.6mm; }
+        .tete { left: 3mm; top: 8.3mm; width: 79.6mm; height: 8.6mm; overflow: hidden; }
+        .tete .logo { position: absolute; left: 0; top: 0.2mm; width: 7.8mm; height: 7.8mm; }
+        .tete .textes { position: absolute; left: 9.5mm; top: 0; width: 66mm; }
         .tete.sans-logo .textes { left: 0; width: 76mm; }
-        .entete { font-size: 4.3pt; line-height: 1.15; color: #374151; text-transform: uppercase; }
-        .nom-ecole { font-size: 7pt; line-height: 1.12; font-weight: bold; text-transform: uppercase; color: {{ $c1 }}; margin-top: 0.4mm; }
-        .titre { font-size: 5pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.2mm; margin-top: 0.5mm; color: #111827; }
-        .drapeau { display: inline-block; width: 4.8mm; height: 3mm; vertical-align: middle; margin-right: 1mm; border: 0.1mm solid rgba(0,0,0,.2); }
+        .nom-ecole { font-size: 6.6pt; line-height: 1.02; font-weight: bold; text-transform: uppercase; color: {{ $c1 }}; }
+        .nom-ecole.long { font-size: 5.6pt; }
+        .titre { font-size: 4.6pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.2mm; margin-top: 0.4mm; color: #111827; }
+        .drapeau { display: inline-block; width: 4.8mm; height: 3mm; border: 0.1mm solid rgba(0,0,0,.2); }
         .drapeau span { display: inline-block; width: 1.6mm; height: 3mm; }
         .vert { background: #14b53a; } .or { background: #fcd116; } .rouge { background: #ce1126; }
 
@@ -75,7 +90,7 @@
         .signature img { max-width: 22mm; max-height: 8mm; }
 
         /* Élégant : bleu nuit et or. */
-        .m-elegant .entete, .m-elegant .titre { color: {{ ModelesCarte::eclaircir($c2, 0.35) }}; }
+        .m-elegant .officiel, .m-elegant .titre { color: {{ ModelesCarte::eclaircir($c2, 0.35) }}; }
         .m-elegant .nom-ecole { color: {{ $c2 }}; }
         .m-elegant .bandeau { left: 4mm; top: 48.6mm; font-size: 6.5pt; font-weight: bold; letter-spacing: 0.25mm; color: {{ $c2 }}; }
         .m-elegant .signature { top: 33.5mm; }
@@ -83,6 +98,7 @@
 
         /* Franco-arabe : bandeau clair, panneau vert. */
         .m-franco_arabe .tete { text-align: center; }
+        .m-franco_arabe .officiel { color: {{ ModelesCarte::assombrir($c1, 0.1) }}; }
         .m-franco_arabe .arabe { font-size: 6pt; color: {{ $c1 }}; text-transform: none; letter-spacing: 0; }
         .m-franco_arabe .infos, .m-franco_arabe .infos .lib { color: #ffffff; }
         .m-franco_arabe .signature { color: #ffffff; }
@@ -94,24 +110,28 @@
         .m-franco_arabe .signature { top: 41mm; }
 
         /* École de santé : en-tête à gauche, tracé à droite. */
-        .m-sante .tete .textes { width: 47mm; }
-        .m-sante .entete { font-size: 3.8pt; }
-        .m-sante .nom-ecole { font-size: 6.6pt; }
+        .m-sante .tete .textes { width: 61mm; }
+        .m-sante .tete.sans-logo .textes { width: 70mm; }
 
         /* Primaire : couleurs vives, signature à l'écart des crayons. */
         .m-primaire .nom-ecole { color: {{ $c2 }}; }
         .m-primaire .titre { color: {{ $c1 }}; }
-        .m-primaire .tete .textes, .m-primaire .tete.sans-logo .textes { left: 16mm; width: 52mm; }
+        .m-primaire .tete .textes { width: 64mm; }
+        .m-primaire .tete.sans-logo .textes { width: 73mm; }
         .m-primaire .signature { right: 17mm; top: 40.5mm; }
         .m-primaire .photo { border-color: {{ $c1 }}; }
 
         /* Recto / verso (carte verticale). */
-        .v .tete { left: 3mm; top: 2.5mm; width: 48mm; height: 17mm; }
-        .v .tete .logo { width: 9mm; height: 9mm; }
-        .v .tete .textes { left: 10.5mm; width: 37.5mm; }
+        .v .officiel { left: 2.5mm; top: 1.4mm; width: 49mm; height: 7.6mm; font-size: 2.8pt; color: {{ ModelesCarte::eclaircir($c1, 0.8) }}; }
+        .v .officiel .og, .v .officiel .od { width: 21.5mm; }
+        .v .officiel .drapeau { left: 22.1mm; width: 4.8mm; }
+        .v .tete { left: 3mm; top: 9.3mm; width: 48mm; height: 10.4mm; }
+        .v .tete .logo { width: 8mm; height: 8mm; }
+        .v .tete .textes { left: 9.5mm; width: 38.5mm; }
         .v .tete.sans-logo .textes { left: 0; width: 48mm; }
-        .v .entete, .v .titre { color: {{ ModelesCarte::eclaircir($c1, 0.8) }}; }
-        .v .nom-ecole { color: #ffffff; font-size: 6.4pt; }
+        .v .titre { color: {{ ModelesCarte::eclaircir($c1, 0.8) }}; }
+        .v .nom-ecole { color: #ffffff; font-size: 6pt; }
+        .verso .tete { top: 3mm; }
         .v .photo { left: 4mm; top: 24.5mm; width: 18mm; height: 22mm; border-color: {{ $c1 }}; }
         .v .infos { left: 24mm; top: 25mm; width: 27mm; height: 22mm; font-size: 5.6pt; }
         .v .infos .nom { font-size: 7.5pt; }

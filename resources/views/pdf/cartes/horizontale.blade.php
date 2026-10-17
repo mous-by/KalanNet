@@ -1,14 +1,12 @@
 {{-- Carte scolaire horizontale (85,6 × 54 mm). Variables : voir pdf/cartes_scolaires. --}}
 <div class="carte m-{{ $modele }}">
     <img class="fond" src="{{ $decor }}" alt="">
+    @include('pdf.cartes._officiel')
 
     <div class="abs tete {{ $logo ? '' : 'sans-logo' }}">
         @if($logo)<img class="logo" src="{{ $logo }}" alt="">@endif
         <div class="textes">
-            @if($entete !== '' || $drapeau)
-                <div class="entete">@if($drapeau)<span class="drapeau"><span class="vert"></span><span class="or"></span><span class="rouge"></span></span>@endif{{ $entete }}</div>
-            @endif
-            <div class="nom-ecole">{{ $nomEcole }}</div>
+            <div class="nom-ecole {{ $nomLong ? 'long' : '' }}">{{ $nomEcole }}</div>
             <div class="titre">{{ $titre }}@if($modele === 'franco_arabe') · <span class="arabe">{{ \App\Support\ArabePdf::texte('البطاقة المدرسية') }}</span>@endif</div>
         </div>
     </div>

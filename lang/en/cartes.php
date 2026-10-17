@@ -65,4 +65,9 @@ return [
     'modele_primaire_desc' => 'Colourful, sun and pencils: for the youngest pupils.',
     'modele_recto_verso' => 'Front / back',
     'modele_recto_verso_desc' => 'Vertical card with a back (phone, address, parent contact). 9 cards per page: fronts, then backs on the next page; print double-sided, long edge.',
+    'entete_gauche_label' => 'Header, left',
+    'entete_gauche_placeholder' => 'E.g. MINISTRY OF NATIONAL EDUCATION',
+    'entete_droite_label' => 'Header, right',
+    'entete_droite_placeholder' => 'E.g. REPUBLIC OF MALI (motto on the next line)',
+    'entete_aide' => 'Prefilled with the country header (Settings → Countries), editable here for the cards. One line per line break. The school’s academy and CAP are added automatically under the left text.',
 ];

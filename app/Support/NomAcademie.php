@@ -17,4 +17,13 @@ class NomAcademie
             (string) $nom
         ));
     }
+
+    /**
+     * Même chose pour les CAP (« CAP de Kayes » → « Kayes »). Un nom sans « de »
+     * reste entier : « CAP Diré » → « Diré ».
+     */
+    public static function capSansPrefixe(?string $nom): string
+    {
+        return trim((string) preg_replace('/^\s*cap\s+(?:de\s+|d[’\']\s*)?/iu', '', (string) $nom));
+    }
 }

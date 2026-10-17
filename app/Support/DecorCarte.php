@@ -16,25 +16,24 @@ class DecorCarte
 
         $corps = match ($modele) {
             'elegant' => self::rect(0, 0, 856, 540, $c1)
-                .'<path d="M0,150 L856,150 L856,425 C640,470 330,395 0,462 Z" fill="#ffffff"/>'
+                .'<path d="M0,166 L856,166 L856,425 C640,470 330,395 0,462 Z" fill="#ffffff"/>'
                 .'<path d="M0,462 C330,395 640,470 856,425" fill="none" stroke="'.$c2.'" stroke-width="9"/>'
                 .'<path d="M0,490 C300,430 600,505 856,455" fill="none" stroke="'.$c2.'" stroke-width="3"/>'
-                .'<line x1="0" y1="150" x2="856" y2="150" stroke="'.$c2.'" stroke-width="5"/>',
+                .'<line x1="0" y1="166" x2="856" y2="166" stroke="'.$c2.'" stroke-width="5"/>',
             'franco_arabe' => self::rect(0, 0, 856, 540, $clair($c2, 0.88))
                 .'<rect x="18" y="168" width="820" height="356" rx="26" ry="26" fill="'.$c1.'"/>'
                 .'<rect x="30" y="180" width="796" height="332" rx="20" ry="20" fill="none" stroke="'.$c2.'" stroke-width="3"/>'
-                .'<line x1="40" y1="12" x2="816" y2="12" stroke="'.$c2.'" stroke-width="4"/>'
-                .'<line x1="40" y1="22" x2="816" y2="22" stroke="'.$c2.'" stroke-width="1.5"/>',
+                .'<line x1="40" y1="5" x2="816" y2="5" stroke="'.$c2.'" stroke-width="3"/>',
             'sante' => self::rect(0, 0, 856, 540, '#ffffff')
                 .self::rect(0, 0, 856, 14, $c1)
                 .'<path d="M0,400 C240,350 520,450 856,372 L856,540 L0,540 Z" fill="'.$clair($c2, 0.82).'"/>'
                 .'<path d="M0,430 C260,385 540,470 856,405" fill="none" stroke="'.$clair($c2, 0.45).'" stroke-width="4"/>'
-                .'<polyline points="650,105 700,105 715,72 732,140 750,40 768,128 782,105 845,105" fill="none" stroke="'.$c2.'" stroke-width="5" stroke-linejoin="round"/>',
+                .'<polyline points="764,128 782,128 792,106 803,150 814,96 825,144 833,128 846,128" fill="none" stroke="'.$c2.'" stroke-width="5" stroke-linejoin="round"/>',
             'primaire' => self::rect(0, 0, 856, 540, '#fffdf5')
-                .'<circle cx="0" cy="0" r="175" fill="'.$c1.'"/>'
-                .'<circle cx="20" cy="30" r="110" fill="'.$clair($c1, 0.35).'"/>'
-                .'<circle cx="805" cy="62" r="34" fill="#facc15"/>'
-                .self::rayons(805, 62, 44, 62, '#facc15')
+                .'<circle cx="0" cy="0" r="130" fill="'.$clair($c1, 0.55).'"/>'
+                .'<circle cx="10" cy="20" r="80" fill="'.$clair($c1, 0.75).'"/>'
+                .'<circle cx="826" cy="124" r="15" fill="#facc15"/>'
+                .self::rayons(826, 124, 20, 27, '#facc15')
                 .'<path d="M0,470 C180,430 360,520 560,540 L0,540 Z" fill="'.$clair('#facc15', 0.55).'"/>'
                 .self::crayon(700, 540, -62, '#ef4444').self::crayon(745, 540, -70, '#facc15')
                 .self::crayon(790, 540, -78, '#22c55e').self::crayon(835, 540, -86, $c2),
