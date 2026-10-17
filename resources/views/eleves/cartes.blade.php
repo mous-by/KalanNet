@@ -65,10 +65,18 @@
                     <div class="row g-3">
                         @foreach($cartesTemplates as $value => [$label, $description])
                             <div class="col-md-4">
-                                <label class="card-template-option d-block">
-                                    <input type="radio" name="template" value="{{ $value }}" class="form-check-input me-2 card-config" @checked(request('template', 'epure') === $value)>
-                                    <span class="fw-bold">{{ $label }}</span>
-                                    <small class="d-block text-muted mt-1">{{ $description }}</small>
+                                <label class="card-template-option d-flex flex-column">
+                                    <span>
+                                        <input type="radio" name="template" value="{{ $value }}" class="form-check-input me-2 card-config" @checked(request('template', 'epure') === $value)>
+                                        <span class="fw-bold">{{ $label }}</span>
+                                    </span>
+                                    <small class="d-block text-muted mt-1 mb-2">{{ $description }}</small>
+                                    <span class="d-flex align-items-center mt-auto">
+                                        <span class="small fw-semibold text-success modele-coche"><i class="bi bi-check-circle-fill me-1"></i>{{ __('cartes.modele_choisi') }}</span>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary ms-auto carte-apercu" data-template="{{ $value }}" data-nom="{{ $label }}">
+                                            <i class="bi bi-eye me-1"></i>{{ __('cartes.apercu') }}
+                                        </button>
+                                    </span>
                                 </label>
                             </div>
                         @endforeach
@@ -215,6 +223,31 @@
         </div>
     @endif
 
+    <div class="modal fade" id="apercu-carte-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">{{ __('cartes.apercu_titre') }} · <span id="apercu-carte-nom"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('eleves.close') }}"></button>
+                </div>
+                <div class="px-3 pt-2 small text-muted" id="apercu-carte-aide"></div>
+                <div class="modal-body p-0" style="height: 76vh;">
+                    <iframe name="apercu-carte-cadre" id="apercu-carte-cadre" title="{{ __('cartes.apercu_titre') }}" style="width:100%; height:100%; border:0;"></iframe>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">{{ __('eleves.close') }}</button>
+                    <button type="button" class="btn btn-primary" id="apercu-carte-choisir"><i class="bi bi-check2 me-1"></i>{{ __('cartes.choisir_modele') }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <form action="{{ route('eleves.cartes.apercu') }}" method="POST" target="apercu-carte-cadre" id="apercu-carte-form" class="d-none">
+        @csrf
+        <input type="hidden" name="id_classe" value="{{ request('id_classe') }}">
+        <input type="hidden" name="id_annee" value="{{ request('id_annee') }}">
+        <input type="hidden" name="search" value="{{ request('search') }}">
+    </form>
+
     <div class="modal fade" id="signature-modal" tabindex="-1" aria-labelledby="signature-modal-title" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -260,6 +293,8 @@
             border-color: var(--theme-accent);
             box-shadow: 0 0 0 3px rgba(13, 110, 253, .12);
         }
+        .card-template-option .modele-coche { visibility: hidden; }
+        .card-template-option:has(input:checked) .modele-coche { visibility: visible; }
         .cards-students-table thead th {
             background: #fff !important;
             color: inherit !important;
@@ -302,6 +337,8 @@
             'printN' => __('cartes.print_n_button'),
             'signatureSaved' => __('cartes.signature_saved'),
             'noSignature' => __('cartes.no_signature'),
+            'apercuExemple' => __('cartes.apercu_exemple'),
+            'apercuClasse' => __('cartes.apercu_classe'),
         ];
     @endphp
     <script>
@@ -445,6 +482,44 @@
                 saveSignature();
             });
         }
+
+        // Aperçu d'un modèle avec les réglages en cours (couleurs, titre, signature…).
+        const apercuForm = document.getElementById('apercu-carte-form');
+        const apercuModal = document.getElementById('apercu-carte-modal');
+        let apercuTemplate = null;
+        document.querySelectorAll('.carte-apercu').forEach((bouton) => {
+            bouton.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                apercuTemplate = bouton.dataset.template;
+                apercuForm.querySelectorAll('.apercu-config').forEach((champ) => champ.remove());
+                const valeurs = { template: apercuTemplate };
+                configInputs.forEach((input) => {
+                    if (input.name === 'template') return;
+                    if (input.type === 'checkbox') valeurs[input.name] = input.checked ? '1' : '0';
+                    else if (input.type !== 'radio' || input.checked) valeurs[input.name] = input.value;
+                });
+                const coches = Array.from(document.querySelectorAll('.cards-check:checked')).map((box) => box.value);
+                if (coches.length) valeurs.selected_eleves = coches.join(',');
+                Object.entries(valeurs).forEach(([nom, valeur]) => {
+                    const champ = document.createElement('input');
+                    champ.type = 'hidden'; champ.name = nom; champ.value = valeur; champ.className = 'apercu-config';
+                    apercuForm.appendChild(champ);
+                });
+                document.getElementById('apercu-carte-nom').textContent = bouton.dataset.nom;
+                document.getElementById('apercu-carte-aide').textContent = apercuForm.querySelector('[name=id_classe]').value ? cartesI18n.apercuClasse : cartesI18n.apercuExemple;
+                bootstrap.Modal.getOrCreateInstance(apercuModal).show();
+                apercuForm.submit();
+            });
+        });
+        document.getElementById('apercu-carte-choisir')?.addEventListener('click', () => {
+            const radio = document.querySelector(`input[name="template"][value="${apercuTemplate}"]`);
+            if (radio) { radio.checked = true; syncCardConfig(); }
+            bootstrap.Modal.getOrCreateInstance(apercuModal).hide();
+        });
+        apercuModal?.addEventListener('hidden.bs.modal', () => {
+            document.getElementById('apercu-carte-cadre').src = 'about:blank';
+        });
 
         configInputs.forEach((input) => input.addEventListener('change', syncCardConfig));
         setupSignaturePad();

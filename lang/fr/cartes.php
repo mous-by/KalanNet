@@ -45,4 +45,10 @@ return [
     'empty_table' => 'Aucun élève trouvé pour ces critères.',
     'signature_modal_title' => 'Signature électronique',
     'clear_button' => 'Effacer',
+    'apercu' => 'Aperçu',
+    'apercu_titre' => 'Aperçu du modèle',
+    'modele_choisi' => 'Choisi',
+    'choisir_modele' => 'Choisir ce modèle',
+    'apercu_exemple' => 'Exemple avec des élèves fictifs : choisissez une classe pour voir vos élèves. Les couleurs, le titre et la signature sont ceux réglés plus bas.',
+    'apercu_classe' => 'Premiers élèves de la classe (ou ceux cochés), avec vos réglages.',
 ];

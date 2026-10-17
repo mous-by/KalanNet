@@ -12,13 +12,13 @@
         .motto span:nth-child(1) { color: #15803d; }
         .motto span:nth-child(2) { color: #b45309; }
         .motto span:nth-child(3) { color: #b91c1c; }
-        .logo { position: absolute; top: 8px; width: 42px; height: 38px; object-fit: contain; z-index: 2; }
+        .logo { position: absolute; top: 8px; width: 42px; height: 38px; object-fit: contain; z-index: 20; }
         .logo.school { right: 10px; }
         .flag-corner {
             position: absolute;
             left: 10px;
             top: 10px;
-            z-index: 3;
+            z-index: 20;
             box-shadow: 0 1px 2px rgba(17,24,39,.22);
         }
         .flag-watermark {
@@ -96,55 +96,71 @@
         .school-contact { font-size: 7.5px; line-height: 1.2; color: #374151; }
         .name { font-weight: bold; text-transform: uppercase; color: #111827; }
 
-        .tpl-epure {
+        /* Modèles horizontaux : photo, informations, puis QR et signature dans leur propre colonne (rien ne se chevauche). */
+        .tpl-institutionnel, .tpl-moderne, .tpl-epure, .tpl-horizon {
             width: 48%;
-            height: 220px;
-            margin: 0 1% 13px 0;
-            border-radius: 15px;
+            height: 232px;
+            margin: 0 1% 12px 0;
             border: 2px solid {{ $config['primary_color'] }};
-            background: #ffffff;
-        }
-        .tpl-epure .head { text-align: center; padding: 8px 58px 4px; min-height: 55px; }
-        .tpl-epure .body { padding: 8px 12px 0; }
-        .tpl-epure .photo { width: 78px; height: 88px; line-height: 88px; border-radius: 8px; border: 2px solid {{ $config['secondary_color'] }}; }
-        .tpl-epure .info { line-height: 1.5; color: #111827; }
-        .tpl-epure .name { font-size: 12px; color: #111827; }
-        .tpl-epure .mat { clear: both; margin: 8px 12px 0; }
-        .tpl-epure .qr { position: absolute; right: 12px; bottom: 10px; }
-        .tpl-epure .sign { position: absolute; right: 76px; bottom: 10px; width: 82px; font-size: 9px; text-align: center; }
-
-        .tpl-institutionnel, .tpl-moderne, .tpl-horizon {
-            width: 48%;
-            height: 220px;
-            margin: 0 1% 13px 0;
-            border: 2px solid {{ $config['primary_color'] }};
-            border-radius: 9px;
+            border-radius: 10px;
             background: #fff;
         }
-        .tpl-institutionnel .head, .tpl-moderne .head, .tpl-horizon .head { text-align: center; padding: 8px 55px 5px; min-height: 54px; }
-        .tpl-institutionnel .head, .tpl-moderne .head, .tpl-horizon .head { color: #111827; }
-        .tpl-institutionnel .body, .tpl-moderne .body, .tpl-horizon .body { padding: 9px 10px; }
-        .tpl-institutionnel .photo, .tpl-moderne .photo, .tpl-horizon .photo { width: 68px; height: 80px; line-height: 80px; border: 2px solid {{ $config['secondary_color'] }}; }
-        .tpl-moderne .photo { border-radius: 9px; }
-        .tpl-institutionnel .line, .tpl-moderne .line, .tpl-horizon .line { margin-bottom: 3px; }
-        .tpl-institutionnel .qr, .tpl-moderne .qr, .tpl-horizon .qr { position: absolute; right: 10px; bottom: 10px; }
-        .tpl-institutionnel .sign, .tpl-moderne .sign, .tpl-horizon .sign { position: absolute; right: 72px; bottom: 10px; width: 82px; font-size: 9px; text-align: center; }
+        .tpl-institutionnel .head, .tpl-moderne .head, .tpl-epure .head, .tpl-horizon .head { text-align: center; padding: 8px 54px 5px; min-height: 52px; color: #111827; }
+        .tpl-institutionnel .body, .tpl-moderne .body, .tpl-epure .body, .tpl-horizon .body { padding: 6px 10px 0; }
+        .side-cell { width: 60px; text-align: center; vertical-align: bottom !important; }
+        .side-cell .qr img { width: 50px; height: 50px; }
+        .side-cell .sign { width: 60px; font-size: 8px; margin-top: 2px; }
+        .line { margin-bottom: 1px; }
+
+        /* Institutionnel : en-tête plein à la couleur principale, filet de la couleur secondaire. */
+        .tpl-institutionnel .head { background: {{ $config['primary_color'] }}; color: #fff; border-radius: 8px 8px 0 0; border-bottom: 3px solid {{ $config['secondary_color'] }}; }
+        .tpl-institutionnel .head div, .tpl-institutionnel .head .school-contact { color: #fff; }
+        .tpl-institutionnel .photo { width: 68px; height: 82px; line-height: 82px; border: 2px solid {{ $config['primary_color'] }}; }
+
+        /* Moderne : bande verticale à gauche, en-tête aligné à gauche, nom en grand. */
+        .tpl-moderne { border-width: 1px; border-radius: 14px; }
+        .tpl-moderne .bande { position: absolute; left: 0; top: 0; bottom: 0; width: 12px; background: {{ $config['primary_color'] }}; }
+        .tpl-moderne .bande-fine { position: absolute; left: 12px; top: 0; bottom: 0; width: 4px; background: {{ $config['secondary_color'] }}; }
+        .tpl-moderne .head { text-align: left; padding: 8px 54px 4px 68px; }
+        .tpl-moderne .body { padding-left: 26px; }
+        .tpl-moderne .title { color: {{ $config['primary_color'] }}; }
+        .tpl-moderne .photo { width: 66px; height: 80px; line-height: 80px; border-radius: 12px; border: 2px solid {{ $config['secondary_color'] }}; }
+        .tpl-moderne .grand-nom { font-size: 12px; font-weight: bold; text-transform: uppercase; color: {{ $config['primary_color'] }}; margin-bottom: 2px; }
+        .tpl-moderne .flag-corner { left: 22px; }
+
+        /* Épuré : sobre, beaucoup de blanc, coins très arrondis. */
+        .tpl-epure { border-radius: 16px; border-width: 1.5px; }
+        .tpl-epure .photo { width: 70px; height: 84px; line-height: 84px; border-radius: 8px; border: 2px solid {{ $config['secondary_color'] }}; }
+        .tpl-epure .title { letter-spacing: 1px; }
+
+        /* Horizon : photo à droite, bandeau du bas avec le matricule et la classe. */
+        .tpl-horizon .head { border-top: 6px solid {{ $config['secondary_color'] }}; border-radius: 8px 8px 0 0; }
+        .tpl-horizon .photo { width: 68px; height: 80px; line-height: 80px; border: 2px solid {{ $config['primary_color'] }}; border-radius: 4px; }
+        .tpl-horizon .student-photo-cell { padding-right: 0; padding-left: 8px; }
+        .tpl-horizon .bandeau { position: absolute; left: 0; bottom: 0; width: 100%; height: 24px; background: {{ $config['primary_color'] }}; border-radius: 0 0 8px 8px; z-index: 15; }
+        .tpl-horizon .bandeau table { width: 100%; border-collapse: collapse; }
+        .tpl-horizon .bandeau td { color: #fff; font-weight: bold; font-size: 9px; padding: 6px 12px 0; }
+        .tpl-horizon .bandeau td.droite { text-align: right; }
 
         .tpl-vertical {
             width: 30.6%;
-            height: 315px;
-            margin: 0 2% 14px 0;
+            height: 324px;
+            margin: 0 2% 12px 0;
             border: 2px solid {{ $config['primary_color'] }};
             border-radius: 12px;
             text-align: center;
             background: #ffffff;
         }
         .tpl-vertical .head { color: #111827; padding: 10px 8px 6px; min-height: 56px; }
-        .tpl-vertical .photo { width: 88px; height: 100px; line-height: 100px; border-radius: 12px; margin: 10px auto 7px; border: 2px solid {{ $config['secondary_color'] }}; }
-        .tpl-vertical .meta { text-align: left; padding: 6px 13px; line-height: 1.45; color: #111827; }
+        .tpl-vertical .photo { width: 76px; height: 86px; line-height: 86px; border-radius: 12px; margin: 5px auto 4px; border: 2px solid {{ $config['secondary_color'] }}; }
+        .tpl-vertical .meta { text-align: left; padding: 4px 13px; line-height: 1.3; font-size: 8.5px; color: #111827; }
         .tpl-vertical .meta div { color: #111827; }
-        .tpl-vertical .qr { position: absolute; left: 12px; bottom: 10px; }
-        .tpl-vertical .sign { position: absolute; right: 12px; bottom: 10px; width: 76px; font-size: 8px; text-align: center; }
+        .tpl-vertical .pied { width: 100%; margin-top: 2px; border-collapse: collapse; }
+        .tpl-vertical .pied td { padding: 0 12px; vertical-align: bottom; width: 50%; }
+        .tpl-vertical .pied .qr img { width: 42px; height: 42px; }
+        .tpl-vertical .pied .sign { font-size: 8px; text-align: right; }
+        .tpl-vertical .pied .signature-label { text-align: right; }
+        .tpl-vertical .pied .signature-img { margin: 1px 0 0 auto; }
 
         .tpl-compact {
             width: 32%;
@@ -154,7 +170,7 @@
             border-radius: 8px;
             background: #fff;
         }
-        .tpl-compact .head { color: #111827; text-align: center; padding: 6px 42px 4px; min-height: 42px; }
+        .tpl-compact .head { color: #111827; text-align: center; padding: 6px 46px 4px; min-height: 42px; font-size: 7.5px; }
         .tpl-compact .school-name { font-size: 7.5px; }
         .tpl-compact .title { font-size: 7px; }
         .tpl-compact .body { padding: 8px; }
@@ -178,6 +194,9 @@
     @endphp
 
     <div class="card {{ $tpl }}">
+        @if($config['template'] === 'moderne')
+            <div class="bande"></div><div class="bande-fine"></div>
+        @endif
         @if($config['show_mali_flag'] && $config['mali_flag_style'] === 'watermark')
             <div class="diagonal-flag-band green"></div>
             <div class="diagonal-flag-band gold"></div>
@@ -209,8 +228,19 @@
                     <div><span class="label">MAT :</span> {{ $eleve->matricule ?: 'Non renseigné' }}</div>
                     <div><span class="label">Classe :</span> {{ $classe->nom_classe }}</div>
                     <div><span class="label">Sexe :</span> {{ $eleve->genre_eleve }}</div>
-                    <div><span class="label">Né(e) :</span> {{ $eleve->date_naissance ? \Carbon\Carbon::parse($eleve->date_naissance)->format('d/m/Y') : 'Non renseigné' }} à {{ $eleve->lieu_naiss ?: 'Non renseigné' }}</div>
+                    <div><span class="label">Né(e) :</span> {{ $eleve->date_naissance ? \Carbon\Carbon::parse($eleve->date_naissance)->format('d/m/Y') : 'Non renseigné' }}{{ $eleve->lieu_naiss ? ' à '.$eleve->lieu_naiss : '' }}</div>
                 </div>
+                <table class="pied">
+                    <tr>
+                        <td style="text-align:left">@if($qrCode)<div class="qr"><img src="{{ $qrCode }}" alt="QR"></div>@endif</td>
+                        <td style="text-align:right">
+                            <div class="sign">
+                                <span class="signature-label">{{ $config['signature_label'] }}</span>
+                                @if(!empty($config['signature_image']))<img src="{{ $config['signature_image'] }}" class="signature-img" alt="">@endif
+                            </div>
+                        </td>
+                    </tr>
+                </table>
             @elseif($config['template'] === 'compact')
                 <div class="body">
                     <table class="student-layout">
@@ -228,35 +258,56 @@
                     </table>
                 </div>
             @else
+                @php
+                    $photoCell = '<td class="student-photo-cell"><div class="photo">'.($hasPhoto ? '<img src="'.e($photoPath).'" alt="">' : 'PHOTO').'</div></td>';
+                    $naissance = ($eleve->date_naissance ? \Carbon\Carbon::parse($eleve->date_naissance)->format('d/m/Y') : 'Non renseigné').($eleve->lieu_naiss ? ' à '.$eleve->lieu_naiss : '');
+                @endphp
                 <div class="body">
                     <table class="student-layout">
                         <tr>
-                            <td class="student-photo-cell">
-                                <div class="photo">@if($hasPhoto)<img src="{{ $photoPath }}" alt="">@else PHOTO @endif</div>
-                            </td>
+                            @if($config['template'] !== 'horizon'){!! $photoCell !!}@endif
                             <td class="student-info-cell info">
-                                <div class="line"><span class="label">Prénom :</span> {{ $eleve->prenom_eleve }}</div>
-                                <div class="line"><span class="label">Nom :</span> {{ strtoupper($eleve->nom_eleve) }}</div>
-                                <div class="line"><span class="label">Né(e) le :</span> {{ $eleve->date_naissance ? \Carbon\Carbon::parse($eleve->date_naissance)->format('d/m/Y') : 'Non renseigné' }} à {{ $eleve->lieu_naiss ?: 'Non renseigné' }}</div>
+                                @if($config['template'] === 'moderne')
+                                    <div class="grand-nom">{{ $fullName }}</div>
+                                @else
+                                    <div class="line"><span class="label">Prénom :</span> {{ $eleve->prenom_eleve }}</div>
+                                    <div class="line"><span class="label">Nom :</span> {{ strtoupper($eleve->nom_eleve) }}</div>
+                                @endif
+                                <div class="line"><span class="label">Né(e) le :</span> {{ $naissance }}</div>
                                 <div class="line"><span class="label">Sexe :</span> {{ $eleve->genre_eleve }}</div>
-                                <div class="line"><span class="label">Classe :</span> {{ $classe->nom_classe }}</div>
+                                @if($config['template'] !== 'horizon')
+                                    <div class="line"><span class="label">Classe :</span> {{ $classe->nom_classe }}</div>
+                                    <div class="line"><span class="label">MAT :</span> {{ $eleve->matricule ?: 'Non renseigné' }}</div>
+                                @endif
                             </td>
+                            <td class="side-cell">
+                                @if($qrCode)<div class="qr"><img src="{{ $qrCode }}" alt="QR"></div>@endif
+                                <div class="sign">
+                                    <span class="signature-label">{{ $config['signature_label'] }}</span>
+                                    @if(!empty($config['signature_image']))<img src="{{ $config['signature_image'] }}" class="signature-img" alt="">@endif
+                                </div>
+                            </td>
+                            @if($config['template'] === 'horizon'){!! $photoCell !!}@endif
                         </tr>
                     </table>
-                    <div class="mat"><span class="label">MAT :</span> {{ $eleve->matricule ?: 'Non renseigné' }}</div>
                 </div>
+                @if($config['template'] === 'horizon')
+                    <div class="bandeau"><table><tr><td>MAT : {{ $eleve->matricule ?: 'Non renseigné' }}</td><td class="droite">{{ $classe->nom_classe }}</td></tr></table></div>
+                @endif
             @endif
         </div>
 
-        @if($qrCode)
-            <div class="qr"><img src="{{ $qrCode }}" alt="QR"></div>
-        @endif
-        <div class="sign">
-            <span class="signature-label">{{ $config['signature_label'] }}</span>
-            @if(!empty($config['signature_image']))
-                <img src="{{ $config['signature_image'] }}" class="signature-img" alt="">
+        @if($config['template'] === 'compact')
+            @if($qrCode)
+                <div class="qr"><img src="{{ $qrCode }}" alt="QR"></div>
             @endif
-        </div>
+            <div class="sign">
+                <span class="signature-label">{{ $config['signature_label'] }}</span>
+                @if(!empty($config['signature_image']))
+                    <img src="{{ $config['signature_image'] }}" class="signature-img" alt="">
+                @endif
+            </div>
+        @endif
     </div>
 
     @if($config['template'] === 'vertical' && $loop->iteration % 3 === 0)

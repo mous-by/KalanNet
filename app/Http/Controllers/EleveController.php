@@ -415,15 +415,52 @@ class EleveController extends Controller
     public function downloadCartesPdf(Request $request)
     {
         [$eleves, $classe, $annee, $ecole] = $this->listExportData($request);
+
+        return $this->cartesPdf($eleves, $classe, $annee, $ecole, $this->cardPrintConfig($request))
+            ->download('Cartes_scolaires_' . str_replace(' ', '_', $classe->nom_classe) . '.pdf');
+    }
+
+    /**
+     * Aperçu d'un modèle de carte, affiché dans la page : les premiers élèves de
+     * la classe choisie, ou un élève d'exemple si aucune classe n'est choisie.
+     */
+    public function apercuCartes(Request $request)
+    {
         $config = $this->cardPrintConfig($request);
+        $eleves = collect();
+        if ($request->filled('id_classe') && $request->filled('id_annee')) {
+            try {
+                [$eleves, $classe, $annee, $ecole] = $this->listExportData($request);
+            } catch (ValidationException) {
+                $eleves = collect();
+            }
+        }
+
+        if ($eleves->isEmpty()) {
+            $ecole = Ecole::withoutGlobalScopes()->find(session('idEcole'));
+            $classe = isset($classe) ? $classe : (new Classe())->forceFill(['nom_classe' => '7ème année A', 'ordreEnseignement' => 'fondamentale2']);
+            $annee = isset($annee) ? $annee : (AnneeScolaire::orderByDesc('date_debut')->first() ?? (new AnneeScolaire())->forceFill(['annee' => date('Y') . '-' . (date('Y') + 1)]));
+            $eleves = collect([
+                ['Aminata', 'Diallo', 'Féminin', '2013-03-14'],
+                ['Ibrahim', 'Koné', 'Masculin', '2012-11-02'],
+            ])->map(fn ($e, $i) => (new Eleve())->forceFill([
+                'id_eleve' => -1 - $i, 'prenom_eleve' => $e[0], 'nom_eleve' => $e[1], 'genre_eleve' => $e[2],
+                'date_naissance' => $e[3], 'matricule' => 'EX-000' . ($i + 1),
+            ]));
+        }
+
+        // Une page suffit pour juger du modèle.
+        return $this->cartesPdf($eleves->take(6), $classe, $annee, $ecole, $config)->stream('Apercu_carte_' . $config['template'] . '.pdf');
+    }
+
+    private function cartesPdf($eleves, Classe $classe, AnneeScolaire $annee, ?Ecole $ecole, array $config)
+    {
         $schoolName = $this->schoolCardName($ecole, $classe);
         $schoolLogoPath = $this->schoolLogoPath($ecole);
         $adminPhone = $this->schoolAdminPhone($ecole);
         $qrCodes = $this->studentQrCodes($eleves, $config, $classe, $annee, $schoolName, $adminPhone);
 
-        $pdf = Pdf::loadView('pdf.cartes_scolaires', compact('eleves', 'classe', 'annee', 'ecole', 'config', 'qrCodes', 'schoolName', 'schoolLogoPath', 'adminPhone'))->setPaper('a4', 'portrait');
-
-        return $pdf->download('Cartes_scolaires_' . str_replace(' ', '_', $classe->nom_classe) . '.pdf');
+        return Pdf::loadView('pdf.cartes_scolaires', compact('eleves', 'classe', 'annee', 'ecole', 'config', 'qrCodes', 'schoolName', 'schoolLogoPath', 'adminPhone'))->setPaper('a4', 'portrait');
     }
 
     public function downloadListPdf(Request $request)

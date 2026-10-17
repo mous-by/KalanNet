@@ -45,4 +45,10 @@ return [
     'empty_table' => 'No student found for these criteria.',
     'signature_modal_title' => 'Electronic signature',
     'clear_button' => 'Clear',
+    'apercu' => 'Preview',
+    'apercu_titre' => 'Template preview',
+    'modele_choisi' => 'Selected',
+    'choisir_modele' => 'Use this template',
+    'apercu_exemple' => 'Example with sample students: choose a class to see your students. Colours, title and signature are the ones set below.',
+    'apercu_classe' => 'First students of the class (or the ticked ones), with your settings.',
 ];
