@@ -192,6 +192,7 @@ class Permission extends Model
                 'dae_activer' => 'Activer DAE',
                 'dae_permission' => 'Permissions DAE',
                 'annees_scolaires_apercu' => 'Voir années scolaires',
+                'annees_scolaires_creation' => 'Créer une année scolaire',
                 'classes_officielles_apercu' => 'Voir classes officielles',
                 'types_notes_apercu' => 'Voir types de notes',
                 'status_controles_apercu' => 'Voir statuts de contrôle',
@@ -229,6 +230,7 @@ class Permission extends Model
      */
     public const JAMAIS_PAR_DEFAUT = [
         'evaluations_communes_apercu',
+        'annees_scolaires_creation',
         // Annuler un paiement de frais scolaires : le SupAdmin l'accorde à
         // l'Admin qui le demande, qui peut ensuite la donner à son gestionnaire.
         'paiements_annuler',

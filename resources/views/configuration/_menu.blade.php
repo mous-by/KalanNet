@@ -20,7 +20,7 @@
     $showFilieres  = $connectedUser->droit === 'Admin' && $adminEcoleType === 'École de Santé';
     $showAcademies = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('academies_apercu');
     $showCaps      = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('dcap_apercu');
-    $showAnnees    = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('annees_scolaires_apercu');
+    $showAnnees    = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasAnyPermission(['annees_scolaires_apercu', 'annees_scolaires_creation']);
     $showNotes     = $connectedUser->droit === 'SupAdmin' || $connectedUser->userHasPermission('types_notes_apercu');
     // Le referentiel "classes officielles" est le curriculum publie par le
     // ministere malien : sans objet pour une Ecole de Sante et pour les

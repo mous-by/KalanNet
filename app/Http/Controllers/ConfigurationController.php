@@ -385,7 +385,7 @@ class ConfigurationController extends Controller
     public function annees(Request $request)
     {
         $user = Auth::user();
-        $this->authorizeAnyPermission($user, ['annees_scolaires_apercu']);
+        $this->authorizeAnyPermission($user, ['annees_scolaires_apercu', 'annees_scolaires_creation']);
 
         $idEcole = session('idEcole');
         $search = $request->get('search');
@@ -407,7 +407,7 @@ class ConfigurationController extends Controller
     public function storeAnnee(Request $request)
     {
         $user = Auth::user();
-        $this->authorizeAnyPermission($user, ['annees_scolaires_apercu']);
+        $this->authorizeAnyPermission($user, ['annees_scolaires_creation']);
 
         $data = $request->validate([
             'annee' => 'required|string|max:100',
@@ -432,9 +432,12 @@ class ConfigurationController extends Controller
                 ->with('error', __('configuration.annees_delete_auto_error'));
         }
 
-        if ($this->anneeEstUtilisee((int) $annee->id_anneeScolaire)) {
+        $usages = $this->usagesAnnee((int) $annee->id_anneeScolaire);
+        if ($usages !== []) {
             return redirect()->route('configuration.annees')
-                ->with('error', __('configuration.annees_delete_used_error'));
+                ->with('error', __('configuration.annees_delete_used_error', [
+                    'usages' => implode(', ', $usages),
+                ]));
         }
 
         $annee->delete();
@@ -1198,6 +1201,7 @@ class ConfigurationController extends Controller
             'academies_apercu' => 'configuration.academies',
             'dcap_apercu' => 'configuration.caps',
             'annees_scolaires_apercu' => 'configuration.annees',
+            'annees_scolaires_creation' => 'configuration.annees',
             'types_notes_apercu' => 'configuration.types-notes',
             'classes_officielles_apercu' => 'configuration.classes-officielles',
             'status_controles_apercu' => 'configuration.status-controles',
@@ -1251,10 +1255,11 @@ class ConfigurationController extends Controller
             ->first();
     }
 
-    private function anneeEstUtilisee(int $anneeId): bool
+    private function usagesAnnee(int $anneeId): array
     {
         $colonnesAnnee = ['id_annee', 'id_anneeScolaire', 'id_annee_scolaire', 'annee_scolaire_id'];
         $database = DB::connection()->getDatabaseName();
+        $usages = [];
 
         foreach (Schema::getTables() as $table) {
             $tableName = $table['name'] ?? null;
@@ -1263,14 +1268,16 @@ class ConfigurationController extends Controller
             }
 
             foreach (Schema::getColumnListing($tableName) as $column) {
-                if (in_array($column, $colonnesAnnee, true)
-                    && DB::table($tableName)->where($column, $anneeId)->exists()) {
-                    return true;
+                if (in_array($column, $colonnesAnnee, true)) {
+                    $count = DB::table($tableName)->where($column, $anneeId)->count();
+                    if ($count > 0) {
+                        $usages[] = "{$tableName}.{$column} ({$count})";
+                    }
                 }
             }
         }
 
-        return false;
+        return $usages;
     }
 
     protected function authorizeUserCreation(User $authUser, int $type, array $data): void

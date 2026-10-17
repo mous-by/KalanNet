@@ -107,7 +107,7 @@ class ConfigurationController extends WebConfigurationController
     public function annees(Request $request)
     {
         $user = $request->user();
-        $this->authorizeAnyPermission($user, ['annees_scolaires_apercu']);
+        $this->authorizeAnyPermission($user, ['annees_scolaires_apercu', 'annees_scolaires_creation']);
 
         $idEcole = session('idEcole');
         $this->ensureCurrentAcademicYearExists();
@@ -128,7 +128,7 @@ class ConfigurationController extends WebConfigurationController
     public function storeAnnee(Request $request)
     {
         $user = $request->user();
-        $this->authorizeAnyPermission($user, ['annees_scolaires_apercu']);
+        $this->authorizeAnyPermission($user, ['annees_scolaires_creation']);
 
         $data = $request->validate([
             'annee' => 'required|string|max:100',

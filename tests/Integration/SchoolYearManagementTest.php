@@ -84,8 +84,60 @@ class SchoolYearManagementTest extends IntegrationTestCase
 
         $this->actingAs($superAdmin)->withSession(['idEcole' => $schoolId])
             ->delete(route('configuration.annees.destroy', $usedYear->id_anneeScolaire))
-            ->assertSessionHas('error', __('configuration.annees_delete_used_error'));
+            ->assertSessionHas('error', __('configuration.annees_delete_used_error', [
+                'usages' => 'planification.id_annee (1)',
+            ]));
         $this->assertDatabaseHas('anneescolaire', ['id_anneeScolaire' => $usedYear->id_anneeScolaire]);
+    }
+
+    public function test_school_admin_needs_explicit_permission_to_create_school_years(): void
+    {
+        $schoolId = (int) $this->compte('Admin')->idEcole;
+        $admin = $this->adminComplet($schoolId);
+        $permissionId = DB::table('permissions')->where('name', 'annees_scolaires_creation')->value('id');
+        $this->assertNotNull($permissionId, 'La permission doit être enregistrée dans le catalogue.');
+
+        DB::table('user_permission')
+            ->where('user_id', $admin->idUtilisateur)
+            ->where('permission_id', $permissionId)
+            ->delete();
+        $admin = $admin->fresh();
+        $session = ['idEcole' => $schoolId];
+
+        $this->actingAs($admin)->withSession($session)->get('/configuration/annees')
+            ->assertOk()
+            ->assertDontSee('id="addNewAnneeModal"', false)
+            ->assertDontSee('data-bs-target="#addNewAnneeModal"', false);
+
+        $anneeData = [
+            'annee' => '2030-2031',
+            'date_debut' => '2030-09-01',
+            'date_fin' => '2031-08-31',
+        ];
+        $this->actingAs($admin)->withSession($session)
+            ->post(route('configuration.annees.store'), $anneeData)
+            ->assertForbidden();
+
+        DB::table('user_permission')->insert([
+            'user_id' => $admin->idUtilisateur,
+            'permission_id' => $permissionId,
+        ]);
+        $admin = $admin->fresh();
+
+        $this->actingAs($admin)->withSession($session)->get('/configuration/annees')
+            ->assertOk()
+            ->assertSee('id="addNewAnneeModal"', false)
+            ->assertSee('data-bs-target="#addNewAnneeModal"', false);
+
+        $this->actingAs($admin)->withSession($session)
+            ->post(route('configuration.annees.store'), $anneeData)
+            ->assertRedirect(route('configuration.annees'))
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('anneescolaire', [
+            'annee' => '2030-2031',
+            'id_ecole' => $schoolId,
+        ]);
     }
 
     private function createSchoolYear(int $schoolId, string $label, string $start, string $end): AnneeScolaire

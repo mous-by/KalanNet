@@ -1,5 +1,10 @@
 @extends('layouts.app')
 
+@php
+    $canCreateAnnee = auth()->user()->droit === 'SupAdmin'
+        || auth()->user()->userHasPermission('annees_scolaires_creation');
+@endphp
+
 @section('content')
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
         <div class="breadcrumb-title pe-3">{{ __('configuration.title') }}</div>
@@ -26,7 +31,7 @@
             <div class="card theme-card shadow-sm">
                 <div class="card-header theme-header d-flex align-items-center justify-content-between flex-wrap gap-2">
                     <h5 class="mb-0 fw-bold"><i class="bi bi-calendar3 me-2"></i>{{ __('configuration.annees_liste_title') }}</h5>
-                    @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('annees_scolaires_apercu'))
+                    @if($canCreateAnnee)
                         <button type="button" class="btn btn-sm d-flex align-items-center gap-1 shadow-sm text-white"
                                 style="background-color: var(--theme-accent) !important; color: var(--text-on-accent) !important; border: none;"
                                 data-bs-toggle="modal" data-bs-target="#addNewAnneeModal">
@@ -100,6 +105,7 @@
         </div>
     </div>
 
+    @if($canCreateAnnee)
     <!-- Modal Ajouter Année Scolaire -->
     <div class="modal fade" id="addNewAnneeModal" tabindex="-1" aria-labelledby="addNewAnneeModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -135,6 +141,7 @@
             </div>
         </div>
     </div>
+    @endif
 @endsection
 
 @push('scripts')
