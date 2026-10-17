@@ -30,6 +30,9 @@ class CartesScolairesTest extends IntegrationTestCase
         $params = ['id_classe' => $eleve->id_classe, 'id_annee' => $eleve->id_annee, 'template' => 'horizon'];
         $this->actingAs($admin)->withSession(['idEcole' => 1])->post('/eleves/cartes-scolaires/apercu', $params)->assertOk()->assertHeader('content-type', 'application/pdf');
         $this->actingAs($admin)->withSession(['idEcole' => 1])->post('/eleves/cartes-scolaires/pdf', $params)->assertOk()->assertHeader('content-type', 'application/pdf');
+        // Bouton Imprimer : PDF affiché dans la page (imprimé directement) ; Télécharger : fichier.
+        $this->assertStringStartsWith('inline;', $this->actingAs($admin)->withSession(['idEcole' => 1])->post('/eleves/cartes-scolaires/pdf', $params + ['imprimer' => 1])->headers->get('content-disposition'));
+        $this->assertStringStartsWith('attachment;', $this->actingAs($admin)->withSession(['idEcole' => 1])->post('/eleves/cartes-scolaires/pdf', $params + ['imprimer' => 0])->headers->get('content-disposition'));
     }
 
     public function test_modele_inconnu_refuse(): void

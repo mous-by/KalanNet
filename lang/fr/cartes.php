@@ -51,4 +51,6 @@ return [
     'choisir_modele' => 'Choisir ce modèle',
     'apercu_exemple' => 'Exemple avec des élèves fictifs : choisissez une classe pour voir vos élèves. Les couleurs, le titre et la signature sont ceux réglés plus bas.',
     'apercu_classe' => 'Premiers élèves de la classe (ou ceux cochés), avec vos réglages.',
+    'telecharger_pdf' => 'Télécharger le PDF',
+    'preparation_impression' => 'Préparation des cartes…',
 ];

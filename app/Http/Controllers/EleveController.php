@@ -416,8 +416,11 @@ class EleveController extends Controller
     {
         [$eleves, $classe, $annee, $ecole] = $this->listExportData($request);
 
-        return $this->cartesPdf($eleves, $classe, $annee, $ecole, $this->cardPrintConfig($request))
-            ->download('Cartes_scolaires_' . str_replace(' ', '_', $classe->nom_classe) . '.pdf');
+        $pdf = $this->cartesPdf($eleves, $classe, $annee, $ecole, $this->cardPrintConfig($request));
+        $fichier = 'Cartes_scolaires_' . str_replace(' ', '_', $classe->nom_classe) . '.pdf';
+
+        // ?imprimer=1 : affiché dans la page pour être imprimé directement.
+        return $request->boolean('imprimer') ? $pdf->stream($fichier) : $pdf->download($fichier);
     }
 
     /**

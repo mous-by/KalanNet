@@ -154,7 +154,7 @@
                     <div class="small fw-semibold cards-students-count">{{ __('cartes.count_eleves', ['count' => number_format($eleves->count(), 0, ',', ' ')]) }}</div>
                 </div>
                 @if($eleves->isNotEmpty())
-                    <form action="{{ route('eleves.cartes.pdf') }}" method="POST" target="_blank" id="cards-form">
+                    <form action="{{ route('eleves.cartes.pdf') }}" method="POST" target="impression-cartes-cadre" id="cards-form" class="d-flex flex-wrap gap-2">
                         @csrf
                         <input type="hidden" name="id_classe" value="{{ request('id_classe') }}">
                         <input type="hidden" name="id_annee" value="{{ request('id_annee') }}">
@@ -170,10 +170,16 @@
                         <input type="hidden" name="show_school_logo" value="{{ request('show_school_logo', '1') }}" data-card-config-target="show_school_logo">
                         <input type="hidden" name="show_qr" value="{{ request('show_qr', '1') }}" data-card-config-target="show_qr">
                         <input type="hidden" name="selected_eleves" id="cards-selected-input">
+                        <input type="hidden" name="imprimer" value="1" id="cards-imprimer-input">
+                        <button type="button" class="btn btn-outline-secondary" id="cards-download-button">
+                            <i class="bi bi-download me-2"></i>{{ __('cartes.telecharger_pdf') }}
+                        </button>
                         <button type="submit" class="btn btn-primary" id="cards-print-button">
                             <i class="bi bi-printer me-2"></i>{{ __('cartes.print_all_button') }}
                         </button>
                     </form>
+                    {{-- Le PDF des cartes est chargé ici puis imprimé directement (pas de téléchargement). --}}
+                    <iframe name="impression-cartes-cadre" id="impression-cartes-cadre" title="{{ __('cartes.print_all_button') }}" style="position:fixed; right:0; bottom:0; width:0; height:0; border:0;"></iframe>
                 @endif
             </div>
             <div class="table-responsive">
@@ -339,6 +345,7 @@
             'noSignature' => __('cartes.no_signature'),
             'apercuExemple' => __('cartes.apercu_exemple'),
             'apercuClasse' => __('cartes.apercu_classe'),
+            'preparation' => __('cartes.preparation_impression'),
         ];
     @endphp
     <script>
@@ -482,6 +489,49 @@
                 saveSignature();
             });
         }
+
+        // Impression directe : le PDF arrive dans le cadre caché, puis la fenêtre d'impression s'ouvre.
+        const cardsForm = document.getElementById('cards-form');
+        const cadreImpression = document.getElementById('impression-cartes-cadre');
+        const imprimerInput = document.getElementById('cards-imprimer-input');
+        let impressionEnCours = false;
+        let texteBouton = '';
+        function finImpression() {
+            impressionEnCours = false;
+            if (cardsPrintButton) { cardsPrintButton.disabled = false; updateCardsSelection(); }
+        }
+        cardsForm?.addEventListener('submit', (event) => {
+            syncCardConfig();
+            if (imprimerInput.value !== '1') return;
+            impressionEnCours = true;
+            cardsPrintButton.disabled = true;
+            cardsPrintButton.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>${cartesI18n.preparation}`;
+            // Garde-fou : le bouton redevient utilisable même si le navigateur ne signale pas la fin.
+            setTimeout(() => { if (impressionEnCours) finImpression(); }, 120000);
+        });
+        cadreImpression?.addEventListener('load', () => {
+            if (!impressionEnCours) return;
+            finImpression();
+            setTimeout(() => {
+                try {
+                    cadreImpression.contentWindow.focus();
+                    cadreImpression.contentWindow.print();
+                } catch (e) {
+                    // Navigateur qui refuse d'imprimer depuis le cadre : le PDF s'ouvre dans un onglet.
+                    cardsForm.target = '_blank';
+                    cardsForm.submit();
+                    cardsForm.target = 'impression-cartes-cadre';
+                }
+            }, 300);
+        });
+        document.getElementById('cards-download-button')?.addEventListener('click', () => {
+            syncCardConfig();
+            imprimerInput.value = '0';
+            cardsForm.target = '_self';
+            cardsForm.submit();
+            imprimerInput.value = '1';
+            cardsForm.target = 'impression-cartes-cadre';
+        });
 
         // Aperçu d'un modèle avec les réglages en cours (couleurs, titre, signature…).
         const apercuForm = document.getElementById('apercu-carte-form');
