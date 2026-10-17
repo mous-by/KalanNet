@@ -409,7 +409,20 @@ class EleveController extends Controller
             $eleves = $this->filteredEleves($request)->get();
         }
 
-        return view('eleves.cartes', compact('classes', 'annees', 'eleves', 'showList'));
+        // Modèle et couleurs : ceux demandés, sinon le modèle conseillé pour l'école et ses couleurs.
+        $modeleDefaut = \App\Support\ModelesCarte::parDefaut(Ecole::withoutGlobalScopes()->find($idEcole));
+        $modeleActuel = \App\Support\ModelesCarte::normaliser($request->input('template', $modeleDefaut));
+        [$couleur1, $couleur2] = \App\Support\ModelesCarte::couleurs($modeleActuel);
+        $couleur1 = $request->input('primary_color', $couleur1);
+        $couleur2 = $request->input('secondary_color', $couleur2);
+        $donnees = compact('classes', 'annees', 'eleves', 'showList', 'modeleDefaut', 'modeleActuel', 'couleur1', 'couleur2');
+
+        // Classe, année ou recherche changées : seule la liste est renvoyée (la page n'est pas rechargée).
+        if ($request->header('X-Cartes-Liste')) {
+            return view('eleves.partials.cartes-liste', $donnees);
+        }
+
+        return view('eleves.cartes', $donnees);
     }
 
     public function downloadCartesPdf(Request $request)
@@ -463,7 +476,8 @@ class EleveController extends Controller
         $adminPhone = $this->schoolAdminPhone($ecole);
         $qrCodes = $this->studentQrCodes($eleves, $config, $classe, $annee, $schoolName, $adminPhone);
 
-        return Pdf::loadView('pdf.cartes_scolaires', compact('eleves', 'classe', 'annee', 'ecole', 'config', 'qrCodes', 'schoolName', 'schoolLogoPath', 'adminPhone'))->setPaper('a4', 'portrait');
+        return Pdf::loadView('pdf.cartes_scolaires', compact('eleves', 'classe', 'annee', 'ecole', 'config', 'qrCodes', 'schoolName', 'schoolLogoPath', 'adminPhone'))
+            ->setPaper('a4', \App\Support\ModelesCarte::rectoVerso($config['template']) ? 'landscape' : 'portrait');
     }
 
     public function downloadListPdf(Request $request)
@@ -594,7 +608,7 @@ class EleveController extends Controller
     private function cardPrintConfig(Request $request): array
     {
         $data = $request->validate([
-            'template' => 'nullable|string|in:institutionnel,moderne,vertical,epure,horizon,compact',
+            'template' => ['nullable', 'string', \Illuminate\Validation\Rule::in(\App\Support\ModelesCarte::codes())],
             'primary_color' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
             'secondary_color' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
             'card_title' => 'nullable|string|max:80',
@@ -606,10 +620,13 @@ class EleveController extends Controller
             'show_qr' => 'nullable|boolean',
         ]);
 
+        $template = \App\Support\ModelesCarte::normaliser($data['template'] ?? \App\Support\ModelesCarte::parDefaut(Ecole::withoutGlobalScopes()->find(session('idEcole'))));
+        [$couleur1, $couleur2] = \App\Support\ModelesCarte::couleurs($template);
+
         return [
-            'template' => $data['template'] ?? 'institutionnel',
-            'primary_color' => $data['primary_color'] ?? '#0f766e',
-            'secondary_color' => $data['secondary_color'] ?? '#1d4ed8',
+            'template' => $template,
+            'primary_color' => $data['primary_color'] ?? $couleur1,
+            'secondary_color' => $data['secondary_color'] ?? $couleur2,
             'card_title' => $data['card_title'] ?? 'CARTE D’IDENTITÉ SCOLAIRE',
             'signature_label' => $data['signature_label'] ?? 'Directeur',
             'signature_image' => $data['signature_image'] ?? null,

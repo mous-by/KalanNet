@@ -1,322 +1,161 @@
+@use('App\Support\ArabePdf')
+@use('App\Support\DecorCarte')
+@use('App\Support\ModelesCarte')
+@php
+    $modele = ModelesCarte::normaliser($config['template']);
+    $c1 = $config['primary_color'];
+    $c2 = $config['secondary_color'];
+    $rectoVerso = ModelesCarte::rectoVerso($modele);
+    $filigrane = $config['show_mali_flag'] && $config['mali_flag_style'] === 'watermark';
+    $drapeau = $config['show_mali_flag'] && $config['mali_flag_style'] !== 'watermark';
+    $decor = $rectoVerso ? DecorCarte::vertical(false, $c1, $c2, $filigrane) : DecorCarte::recto($modele, $c1, $c2, $filigrane);
+    $decorVerso = $rectoVerso ? DecorCarte::vertical(true, $c1, $c2) : null;
+
+    // En-tête officiel du pays (ex. « RÉPUBLIQUE DU MALI · Un Peuple - Un But - Une Foi ») sur une ligne.
+    $entete = collect(preg_split('/\R/', (string) ($ecole?->pays?->entete_document_droite ?? '')))->map(fn ($l) => trim($l))->filter()->implode(' · ');
+    $nomEcole = ArabePdf::texte($schoolName);
+    $titre = $config['card_title'];
+    $logo = $config['show_school_logo'] ? $schoolLogoPath : null;
+    $filiere = $classe->filiere?->nom_filiere ?? null;
+    $serie = $classe->serie ?? null;
+    $telephoneEcole = $adminPhone ?: ($ecole?->telephone ?: null);
+
+    // Pages : 10 cartes (2 × 5) en A4 portrait ; recto / verso : 4 élèves (2 × 2) en A4 paysage.
+    $parPage = $rectoVerso ? 4 : 10;
+    $pages = $eleves->values()->chunk($parPage);
+@endphp
 <!doctype html>
 <html lang="fr">
 <head>
     <meta charset="utf-8">
     <style>
-        @page { margin: 16px; }
-        body { font-family: DejaVu Sans, sans-serif; color: #111827; font-size: 9.5px; }
-        .clearfix { clear: both; }
-        .flag { width: 36px; height: 18px; border: 1px solid rgba(0,0,0,.18); vertical-align: middle; overflow: hidden; font-size: 0; }
-        .flag span { display: inline-block; width: 12px; height: 18px; vertical-align: top; }
-        .green { background: #14b53a; } .gold { background: #fcd116; } .red { background: #ce1126; }
-        .motto span:nth-child(1) { color: #15803d; }
-        .motto span:nth-child(2) { color: #b45309; }
-        .motto span:nth-child(3) { color: #b91c1c; }
-        .logo { position: absolute; top: 8px; width: 42px; height: 38px; object-fit: contain; z-index: 20; }
-        .logo.school { right: 10px; }
-        .flag-corner {
-            position: absolute;
-            left: 10px;
-            top: 10px;
-            z-index: 20;
-            box-shadow: 0 1px 2px rgba(17,24,39,.22);
-        }
-        .flag-watermark {
-            position: absolute;
-            left: -44px;
-            top: 88px;
-            width: 360px;
-            height: 42px;
-            transform: rotate(-34deg);
-            z-index: -1;
-            border: 0;
-            overflow: hidden;
-        }
-        .flag-watermark span { display: block; float: left; width: 120px; height: 42px; }
-        .flag-watermark .green { background: #d9f3df; }
-        .flag-watermark .gold { background: #fff4b8; }
-        .flag-watermark .red { background: #f8d6d9; }
-        .tpl-vertical .flag-watermark {
-            left: -78px;
-            top: 132px;
-            width: 340px;
-            height: 38px;
-        }
-        .tpl-vertical .flag-watermark span { width: 113px; height: 38px; }
-        .tpl-compact .flag-watermark {
-            left: -58px;
-            top: 72px;
-            width: 300px;
-            height: 34px;
-        }
-        .tpl-compact .flag-watermark span { width: 100px; height: 34px; }
-        .diagonal-flag-band {
-            position: absolute;
-            left: -45px;
-            width: 365px;
-            height: 14px;
-            transform: rotate(-34deg);
-            z-index: 0;
-        }
-        .diagonal-flag-band.green { top: 82px; background: #d9f3df; }
-        .diagonal-flag-band.gold { top: 96px; background: #fff4b8; }
-        .diagonal-flag-band.red { top: 110px; background: #f8d6d9; }
-        .tpl-vertical .diagonal-flag-band { left: -78px; width: 340px; height: 13px; }
-        .tpl-vertical .diagonal-flag-band.green { top: 126px; }
-        .tpl-vertical .diagonal-flag-band.gold { top: 139px; }
-        .tpl-vertical .diagonal-flag-band.red { top: 152px; }
-        .tpl-compact .diagonal-flag-band { left: -58px; width: 300px; height: 12px; }
-        .tpl-compact .diagonal-flag-band.green { top: 66px; }
-        .tpl-compact .diagonal-flag-band.gold { top: 78px; }
-        .tpl-compact .diagonal-flag-band.red { top: 90px; }
-        .card-content { position: relative; z-index: 10; color: #111827; }
-        .photo { background: #f3f4f6; color: #6b7280; text-align: center; overflow: hidden; }
-        .photo img { width: 100%; height: 100%; object-fit: cover; }
-        .student-layout { width: 100%; border-collapse: collapse; color: #111827; }
-        .student-layout td { vertical-align: top; color: #111827; }
-        .student-photo-cell { width: 92px; padding-right: 10px; }
-        .student-info-cell { line-height: 1.5; color: #111827; }
-        .student-info-cell div { color: #111827; }
-        .qr img { width: 52px; height: 52px; }
-        .qr, .sign { z-index: 2; }
-        .signature-img { display: block; max-width: 76px; max-height: 24px; margin: 1px auto 0; }
-        .signature-label { display: block; font-size: 7.5px; line-height: 1.1; text-align: center; color: #374151; }
-        .label { font-weight: bold; }
-        .card {
-            float: left;
-            overflow: hidden;
-            page-break-inside: avoid;
-            position: relative;
-            border-color: {{ $config['primary_color'] }} !important;
-            box-shadow: inset 0 0 0 2px {{ $config['secondary_color'] }};
-            color: #111827;
-        }
-        .school-name { font-weight: bold; text-transform: uppercase; line-height: 1.25; }
-        .title { font-weight: bold; text-transform: uppercase; }
-        .school-contact { font-size: 7.5px; line-height: 1.2; color: #374151; }
-        .name { font-weight: bold; text-transform: uppercase; color: #111827; }
+        @page { margin: {{ $rectoVerso ? '12mm 14mm' : '5mm 12mm' }}; }
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: DejaVu Sans, sans-serif; color: #111827; }
+        .page { page-break-after: always; }
+        .page:last-child { page-break-after: auto; }
+        table.grille { border-collapse: separate; border-spacing: 0; }
+        table.grille td { padding: 0; vertical-align: top; }
 
-        /* Modèles horizontaux : photo, informations, puis QR et signature dans leur propre colonne (rien ne se chevauche). */
-        .tpl-institutionnel, .tpl-moderne, .tpl-epure, .tpl-horizon {
-            width: 48%;
-            height: 232px;
-            margin: 0 1% 12px 0;
-            border: 2px solid {{ $config['primary_color'] }};
-            border-radius: 10px;
-            background: #fff;
-        }
-        .tpl-institutionnel .head, .tpl-moderne .head, .tpl-epure .head, .tpl-horizon .head { text-align: center; padding: 8px 54px 5px; min-height: 52px; color: #111827; }
-        .tpl-institutionnel .body, .tpl-moderne .body, .tpl-epure .body, .tpl-horizon .body { padding: 6px 10px 0; }
-        .side-cell { width: 60px; text-align: center; vertical-align: bottom !important; }
-        .side-cell .qr img { width: 50px; height: 50px; }
-        .side-cell .sign { width: 60px; font-size: 8px; margin-top: 2px; }
-        .line { margin-bottom: 1px; }
+        .carte { position: relative; overflow: hidden; width: 85.6mm; height: 54mm; border-radius: 3mm; border: 0.2mm solid #d1d5db; }
+        .carte.verticale { width: 54mm; height: 85.6mm; }
+        .carte .fond { position: absolute; left: 0; top: 0; width: 85.6mm; height: 54mm; }
+        .carte.verticale .fond { width: 54mm; height: 85.6mm; }
+        .abs { position: absolute; }
 
-        /* Institutionnel : en-tête plein à la couleur principale, filet de la couleur secondaire. */
-        .tpl-institutionnel .head { background: {{ $config['primary_color'] }}; color: #fff; border-radius: 8px 8px 0 0; border-bottom: 3px solid {{ $config['secondary_color'] }}; }
-        .tpl-institutionnel .head div, .tpl-institutionnel .head .school-contact { color: #fff; }
-        .tpl-institutionnel .photo { width: 68px; height: 82px; line-height: 82px; border: 2px solid {{ $config['primary_color'] }}; }
+        .tete { left: 3mm; top: 2.2mm; width: 79.6mm; height: 13.4mm; overflow: hidden; }
+        .tete .logo { position: absolute; left: 0; top: 0.4mm; width: 10.5mm; height: 10.5mm; }
+        .tete .textes { position: absolute; left: 12.5mm; top: 0; width: 63mm; }
+        .tete.sans-logo .textes { left: 0; width: 76mm; }
+        .entete { font-size: 4.3pt; line-height: 1.15; color: #374151; text-transform: uppercase; }
+        .nom-ecole { font-size: 7pt; line-height: 1.12; font-weight: bold; text-transform: uppercase; color: {{ $c1 }}; margin-top: 0.4mm; }
+        .titre { font-size: 5pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.2mm; margin-top: 0.5mm; color: #111827; }
+        .drapeau { display: inline-block; width: 4.8mm; height: 3mm; vertical-align: middle; margin-right: 1mm; border: 0.1mm solid rgba(0,0,0,.2); }
+        .drapeau span { display: inline-block; width: 1.6mm; height: 3mm; }
+        .vert { background: #14b53a; } .or { background: #fcd116; } .rouge { background: #ce1126; }
 
-        /* Moderne : bande verticale à gauche, en-tête aligné à gauche, nom en grand. */
-        .tpl-moderne { border-width: 1px; border-radius: 14px; }
-        .tpl-moderne .bande { position: absolute; left: 0; top: 0; bottom: 0; width: 12px; background: {{ $config['primary_color'] }}; }
-        .tpl-moderne .bande-fine { position: absolute; left: 12px; top: 0; bottom: 0; width: 4px; background: {{ $config['secondary_color'] }}; }
-        .tpl-moderne .head { text-align: left; padding: 8px 54px 4px 68px; }
-        .tpl-moderne .body { padding-left: 26px; }
-        .tpl-moderne .title { color: {{ $config['primary_color'] }}; }
-        .tpl-moderne .photo { width: 66px; height: 80px; line-height: 80px; border-radius: 12px; border: 2px solid {{ $config['secondary_color'] }}; }
-        .tpl-moderne .grand-nom { font-size: 12px; font-weight: bold; text-transform: uppercase; color: {{ $config['primary_color'] }}; margin-bottom: 2px; }
-        .tpl-moderne .flag-corner { left: 22px; }
+        .photo { left: 4mm; top: 17mm; width: 17.5mm; height: 21.5mm; border: 0.6mm solid #ffffff; border-radius: 1.5mm; background: #e5e7eb; overflow: hidden; text-align: center; }
+        .photo img { width: 100%; height: 100%; }
+        .photo .vide { font-size: 5pt; color: #6b7280; padding-top: 8.5mm; }
+        .infos { left: 24mm; top: 16.6mm; width: 43mm; height: 24mm; overflow: hidden; font-size: 5.7pt; line-height: 1.3; }
+        .infos .nom { font-size: 8.5pt; font-weight: bold; text-transform: uppercase; line-height: 1.1; }
+        .infos .prenom { font-size: 7.5pt; font-weight: bold; line-height: 1.15; margin-bottom: 0.5mm; }
+        .infos .lib { color: #4b5563; }
+        .qr { right: 3.5mm; top: 17mm; width: 14mm; height: 14mm; background: #fff; padding: 0.5mm; border-radius: 1mm; }
+        .qr img { width: 13mm; height: 13mm; }
+        .codebarres { left: 4mm; top: 41.8mm; width: 36mm; background: #fff; border-radius: 1mm; padding: 0.6mm 0.8mm 0.3mm; text-align: center; }
+        .codebarres img { width: 34.4mm; height: 6.2mm; }
+        .codebarres div { font-size: 4.6pt; letter-spacing: 0.15mm; line-height: 1.1; }
+        .signature { right: 3.5mm; top: 39.5mm; width: 24mm; text-align: center; font-size: 5pt; color: #374151; }
+        .signature img { max-width: 22mm; max-height: 8mm; }
 
-        /* Épuré : sobre, beaucoup de blanc, coins très arrondis. */
-        .tpl-epure { border-radius: 16px; border-width: 1.5px; }
-        .tpl-epure .photo { width: 70px; height: 84px; line-height: 84px; border-radius: 8px; border: 2px solid {{ $config['secondary_color'] }}; }
-        .tpl-epure .title { letter-spacing: 1px; }
+        /* Élégant : bleu nuit et or. */
+        .m-elegant .entete, .m-elegant .titre { color: {{ ModelesCarte::eclaircir($c2, 0.35) }}; }
+        .m-elegant .nom-ecole { color: {{ $c2 }}; }
+        .m-elegant .bandeau { left: 4mm; top: 48.6mm; font-size: 6.5pt; font-weight: bold; letter-spacing: 0.25mm; color: {{ $c2 }}; }
+        .m-elegant .signature { top: 33.5mm; }
+        .m-elegant .photo { border-color: {{ $c2 }}; }
 
-        /* Horizon : photo à droite, bandeau du bas avec le matricule et la classe. */
-        .tpl-horizon .head { border-top: 6px solid {{ $config['secondary_color'] }}; border-radius: 8px 8px 0 0; }
-        .tpl-horizon .photo { width: 68px; height: 80px; line-height: 80px; border: 2px solid {{ $config['primary_color'] }}; border-radius: 4px; }
-        .tpl-horizon .student-photo-cell { padding-right: 0; padding-left: 8px; }
-        .tpl-horizon .bandeau { position: absolute; left: 0; bottom: 0; width: 100%; height: 24px; background: {{ $config['primary_color'] }}; border-radius: 0 0 8px 8px; z-index: 15; }
-        .tpl-horizon .bandeau table { width: 100%; border-collapse: collapse; }
-        .tpl-horizon .bandeau td { color: #fff; font-weight: bold; font-size: 9px; padding: 6px 12px 0; }
-        .tpl-horizon .bandeau td.droite { text-align: right; }
+        /* Franco-arabe : bandeau clair, panneau vert. */
+        .m-franco_arabe .tete { text-align: center; }
+        .m-franco_arabe .arabe { font-size: 6pt; color: {{ $c1 }}; text-transform: none; letter-spacing: 0; }
+        .m-franco_arabe .infos, .m-franco_arabe .infos .lib { color: #ffffff; }
+        .m-franco_arabe .signature { color: #ffffff; }
+        .m-franco_arabe .signature .encre { background: #fff; border-radius: 1mm; padding: 0.3mm; }
+        .m-franco_arabe .photo { top: 19mm; height: 20.5mm; }
+        .m-franco_arabe .infos { top: 19mm; height: 21.5mm; }
+        .m-franco_arabe .qr { top: 19.5mm; }
+        .m-franco_arabe .codebarres { top: 41.6mm; }
+        .m-franco_arabe .signature { top: 41mm; }
 
-        .tpl-vertical {
-            width: 30.6%;
-            height: 324px;
-            margin: 0 2% 12px 0;
-            border: 2px solid {{ $config['primary_color'] }};
-            border-radius: 12px;
-            text-align: center;
-            background: #ffffff;
-        }
-        .tpl-vertical .head { color: #111827; padding: 10px 8px 6px; min-height: 56px; }
-        .tpl-vertical .photo { width: 76px; height: 86px; line-height: 86px; border-radius: 12px; margin: 5px auto 4px; border: 2px solid {{ $config['secondary_color'] }}; }
-        .tpl-vertical .meta { text-align: left; padding: 4px 13px; line-height: 1.3; font-size: 8.5px; color: #111827; }
-        .tpl-vertical .meta div { color: #111827; }
-        .tpl-vertical .pied { width: 100%; margin-top: 2px; border-collapse: collapse; }
-        .tpl-vertical .pied td { padding: 0 12px; vertical-align: bottom; width: 50%; }
-        .tpl-vertical .pied .qr img { width: 42px; height: 42px; }
-        .tpl-vertical .pied .sign { font-size: 8px; text-align: right; }
-        .tpl-vertical .pied .signature-label { text-align: right; }
-        .tpl-vertical .pied .signature-img { margin: 1px 0 0 auto; }
+        /* École de santé : en-tête à gauche, tracé à droite. */
+        .m-sante .tete .textes { width: 47mm; }
+        .m-sante .entete { font-size: 3.8pt; }
+        .m-sante .nom-ecole { font-size: 6.6pt; }
 
-        .tpl-compact {
-            width: 32%;
-            height: 182px;
-            margin: 0 1% 10px 0;
-            border: 2px solid {{ $config['primary_color'] }};
-            border-radius: 8px;
-            background: #fff;
-        }
-        .tpl-compact .head { color: #111827; text-align: center; padding: 6px 46px 4px; min-height: 42px; font-size: 7.5px; }
-        .tpl-compact .school-name { font-size: 7.5px; }
-        .tpl-compact .title { font-size: 7px; }
-        .tpl-compact .body { padding: 8px; }
-        .tpl-compact .student-photo-cell { width: 62px; padding-right: 7px; }
-        .tpl-compact .photo { width: 54px; height: 64px; line-height: 64px; border: 2px solid {{ $config['secondary_color'] }}; }
-        .tpl-compact .info { line-height: 1.35; color: #111827; }
-        .tpl-compact .name { font-size: 9px; color: #111827; }
-        .tpl-compact .qr { position: absolute; right: 7px; bottom: 7px; }
-        .tpl-compact .qr img { width: 38px; height: 38px; }
-        .tpl-compact .sign { display: none; }
+        /* Primaire : couleurs vives, signature à l'écart des crayons. */
+        .m-primaire .nom-ecole { color: {{ $c2 }}; }
+        .m-primaire .titre { color: {{ $c1 }}; }
+        .m-primaire .tete .textes, .m-primaire .tete.sans-logo .textes { left: 16mm; width: 52mm; }
+        .m-primaire .signature { right: 17mm; top: 40.5mm; }
+        .m-primaire .photo { border-color: {{ $c1 }}; }
+
+        /* Recto / verso (carte verticale). */
+        .v .tete { left: 3mm; top: 2.5mm; width: 48mm; height: 17mm; }
+        .v .tete .logo { width: 9mm; height: 9mm; }
+        .v .tete .textes { left: 10.5mm; width: 37.5mm; }
+        .v .tete.sans-logo .textes { left: 0; width: 48mm; }
+        .v .entete, .v .titre { color: {{ ModelesCarte::eclaircir($c1, 0.8) }}; }
+        .v .nom-ecole { color: #ffffff; font-size: 6.4pt; }
+        .v .photo { left: 4mm; top: 24.5mm; width: 18mm; height: 22mm; border-color: {{ $c1 }}; }
+        .v .infos { left: 24mm; top: 25mm; width: 27mm; height: 22mm; font-size: 5.6pt; }
+        .v .infos .nom { font-size: 7.5pt; }
+        .v .infos .prenom { font-size: 6.8pt; }
+        .v .qr { right: 4mm; left: auto; top: 49.5mm; }
+        .v .signature { left: 4mm; right: auto; top: 51mm; width: 26mm; }
+        .v .codebarres { left: 4mm; top: 65.5mm; width: 46mm; }
+        .v .codebarres img { width: 44.4mm; }
+        .verso .titre-verso { left: 4mm; top: 17.5mm; font-size: 6.4pt; font-weight: bold; text-transform: uppercase; color: {{ $c1 }}; letter-spacing: 0.2mm; }
+        .verso .lignes { left: 4mm; top: 23mm; width: 46mm; font-size: 5.6pt; line-height: 1.3; }
+        .verso .lignes .lib { display: block; color: #6b7280; font-size: 4.8pt; text-transform: uppercase; margin-top: 1.2mm; }
+        .verso .lignes .val { display: block; font-weight: bold; }
+        .verso .avis { left: 4mm; top: 63mm; width: 30mm; font-size: 4.6pt; line-height: 1.25; color: #374151; font-style: italic; }
+        .verso .qr { right: 4mm; top: 61.5mm; }
+        .verso .tete .nom-ecole { margin-top: 1mm; }
     </style>
 </head>
 <body>
-@foreach($eleves as $eleve)
-    @php
-        $photoPath = $eleve->image ? public_path($eleve->image) : null;
-        $hasPhoto = $photoPath && file_exists($photoPath);
-        $fullName = trim($eleve->prenom_eleve . ' ' . $eleve->nom_eleve);
-        $tpl = 'tpl-' . $config['template'];
-        $qrCode = $qrCodes[$eleve->id_eleve] ?? null;
-    @endphp
-
-    <div class="card {{ $tpl }}">
-        @if($config['template'] === 'moderne')
-            <div class="bande"></div><div class="bande-fine"></div>
-        @endif
-        @if($config['show_mali_flag'] && $config['mali_flag_style'] === 'watermark')
-            <div class="diagonal-flag-band green"></div>
-            <div class="diagonal-flag-band gold"></div>
-            <div class="diagonal-flag-band red"></div>
-        @endif
-        @if($config['show_school_logo'] && $schoolLogoPath)
-            <img src="{{ $schoolLogoPath }}" class="logo school" alt="">
-        @endif
-        @if($config['show_mali_flag'] && $config['mali_flag_style'] === 'corner')
-            <div class="flag flag-corner"><span class="green"></span><span class="gold"></span><span class="red"></span></div>
-        @endif
-
-        <div class="card-content">
-            <div class="head">
-                @if($ecole?->pays?->entete_document_droite)
-                    <div>{!! nl2br(e($ecole->pays->entete_document_droite)) !!}</div>
-                @endif
-                <div class="school-name">{{ $schoolName }}</div>
-                @if(!empty($adminPhone))
-                    <div class="school-contact">Tél : {{ $adminPhone }}</div>
-                @endif
-                <div class="title">{{ $config['card_title'] }} ({{ $annee->annee }})</div>
-            </div>
-
-            @if($config['template'] === 'vertical')
-                <div class="photo">@if($hasPhoto)<img src="{{ $photoPath }}" alt="">@else PHOTO @endif</div>
-                <div class="name">{{ $fullName }}</div>
-                <div class="meta">
-                    <div><span class="label">MAT :</span> {{ $eleve->matricule ?: 'Non renseigné' }}</div>
-                    <div><span class="label">Classe :</span> {{ $classe->nom_classe }}</div>
-                    <div><span class="label">Sexe :</span> {{ $eleve->genre_eleve }}</div>
-                    <div><span class="label">Né(e) :</span> {{ $eleve->date_naissance ? \Carbon\Carbon::parse($eleve->date_naissance)->format('d/m/Y') : 'Non renseigné' }}{{ $eleve->lieu_naiss ? ' à '.$eleve->lieu_naiss : '' }}</div>
-                </div>
-                <table class="pied">
-                    <tr>
-                        <td style="text-align:left">@if($qrCode)<div class="qr"><img src="{{ $qrCode }}" alt="QR"></div>@endif</td>
-                        <td style="text-align:right">
-                            <div class="sign">
-                                <span class="signature-label">{{ $config['signature_label'] }}</span>
-                                @if(!empty($config['signature_image']))<img src="{{ $config['signature_image'] }}" class="signature-img" alt="">@endif
-                            </div>
+@foreach($pages as $page)
+    <div class="page">
+        <table class="grille">
+            @foreach($page->chunk(2) as $rang)
+                <tr>
+                    @foreach($rang as $eleve)
+                        @php
+                            $photoPath = $eleve->image ? public_path($eleve->image) : null;
+                            $hasPhoto = $photoPath && is_file($photoPath);
+                            $qrCode = $qrCodes[$eleve->id_eleve] ?? null;
+                            $naissance = $eleve->date_naissance ? \Carbon\Carbon::parse($eleve->date_naissance)->format('d/m/Y') : null;
+                            $matricule = $eleve->matricule ?: null;
+                            $parent = $eleve->relationLoaded('parents') ? $eleve->parents->first() : null;
+                            $espace = $loop->first ? '' : ($rectoVerso ? 'padding-left:10mm' : 'padding-left:4mm');
+                        @endphp
+                        <td style="{{ $espace }}; padding-bottom: {{ $rectoVerso ? '6mm' : '2.5mm' }};">
+                            @if($rectoVerso)
+                                <table class="grille"><tr><td>
+                                    @include('pdf.cartes.verticale', ['verso' => false])
+                                </td><td style="padding-left:2mm">
+                                    @include('pdf.cartes.verticale', ['verso' => true])
+                                </td></tr></table>
+                            @else
+                                @include('pdf.cartes.horizontale')
+                            @endif
                         </td>
-                    </tr>
-                </table>
-            @elseif($config['template'] === 'compact')
-                <div class="body">
-                    <table class="student-layout">
-                        <tr>
-                            <td class="student-photo-cell">
-                                <div class="photo">@if($hasPhoto)<img src="{{ $photoPath }}" alt="">@else PHOTO @endif</div>
-                            </td>
-                            <td class="student-info-cell info">
-                                <div class="name">{{ $fullName }}</div>
-                                <div><span class="label">MAT :</span> {{ $eleve->matricule ?: 'Non renseigné' }}</div>
-                                <div><span class="label">Sexe :</span> {{ $eleve->genre_eleve }}</div>
-                                <div><span class="label">Classe :</span> {{ $classe->nom_classe }}</div>
-                            </td>
-                        </tr>
-                    </table>
-                </div>
-            @else
-                @php
-                    $photoCell = '<td class="student-photo-cell"><div class="photo">'.($hasPhoto ? '<img src="'.e($photoPath).'" alt="">' : 'PHOTO').'</div></td>';
-                    $naissance = ($eleve->date_naissance ? \Carbon\Carbon::parse($eleve->date_naissance)->format('d/m/Y') : 'Non renseigné').($eleve->lieu_naiss ? ' à '.$eleve->lieu_naiss : '');
-                @endphp
-                <div class="body">
-                    <table class="student-layout">
-                        <tr>
-                            @if($config['template'] !== 'horizon'){!! $photoCell !!}@endif
-                            <td class="student-info-cell info">
-                                @if($config['template'] === 'moderne')
-                                    <div class="grand-nom">{{ $fullName }}</div>
-                                @else
-                                    <div class="line"><span class="label">Prénom :</span> {{ $eleve->prenom_eleve }}</div>
-                                    <div class="line"><span class="label">Nom :</span> {{ strtoupper($eleve->nom_eleve) }}</div>
-                                @endif
-                                <div class="line"><span class="label">Né(e) le :</span> {{ $naissance }}</div>
-                                <div class="line"><span class="label">Sexe :</span> {{ $eleve->genre_eleve }}</div>
-                                @if($config['template'] !== 'horizon')
-                                    <div class="line"><span class="label">Classe :</span> {{ $classe->nom_classe }}</div>
-                                    <div class="line"><span class="label">MAT :</span> {{ $eleve->matricule ?: 'Non renseigné' }}</div>
-                                @endif
-                            </td>
-                            <td class="side-cell">
-                                @if($qrCode)<div class="qr"><img src="{{ $qrCode }}" alt="QR"></div>@endif
-                                <div class="sign">
-                                    <span class="signature-label">{{ $config['signature_label'] }}</span>
-                                    @if(!empty($config['signature_image']))<img src="{{ $config['signature_image'] }}" class="signature-img" alt="">@endif
-                                </div>
-                            </td>
-                            @if($config['template'] === 'horizon'){!! $photoCell !!}@endif
-                        </tr>
-                    </table>
-                </div>
-                @if($config['template'] === 'horizon')
-                    <div class="bandeau"><table><tr><td>MAT : {{ $eleve->matricule ?: 'Non renseigné' }}</td><td class="droite">{{ $classe->nom_classe }}</td></tr></table></div>
-                @endif
-            @endif
-        </div>
-
-        @if($config['template'] === 'compact')
-            @if($qrCode)
-                <div class="qr"><img src="{{ $qrCode }}" alt="QR"></div>
-            @endif
-            <div class="sign">
-                <span class="signature-label">{{ $config['signature_label'] }}</span>
-                @if(!empty($config['signature_image']))
-                    <img src="{{ $config['signature_image'] }}" class="signature-img" alt="">
-                @endif
-            </div>
-        @endif
+                    @endforeach
+                </tr>
+            @endforeach
+        </table>
     </div>
-
-    @if($config['template'] === 'vertical' && $loop->iteration % 3 === 0)
-        <div class="clearfix"></div>
-    @elseif($config['template'] === 'compact' && $loop->iteration % 3 === 0)
-        <div class="clearfix"></div>
-    @elseif(!in_array($config['template'], ['vertical', 'compact'], true) && $loop->iteration % 2 === 0)
-        <div class="clearfix"></div>
-    @endif
 @endforeach
 </body>
 </html>

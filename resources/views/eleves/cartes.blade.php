@@ -22,18 +22,7 @@
             <h5 class="mb-0 fw-bold">{{ __('cartes.page_title') }}</h5>
         </div>
         <div class="card-body p-4">
-            @php
-                $cartesTemplates = [
-                    'institutionnel' => [__('cartes.template_institutionnel'), __('cartes.template_institutionnel_desc')],
-                    'moderne' => [__('cartes.template_moderne'), __('cartes.template_moderne_desc')],
-                    'vertical' => [__('cartes.template_vertical'), __('cartes.template_vertical_desc')],
-                    'epure' => [__('cartes.template_epure'), __('cartes.template_epure_desc')],
-                    'horizon' => [__('cartes.template_horizon'), __('cartes.template_horizon_desc')],
-                    'compact' => [__('cartes.template_compact'), __('cartes.template_compact_desc')],
-                ];
-            @endphp
-            <form action="{{ route('eleves.cartes') }}" method="POST" class="row g-3 align-items-end" data-auto-filter="true" data-auto-filter-fields="id_classe,id_annee,search">
-                @csrf
+            <form action="{{ route('eleves.cartes') }}" method="GET" class="row g-3 align-items-end" id="cartes-filtres">
                 <div class="col-md-4">
                     <label class="form-label">{{ __('eleves.label_classe') }}</label>
                     <select name="id_classe" class="form-select" required>
@@ -63,17 +52,18 @@
                     <h6 class="fw-bold mb-3">{{ __('cartes.workshop_title') }}</h6>
                     <label class="form-label fw-bold">{{ __('cartes.model_label') }}</label>
                     <div class="row g-3">
-                        @foreach($cartesTemplates as $value => [$label, $description])
-                            <div class="col-md-4">
+                        @foreach(\App\Support\ModelesCarte::MODELES as $value => $infos)
+                            <div class="col-sm-6 col-lg-4">
                                 <label class="card-template-option d-flex flex-column">
+                                    <img src="{{ asset('assets/images/cartes/'.$value.'.png') }}" alt="" class="carte-vignette mb-2" loading="lazy">
                                     <span>
-                                        <input type="radio" name="template" value="{{ $value }}" class="form-check-input me-2 card-config" @checked(request('template', 'epure') === $value)>
-                                        <span class="fw-bold">{{ $label }}</span>
+                                        <input type="radio" name="template" value="{{ $value }}" class="form-check-input me-2 card-config" data-couleurs="{{ implode(',', $infos['couleurs']) }}" @checked($modeleActuel === $value)>
+                                        <span class="fw-bold">{{ __('cartes.modele_'.$value) }}</span>
                                     </span>
-                                    <small class="d-block text-muted mt-1 mb-2">{{ $description }}</small>
+                                    <small class="d-block text-muted mt-1 mb-2">{{ __('cartes.modele_'.$value.'_desc') }}</small>
                                     <span class="d-flex align-items-center mt-auto">
                                         <span class="small fw-semibold text-success modele-coche"><i class="bi bi-check-circle-fill me-1"></i>{{ __('cartes.modele_choisi') }}</span>
-                                        <button type="button" class="btn btn-sm btn-outline-secondary ms-auto carte-apercu" data-template="{{ $value }}" data-nom="{{ $label }}">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary ms-auto carte-apercu" data-template="{{ $value }}" data-nom="{{ __('cartes.modele_'.$value) }}">
                                             <i class="bi bi-eye me-1"></i>{{ __('cartes.apercu') }}
                                         </button>
                                     </span>
@@ -84,11 +74,11 @@
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">{{ __('cartes.primary_color_label') }}</label>
-                    <input type="color" name="primary_color" class="form-control form-control-color card-config" value="{{ request('primary_color', '#0f766e') }}">
+                    <input type="color" name="primary_color" class="form-control form-control-color card-config" value="{{ $couleur1 }}">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">{{ __('cartes.secondary_color_label') }}</label>
-                    <input type="color" name="secondary_color" class="form-control form-control-color card-config" value="{{ request('secondary_color', '#f59e0b') }}">
+                    <input type="color" name="secondary_color" class="form-control form-control-color card-config" value="{{ $couleur2 }}">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">{{ __('cartes.card_title_label') }}</label>
@@ -138,96 +128,11 @@
         </div>
     </div>
 
-    @if(!$showList)
-        <div class="empty-eleves-state text-center py-5">
-            <div class="empty-eleves-icon mx-auto mb-3 d-flex align-items-center justify-content-center">
-                <i class="bi bi-person-vcard fs-1"></i>
-            </div>
-            <h5 class="fw-bold mb-2">{{ __('cartes.empty_title') }}</h5>
-            <p class="text-muted mb-0">{{ __('cartes.empty_desc') }}</p>
-        </div>
-    @else
-        <div class="card theme-card shadow-sm cards-students-card">
-            <div class="card-header theme-header cards-students-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <div>
-                    <h5 class="mb-0 fw-bold">{{ __('cartes.available_title') }}</h5>
-                    <div class="small fw-semibold cards-students-count">{{ __('cartes.count_eleves', ['count' => number_format($eleves->count(), 0, ',', ' ')]) }}</div>
-                </div>
-                @if($eleves->isNotEmpty())
-                    <form action="{{ route('eleves.cartes.pdf') }}" method="POST" target="impression-cartes-cadre" id="cards-form" class="d-flex flex-wrap gap-2">
-                        @csrf
-                        <input type="hidden" name="id_classe" value="{{ request('id_classe') }}">
-                        <input type="hidden" name="id_annee" value="{{ request('id_annee') }}">
-                        <input type="hidden" name="search" value="{{ request('search') }}">
-                        <input type="hidden" name="template" value="{{ request('template', 'epure') }}" data-card-config-target="template">
-                        <input type="hidden" name="primary_color" value="{{ request('primary_color', '#0f766e') }}" data-card-config-target="primary_color">
-                        <input type="hidden" name="secondary_color" value="{{ request('secondary_color', '#f59e0b') }}" data-card-config-target="secondary_color">
-                        <input type="hidden" name="card_title" value="{{ request('card_title', __('cartes.card_title_default')) }}" data-card-config-target="card_title">
-                        <input type="hidden" name="signature_label" value="{{ request('signature_label', __('cartes.signature_label_default')) }}" data-card-config-target="signature_label">
-                        <input type="hidden" name="signature_image" value="{{ request('signature_image') }}" data-card-config-target="signature_image">
-                        <input type="hidden" name="show_mali_flag" value="{{ request('show_mali_flag', '1') }}" data-card-config-target="show_mali_flag">
-                        <input type="hidden" name="mali_flag_style" value="{{ request('mali_flag_style', 'corner') }}" data-card-config-target="mali_flag_style">
-                        <input type="hidden" name="show_school_logo" value="{{ request('show_school_logo', '1') }}" data-card-config-target="show_school_logo">
-                        <input type="hidden" name="show_qr" value="{{ request('show_qr', '1') }}" data-card-config-target="show_qr">
-                        <input type="hidden" name="selected_eleves" id="cards-selected-input">
-                        <input type="hidden" name="imprimer" value="1" id="cards-imprimer-input">
-                        <button type="button" class="btn btn-outline-secondary" id="cards-download-button">
-                            <i class="bi bi-download me-2"></i>{{ __('cartes.telecharger_pdf') }}
-                        </button>
-                        <button type="submit" class="btn btn-primary" id="cards-print-button">
-                            <i class="bi bi-printer me-2"></i>{{ __('cartes.print_all_button') }}
-                        </button>
-                    </form>
-                    {{-- Le PDF des cartes est chargé ici puis imprimé directement (pas de téléchargement). --}}
-                    <iframe name="impression-cartes-cadre" id="impression-cartes-cadre" title="{{ __('cartes.print_all_button') }}" style="position:fixed; right:0; bottom:0; width:0; height:0; border:0;"></iframe>
-                @endif
-            </div>
-            <div class="table-responsive">
-                <table class="table table-striped table-bordered align-middle mb-0 cards-students-table">
-                    <thead>
-                    <tr>
-                        <th class="text-center" style="width: 48px;"><input type="checkbox" id="cards-check-all"></th>
-                        <th>{{ __('parents.th_eleve') }}</th>
-                        <th>{{ __('eleves.label_matricule') }}</th>
-                        <th>{{ __('eleves.label_classe') }}</th>
-                        <th>{{ __('eleves.label_genre') }}</th>
-                        <th>{{ __('cartes.th_contact_parent') }}</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    @forelse($eleves as $eleve)
-                        <tr>
-                            <td class="text-center"><input type="checkbox" class="cards-check" value="{{ $eleve->id_eleve }}"></td>
-                            <td>
-                                <div class="d-flex align-items-center gap-2">
-                                    <div class="rounded-circle bg-light d-flex align-items-center justify-content-center overflow-hidden" style="width: 38px; height: 38px;">
-                                        @if($eleve->image)
-                                            <img src="{{ asset($eleve->image) }}" alt="" class="w-100 h-100 object-fit-cover">
-                                        @else
-                                            <i class="bi bi-person text-muted"></i>
-                                        @endif
-                                    </div>
-                                    <div>
-                                        <div class="fw-bold">{{ $eleve->prenom_eleve }} {{ $eleve->nom_eleve }}</div>
-                                        <div class="small text-muted">{{ $eleve->date_naissance ? \Carbon\Carbon::parse($eleve->date_naissance)->format('d/m/Y') : __('cartes.birth_not_specified') }}</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td><span class="badge bg-light text-dark font-monospace">{{ $eleve->matricule }}</span></td>
-                            <td>{{ $eleve->classe?->nom_classe }}</td>
-                            <td>{{ $eleve->genre_eleve }}</td>
-                            <td>{{ $eleve->parents->first()?->telephone_parent ?? __('eleves.not_specified_m') }}</td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="text-center py-5 text-muted">{{ __('cartes.empty_table') }}</td>
-                        </tr>
-                    @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    @endif
+    <div id="cartes-liste">
+        @include('eleves.partials.cartes-liste')
+    </div>
+    {{-- Le PDF des cartes est chargé ici puis imprimé directement (pas de téléchargement). --}}
+    <iframe name="impression-cartes-cadre" id="impression-cartes-cadre" title="{{ __('cartes.print_all_button') }}" style="position:fixed; right:0; bottom:0; width:0; height:0; border:0;"></iframe>
 
     <div class="modal fade" id="apercu-carte-modal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered">
@@ -300,6 +205,8 @@
             box-shadow: 0 0 0 3px rgba(13, 110, 253, .12);
         }
         .card-template-option .modele-coche { visibility: hidden; }
+        .carte-vignette { width: 100%; height: auto; border-radius: 6px; box-shadow: 0 1px 4px rgba(15, 23, 42, .18); }
+        #cartes-liste.chargement { opacity: .55; pointer-events: none; transition: opacity .15s; }
         .card-template-option:has(input:checked) .modele-coche { visibility: visible; }
         .cards-students-table thead th {
             background: #fff !important;
@@ -350,9 +257,8 @@
     @endphp
     <script>
         const cartesI18n = @json($cartesI18n);
-        const cardsCheckAll = document.getElementById('cards-check-all');
-        const cardsSelectedInput = document.getElementById('cards-selected-input');
-        const cardsPrintButton = document.getElementById('cards-print-button');
+        // La liste des élèves est remplacée sans recharger la page : ses éléments sont relus à chaque usage.
+        const el = (id) => document.getElementById(id);
         const configInputs = Array.from(document.querySelectorAll('.card-config'));
         const signaturePad = document.getElementById('signature-pad');
         const signatureInput = document.getElementById('signature-image-input');
@@ -360,28 +266,34 @@
         const signatureModal = document.getElementById('signature-modal');
         const signatureStatus = document.getElementById('signature-status');
         const signatureStorageKey = 'kalannet_card_signature_{{ session('idEcole') }}';
+        let impressionEnCours = false;
 
         function updateCardsSelection() {
-            const checked = Array.from(document.querySelectorAll('.cards-check:checked'));
-            const ids = checked.map((box) => box.value);
-            if (cardsSelectedInput) cardsSelectedInput.value = ids.join(',');
-            if (cardsPrintButton) {
-                cardsPrintButton.innerHTML = ids.length > 0
+            const ids = Array.from(document.querySelectorAll('.cards-check:checked')).map((box) => box.value);
+            if (el('cards-selected-input')) el('cards-selected-input').value = ids.join(',');
+            const bouton = el('cards-print-button');
+            if (bouton && !impressionEnCours) {
+                bouton.innerHTML = ids.length > 0
                     ? `<i class="bi bi-printer me-2"></i>${cartesI18n.printN.replace(':count', ids.length)}`
                     : `<i class="bi bi-printer me-2"></i>${cartesI18n.printAll}`;
             }
             const boxes = document.querySelectorAll('.cards-check');
-            if (cardsCheckAll) {
-                cardsCheckAll.checked = boxes.length > 0 && ids.length === boxes.length;
-                cardsCheckAll.indeterminate = ids.length > 0 && ids.length < boxes.length;
+            const tout = el('cards-check-all');
+            if (tout) {
+                tout.checked = boxes.length > 0 && ids.length === boxes.length;
+                tout.indeterminate = ids.length > 0 && ids.length < boxes.length;
             }
         }
 
-        cardsCheckAll?.addEventListener('change', () => {
-            document.querySelectorAll('.cards-check').forEach((box) => box.checked = cardsCheckAll.checked);
-            updateCardsSelection();
+        document.addEventListener('change', (event) => {
+            if (event.target.id === 'cards-check-all') {
+                document.querySelectorAll('.cards-check').forEach((box) => box.checked = event.target.checked);
+                updateCardsSelection();
+            } else if (event.target.classList.contains('cards-check')) {
+                updateCardsSelection();
+            }
         });
-        document.querySelectorAll('.cards-check').forEach((box) => box.addEventListener('change', updateCardsSelection));
+
         function syncCardConfig() {
             configInputs.forEach((input) => {
                 const target = document.querySelector(`[data-card-config-target="${input.name}"]`);
@@ -491,21 +403,20 @@
         }
 
         // Impression directe : le PDF arrive dans le cadre caché, puis la fenêtre d'impression s'ouvre.
-        const cardsForm = document.getElementById('cards-form');
-        const cadreImpression = document.getElementById('impression-cartes-cadre');
-        const imprimerInput = document.getElementById('cards-imprimer-input');
-        let impressionEnCours = false;
-        let texteBouton = '';
+        const cadreImpression = el('impression-cartes-cadre');
         function finImpression() {
             impressionEnCours = false;
-            if (cardsPrintButton) { cardsPrintButton.disabled = false; updateCardsSelection(); }
+            if (el('cards-print-button')) el('cards-print-button').disabled = false;
+            updateCardsSelection();
         }
-        cardsForm?.addEventListener('submit', (event) => {
+        document.addEventListener('submit', (event) => {
+            if (event.target.id !== 'cards-form') return;
             syncCardConfig();
-            if (imprimerInput.value !== '1') return;
+            if (el('cards-imprimer-input').value !== '1') return;
             impressionEnCours = true;
-            cardsPrintButton.disabled = true;
-            cardsPrintButton.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>${cartesI18n.preparation}`;
+            const bouton = el('cards-print-button');
+            bouton.disabled = true;
+            bouton.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>${cartesI18n.preparation}`;
             // Garde-fou : le bouton redevient utilisable même si le navigateur ne signale pas la fin.
             setTimeout(() => { if (impressionEnCours) finImpression(); }, 120000);
         });
@@ -518,19 +429,65 @@
                     cadreImpression.contentWindow.print();
                 } catch (e) {
                     // Navigateur qui refuse d'imprimer depuis le cadre : le PDF s'ouvre dans un onglet.
-                    cardsForm.target = '_blank';
-                    cardsForm.submit();
-                    cardsForm.target = 'impression-cartes-cadre';
+                    const form = el('cards-form');
+                    form.target = '_blank';
+                    form.submit();
+                    form.target = 'impression-cartes-cadre';
                 }
             }, 300);
         });
-        document.getElementById('cards-download-button')?.addEventListener('click', () => {
+        document.addEventListener('click', (event) => {
+            if (!event.target.closest('#cards-download-button')) return;
+            const form = el('cards-form');
             syncCardConfig();
-            imprimerInput.value = '0';
-            cardsForm.target = '_self';
-            cardsForm.submit();
-            imprimerInput.value = '1';
-            cardsForm.target = 'impression-cartes-cadre';
+            el('cards-imprimer-input').value = '0';
+            form.target = '_self';
+            form.submit();
+            el('cards-imprimer-input').value = '1';
+            form.target = 'impression-cartes-cadre';
+        });
+
+        // Classe, année ou recherche : la liste est rechargée seule, sans recharger la page.
+        const filtres = el('cartes-filtres');
+        let filtreDemande = null;
+        let filtreMinuterie = null;
+        function chargerListe() {
+            const params = new URLSearchParams(new FormData(filtres));
+            const zone = el('cartes-liste');
+            const demande = (filtreDemande = Symbol());
+            zone.classList.add('chargement');
+            fetch(filtres.action + '?' + params.toString(), { headers: { 'X-Cartes-Liste': '1', 'X-Requested-With': 'XMLHttpRequest' } })
+                .then((reponse) => { if (!reponse.ok) throw new Error(); return reponse.text(); })
+                .then((html) => {
+                    if (demande !== filtreDemande) return;
+                    zone.innerHTML = html;
+                    // Aperçu : mêmes élèves que la liste ; adresse de la page à jour (rechargement, favori).
+                    ['id_classe', 'id_annee', 'search'].forEach((nom) => {
+                        const champ = el('apercu-carte-form').querySelector(`[name="${nom}"]`);
+                        if (champ) champ.value = params.get(nom) || '';
+                    });
+                    history.replaceState(null, '', filtres.action + '?' + params.toString());
+                    syncCardConfig();
+                    updateCardsSelection();
+                })
+                .catch(() => filtres.submit())
+                .finally(() => { if (demande === filtreDemande) zone.classList.remove('chargement'); });
+        }
+        filtres?.addEventListener('submit', (event) => { event.preventDefault(); chargerListe(); });
+        filtres?.querySelectorAll('select').forEach((liste) => liste.addEventListener('change', chargerListe));
+        filtres?.querySelector('[name="search"]')?.addEventListener('input', () => {
+            clearTimeout(filtreMinuterie);
+            filtreMinuterie = setTimeout(chargerListe, 350);
+        });
+
+        // Choisir un modèle applique ses couleurs (modifiables ensuite).
+        document.querySelectorAll('input[name="template"]').forEach((radio) => {
+            radio.addEventListener('change', () => {
+                const [principale, secondaire] = (radio.dataset.couleurs || '').split(',');
+                if (principale) document.querySelector('input[name="primary_color"]').value = principale;
+                if (secondaire) document.querySelector('input[name="secondary_color"]').value = secondaire;
+                syncCardConfig();
+            });
         });
 
         // Aperçu d'un modèle avec les réglages en cours (couleurs, titre, signature…).
@@ -549,6 +506,11 @@
                     if (input.type === 'checkbox') valeurs[input.name] = input.checked ? '1' : '0';
                     else if (input.type !== 'radio' || input.checked) valeurs[input.name] = input.value;
                 });
+                // Modèle pas encore choisi : affiché dans ses propres couleurs.
+                const radioModele = document.querySelector(`input[name="template"][value="${apercuTemplate}"]`);
+                if (radioModele && !radioModele.checked) {
+                    [valeurs.primary_color, valeurs.secondary_color] = radioModele.dataset.couleurs.split(',');
+                }
                 const coches = Array.from(document.querySelectorAll('.cards-check:checked')).map((box) => box.value);
                 if (coches.length) valeurs.selected_eleves = coches.join(',');
                 Object.entries(valeurs).forEach(([nom, valeur]) => {
@@ -564,7 +526,7 @@
         });
         document.getElementById('apercu-carte-choisir')?.addEventListener('click', () => {
             const radio = document.querySelector(`input[name="template"][value="${apercuTemplate}"]`);
-            if (radio) { radio.checked = true; syncCardConfig(); }
+            if (radio && !radio.checked) { radio.checked = true; radio.dispatchEvent(new Event('change', { bubbles: true })); }
             bootstrap.Modal.getOrCreateInstance(apercuModal).hide();
         });
         apercuModal?.addEventListener('hidden.bs.modal', () => {

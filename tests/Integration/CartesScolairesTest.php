@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 /** Cartes scolaires : les 6 modèles s'impriment et chacun peut être visualisé avant impression. */
 class CartesScolairesTest extends IntegrationTestCase
 {
-    private const MODELES = ['institutionnel', 'moderne', 'vertical', 'epure', 'horizon', 'compact'];
+    private const MODELES = ['classique', 'elegant', 'franco_arabe', 'sante', 'primaire', 'recto_verso'];
 
     public function test_apercu_de_chaque_modele_sans_classe_puis_avec_classe(): void
     {
@@ -27,12 +27,39 @@ class CartesScolairesTest extends IntegrationTestCase
         if (!$eleve) {
             $this->markTestSkipped('Aucun élève dans l\'école 1.');
         }
-        $params = ['id_classe' => $eleve->id_classe, 'id_annee' => $eleve->id_annee, 'template' => 'horizon'];
+        $params = ['id_classe' => $eleve->id_classe, 'id_annee' => $eleve->id_annee, 'template' => 'elegant'];
         $this->actingAs($admin)->withSession(['idEcole' => 1])->post('/eleves/cartes-scolaires/apercu', $params)->assertOk()->assertHeader('content-type', 'application/pdf');
         $this->actingAs($admin)->withSession(['idEcole' => 1])->post('/eleves/cartes-scolaires/pdf', $params)->assertOk()->assertHeader('content-type', 'application/pdf');
         // Bouton Imprimer : PDF affiché dans la page (imprimé directement) ; Télécharger : fichier.
         $this->assertStringStartsWith('inline;', $this->actingAs($admin)->withSession(['idEcole' => 1])->post('/eleves/cartes-scolaires/pdf', $params + ['imprimer' => 1])->headers->get('content-disposition'));
         $this->assertStringStartsWith('attachment;', $this->actingAs($admin)->withSession(['idEcole' => 1])->post('/eleves/cartes-scolaires/pdf', $params + ['imprimer' => 0])->headers->get('content-disposition'));
+    }
+
+    public function test_anciens_modeles_acceptes_et_liste_sans_recharger(): void
+    {
+        $admin = $this->adminComplet(1);
+        // Liens et applications existants : les anciens noms de modèles restent acceptés.
+        foreach (['institutionnel', 'vertical', 'compact'] as $ancien) {
+            $this->actingAs($admin)->withSession(['idEcole' => 1])->post('/eleves/cartes-scolaires/apercu', ['template' => $ancien])
+                ->assertOk()->assertHeader('content-type', 'application/pdf');
+        }
+        $this->assertSame('recto_verso', \App\Support\ModelesCarte::normaliser('vertical'));
+
+        // Classe changée : seule la liste est renvoyée.
+        $eleve = DB::table('eleve')->where('id_ecole', 1)->where('etat_dossier', 0)->first(['id_classe', 'id_annee']);
+        $liste = $this->actingAs($admin)->withSession(['idEcole' => 1])->withHeader('X-Cartes-Liste', '1')
+            ->get("/eleves/cartes-scolaires?id_classe={$eleve->id_classe}&id_annee={$eleve->id_annee}")->assertOk()->getContent();
+        $this->assertStringContainsString('id="cards-form"', $liste);
+        $this->assertStringNotContainsString('<html', $liste);
+    }
+
+    public function test_code_barres_du_matricule(): void
+    {
+        $valeurs = \App\Support\CodeBarres::symboles('EX-0001');
+        $this->assertSame(104, $valeurs[0], 'départ jeu B');
+        $this->assertSame(106, end($valeurs), 'arrêt');
+        $this->assertCount(7 + 3, $valeurs);
+        $this->assertStringStartsWith('data:image/svg+xml;base64,', \App\Support\CodeBarres::svg('EX-0001'));
     }
 
     public function test_modele_inconnu_refuse(): void
