@@ -21,6 +21,7 @@ use App\Models\Note;
 use App\Models\Controle;
 use App\Support\ExamenNational;
 use App\Support\SchoolOrderAccess;
+use App\Services\Configuration\SupprimerAnneeScolaire;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -432,18 +433,16 @@ class ConfigurationController extends Controller
                 ->with('error', __('configuration.annees_delete_auto_error'));
         }
 
-        $usages = $this->usagesAnnee((int) $annee->id_anneeScolaire);
-        if ($usages !== []) {
-            return redirect()->route('configuration.annees')
-                ->with('error', __('configuration.annees_delete_used_error', [
-                    'usages' => implode(', ', $usages),
-                ]));
-        }
-
-        $annee->delete();
+        $deletedCounts = app(SupprimerAnneeScolaire::class)->supprimer((int) $annee->id_anneeScolaire);
+        $details = collect($deletedCounts)
+            ->filter(fn ($count) => $count > 0)
+            ->map(fn ($count, $table) => "{$table} ({$count})")
+            ->implode(', ');
 
         return redirect()->route('configuration.annees')
-            ->with('success', __('configuration.annees_delete_success'));
+            ->with('success', __('configuration.annees_delete_success', [
+                'details' => $details ?: __('configuration.annees_no_linked_data'),
+            ]));
     }
 
     public function utilisateurs(Request $request)
@@ -1253,31 +1252,6 @@ class ConfigurationController extends Controller
             ->orderByRaw('id_ecole IS NOT NULL')
             ->orderByDesc('date_debut')
             ->first();
-    }
-
-    private function usagesAnnee(int $anneeId): array
-    {
-        $colonnesAnnee = ['id_annee', 'id_anneeScolaire', 'id_annee_scolaire', 'annee_scolaire_id'];
-        $database = DB::connection()->getDatabaseName();
-        $usages = [];
-
-        foreach (Schema::getTables() as $table) {
-            $tableName = $table['name'] ?? null;
-            if (($table['schema'] ?? null) !== $database || !$tableName || $tableName === 'anneescolaire') {
-                continue;
-            }
-
-            foreach (Schema::getColumnListing($tableName) as $column) {
-                if (in_array($column, $colonnesAnnee, true)) {
-                    $count = DB::table($tableName)->where($column, $anneeId)->count();
-                    if ($count > 0) {
-                        $usages[] = "{$tableName}.{$column} ({$count})";
-                    }
-                }
-            }
-        }
-
-        return $usages;
     }
 
     protected function authorizeUserCreation(User $authUser, int $type, array $data): void

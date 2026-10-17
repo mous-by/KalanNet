@@ -78,6 +78,7 @@
                                                 @if($annee->id_ecole !== null)
                                                         <form action="{{ route('configuration.annees.destroy', $annee->id_anneeScolaire) }}" method="POST" class="d-inline annee-delete-form"
                                                             data-confirm-title="{{ __('configuration.annees_delete_confirm') }}"
+                                                              data-confirm-text="{{ __('configuration.annees_delete_warning') }}"
                                                             data-confirm-button="{{ __('configuration.annees_delete') }}"
                                                             data-cancel-button="{{ __('configuration.annuler') }}">
                                                         @csrf
@@ -154,6 +155,7 @@ document.addEventListener('DOMContentLoaded', function () {
             event.preventDefault();
             const result = await Swal.fire({
                 title: form.dataset.confirmTitle,
+                text: form.dataset.confirmText,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: form.dataset.confirmButton,

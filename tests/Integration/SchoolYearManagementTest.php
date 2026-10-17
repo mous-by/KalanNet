@@ -72,22 +72,49 @@ class SchoolYearManagementTest extends IntegrationTestCase
             $this->markTestSkipped('Aucune classe disponible pour tester une année scolaire utilisée.');
         }
 
-        $usedYear = $this->createSchoolYear($schoolId, '2016-2017', '2016-09-01', '2017-08-31');
+        $usedYear = $this->createSchoolYear($schoolId, '2198-2199', '2198-09-01', '2199-08-31');
         Planification::create([
             'motif' => 'cooperative',
             'id_classe' => $classId,
             'id_annee' => $usedYear->id_anneeScolaire,
-            'date_debut' => '2016-09-01',
-            'date_fin' => '2017-08-31',
+            'date_debut' => '2198-09-01',
+            'date_fin' => '2199-08-31',
             'montant_planification' => 1000,
+        ]);
+
+        $planificationId = (int) DB::table('planification')->where('id_annee', $usedYear->id_anneeScolaire)->value('id_planification');
+        DB::table('ligne_inscription')->insert([
+            'id_eleve' => (int) (DB::table('eleve')->where('id_ecole', $schoolId)->value('id_eleve') ?: 1),
+            'id_classe' => $classId,
+            'id_annee' => $usedYear->id_anneeScolaire,
+            'id_planification' => $planificationId,
+            'date_inscription' => '2198-09-01',
+        ]);
+
+        $admin = $this->compte('Admin', $schoolId);
+        $caisseId = DB::table('caisse')->where('id_ecole', $schoolId)->value('id_caisse');
+        if (!$caisseId) {
+            $this->markTestSkipped('Aucune caisse disponible pour tester la suppression d’un décaissement lié.');
+        }
+        $decaissementId = DB::table('decaissement')->insertGetId([
+            'montant_decaissement' => 10,
+            'date_decaissement' => '2198-10-01',
+            'motif_decaissement' => 'Test suppression année',
+            'id_annee_scolaire' => $usedYear->id_anneeScolaire,
+            'id_caisse' => $caisseId,
+            'idUtilisateur' => $admin->idUtilisateur,
+            'valide' => 0,
         ]);
 
         $this->actingAs($superAdmin)->withSession(['idEcole' => $schoolId])
             ->delete(route('configuration.annees.destroy', $usedYear->id_anneeScolaire))
-            ->assertSessionHas('error', __('configuration.annees_delete_used_error', [
-                'usages' => 'planification.id_annee (1)',
-            ]));
-        $this->assertDatabaseHas('anneescolaire', ['id_anneeScolaire' => $usedYear->id_anneeScolaire]);
+            ->assertSessionHas('success')
+            ->assertSessionHas('success', fn ($message) => str_contains($message, 'planification (1)')
+                && str_contains($message, 'decaissement (1)'));
+        $this->assertDatabaseMissing('anneescolaire', ['id_anneeScolaire' => $usedYear->id_anneeScolaire]);
+        $this->assertDatabaseMissing('planification', ['id_planification' => $planificationId]);
+        $this->assertDatabaseMissing('ligne_inscription', ['id_planification' => $planificationId]);
+        $this->assertDatabaseMissing('decaissement', ['id_decaissement' => $decaissementId]);
     }
 
     public function test_school_admin_needs_explicit_permission_to_create_school_years(): void
