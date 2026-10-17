@@ -477,7 +477,7 @@ class EleveController extends Controller
         $qrCodes = $this->studentQrCodes($eleves, $config, $classe, $annee, $schoolName, $adminPhone);
 
         return Pdf::loadView('pdf.cartes_scolaires', compact('eleves', 'classe', 'annee', 'ecole', 'config', 'qrCodes', 'schoolName', 'schoolLogoPath', 'adminPhone'))
-            ->setPaper('a4', \App\Support\ModelesCarte::rectoVerso($config['template']) ? 'landscape' : 'portrait');
+            ->setPaper('a4', 'portrait');
     }
 
     public function downloadListPdf(Request $request)

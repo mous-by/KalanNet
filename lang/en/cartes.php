@@ -64,5 +64,5 @@ return [
     'modele_primaire' => 'Primary',
     'modele_primaire_desc' => 'Colourful, sun and pencils: for the youngest pupils.',
     'modele_recto_verso' => 'Front / back',
-    'modele_recto_verso_desc' => 'Vertical card with a back: school phone and address, parent contact.',
+    'modele_recto_verso_desc' => 'Vertical card with a back (phone, address, parent contact). 9 cards per page: fronts, then backs on the next page; print double-sided, long edge.',
 ];

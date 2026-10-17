@@ -20,8 +20,9 @@
     $serie = $classe->serie ?? null;
     $telephoneEcole = $adminPhone ?: ($ecole?->telephone ?: null);
 
-    // Pages : 10 cartes (2 × 5) en A4 portrait ; recto / verso : 4 élèves (2 × 2) en A4 paysage.
-    $parPage = $rectoVerso ? 4 : 10;
+    // Pages : 10 cartes (2 × 5) en A4 portrait. Recto / verso : 9 cartes (3 × 3) par page,
+    // la page des rectos puis celle des versos, en miroir pour l'impression recto verso.
+    $parPage = $rectoVerso ? 9 : 10;
     $pages = $eleves->values()->chunk($parPage);
 @endphp
 <!doctype html>
@@ -29,7 +30,11 @@
 <head>
     <meta charset="utf-8">
     <style>
-        @page { margin: {{ $rectoVerso ? '12mm 14mm' : '5mm 12mm' }}; }
+        @page { margin: {{ $rectoVerso ? '0' : '5mm 12mm' }}; }
+        /* Recto / verso : cartes placées au millimètre, grille centrée (mêmes marges des deux côtés). */
+        .feuille { position: relative; width: 210mm; height: 296mm; overflow: hidden; }
+        .feuille .place { position: absolute; }
+        .feuille .consigne { position: absolute; left: 0; width: 210mm; bottom: 4mm; text-align: center; font-size: 6.5pt; color: #9ca3af; }
         * { box-sizing: border-box; }
         body { margin: 0; font-family: DejaVu Sans, sans-serif; color: #111827; }
         .page { page-break-after: always; }
@@ -125,6 +130,36 @@
     </style>
 </head>
 <body>
+@if($rectoVerso)
+    @php
+        // 3 colonnes de 54 mm et 3 rangées de 85,6 mm, espacées de 6 mm, centrées sur la feuille A4.
+        $gauche = (210 - (3 * 54 + 2 * 6)) / 2;
+        $haut = (297 - (3 * 85.6 + 2 * 6)) / 2;
+    @endphp
+    @foreach($pages as $page)
+        @foreach([false, true] as $verso)
+            <div class="page feuille">
+                @foreach($page->values() as $i => $eleve)
+                    @php
+                        $photoPath = $eleve->image ? public_path($eleve->image) : null;
+                        $hasPhoto = $photoPath && is_file($photoPath);
+                        $qrCode = $qrCodes[$eleve->id_eleve] ?? null;
+                        $naissance = $eleve->date_naissance ? \Carbon\Carbon::parse($eleve->date_naissance)->format('d/m/Y') : null;
+                        $matricule = $eleve->matricule ?: null;
+                        $parent = $eleve->relationLoaded('parents') ? $eleve->parents->first() : null;
+                        // Feuille retournée sur le bord long : la colonne d'un verso est l'inverse de celle de son recto.
+                        $colonne = $verso ? 2 - $i % 3 : $i % 3;
+                        $rangee = intdiv($i, 3);
+                    @endphp
+                    <div class="place" style="left: {{ $gauche + $colonne * 60 }}mm; top: {{ $haut + $rangee * 91.6 }}mm;">
+                        @include('pdf.cartes.verticale', ['verso' => $verso])
+                    </div>
+                @endforeach
+                <div class="consigne">{{ $verso ? 'Versos — page '.($loop->parent->iteration * 2).' : à imprimer au dos de la page précédente' : 'Rectos — page '.($loop->parent->iteration * 2 - 1).' : imprimez en recto verso, retournement sur le bord long' }}</div>
+            </div>
+        @endforeach
+    @endforeach
+@else
 @foreach($pages as $page)
     <div class="page">
         <table class="grille">
@@ -138,18 +173,10 @@
                             $naissance = $eleve->date_naissance ? \Carbon\Carbon::parse($eleve->date_naissance)->format('d/m/Y') : null;
                             $matricule = $eleve->matricule ?: null;
                             $parent = $eleve->relationLoaded('parents') ? $eleve->parents->first() : null;
-                            $espace = $loop->first ? '' : ($rectoVerso ? 'padding-left:10mm' : 'padding-left:4mm');
+                            $espace = $loop->first ? '' : 'padding-left:4mm';
                         @endphp
-                        <td style="{{ $espace }}; padding-bottom: {{ $rectoVerso ? '6mm' : '2.5mm' }};">
-                            @if($rectoVerso)
-                                <table class="grille"><tr><td>
-                                    @include('pdf.cartes.verticale', ['verso' => false])
-                                </td><td style="padding-left:2mm">
-                                    @include('pdf.cartes.verticale', ['verso' => true])
-                                </td></tr></table>
-                            @else
-                                @include('pdf.cartes.horizontale')
-                            @endif
+                        <td style="{{ $espace }}; padding-bottom: 2.5mm;">
+                            @include('pdf.cartes.horizontale')
                         </td>
                     @endforeach
                 </tr>
@@ -157,5 +184,6 @@
         </table>
     </div>
 @endforeach
+@endif
 </body>
 </html>

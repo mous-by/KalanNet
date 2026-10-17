@@ -53,6 +53,25 @@ class CartesScolairesTest extends IntegrationTestCase
         $this->assertStringNotContainsString('<html', $liste);
     }
 
+    public function test_recto_verso_rectos_puis_versos_en_miroir(): void
+    {
+        $admin = $this->adminComplet(1);
+        $eleve = DB::table('eleve')->where('id_ecole', 1)->where('etat_dossier', 0)->first(['id_classe', 'id_annee']);
+        $html = view('pdf.cartes_scolaires', [
+            'eleves' => \App\Models\Eleve::where('id_classe', $eleve->id_classe)->where('id_annee', $eleve->id_annee)->where('etat_dossier', 0)->take(4)->get(),
+            'classe' => \App\Models\Classe::find($eleve->id_classe), 'annee' => \App\Models\AnneeScolaire::find($eleve->id_annee), 'ecole' => null,
+            'config' => ['template' => 'recto_verso', 'primary_color' => '#1e3a8a', 'secondary_color' => '#3b82f6', 'card_title' => 'CARTE', 'signature_label' => 'Le Directeur',
+                'signature_image' => null, 'show_mali_flag' => false, 'mali_flag_style' => 'corner', 'show_school_logo' => false, 'show_qr' => false],
+            'qrCodes' => [], 'schoolName' => 'École', 'schoolLogoPath' => null, 'adminPhone' => null,
+        ])->render();
+
+        // Une feuille de rectos puis une feuille de versos ; 4e élève : 1re colonne au recto, 3e au verso.
+        $this->assertSame(2, substr_count($html, 'class="page feuille"'));
+        $this->assertStringContainsString('Versos — page 2', $html);
+        preg_match_all('#<div class="place" style="left: ([\d.]+)mm; top: ([\d.]+)mm;">#', $html, $m);
+        $this->assertSame(['18', '78', '138', '18', '138', '78', '18', '138'], $m[1]);
+    }
+
     public function test_code_barres_du_matricule(): void
     {
         $valeurs = \App\Support\CodeBarres::symboles('EX-0001');

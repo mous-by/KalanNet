@@ -39,7 +39,7 @@ class ModelesCarte
         ],
         'recto_verso' => [
             'nom' => 'Recto / verso',
-            'description' => 'Carte verticale avec un dos : établissement, téléphone, adresse et contact du parent.',
+            'description' => 'Carte verticale avec un dos ; les rectos sur une page, les versos sur la suivante (impression recto verso, bord long).',
             'couleurs' => ['#1e3a8a', '#3b82f6'],
             'recto_verso' => true,
         ],

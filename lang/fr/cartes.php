@@ -64,5 +64,5 @@ return [
     'modele_primaire' => 'Primaire',
     'modele_primaire_desc' => 'Coloré, soleil et crayons : pour les plus jeunes.',
     'modele_recto_verso' => 'Recto / verso',
-    'modele_recto_verso_desc' => 'Carte verticale avec un dos : téléphone et adresse de l’établissement, contact du parent.',
+    'modele_recto_verso_desc' => 'Carte verticale avec un dos (téléphone, adresse, contact du parent). 9 cartes par page : les rectos, puis les versos sur la page suivante ; imprimez en recto verso, bord long.',
 ];
