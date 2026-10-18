@@ -62,6 +62,8 @@ class BulletinController extends WebBulletinController
                             : ($m['format'] === 'A4' ? __('bulletins.modele_a4') : __('bulletins.modele_a5')),
                         'description' => $m['description'],
                         'calcul' => $m['calcul'],
+                        // Pour la miniature mobile (mêmes proportions que la tuile web).
+                        'mise_en_page' => ($m['orientation'] ?? '') === 'landscape' ? 'paysage' : strtolower($m['format']),
                         'avertissement' => \App\Support\ModelesBulletin::demiPage($code) && $equivalentA4 && isset($modeles[$equivalentA4]) && $nbMatieres > \App\Support\ModelesBulletin::MAX_MATIERES_A5
                             ? __('bulletins.modele_trop_matieres', ['count' => $nbMatieres, 'a4' => $modeles[$equivalentA4]['nom']])
                             : null,

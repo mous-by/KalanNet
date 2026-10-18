@@ -3,6 +3,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Button, Checkbox, Text } from 'react-native-paper';
 
+import MiniatureBulletin from '@/components/MiniatureBulletin';
 import SelectField from '@/components/SelectField';
 import { useAuth } from '@/context/AuthContext';
 import { useLocale } from '@/context/LocaleContext';
@@ -18,6 +19,7 @@ interface ModeleBulletin {
   format: string;
   description: string;
   calcul?: string;
+  mise_en_page?: 'paysage' | 'a4' | 'a5';
   avertissement?: string | null;
   info?: string | null;
 }
@@ -161,7 +163,8 @@ export default function BulletinsClasseScreen() {
             accessibilityRole="radio"
             accessibilityState={{ checked: choisi }}
           >
-            <View style={styles.modeleHead}>
+            <MiniatureBulletin code={m.code} miseEnPage={m.mise_en_page ?? 'a4'} />
+            <View style={[styles.modeleHead, styles.modeleHeadSpace]}>
               <Text style={styles.modeleNom}>{m.nom}</Text>
               <Text style={styles.formatBadge}>{m.format}</Text>
             </View>
@@ -271,6 +274,7 @@ const styles = StyleSheet.create({
   },
   modeleTileSelected: { borderColor: '#2e7d32', borderWidth: 2 },
   modeleHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  modeleHeadSpace: { marginTop: 10 },
   modeleNom: { fontWeight: '700', flexShrink: 1 },
   formatBadge: {
     fontSize: 11,
