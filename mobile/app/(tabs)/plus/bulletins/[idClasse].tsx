@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Button, Checkbox, Text } from 'react-native-paper';
 
 import SelectField from '@/components/SelectField';
@@ -17,6 +17,9 @@ interface ModeleBulletin {
   nom: string;
   format: string;
   description: string;
+  calcul?: string;
+  avertissement?: string | null;
+  info?: string | null;
 }
 
 interface BulletinOptions {
@@ -39,7 +42,7 @@ export default function BulletinsClasseScreen() {
   const { idClasse } = useLocalSearchParams<{ idClasse: string }>();
   const { user } = useAuth();
   const { t } = useLocale();
-  const { data: options } = useApiGet<BulletinOptions>(`/bulletins/classes/${idClasse}`, [idClasse]);
+  const { data: options, isLoading: isLoadingOptions, error: optionsError, reload: reloadOptions } = useApiGet<BulletinOptions>(`/bulletins/classes/${idClasse}`, [idClasse]);
 
   const [idAnnee, setIdAnnee] = useState<number | null>(null);
   const [periodMode, setPeriodMode] = useState<'trimestre' | 'mois'>('trimestre');
@@ -60,8 +63,8 @@ export default function BulletinsClasseScreen() {
     setModele(code);
     try {
       await api.post(`/bulletins/classes/${idClasse}/reglages`, { modele_bulletin: code });
-      setActionMessage('Modèle de bulletin enregistré pour la classe.');
-      reload();
+      setActionMessage(t('bulletins.modele_enregistre'));
+      reloadOptions();
     } catch (err) {
       setModele(precedent);
       setActionMessage(apiErrorMessage(err, t('bulletins.action_error')));
@@ -93,6 +96,29 @@ export default function BulletinsClasseScreen() {
     }
   }
 
+  // Aperçu d'un modèle sans le choisir : bulletin du premier élève, comme sur le web.
+  const [previewing, setPreviewing] = useState<string | null>(null);
+  async function handlePreview(m: ModeleBulletin) {
+    setActionMessage(null);
+    if (!idAnnee || !period) {
+      setActionMessage(t('bulletins.apercu_choisir_periode'));
+      return;
+    }
+    const premier = students?.[0];
+    if (!premier) {
+      setActionMessage(t('bulletins.apercu_aucun_eleve'));
+      return;
+    }
+    setPreviewing(m.code);
+    try {
+      await downloadAndShare(`${premier.url}&modele=${encodeURIComponent(m.code)}`, `Apercu_${m.code}.pdf`);
+    } catch (err) {
+      setActionMessage(apiErrorMessage(err, t('bulletins.download_error')));
+    } finally {
+      setPreviewing(null);
+    }
+  }
+
   async function handlePublishToggle(publish: boolean) {
     if (!idAnnee || !period) return;
     setActionMessage(null);
@@ -114,98 +140,156 @@ export default function BulletinsClasseScreen() {
   const anneeOptions = (options?.annees ?? []).map((a) => ({ value: a.id_anneeScolaire, label: a.annee }));
   const trimestreOptions = (options?.trimestres ?? []).map((tr) => ({ value: tr.id_trimestre, label: t('bulletins.trimestre_option_label').replace(':n', String(tr.id_trimestre)) }));
   const moisOptions = Object.entries(options?.mois_options ?? {}).map(([value, label]) => ({ value: Number(value), label }));
+  const modeles = options?.modeles ?? [];
 
-  return (
-    <View style={styles.container}>
-      <View style={styles.filters}>
-        {options?.modeles?.length ? (
-          <SelectField
-            label="Modèle de bulletin"
-            value={modele}
-            options={options.modeles.map((m) => ({ value: m.code, label: `${m.nom} (${m.format})` }))}
-            onChange={(v) => choisirModele(v as string)}
-          />
-        ) : null}
-        <SelectField label={t('eleves.label_annee')} value={idAnnee} options={anneeOptions} onChange={(v) => setIdAnnee(v as number)} />
-        <View style={styles.periodToggle}>
-          <Button mode={periodMode === 'trimestre' ? 'contained' : 'outlined'} onPress={() => setPeriodMode('trimestre')} style={styles.toggleButton} compact>
-            {t('bulletins.trimestre_toggle')}
-          </Button>
-          <Button mode={periodMode === 'mois' ? 'contained' : 'outlined'} onPress={() => setPeriodMode('mois')} style={styles.toggleButton} compact>
-            {t('bulletins.mois_toggle')}
-          </Button>
-        </View>
-        {periodMode === 'trimestre' ? (
-          <SelectField label={t('bulletins.trimestre_toggle')} value={idTrimestre} options={trimestreOptions} onChange={(v) => setIdTrimestre(v as number)} />
-        ) : (
-          <>
-            <SelectField label={t('bulletins.mois_toggle')} value={mois} options={moisOptions} onChange={(v) => setMois(v as number)} />
-            <Checkbox.Item
-              label="Bulletin de fin d'année (avec la moyenne annuelle)"
-              status={finAnnee ? 'checked' : 'unchecked'}
-              onPress={() => setFinAnnee(!finAnnee)}
-              position="leading"
-              labelStyle={styles.finAnnee}
-            />
-          </>
-        )}
-
-        {canManage && idAnnee && period ? (
-          <View style={styles.publishRow}>
-            <Button mode="outlined" onPress={() => handlePublishToggle(true)} style={styles.actionButton}>
-              {t('bulletins.publish_button')}
-            </Button>
-            <Button mode="outlined" textColor="#d33" onPress={() => handlePublishToggle(false)} style={styles.actionButton}>
-              {t('bulletins.unpublish_button')}
-            </Button>
-          </View>
-        ) : null}
-        {actionMessage ? <Text style={styles.info}>{actionMessage}</Text> : null}
-      </View>
-
-      {!idAnnee || !period ? (
-        <Text style={styles.empty}>{t('bulletins.choose_year_period')}</Text>
-      ) : isLoading ? (
-        <ActivityIndicator style={styles.spinner} size="large" />
-      ) : error ? (
-        <Text style={styles.error}>{error}</Text>
-      ) : (
-        <FlatList
-          data={students ?? []}
-          keyExtractor={(item) => String(item.id)}
-          contentContainerStyle={styles.list}
-          refreshing={false}
-          onRefresh={reload}
-          ListEmptyComponent={<Text style={styles.empty}>{t('bulletins.empty_students')}</Text>}
-          renderItem={({ item }) => (
-            <View style={styles.studentRow}>
-              <View style={styles.studentInfo}>
-                <Text style={styles.studentName}>
-                  {item.prenom} {item.nom}
-                </Text>
-                <Text style={styles.meta}>{item.matricule ?? '—'}</Text>
-              </View>
-              <Button mode="outlined" loading={downloadingId === item.id} onPress={() => handleDownload(item)}>
-                {t('bulletins.download_button')}
+  const header = (
+    <View style={styles.filters}>
+      <Text style={styles.sectionTitle}>{t('bulletins.modele_title')}</Text>
+      <Text style={styles.sectionDesc}>{t('bulletins.modele_desc')}</Text>
+      {isLoadingOptions ? <ActivityIndicator style={styles.inlineSpinner} size="small" /> : null}
+      {optionsError ? <Text style={styles.error}>{optionsError}</Text> : null}
+      {!isLoadingOptions && !optionsError && modeles.length === 0 ? (
+        <Text style={styles.empty}>{t('bulletins.modele_vide')}</Text>
+      ) : null}
+      {modeles.map((m) => {
+        const choisi = m.code === modele;
+        return (
+          <Pressable
+            key={m.code}
+            onPress={() => (choisi ? undefined : choisirModele(m.code))}
+            style={[styles.modeleTile, choisi && styles.modeleTileSelected]}
+            accessibilityRole="radio"
+            accessibilityState={{ checked: choisi }}
+          >
+            <View style={styles.modeleHead}>
+              <Text style={styles.modeleNom}>{m.nom}</Text>
+              <Text style={styles.formatBadge}>{m.format}</Text>
+            </View>
+            <Text style={styles.modeleDesc}>{m.description}</Text>
+            {m.avertissement ? <Text style={styles.modeleWarning}>⚠ {m.avertissement}</Text> : null}
+            {m.info ? <Text style={styles.modeleDesc}>{m.info}</Text> : null}
+            <View style={styles.modeleFoot}>
+              {choisi ? <Text style={styles.modeleChoisi}>✓ {t('bulletins.modele_choisi')}</Text> : <View />}
+              <Button mode="text" compact icon="eye" loading={previewing === m.code} disabled={previewing !== null} onPress={() => handlePreview(m)}>
+                {t('bulletins.modele_apercu')}
               </Button>
             </View>
-          )}
-        />
+          </Pressable>
+        );
+      })}
+
+      <SelectField label={t('eleves.label_annee')} value={idAnnee} options={anneeOptions} onChange={(v) => setIdAnnee(v as number)} />
+      <View style={styles.periodToggle}>
+        <Button mode={periodMode === 'trimestre' ? 'contained' : 'outlined'} onPress={() => setPeriodMode('trimestre')} style={styles.toggleButton} compact>
+          {t('bulletins.trimestre_toggle')}
+        </Button>
+        <Button mode={periodMode === 'mois' ? 'contained' : 'outlined'} onPress={() => setPeriodMode('mois')} style={styles.toggleButton} compact>
+          {t('bulletins.mois_toggle')}
+        </Button>
+      </View>
+      {periodMode === 'trimestre' ? (
+        <SelectField label={t('bulletins.trimestre_toggle')} value={idTrimestre} options={trimestreOptions} onChange={(v) => setIdTrimestre(v as number)} />
+      ) : (
+        <>
+          <SelectField label={t('bulletins.mois_toggle')} value={mois} options={moisOptions} onChange={(v) => setMois(v as number)} />
+          <Checkbox.Item
+            label="Bulletin de fin d'année (avec la moyenne annuelle)"
+            status={finAnnee ? 'checked' : 'unchecked'}
+            onPress={() => setFinAnnee(!finAnnee)}
+            position="leading"
+            labelStyle={styles.finAnnee}
+          />
+        </>
       )}
+
+      {canManage && idAnnee && period ? (
+        <View style={styles.publishRow}>
+          <Button mode="outlined" onPress={() => handlePublishToggle(true)} style={styles.actionButton}>
+            {t('bulletins.publish_button')}
+          </Button>
+          <Button mode="outlined" textColor="#d33" onPress={() => handlePublishToggle(false)} style={styles.actionButton}>
+            {t('bulletins.unpublish_button')}
+          </Button>
+        </View>
+      ) : null}
+      {actionMessage ? <Text style={styles.info}>{actionMessage}</Text> : null}
     </View>
+  );
+
+  const ready = Boolean(idAnnee && period);
+
+  return (
+    <FlatList
+      style={styles.container}
+      data={ready && !isLoading && !error ? students ?? [] : []}
+      keyExtractor={(item) => String(item.id)}
+      contentContainerStyle={styles.list}
+      ListHeaderComponent={header}
+      refreshing={false}
+      onRefresh={ready ? reload : reloadOptions}
+      ListEmptyComponent={
+        !ready ? (
+          <Text style={styles.empty}>{t('bulletins.choose_year_period')}</Text>
+        ) : isLoading ? (
+          <ActivityIndicator style={styles.spinner} size="large" />
+        ) : error ? (
+          <Text style={styles.error}>{error}</Text>
+        ) : (
+          <Text style={styles.empty}>{t('bulletins.empty_students')}</Text>
+        )
+      }
+      renderItem={({ item }) => (
+        <View style={styles.studentRow}>
+          <View style={styles.studentInfo}>
+            <Text style={styles.studentName}>
+              {item.prenom} {item.nom}
+            </Text>
+            <Text style={styles.meta}>{item.matricule ?? '—'}</Text>
+          </View>
+          <Button mode="outlined" loading={downloadingId === item.id} onPress={() => handleDownload(item)}>
+            {t('bulletins.download_button')}
+          </Button>
+        </View>
+      )}
+    />
   );
 }
 
 const styles = StyleSheet.create({
   finAnnee: { fontSize: 13, textAlign: 'left' },
   container: { flex: 1 },
-  filters: { padding: 16, paddingBottom: 0 },
+  filters: { paddingBottom: 4 },
+  sectionTitle: { fontWeight: '700', fontSize: 16 },
+  sectionDesc: { opacity: 0.6, marginBottom: 10 },
+  inlineSpinner: { marginVertical: 12 },
+  modeleTile: {
+    borderWidth: 1,
+    borderColor: 'rgba(128,128,128,0.25)',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+  },
+  modeleTileSelected: { borderColor: '#2e7d32', borderWidth: 2 },
+  modeleHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  modeleNom: { fontWeight: '700', flexShrink: 1 },
+  formatBadge: {
+    fontSize: 11,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(128,128,128,0.15)',
+  },
+  modeleDesc: { fontSize: 12, opacity: 0.7, marginTop: 4 },
+  modeleWarning: { fontSize: 12, color: '#b26a00', marginTop: 4 },
+  modeleFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 },
+  modeleChoisi: { fontSize: 12, fontWeight: '600', color: '#2e7d32' },
   periodToggle: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   toggleButton: { flex: 1 },
   publishRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
   actionButton: { flex: 1 },
   info: { textAlign: 'center', opacity: 0.7, marginBottom: 8 },
-  list: { padding: 16, paddingTop: 0, flexGrow: 1 },
+  list: { padding: 16, flexGrow: 1 },
   spinner: { marginTop: 40 },
   empty: { textAlign: 'center', opacity: 0.6, marginTop: 24 },
   error: { color: '#d33', textAlign: 'center', marginTop: 24 },

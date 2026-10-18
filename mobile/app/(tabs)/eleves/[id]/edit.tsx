@@ -132,7 +132,14 @@ export default function EditEleveScreen() {
       <TextInput mode="outlined" label={requiredLabel(t('eleves.label_nom'))} value={form.nom_eleve ?? ''} onChangeText={(v) => set('nom_eleve', v)} style={styles.input} />
       <TextInput mode="outlined" label={t('eleves.label_matricule_short')} value={form.matricule ?? ''} onChangeText={(v) => set('matricule', v)} style={styles.input} />
       <SelectField label={requiredLabel(t('eleves.label_genre'))} value={form.genre_eleve ?? null} options={GENRE_OPTIONS} onChange={(v) => set('genre_eleve', v as string)} />
-      <DateField label={t('eleves.label_date_naissance')} value={form.date_naissance ?? null} onChange={(v) => set('date_naissance', v)} />
+      <TextInput
+        mode="outlined"
+        label={t('eleves.label_date_naissance')}
+        value={form.date_naissance ?? ''}
+        onChangeText={(v) => set('date_naissance', v)}
+        placeholder={t('eleves.date_naissance_placeholder')}
+        style={styles.input}
+      />
       <TextInput mode="outlined" label={t('eleves.label_lieu_naissance')} value={form.lieu_naiss ?? ''} onChangeText={(v) => set('lieu_naiss', v)} style={styles.input} />
       <TextInput mode="outlined" label={t('eleves.label_adresse_short')} value={form.adresse_eleve ?? ''} onChangeText={(v) => set('adresse_eleve', v)} style={styles.input} />
       <SelectField label={requiredLabel(t('eleves.label_classe'))} value={form.id_classe ?? null} options={classeOptions} onChange={(v) => set('id_classe', v as number)} />

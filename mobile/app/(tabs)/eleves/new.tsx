@@ -221,7 +221,15 @@ export default function NewEleveScreen() {
 
       <TextInput mode="outlined" label={requiredLabel(t('eleves.label_prenom'))} value={prenom} onChangeText={setPrenom} style={styles.input} />
       <TextInput mode="outlined" label={requiredLabel(t('eleves.label_nom'))} value={nom} onChangeText={setNom} style={styles.input} />
-      <DateField label={t('eleves.label_date_naissance')} value={dateNaissance} onChange={setDateNaissance} />
+      {/* Saisie libre : JJ/MM/AAAA, mois en lettres ou « vers 2009 » (contrôlé par le serveur). */}
+      <TextInput
+        mode="outlined"
+        label={t('eleves.label_date_naissance')}
+        value={dateNaissance ?? ''}
+        onChangeText={setDateNaissance}
+        placeholder={t('eleves.date_naissance_placeholder')}
+        style={styles.input}
+      />
       <TextInput mode="outlined" label={t('eleves.label_lieu_naissance')} value={lieuNaissance} onChangeText={setLieuNaissance} placeholder={t('eleves.lieu_naissance_placeholder')} style={styles.input} />
       <TextInput mode="outlined" label={t('eleves.label_adresse')} value={adresse} onChangeText={setAdresse} style={styles.input} />
       <SelectField label={requiredLabel(t('eleves.label_genre'))} value={genre} options={GENRE_OPTIONS} onChange={(v) => setGenre(v as string)} />

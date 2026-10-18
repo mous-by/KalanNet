@@ -24,8 +24,8 @@ interface ParentPayeur {
 
 interface PaymentRow {
   eleve: { id_eleve: number; prenom_eleve: string; nom_eleve: string };
-  id_planification: number;
-  motif: string;
+  id_planification: number | null;
+  motif: string | null;
   montant_total: number;
   montant_deja_paye: number;
   reste_a_payer: number;
@@ -106,7 +106,7 @@ export default function PaiementClasseScreen() {
     if (entries[row.eleve.id_eleve]) return entries[row.eleve.id_eleve];
     return {
       selected: false,
-      motif: row.motif,
+      motif: row.motif ?? '',
       montant: String(row.a_payer_maintenant ?? row.reste_a_payer),
       parentId: null,
       autreNom: '',
