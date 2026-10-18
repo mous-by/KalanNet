@@ -20,7 +20,7 @@ class PresentationBulletin
         $estFondamental = Ordres::sousCap($ordre);
         $estTechnique = str_starts_with((string) $ordre, 'secondairetechnique');
         $estLycee = !$estTechnique && str_starts_with((string) $ordre, 'secondaire');
-        $cycle = trim(preg_replace('/\s*\(.*\)\s*$/', '', ExamenNational::ordresLabels($ecole)[$ordre] ?? ''));
+        $cycle = trim(preg_replace('/\s*\(.*\)\s*$/', '', ExamenNational::ordresLabels($ecole)[(string) $ordre] ?? ''));
 
         if (strtolower((string) $ecole->typeEcole) === 'complexe scolaire') {
             $nomEcole = __('bulletins.complexe_scolaire_prefix', ['name' => $ecole->nomComplexe ?: $ecole->nomEcole]);

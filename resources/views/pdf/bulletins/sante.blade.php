@@ -8,7 +8,6 @@
     if ($note_conduite !== null) {
         $lignes->push((object) ['nom' => 'Conduite', 'classe' => null, 'compo' => null, 'moyenne' => $note_conduite, 'coef' => 1, 'total' => $note_conduite, 'appreciation' => $appreciation_conduite]);
     }
-    $vides = max(0, 14 - $lignes->count());
 @endphp
 <div class="feuille">
     <div class="tete-sante">
@@ -65,9 +64,6 @@
                     <td class="appr">{{ $l->appreciation }}</td>
                 </tr>
             @endforeach
-            @for($i = 0; $i < $vides; $i++)
-                <tr class="vide"><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-            @endfor
         </tbody>
     </table>
 
