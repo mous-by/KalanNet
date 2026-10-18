@@ -282,6 +282,7 @@ class DashboardController extends Controller
     protected function supAdminDashboardData($user): array
     {
         $subscriptionOverview = $this->subscriptionOverview();
+        $totalEcoles = $subscriptionOverview->count();
         
         // Connected Users (active in the last 15 minutes)
         $connectedUsers = \App\Models\User::with('ecole')
@@ -322,6 +323,7 @@ class DashboardController extends Controller
 
         return compact(
             'subscriptionOverview',
+            'totalEcoles',
             'connectedUsers',
             'health',
             'pendingValidations',

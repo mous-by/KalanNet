@@ -973,9 +973,17 @@ class ConfigurationController extends Controller
         $this->authorizeAnyPermission(Auth::user(), ['permissions_apercu', 'permission_voir']);
 
         $search = $request->get('search');
+        // Hors SupAdmin : on ne montre que les permissions que l'on possède
+        // soi-même, et le nombre d'utilisateurs de sa propre école.
+        $authUser = Auth::user();
+        $visibles = $this->permissionsAssignables($authUser);
+        $visibles = $visibles === null ? null : array_flip($visibles);
 
         $canonicalPermissions = Permission::query()
-            ->withCount('users')
+            ->withCount(['users' => fn ($query) => $query->when(
+                $authUser->droit !== 'SupAdmin',
+                fn ($scoped) => $scoped->where('utilisateurs.idEcole', session('idEcole'))
+            )])
             ->orderBy('name')
             ->get()
             ->groupBy(fn ($permission) => Permission::canonicalName($permission->name))
@@ -986,6 +994,7 @@ class ConfigurationController extends Controller
 
                 return $permission;
             })
+            ->filter(fn ($permission) => $visibles === null || isset($visibles[$permission->name]))
             ->filter(fn ($permission) => !$search || str_contains(Permission::normalizeName($permission->name), Permission::normalizeName($search)))
             ->sortBy('name')
             ->values();

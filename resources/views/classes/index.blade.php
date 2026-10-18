@@ -86,6 +86,19 @@
                                                     </a>
                                                 </li>
                                             @endif
+                                            @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('classes_reinitialiser_eleves'))
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li>
+                                                    <form action="{{ route('classes.students.reset', $classe->id_classe) }}" method="POST" data-confirm-reset-class data-class-name="{{ $classe->nom_classe }}" data-student-count="{{ $classe->eleves_count }}">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <input type="hidden" name="confirmation_classe">
+                                                        <button type="submit" class="dropdown-item py-2 text-danger" @disabled($classe->eleves_count === 0)>
+                                                            <i class="bi bi-arrow-counterclockwise me-2"></i>Réinitialiser la classe
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            @endif
                                             <li>
                                                 <a class="dropdown-item py-2" href="{{ route('pedagogie.timetable', ['id_classe' => $classe->id_classe]) }}">
                                                     <i class="bi bi-calendar-plus text-primary me-2"></i>{{ __('classes.action_timetable') }}
@@ -182,6 +195,39 @@
                         cancelButtonColor: '#6c757d',
                     }).then(function (result) {
                         if (result.isConfirmed) form.submit();
+                    });
+                });
+            });
+
+            document.querySelectorAll('[data-confirm-reset-class]').forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    event.preventDefault();
+                    const className = form.dataset.className;
+                    const studentCount = form.dataset.studentCount;
+                    if (!window.Swal) {
+                        if (prompt('Cette opération efface définitivement les élèves sans activité. Saisissez le nom exact de la classe « ' + className + ' » pour confirmer.') === className) {
+                            form.querySelector('[name="confirmation_classe"]').value = className;
+                            form.submit();
+                        }
+                        return;
+                    }
+
+                    Swal.fire({
+                        title: 'Réinitialiser cette classe ?',
+                        text: studentCount + ' élève(s) seront supprimés définitivement. L’opération sera refusée si des données métier existent pour l’un d’eux. Saisissez le nom exact de la classe pour confirmer.',
+                        input: 'text',
+                        inputPlaceholder: className,
+                        showCancelButton: true,
+                        confirmButtonText: 'Supprimer définitivement',
+                        cancelButtonText: i18n.cancel,
+                        confirmButtonColor: '#dc3545',
+                        inputValidator: function (value) {
+                            return value === className ? undefined : 'Le nom saisi ne correspond pas à la classe.';
+                        },
+                    }).then(function (result) {
+                        if (!result.isConfirmed) return;
+                        form.querySelector('[name="confirmation_classe"]').value = result.value;
+                        form.submit();
                     });
                 });
             });

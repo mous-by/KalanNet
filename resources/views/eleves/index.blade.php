@@ -219,7 +219,7 @@
                                             <span class="text-pink"><i class="bi bi-gender-female me-1"></i> {{ __('eleves.genre_feminin') }}</span>
                                         @endif
                                     </td>
-                                    <td>{{ $eleve->date_naissance ? \Carbon\Carbon::parse($eleve->date_naissance)->format('d/m/Y') : __('eleves.not_specified') }}</td>
+                                    <td>{{ \App\Support\DateNaissance::afficher($eleve->date_naissance, __('eleves.not_specified')) }}</td>
                                     <td>{{ $eleve->lieu_naiss ?: __('eleves.not_specified_m') }}</td>
                                     <td>{{ $eleve->adresse_eleve ?: __('eleves.not_specified') }}</td>
                                     <td>{{ $eleve->cas_social ?: __('eleves.social_normal') }}</td>

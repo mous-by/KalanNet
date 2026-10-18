@@ -155,7 +155,7 @@
                     <td class="matricule">{{ $eleve->matricule }}</td>
                     <td>{{ $eleve->prenom_eleve }} {{ $eleve->nom_eleve }}</td>
                     <td class="genre">{{ $eleve->genre_eleve }}</td>
-                    <td class="date">{{ $eleve->date_naissance ? \Carbon\Carbon::parse($eleve->date_naissance)->format('d/m/Y') : '' }}</td>
+                    <td class="date">{{ \App\Support\DateNaissance::afficher($eleve->date_naissance, '') }}</td>
                     <td>{{ $eleve->lieu_naiss }}</td>
                 </tr>
             @endforeach

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Classe;
 use App\Models\ClasseOfficielle;
+use App\Models\Eleve;
 use App\Models\Ecole;
 use App\Models\Filiere;
 use App\Models\Matiere;
@@ -17,6 +18,7 @@ use App\Support\SchoolOrderAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 
 class ClasseController extends Controller
@@ -278,6 +280,129 @@ class ClasseController extends Controller
         });
 
         return redirect()->route('classes.index')->with('success', 'Classe supprimée avec succès.');
+    }
+
+    public function resetStudents(Request $request, $id)
+    {
+        $user = Auth::user();
+        abort_unless($user->droit === 'SupAdmin' || $user->userHasPermission('classes_reinitialiser_eleves'), 403);
+
+        $classe = Classe::withCount('eleves')
+            ->when($user->droit !== 'SupAdmin', fn ($query) => $query->where('idEcole', session('idEcole')))
+            ->findOrFail($id);
+        abort_unless($user->droit === 'SupAdmin' || (int) $classe->idEcole === (int) session('idEcole'), 403);
+
+        $data = $request->validate([
+            'confirmation_classe' => ['required', 'string', Rule::in([$classe->nom_classe])],
+        ]);
+
+        $resultat = DB::transaction(function () use ($classe) {
+            Classe::whereKey($classe->id_classe)->lockForUpdate()->firstOrFail();
+            $eleves = $classe->eleves()->lockForUpdate()->get();
+            $idsEleves = $eleves->pluck('id_eleve')->all();
+            if ($idsEleves === []) {
+                return ['supprimes' => 0, 'activite' => null];
+            }
+
+            $lignesHorsContexte = DB::table('ligne_inscription')
+                ->join('eleve as eleve', 'eleve.id_eleve', '=', 'ligne_inscription.id_eleve')
+                ->whereIn('ligne_inscription.id_eleve', $idsEleves)
+                ->where(fn ($query) => $query
+                    ->whereColumn('ligne_inscription.id_classe', '!=', 'eleve.id_classe')
+                    ->orWhereColumn('ligne_inscription.id_annee', '!=', 'eleve.id_annee'))
+                ->exists();
+            if ($lignesHorsContexte) {
+                return ['supprimes' => 0, 'activite' => 'ligne_inscription (historique d’une autre classe ou année)'];
+            }
+
+            if (Schema::hasTable('inscription') && in_array('id_anneeScolaire', Schema::getColumnListing('inscription'), true)) {
+                $inscriptionsHorsContexte = DB::table('inscription')
+                    ->join('eleve as eleve', 'eleve.id_eleve', '=', 'inscription.id_eleve')
+                    ->whereIn('inscription.id_eleve', $idsEleves)
+                    ->whereColumn('inscription.id_anneeScolaire', '!=', 'eleve.id_annee')
+                    ->exists();
+                if ($inscriptionsHorsContexte) {
+                    return ['supprimes' => 0, 'activite' => 'inscription (historique d’une autre année)'];
+                }
+            }
+
+            $subventionsHorsContexte = Schema::hasTable('subvention_etat_eleve')
+                && DB::table('subvention_etat_eleve as subvention')
+                    ->join('eleve as eleve', 'eleve.id_eleve', '=', 'subvention.id_eleve')
+                    ->whereIn('subvention.id_eleve', $idsEleves)
+                    ->where(fn ($query) => $query
+                        ->whereColumn('subvention.id_classe', '!=', 'eleve.id_classe')
+                        ->orWhereColumn('subvention.id_annee', '!=', 'eleve.id_annee'))
+                    ->exists();
+            if ($subventionsHorsContexte) {
+                return ['supprimes' => 0, 'activite' => 'subvention_etat_eleve (historique d’une autre classe ou année)'];
+            }
+
+            $tablesNettoyables = ['ligne_inscription', 'ligneparents_eleves', 'subvention_etat_eleve', 'inscription'];
+            $tablesActiviteEleve = [
+                'appel_epreuve', 'bulletin', 'conduite', 'controle', 'controle_eleve',
+                'indiscipline', 'ligne_evaluation', 'ligne_paiement_eleve',
+                'ligne_reinscription', 'moyenne_eleve', 'paiement', 'resultats_def_terminal',
+                'transfert', 'plans_paiement',
+            ];
+            // Sans schéma, getTables() liste les tables de toutes les bases du serveur.
+            foreach (Schema::getTables(DB::connection()->getDatabaseName()) as $tableInfo) {
+                $table = $tableInfo['name'] ?? null;
+                if (!$table || in_array($table, ['eleve', ...$tablesNettoyables], true)) {
+                    continue;
+                }
+
+                $colonnes = Schema::getColumnListing($table);
+                $colonneEleve = collect(['id_eleve', 'eleve_id'])->first(fn ($colonne) => in_array($colonne, $colonnes, true));
+                if ($colonneEleve && DB::table($table)->whereIn($colonneEleve, $idsEleves)->exists()) {
+                    return ['supprimes' => 0, 'activite' => $table];
+                }
+            }
+
+            foreach ($tablesActiviteEleve as $table) {
+                if (!Schema::hasTable($table)) {
+                    continue;
+                }
+                $colonnes = Schema::getColumnListing($table);
+                $colonneEleve = collect(['id_eleve', 'eleve_id'])->first(fn ($colonne) => in_array($colonne, $colonnes, true));
+                if ($colonneEleve && DB::table($table)->whereIn($colonneEleve, $idsEleves)->exists()) {
+                    return ['supprimes' => 0, 'activite' => $table];
+                }
+            }
+
+            DB::table('ligneparents_eleves')->whereIn('id_eleve', $idsEleves)->delete();
+            foreach ($eleves as $eleve) {
+                DB::table('ligne_inscription')
+                    ->where('id_eleve', $eleve->id_eleve)
+                    ->where('id_classe', $classe->id_classe)
+                    ->where('id_annee', $eleve->id_annee)
+                    ->delete();
+                if (Schema::hasTable('inscription') && in_array('id_anneeScolaire', Schema::getColumnListing('inscription'), true)) {
+                    DB::table('inscription')
+                        ->where('id_eleve', $eleve->id_eleve)
+                        ->where('id_anneeScolaire', $eleve->id_annee)
+                        ->delete();
+                }
+            }
+            if (Schema::hasTable('subvention_etat_eleve')) {
+                foreach ($eleves as $eleve) {
+                    DB::table('subvention_etat_eleve')
+                        ->where('id_eleve', $eleve->id_eleve)
+                        ->where('id_classe', $classe->id_classe)
+                        ->where('id_annee', $eleve->id_annee)
+                        ->delete();
+                }
+            }
+            Eleve::whereIn('id_eleve', $idsEleves)->where('id_classe', $classe->id_classe)->delete();
+
+            return ['supprimes' => count($idsEleves), 'activite' => null];
+        });
+
+        if ($resultat['activite']) {
+            return redirect()->route('classes.index')->with('error', "Réinitialisation refusée : des données élèves existent dans « {$resultat['activite']} ». Aucune donnée n’a été supprimée.");
+        }
+
+        return redirect()->route('classes.index')->with('success', "Classe réinitialisée : {$resultat['supprimes']} élève(s) supprimé(s) définitivement.");
     }
 
     protected function validateClasse(Request $request, ?Ecole $ecole = null): array

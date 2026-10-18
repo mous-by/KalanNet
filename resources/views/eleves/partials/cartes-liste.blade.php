@@ -70,7 +70,7 @@
                                 </div>
                                 <div>
                                     <div class="fw-bold">{{ $eleve->prenom_eleve }} {{ $eleve->nom_eleve }}</div>
-                                    <div class="small text-muted">{{ $eleve->date_naissance ? \Carbon\Carbon::parse($eleve->date_naissance)->format('d/m/Y') : __('cartes.birth_not_specified') }}</div>
+                                    <div class="small text-muted">{{ \App\Support\DateNaissance::afficher($eleve->date_naissance, __('cartes.birth_not_specified')) }}</div>
                                 </div>
                             </div>
                         </td>

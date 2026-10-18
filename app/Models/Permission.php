@@ -87,6 +87,7 @@ class Permission extends Model
                 'classes_creation' => 'Créer une classe',
                 'classes_modification' => 'Modifier les classes',
                 'classes_supprimer' => 'Supprimer les classes',
+                'classes_reinitialiser_eleves' => 'Réinitialiser une classe (effacer les élèves sans activité)',
                 'classes_programme_officiel' => 'Associer le programme officiel',
                 'matieres_apercu' => 'Voir les matières',
                 'matieres_creation' => 'Créer une matière',
@@ -231,6 +232,7 @@ class Permission extends Model
     public const JAMAIS_PAR_DEFAUT = [
         'evaluations_communes_apercu',
         'annees_scolaires_creation',
+        'classes_reinitialiser_eleves',
         // Annuler un paiement de frais scolaires : le SupAdmin l'accorde à
         // l'Admin qui le demande, qui peut ensuite la donner à son gestionnaire.
         'paiements_annuler',
@@ -264,6 +266,8 @@ class Permission extends Model
         // Module Évaluations communes : tous les rôles sauf les parents.
         'evaluations_communes_apercu' => ['Admin', 'Gestionnaire', 'enseignant', 'DAE', 'DCAP'],
         'paiements_annuler' => ['Admin', 'Gestionnaire'],
+        // La suppression définitive des élèves ne peut être déléguée qu'à un Admin.
+        'classes_reinitialiser_eleves' => ['Admin'],
     ];
 
     public static function accessiblePourRole(string $name, ?string $droit): bool

@@ -87,7 +87,7 @@ class ModeleInscriptionGroupe
         $consignes = [
             'Remplissez la feuille « Élèves » : une ligne par élève, à partir de la ligne 2. Ne modifiez pas la ligne des titres.',
             'Colonnes obligatoires (*) : Prénom, Nom et Genre. Une ligne sans prénom ou sans nom est ignorée.',
-            'Date de naissance : au format JJ/MM/AAAA (ex. 22/04/2009). Laissez vide si elle n\'est pas connue.',
+            'Date de naissance : JJ/MM/AAAA (ex. 22/04/2009) ou avec le mois en lettres (ex. 22/avr/2009). Si seule l\'année est connue, écrivez « vers 2009 ». Laissez vide si elle n\'est pas connue.',
             'Genre et Cas social : choisissez dans la liste déroulante de la cellule.',
             'Matricule : laissez vide pour qu\'il soit créé automatiquement.',
         ];
@@ -95,7 +95,7 @@ class ModeleInscriptionGroupe
             $consignes[] = 'Langue LV2 : seulement pour une classe du secondaire. Laissez vide sinon.';
         }
         if ($avecSubvention) {
-            $consignes[] = 'Subventionné par l\'État : « Oui » applique d\'office la formule annuelle de la classe, payée par l\'État.';
+            $consignes[] = 'Subventionné par l\'État : « Oui » = aucune formule ni dette familiale ; les versements globaux de l\'État sont répartis entre les élèves subventionnés.';
         }
         $consignes[] = 'La classe, l\'année scolaire et la formule de paiement se choisissent dans KalanNet au moment de l\'import : elles valent pour tout le fichier.';
         $consignes[] = self::MAX_LIGNES.' élèves au plus par fichier. Formats acceptés : .xlsx, .xls.';

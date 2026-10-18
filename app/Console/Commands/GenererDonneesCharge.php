@@ -453,6 +453,8 @@ class GenererDonneesCharge extends Command
                 foreach (array_chunk($faits->map(fn ($p) => ['id_classe' => $p->id_classe, 'id_annee' => self::ANNEE, 'id_paiement' => $p->id_paiement, 'id_eleve' => $p->id_eleve, 'id_trimestre' => $p->id_trimestre, 'idEcole' => $idEcole])->all(), 1000) as $lot) DB::table('ligne_paiement_eleve')->insert($lot);
                 foreach (array_chunk($faits->map(fn ($p) => ['paiement_id' => $p->id_paiement, 'type_operation' => 'Paiement eleve', 'date_encaissement' => substr($p->date_paiement, 0, 10), 'motif_encaissement' => 'annuelle', 'montant_encaissement' => $p->montant, 'statut' => 'valide', 'id_annee_scolaire' => self::ANNEE, 'id_caisse' => $idCaisse, 'idUtilisateur' => $admin->idUtilisateur])->all(), 1000) as $lot) DB::table('encaissement')->insert($lot);
                 DB::table('caisse')->where('id_caisse', $idCaisse)->update(['montant_net' => $faits->sum('montant')]);
+                // Les reçus 1..$recu sont pris : le compteur doit repartir après.
+                DB::table('paiement_sequences')->updateOrInsert(['ecole_id' => $idEcole, 'type' => 'recu'], ['dernier_numero' => $recu]);
             }
 
             // Absences et retards (environ 15 % des élèves).

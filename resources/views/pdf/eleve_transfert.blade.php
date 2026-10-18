@@ -161,7 +161,7 @@
         Je soussigné(e), Directeur / Directrice de l'établissement ci-dessus, certifie que l'élève
         <span class="field field-long">{{ $fullName }}</span>,
         matricule <span class="field">{{ $eleve->matricule ?: 'Non renseigné' }}</span>,
-        né(e) le <span class="field">{{ $eleve->date_naissance ? \Carbon\Carbon::parse($eleve->date_naissance)->format('d/m/Y') : 'Non renseignée' }}</span>
+        né(e) le <span class="field">{{ \App\Support\DateNaissance::afficher($eleve->date_naissance, 'Non renseignée') }}</span>
         à <span class="field">{{ $eleve->lieu_naiss ?: 'Non renseigné' }}</span>,
         précédemment inscrit(e) en classe de
         <span class="field">{{ $eleve->classe?->nom_classe ?: 'Non renseignée' }}</span>

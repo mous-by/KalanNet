@@ -181,7 +181,7 @@ class EleveController extends Controller
             'nom_eleve' => 'required|string|max:255',
             'matricule' => 'nullable|string|max:50',
             'genre_eleve' => 'required|string|in:Masculin,Féminin',
-            'date_naissance' => 'nullable|date',
+            'date_naissance' => ['nullable', 'string', 'max:30', \App\Support\DateNaissance::regle()],
             'lieu_naiss' => 'nullable|string|max:255',
             'adresse_eleve' => 'nullable|string|max:255',
             ...\App\Support\CasSocial::regles(),
@@ -226,7 +226,7 @@ class EleveController extends Controller
             'nom_eleve' => $data['nom_eleve'],
             'matricule' => $data['matricule'] ?: $eleve->matricule,
             'genre_eleve' => $data['genre_eleve'],
-            'date_naissance' => $data['date_naissance'] ?? null,
+            'date_naissance' => \App\Support\DateNaissance::normaliser($data['date_naissance'] ?? null),
             'lieu_naiss' => $data['lieu_naiss'] ?: 'Non renseigné',
             'adresse_eleve' => $data['adresse_eleve'] ?? null,
             'cas_social' => $casSocial,
@@ -237,6 +237,14 @@ class EleveController extends Controller
             'date_inscription' => $data['date_inscription'] ?? $eleve->date_inscription,
             'id_matiere_lv2' => array_key_exists('id_matiere_lv2', $data) ? $data['id_matiere_lv2'] : $eleve->id_matiere_lv2,
         ]);
+
+        if ($statutPaiement === 'subventionne') {
+            DB::table('ligne_inscription')
+                ->where('id_eleve', $eleve->id_eleve)
+                ->where('id_classe', $data['id_classe'])
+                ->where('id_annee', $data['id_annee'])
+                ->update(['id_planification' => null, 'montant_cas_social' => null]);
+        }
 
         \App\Support\SubventionEtat::synchroniser($eleve->fresh());
         \App\Support\CasSocial::enregistrer((int) $eleve->id_eleve, (int) $data['id_annee'], $casSocialNature, $casSocialMontant);
@@ -664,7 +672,7 @@ class EleveController extends Controller
                 'Eleve: ' . trim($eleve->prenom_eleve . ' ' . $eleve->nom_eleve),
                 'Matricule: ' . ($eleve->matricule ?: 'Non renseigne'),
                 'Sexe: ' . ($eleve->genre_eleve ?: 'Non renseigne'),
-                'Naissance: ' . ($eleve->date_naissance ? \Carbon\Carbon::parse($eleve->date_naissance)->format('d/m/Y') : 'Non renseignee'),
+                'Naissance: ' . \App\Support\DateNaissance::afficher($eleve->date_naissance, 'Non renseignee'),
                 $eleve->lieu_naiss ? 'Lieu: ' . $eleve->lieu_naiss : null,
             ]));
             $codes[$eleve->id_eleve] = $builder->build(
@@ -963,7 +971,7 @@ class EleveController extends Controller
             $eleve->prenom_eleve,
             $eleve->nom_eleve,
             $eleve->genre_eleve,
-            $eleve->date_naissance ? \Carbon\Carbon::parse($eleve->date_naissance)->format('d/m/Y') : '',
+            \App\Support\DateNaissance::afficher($eleve->date_naissance),
             $eleve->lieu_naiss,
         ];
     }

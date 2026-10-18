@@ -39,14 +39,35 @@ class BulletinController extends WebBulletinController
         $classe = Classe::findOrFail($idClasse);
         $this->authorizeClasse($classe);
 
+        // Mêmes informations que les tuiles de la page web (bulletins/index.blade.php).
+        $modeles = \App\Support\ModelesBulletin::disponibles((int) $classe->idEcole);
+        $nbMatieres = $classe->ligneClasses()->count();
+
         return response()->json([
             'classe' => $classe,
             'annees' => AnneeScolaire::orderByDesc('date_debut')->get(),
             'trimestres' => Trimestre::orderBy('id_trimestre')->get(),
             'mois_options' => $this->moisOptions(),
+            'nb_matieres' => $nbMatieres,
             // Modèles proposés à l'école et modèle retenu pour la classe (choix enregistré par /reglages).
-            'modeles' => collect(\App\Support\ModelesBulletin::disponibles((int) $classe->idEcole))
-                ->map(fn ($m, $code) => ['code' => $code, 'nom' => $m['nom'], 'format' => ($m['orientation'] ?? '') === 'landscape' ? 'A4 paysage · 2 exemplaires' : $m['format'], 'description' => $m['description']])
+            'modeles' => collect($modeles)
+                ->map(function ($m, $code) use ($modeles, $nbMatieres) {
+                    $equivalentA4 = \App\Support\ModelesBulletin::EQUIVALENT_A4[$code] ?? null;
+
+                    return [
+                        'code' => $code,
+                        'nom' => $m['nom'],
+                        'format' => ($m['orientation'] ?? '') === 'landscape'
+                            ? __('bulletins.modele_a4_paysage')
+                            : ($m['format'] === 'A4' ? __('bulletins.modele_a4') : __('bulletins.modele_a5')),
+                        'description' => $m['description'],
+                        'calcul' => $m['calcul'],
+                        'avertissement' => \App\Support\ModelesBulletin::demiPage($code) && $equivalentA4 && isset($modeles[$equivalentA4]) && $nbMatieres > \App\Support\ModelesBulletin::MAX_MATIERES_A5
+                            ? __('bulletins.modele_trop_matieres', ['count' => $nbMatieres, 'a4' => $modeles[$equivalentA4]['nom']])
+                            : null,
+                        'info' => $m['calcul'] === 'domaines' ? __('bulletins.modele_domaines_info') : null,
+                    ];
+                })
                 ->values(),
             'modele_actuel' => \App\Support\ModelesBulletin::pourClasse($classe),
         ]);

@@ -121,6 +121,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/classes/{id}', [ClasseController::class, 'show'])->name('classes.show');
     Route::get('/classes/{id}/edit', [ClasseController::class, 'edit'])->name('classes.edit');
     Route::put('/classes/{id}', [ClasseController::class, 'update'])->name('classes.update');
+    Route::delete('/classes/{id}/eleves/reinitialiser', [ClasseController::class, 'resetStudents'])->name('classes.students.reset');
     Route::delete('/classes/{id}', [ClasseController::class, 'destroy'])->name('classes.destroy');
 
     // Programmes officiels

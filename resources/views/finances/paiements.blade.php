@@ -20,6 +20,12 @@
         color: var(--text-on-accent) !important;
         border-color: var(--theme-primary) !important;
     }
+    .payment-subsidized-row,
+    .payment-subsidized-row > td,
+    .payment-subsidized-row > td * {
+        background-color: #e8f4fa !important;
+        color: #212529 !important;
+    }
 </style>
 @endpush
 
@@ -43,14 +49,22 @@
         <div class="alert alert-success">
         <div>{{ session('success') }}</div>
         @if(session('created_payment_ids'))
-            @php $recusCrees = session('created_payment_ids'); @endphp
+            @php
+                $recusCrees = session('created_payment_ids');
+                // Nom de l'élève sur chaque bouton plutôt que le numéro interne du paiement.
+                $elevesRecus = \App\Models\Paiement::with('eleve:id_eleve,prenom_eleve,nom_eleve')
+                    ->where('idEcole', session('idEcole'))
+                    ->whereIn('id_paiement', $recusCrees)
+                    ->get()
+                    ->mapWithKeys(fn ($p) => [$p->id_paiement => trim(($p->eleve?->prenom_eleve ?? '') . ' ' . ($p->eleve?->nom_eleve ?? ''))]);
+            @endphp
             <div class="mt-2 d-flex flex-wrap gap-2" id="recusCrees" data-auto="{{ count($recusCrees) === 1 ? 1 : 0 }}">
                 @foreach($recusCrees as $paymentId)
                     <button type="button" class="btn btn-sm btn-success imprimer-recu" data-format="a4" data-url="{{ route('finances.paiements.download', ['id' => $paymentId, 'imprimer' => 1]) }}">
-                        <i class="bi bi-printer me-1"></i>{{ __('finances.print_receipt_hash', ['id' => $paymentId]) }}
+                        <i class="bi bi-printer me-1"></i>{{ __('finances.print_receipt_hash', ['nom' => $elevesRecus[$paymentId] ?? '#' . $paymentId]) }}
                     </button>
                     <button type="button" class="btn btn-sm btn-outline-success imprimer-recu" data-format="thermique" data-url="{{ route('finances.paiements.thermique', ['id' => $paymentId, 'imprimer' => 1]) }}">
-                        <i class="bi bi-printer me-1"></i>{{ __('finances.print_thermal_hash', ['id' => $paymentId]) }}
+                        <i class="bi bi-printer me-1"></i>{{ __('finances.print_thermal_hash', ['nom' => $elevesRecus[$paymentId] ?? '#' . $paymentId]) }}
                     </button>
                 @endforeach
             </div>
@@ -244,7 +258,7 @@
                         @forelse($paymentRows as $index => $row)
                             @if($row->pris_en_charge_etat)
                             {{-- Frais payés par l'État : aucun champ, pour ne pas décaler les tableaux id_eleve[]/montant_recu[] des autres lignes. --}}
-                            <tr class="table-light text-muted">
+                            <tr class="payment-subsidized-row">
                                 <td class="text-center"><i class="bi bi-bank"></i></td>
                                 <td>{{ $index + 1 }}</td>
                                 <td>{{ $row->eleve->prenom_eleve }} {{ $row->eleve->nom_eleve }}</td>

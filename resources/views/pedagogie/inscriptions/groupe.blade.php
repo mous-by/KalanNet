@@ -88,7 +88,7 @@
                                     <option value="Féminin">Féminin</option>
                                 </select>
                             </td>
-                            <td><input type="date" name="eleves[0][date_naissance]" class="form-control"></td>
+                            <td><input type="text" name="eleves[0][date_naissance]" class="form-control" placeholder="{{ __('eleves.date_naissance_placeholder') }}" maxlength="30"></td>
                             <td><input name="eleves[0][lieu_naiss]" class="form-control"></td>
                             <td><input name="eleves[0][matricule]" class="form-control" placeholder="Auto si vide"></td>
                             <td>

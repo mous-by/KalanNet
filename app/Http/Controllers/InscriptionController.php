@@ -79,8 +79,11 @@ class InscriptionController extends Controller
             'fichier_excel' => 'required|file|mimes:xls,xlsx',
             'id_classe' => 'required|exists:classe,id_classe',
             'id_annee' => 'required|exists:anneescolaire,id_anneeScolaire',
-            'id_planification' => [$this->schoolRequiresPlanification() ? 'required' : 'nullable', 'integer', 'exists:planification,id_planification'],
+            // La présence de la formule dépend des lignes Excel : toutes peuvent
+            // être subventionnées, auquel cas leur formule est résolue plus bas.
+            'id_planification' => ['nullable', 'integer', 'exists:planification,id_planification'],
             'date_inscription' => ['nullable', 'date_format:Y-m-d'],
+            'subventionnes_tous' => ['nullable', 'boolean'],
         ]);
 
         $idEcole = session('idEcole');
@@ -114,8 +117,31 @@ class InscriptionController extends Controller
         $highestRow = $worksheet->getHighestDataRow();
         $createdCount = 0;
         $subventionnesCount = 0;
+        $doublonsCount = 0;
+        $subventionnesTous = $request->boolean('subventionnes_tous');
 
-        DB::transaction(function () use ($worksheet, $highestRow, $data, $idEcole, $classe, $planificationId, &$createdCount, &$subventionnesCount) {
+        DB::transaction(function () use ($worksheet, $highestRow, $data, $idEcole, $classe, $planificationId, $subventionnesTous, &$createdCount, &$subventionnesCount, &$doublonsCount) {
+            // Sérialise les imports sur cette classe pour éviter que deux imports
+            // simultanés ne passent tous les deux le contrôle de doublons.
+            Classe::whereKey($classe->id_classe)->lockForUpdate()->firstOrFail();
+
+            // Identité (nom, prénom, naissance) => matricules déjà présents.
+            $elevesConnus = [];
+            DB::table('ligne_inscription as inscription')
+                ->join('eleve as eleve', 'eleve.id_eleve', '=', 'inscription.id_eleve')
+                ->where('inscription.id_classe', $data['id_classe'])
+                ->where('inscription.id_annee', $data['id_annee'])
+                ->where('eleve.id_ecole', $idEcole)
+                ->select('eleve.prenom_eleve', 'eleve.nom_eleve', 'eleve.date_naissance', 'eleve.genre_eleve', 'eleve.matricule')
+                ->get()
+                ->each(function ($eleve) use (&$elevesConnus) {
+                    $this->memoriserEleve(
+                        $elevesConnus,
+                        $this->cleIdentiteEleve($eleve->prenom_eleve, $eleve->nom_eleve, $eleve->date_naissance, $eleve->genre_eleve),
+                        $eleve->matricule
+                    );
+                });
+
             $dateInscription = $data['date_inscription'] ?? now()->toDateString();
 
             for ($row = 2; $row <= $highestRow; $row++) {
@@ -132,13 +158,21 @@ class InscriptionController extends Controller
                     $dateNaissance = $this->normalizeExcelDate($worksheet->getCell('C' . $row)->getValue());
                 } catch (ValidationException $e) {
                     throw ValidationException::withMessages([
-                        'fichier_excel' => "Date de naissance invalide à la ligne {$row}. Utilisez le format JJ/MM/AAAA, par exemple 22/04/2009.",
+                        'fichier_excel' => "Date de naissance invalide à la ligne {$row}. Utilisez JJ/MM/AAAA (ex. 22/04/2009) ou « vers 2009 » si seule l’année est connue.",
                     ]);
                 }
-                $lieuNaiss = trim((string) $worksheet->getCell('D' . $row)->getValue()) ?: 'Non renseigné';
-                $adresse = trim((string) $worksheet->getCell('E' . $row)->getValue()) ?: null;
                 $genreSaisi = Str::lower(Str::ascii(trim((string) $worksheet->getCell('F' . $row)->getValue())));
                 $genre = in_array($genreSaisi, ['feminin', 'f', 'fille'], true) ? 'Féminin' : 'Masculin';
+                $matricule = $this->normalizeMatricule((string) $worksheet->getCell('H' . $row)->getValue());
+                $identite = $this->cleIdentiteEleve($prenom, $nom, $dateNaissance, $genre);
+                if ($this->estDoublon($elevesConnus, $identite, $matricule)) {
+                    $doublonsCount++;
+                    continue;
+                }
+                $this->memoriserEleve($elevesConnus, $identite, $matricule);
+
+                $lieuNaiss = trim((string) $worksheet->getCell('D' . $row)->getValue()) ?: 'Non renseigné';
+                $adresse = trim((string) $worksheet->getCell('E' . $row)->getValue()) ?: null;
                 $casSocial = trim((string) $worksheet->getCell('G' . $row)->getValue());
                 $casSocialNormalized = Str::lower(Str::ascii($casSocial));
                 if ($casSocialNormalized === 'dispense' || $casSocialNormalized === 'dispenser') {
@@ -148,8 +182,6 @@ class InscriptionController extends Controller
                 } else {
                     $casSocial = 'normal';
                 }
-                $matricule = $this->normalizeMatricule((string) $worksheet->getCell('H' . $row)->getValue());
-
                 // Colonne optionnelle (fichiers existants sans cette colonne
                 // continuent de fonctionner normalement, l'eleve est juste
                 // cree sans langue LV2 — a completer ensuite sur sa fiche).
@@ -163,14 +195,23 @@ class InscriptionController extends Controller
                     }
                 }
 
-                // Colonne optionnelle J : Oui = subventionné par l'État (la
-                // formule annuelle de la classe est alors appliquée d'office).
+                // Colonne optionnelle J : Oui = la formule ne s'applique pas ;
+                // l'État versera une subvention globale répartie entre élèves.
                 $valeurJ = mb_strtolower(trim((string) $worksheet->getCell('J' . $row)->getValue()));
-                $subventionne = in_array(\Illuminate\Support\Str::ascii($valeurJ), ['oui', 'o', 'yes', 'y', '1', 'x', 'subventionne'], true)
+                $subventionne = $subventionnesTous
+                    || in_array(\Illuminate\Support\Str::ascii($valeurJ), ['oui', 'o', 'yes', 'y', '1', 'x', 'subventionne'], true)
                     || $valeurJ === 'نعم';
-                $planificationEleve = $subventionne
-                    ? $this->formuleSubventionneOuErreur($classe, (int) $data['id_annee'], 'fichier_excel', $row)
-                    : $planificationId;
+                if (!$subventionne && $this->schoolRequiresPlanification() && !$planificationId) {
+                    throw ValidationException::withMessages([
+                        'id_planification' => __('inscriptions.ligne_prefix', ['ligne' => $row]) . ' ' . __('inscriptions.select_planification'),
+                    ]);
+                }
+                if ($subventionne && !\App\Support\SubventionEtat::classeEligible($classe)) {
+                    throw ValidationException::withMessages([
+                        'fichier_excel' => __('inscriptions.ligne_prefix', ['ligne' => $row]) . ' ' . __('eleves.statut_subventionne_non_eligible'),
+                    ]);
+                }
+                $planificationEleve = $subventionne ? null : $planificationId;
 
                 $eleve = new Eleve();
                 $eleve->prenom_eleve = $prenom;
@@ -208,12 +249,15 @@ class InscriptionController extends Controller
                 $createdCount++;
             }
 
-            if ($createdCount === 0) {
+            if ($createdCount === 0 && $doublonsCount === 0) {
                 throw new \Exception('Aucune ligne valide trouvée dans le fichier Excel.');
             }
         });
 
         $message = "Import effectué : {$createdCount} élève(s) inscrits.";
+        if ($doublonsCount > 0) {
+            $message .= " {$doublonsCount} doublon(s) ignoré(s) : ces élèves sont déjà inscrits dans cette classe et cette année, ou apparaissent plusieurs fois dans le fichier.";
+        }
         if ($subventionnesCount > 0) {
             $message .= ' ' . __('inscriptions.import_dont_subventionnes', ['count' => $subventionnesCount]);
         }
@@ -242,38 +286,7 @@ class InscriptionController extends Controller
 
     private function normalizeExcelDate($value): ?string
     {
-        if (empty($value)) {
-            return null;
-        }
-
-        if (is_numeric($value)) {
-            try {
-                return Date::excelToDateTimeObject($value)->format('Y-m-d');
-            } catch (\Exception $e) {
-                return null;
-            }
-        }
-
-        if ($value instanceof \DateTimeInterface) {
-            return $value->format('Y-m-d');
-        }
-
-        $normalized = trim((string) $value);
-        // JJ/MM/AAAA (saisie courante) ramené à AAAA-MM-JJ.
-        if (preg_match('#^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$#', $normalized, $matches)) {
-            $normalized = sprintf('%04d-%02d-%02d', $matches[3], $matches[2], $matches[1]);
-        }
-        if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $normalized, $matches)) {
-            if (!checkdate((int) $matches[2], (int) $matches[3], (int) $matches[1])) {
-                throw ValidationException::withMessages([
-                    'date_naissance' => 'La date de naissance est invalide.',
-                ]);
-            }
-
-            return $normalized;
-        }
-
-        return null;
+        return \App\Support\DateNaissance::normaliser($value);
     }
 
     public function store(Request $request)
@@ -285,7 +298,7 @@ class InscriptionController extends Controller
             'id_classe' => 'required|integer|exists:classe,id_classe',
             'id_annee' => 'required|integer|exists:anneescolaire,id_anneeScolaire',
             'genre_eleve' => ['required', Rule::in(['Masculin', 'Féminin'])],
-            'date_naissance' => ['nullable', 'date_format:Y-m-d'],
+            'date_naissance' => ['nullable', 'string', 'max:30', \App\Support\DateNaissance::regle()],
             'lieu_naiss' => 'nullable',
             'adresse_eleve' => 'nullable',
             ...\App\Support\CasSocial::regles(),
@@ -320,8 +333,13 @@ class InscriptionController extends Controller
             $data,
             $this->schoolRequiresPlanification() && !$subventionne
         );
+        if ($subventionne && !\App\Support\SubventionEtat::classeEligible($classe)) {
+            throw ValidationException::withMessages([
+                'subventionne_etat' => __('eleves.statut_subventionne_non_eligible'),
+            ]);
+        }
         $planificationId = $subventionne
-            ? $this->formuleSubventionneOuErreur($classe, (int) $data['id_annee'])
+            ? null
             : ($casSocialMontant !== null
                 ? $this->formuleCasSocialOuErreur($classe, (int) $data['id_annee'])
                 : ($data['id_planification'] ?? null));
@@ -398,7 +416,7 @@ class InscriptionController extends Controller
             'eleves.*.prenom_eleve' => 'required|string|max:255',
             'eleves.*.nom_eleve' => 'required|string|max:255',
             'eleves.*.genre_eleve' => ['required', Rule::in(['Masculin', 'Féminin'])],
-            'eleves.*.date_naissance' => ['nullable', 'date_format:Y-m-d'],
+            'eleves.*.date_naissance' => ['nullable', 'string', 'max:30', \App\Support\DateNaissance::regle()],
             'eleves.*.lieu_naiss' => 'nullable|string|max:255',
             'eleves.*.matricule' => 'nullable|string|max:50',
             'eleves.*.id_matiere_lv2' => ['nullable', 'integer', Rule::exists('matiere', 'id_matiere')->where('est_lv2', true)],
@@ -700,10 +718,8 @@ class InscriptionController extends Controller
             ]);
         }
 
-        // Comme à l'inscription : en école privée, chaque élève qui reste
-        // dans l'école doit avoir sa formule de paiement pour la nouvelle année.
-        // Les élèves subventionnés n'ont pas de formule à choisir : la formule
-        // annuelle de leur nouvelle classe leur est appliquée d'office.
+        // Comme à l'inscription : les élèves ordinaires doivent avoir une formule.
+        // Les élèves subventionnés sont financés par les versements globaux de l'État.
         $subventionnes = Eleve::where('id_ecole', session('idEcole'))
             ->whereIn('id_eleve', $selectedRows->pluck('id_eleve'))
             ->where('statut_paiement', 'subventionne')
@@ -786,7 +802,12 @@ class InscriptionController extends Controller
                 }
 
                 $planificationId = null;
-                if (in_array($decision, ['passant', 'redoublant'], true) && !empty($row['id_planification'])) {
+                if (in_array($decision, ['passant', 'redoublant'], true)
+                    && $subventionnes->has((int) $eleve->id_eleve)
+                    && \App\Support\SubventionEtat::classeEligible($classes->get($targetClasseId))) {
+                    // Subventionné : pas de formule (NULL, la clé étrangère refuse 0).
+                    $planificationId = null;
+                } elseif (in_array($decision, ['passant', 'redoublant'], true) && !empty($row['id_planification'])) {
                     $planificationId = Planification::where('id_classe', $targetClasseId)
                         ->where('id_annee', (int) $data['target_annee_id'])
                         ->whereKey((int) $row['id_planification'])
@@ -795,10 +816,6 @@ class InscriptionController extends Controller
                         $skipped++;
                         continue;
                     }
-                } elseif (in_array($decision, ['passant', 'redoublant'], true)
-                    && $subventionnes->has((int) $eleve->id_eleve)
-                    && \App\Support\SubventionEtat::classeEligible($classes->get($targetClasseId))) {
-                    $planificationId = $this->formuleSubventionneOuErreur($classes->get($targetClasseId), (int) $data['target_annee_id'], 'id_planification');
                 }
 
                 $insert = [
@@ -874,28 +891,6 @@ class InscriptionController extends Controller
 
         return redirect()->route('inscriptions.index', ['tab' => 'reinscription'])
             ->with('success', $message);
-    }
-
-    /**
-     * Élève subventionné : l'utilisateur ne choisit pas de formule, on applique
-     * la formule annuelle de la classe (montant dû par l'État).
-     */
-    protected function formuleSubventionneOuErreur(Classe $classe, int $anneeId, ?string $champ = 'subventionne_etat', ?int $ligne = null): int
-    {
-        if (!\App\Support\SubventionEtat::classeEligible($classe)) {
-            throw ValidationException::withMessages([
-                $champ => ($ligne ? __('inscriptions.ligne_prefix', ['ligne' => $ligne]) . ' ' : '') . __('eleves.statut_subventionne_non_eligible'),
-            ]);
-        }
-
-        $formule = \App\Support\SubventionEtat::formulePourSubventionne((int) $classe->id_classe, $anneeId);
-        if (!$formule) {
-            throw ValidationException::withMessages([
-                $champ => __('inscriptions.subvention_formule_annuelle_manquante', ['classe' => $classe->nom_classe]),
-            ]);
-        }
-
-        return $formule;
     }
 
     /**
@@ -1170,19 +1165,7 @@ class InscriptionController extends Controller
 
     private function validDateOrNull(?string $value, string $field): ?string
     {
-        $value = trim((string) $value);
-        if ($value === '') {
-            return null;
-        }
-
-        if (!preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $value, $matches)
-            || !checkdate((int) $matches[2], (int) $matches[3], (int) $matches[1])) {
-            throw ValidationException::withMessages([
-                $field => 'La date de naissance est invalide.',
-            ]);
-        }
-
-        return $value;
+        return \App\Support\DateNaissance::normaliser($value, $field);
     }
 
     private function generateMatricule(array $data): string
@@ -1206,6 +1189,54 @@ class InscriptionController extends Controller
         $matricule = preg_replace('/[^A-Za-z0-9_-]/', '', $matricule);
 
         return $matricule !== '' ? substr($matricule, 0, 50) : null;
+    }
+
+    /**
+     * Clé d'identité d'un élève (nom, prénom, date de naissance — ou genre à
+     * défaut de date), sans tenir compte des accents ni de la casse.
+     */
+    private function cleIdentiteEleve(?string $prenom, ?string $nom, mixed $dateNaissance, ?string $genre): ?string
+    {
+        $normaliser = static function (?string $valeur): string {
+            $valeur = Str::lower(Str::ascii(trim((string) $valeur)));
+            return preg_replace('/\s+/', ' ', $valeur) ?? $valeur;
+        };
+        $prenom = $normaliser($prenom);
+        $nom = $normaliser($nom);
+        if ($prenom === '' || $nom === '') {
+            return null;
+        }
+
+        $date = $dateNaissance instanceof \DateTimeInterface
+            ? $dateNaissance->format('Y-m-d')
+            : $normaliser((string) $dateNaissance);
+
+        return $nom . '|' . $prenom . ($date !== '' ? '|date:' . $date : '|genre:' . $normaliser($genre));
+    }
+
+    /**
+     * Doublon = même identité ET même matricule. Une ligne sans matricule ne
+     * peut être comparée que sur l'identité.
+     */
+    private function estDoublon(array $elevesConnus, ?string $identite, ?string $matricule): bool
+    {
+        if ($identite === null || !isset($elevesConnus[$identite])) {
+            return false;
+        }
+
+        $matricule = $this->normalizeMatricule($matricule);
+
+        return $matricule === null || isset($elevesConnus[$identite][Str::lower($matricule)]);
+    }
+
+    private function memoriserEleve(array &$elevesConnus, ?string $identite, ?string $matricule): void
+    {
+        if ($identite === null) {
+            return;
+        }
+
+        $matricule = $this->normalizeMatricule($matricule);
+        $elevesConnus[$identite][$matricule === null ? '' : Str::lower($matricule)] = true;
     }
 
     private function asciiLetters(string $value): string

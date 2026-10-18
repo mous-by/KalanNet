@@ -92,7 +92,7 @@ return [
     'cas_social_nature' => 'طبيعة الحالة الاجتماعية',
     'cas_social_nature_placeholder' => 'مثال: يتيم، ابن أحد الموظفين…',
     'cas_social_montant' => 'الرسوم المقابلة (للسنة)',
-    'cas_social_montant_help' => 'ما يدفعه التلميذ للسنة. تُطبَّق الصيغة السنوية للقسم تلقائيًا بهذا المبلغ بدلاً من مبلغها.',
+    'cas_social_montant_help' => 'للتلميذ غير المدعوم: يحل هذا المبلغ محل مبلغ الصيغة السنوية. أما التلميذ المدعوم فلا تُسند إليه صيغة دفع أو رسوم على الأسرة.',
     'cas_social_nature_obligatoire' => 'أدخل طبيعة الحالة الاجتماعية.',
     'cas_social_montant_obligatoire' => 'أدخل الرسوم التي يجب على التلميذ دفعها لهذه الحالة الاجتماعية.',
     'cas_social_montant_trop_eleve' => 'لا يمكن أن تتجاوز رسوم الحالة الاجتماعية مبلغ صيغة الدفع (:montant F).',
@@ -223,4 +223,7 @@ return [
     'statut_subventionne_non_eligible' => 'صفة «مدعوم» مخصصة لأقسام الثانوي في المدارس الخاصة فقط.',
     'row_formule' => 'صيغة الدفع',
     'not_specified_f' => 'غير محددة',
+    'ne_vers' => 'حوالي :annee',
+    'date_naissance_invalide' => 'تاريخ الميلاد غير صالح. استعمل يوم/شهر/سنة (مثال 22/04/2009) أو «vers 2009» إذا كانت السنة فقط معروفة.',
+    'date_naissance_placeholder' => 'يوم/شهر/سنة أو vers 2009',
 ];

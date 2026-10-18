@@ -439,8 +439,15 @@ class ConfigurationController extends WebConfigurationController
         $this->authorizeAnyPermission($request->user(), ['permissions_apercu', 'permission_voir']);
 
         $search = $request->get('search');
+        // Hors SupAdmin : uniquement ses propres permissions (comme sur le web).
+        $authUser = $request->user();
+        $visibles = $this->permissionsAssignables($authUser);
+        $visibles = $visibles === null ? null : array_flip($visibles);
         $permissions = Permission::query()
-            ->withCount('users')
+            ->withCount(['users' => fn ($query) => $query->when(
+                $authUser->droit !== 'SupAdmin',
+                fn ($scoped) => $scoped->where('utilisateurs.idEcole', session('idEcole'))
+            )])
             ->orderBy('name')
             ->get()
             ->groupBy(fn ($p) => Permission::canonicalName($p->name))
@@ -450,6 +457,7 @@ class ConfigurationController extends WebConfigurationController
                 $permission->users_count = $duplicates->sum('users_count');
                 return $permission;
             })
+            ->filter(fn ($p) => $visibles === null || isset($visibles[$p->name]))
             ->filter(fn ($p) => !$search || str_contains(Permission::normalizeName($p->name), Permission::normalizeName($search)))
             ->sortBy('name')
             ->values();

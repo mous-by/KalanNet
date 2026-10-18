@@ -48,7 +48,7 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_date_naissance') }}</label>
-                        <input type="date" name="date_naissance" class="form-control" value="{{ old('date_naissance', $eleve->date_naissance) }}">
+                        <input type="text" name="date_naissance" class="form-control" value="{{ old('date_naissance', \App\Support\DateNaissance::pourSaisie($eleve->date_naissance)) }}" placeholder="{{ __('eleves.date_naissance_placeholder') }}" maxlength="30" autocomplete="off">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_lieu_naissance') }}</label>

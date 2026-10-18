@@ -164,7 +164,7 @@
                         $photoPath = $eleve->image ? public_path($eleve->image) : null;
                         $hasPhoto = $photoPath && is_file($photoPath);
                         $qrCode = $qrCodes[$eleve->id_eleve] ?? null;
-                        $naissance = $eleve->date_naissance ? \Carbon\Carbon::parse($eleve->date_naissance)->format('d/m/Y') : null;
+                        $naissance = \App\Support\DateNaissance::afficher($eleve->date_naissance, null);
                         $matricule = $eleve->matricule ?: null;
                         $parent = $eleve->relationLoaded('parents') ? $eleve->parents->first() : null;
                         // Feuille retournée sur le bord long : la colonne d'un verso est l'inverse de celle de son recto.
@@ -190,7 +190,7 @@
                             $photoPath = $eleve->image ? public_path($eleve->image) : null;
                             $hasPhoto = $photoPath && is_file($photoPath);
                             $qrCode = $qrCodes[$eleve->id_eleve] ?? null;
-                            $naissance = $eleve->date_naissance ? \Carbon\Carbon::parse($eleve->date_naissance)->format('d/m/Y') : null;
+                            $naissance = \App\Support\DateNaissance::afficher($eleve->date_naissance, null);
                             $matricule = $eleve->matricule ?: null;
                             $parent = $eleve->relationLoaded('parents') ? $eleve->parents->first() : null;
                             $espace = $loop->first ? '' : 'padding-left:4mm';

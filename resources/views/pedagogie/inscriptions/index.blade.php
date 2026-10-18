@@ -68,7 +68,7 @@
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_date_naissance') }}</label>
-                                        <input type="date" name="date_naissance" class="form-control rounded-3" value="{{ old('date_naissance') }}">
+                                        <input type="text" name="date_naissance" class="form-control rounded-3" value="{{ old('date_naissance') }}" placeholder="{{ __('eleves.date_naissance_placeholder') }}" maxlength="30" autocomplete="off">
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_lieu_naissance') }}</label>
@@ -162,11 +162,8 @@
                                     <div class="col-md-4">
                                         <label class="form-label small fw-bold text-uppercase">
                                             {{ $planificationLabel }}
-                                            @if($planificationRequired)
-                                                <span class="text-danger">*</span>
-                                            @endif
                                         </label>
-                                        <select name="id_planification" class="form-select rounded-3" @required($planificationRequired) data-planification-select>
+                                        <select name="id_planification" class="form-select rounded-3" data-planification-select>
                                             <option value="">{{ $planificationRequired ? __('inscriptions.select_planification') : __('inscriptions.no_cooperative_no_fee') }}</option>
                                             @foreach($planifications as $planification)
                                                 <option value="{{ $planification->id_planification }}" data-classe="{{ $planification->id_classe }}" data-annee="{{ $planification->id_annee }}" @selected(old('id_planification') == $planification->id_planification)>{{ $planificationRequired ? $planification->motif : __('inscriptions.cooperative_label') }} - {{ number_format((float) $planification->montant_planification, 0, ',', ' ') }} F</option>
@@ -260,7 +257,7 @@
                                         <select name="id_classe" class="form-select rounded-3" required data-planification-classe>
                                             <option value="">{{ __('inscriptions.select_classe') }}</option>
                                             @foreach($classes as $classe)
-                                                <option value="{{ $classe->id_classe }}">{{ $classe->nom_classe }}</option>
+                                                <option value="{{ $classe->id_classe }}" data-subvention="{{ \App\Support\SubventionEtat::classeEligible($classe) ? '1' : '0' }}">{{ $classe->nom_classe }}</option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -273,7 +270,15 @@
                                             @endforeach
                                         </select>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-4 d-none" data-subvention-group-field>
+                                        <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_statut_paiement') }}</label>
+                                        <div class="form-check mt-2">
+                                            <input type="checkbox" name="subventionnes_tous" value="1" class="form-check-input" data-subvention-group-checkbox @checked(old('subventionnes_tous'))>
+                                            <label class="form-check-label">Tous les élèves importés sont subventionnés par l’État</label>
+                                        </div>
+                                        <div class="form-text">Aucune formule ni dette familiale ne sera créée. Les versements globaux de l’État seront partagés également entre les bénéficiaires.</div>
+                                    </div>
+                                    <div class="col-md-4" data-group-formula-wrap>
                                         <label class="form-label small fw-bold text-uppercase">
                                             {{ $planificationLabel }}
                                             @if($planificationRequired)
@@ -286,6 +291,7 @@
                                                 <option value="{{ $planification->id_planification }}" data-classe="{{ $planification->id_classe }}" data-annee="{{ $planification->id_annee }}">{{ $planificationRequired ? $planification->motif : __('inscriptions.cooperative_label') }} - {{ number_format((float) $planification->montant_planification, 0, ',', ' ') }} F</option>
                                             @endforeach
                                         </select>
+                                        <div class="form-text text-danger d-none" data-planification-empty>Aucune formule n’est configurée pour cette classe et cette année. Configurez d’abord une formule dans Finances &gt; Formule de paiement.</div>
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_date_inscription') }}</label>
@@ -710,10 +716,26 @@
             }
 
             const options = Array.from(planificationSelect.options);
+            const groupSubventionField = form.querySelector('[data-subvention-group-field]');
+            const groupSubventionCheckbox = form.querySelector('[data-subvention-group-checkbox]');
+            const groupFormulaWrap = form.querySelector('[data-group-formula-wrap]');
+
+            const syncGroupSubvention = () => {
+                if (!groupSubventionField || !groupSubventionCheckbox || !groupFormulaWrap) return;
+                const eligibleClass = classeSelect.selectedOptions[0]?.dataset.subvention === '1';
+                groupSubventionField.classList.toggle('d-none', !eligibleClass);
+                if (!eligibleClass) groupSubventionCheckbox.checked = false;
+                const autoFormula = eligibleClass && groupSubventionCheckbox.checked;
+                groupFormulaWrap.classList.toggle('d-none', autoFormula);
+                planificationSelect.required = {{ $planificationRequired ? 'true' : 'false' }} && !autoFormula;
+                if (autoFormula) planificationSelect.value = '';
+            };
+
             const filterPlanifications = () => {
                 const classeId = classeSelect.value;
                 const anneeId = anneeSelect.value;
                 let selectedOptionStillVisible = true;
+                let hasMatchingPlanification = false;
 
                 options.forEach((option) => {
                     if (!option.value) {
@@ -724,6 +746,7 @@
                     const visible = option.dataset.classe === classeId && option.dataset.annee === anneeId;
                     option.hidden = !visible;
                     option.disabled = !visible;
+                    hasMatchingPlanification = hasMatchingPlanification || visible;
 
                     if (option.selected && !visible) {
                         selectedOptionStillVisible = false;
@@ -733,10 +756,24 @@
                 if (!selectedOptionStillVisible) {
                     planificationSelect.value = '';
                 }
+
+                const emptyMessage = form.querySelector('[data-planification-empty]');
+                emptyMessage?.classList.toggle('d-none', !classeId || !anneeId || hasMatchingPlanification);
+
+                // Les options sont modifiées via hidden/disabled, ce que
+                // l'observateur Select2 ne voit pas (il observe les enfants).
+                if (planificationSelect.classList.contains('select2-hidden-accessible')) {
+                    window.jQuery(planificationSelect).trigger('change.select2');
+                }
             };
 
-            classeSelect.addEventListener('change', filterPlanifications);
+            classeSelect.addEventListener('change', () => {
+                syncGroupSubvention();
+                filterPlanifications();
+            });
             anneeSelect.addEventListener('change', filterPlanifications);
+            groupSubventionCheckbox?.addEventListener('change', syncGroupSubvention);
+            syncGroupSubvention();
             filterPlanifications();
         });
 

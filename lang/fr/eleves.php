@@ -92,7 +92,7 @@ return [
     'cas_social_nature' => 'Nature du cas social',
     'cas_social_nature_placeholder' => 'Ex. : orphelin, enfant du personnel…',
     'cas_social_montant' => 'Frais correspondant (pour l\'année)',
-    'cas_social_montant_help' => 'Ce que l\'élève paie pour l\'année. La formule annuelle de la classe est appliquée d\'office, avec ce montant à la place du sien.',
+    'cas_social_montant_help' => 'Pour un élève non subventionné : ce montant remplace celui de la formule annuelle. Un élève subventionné n\'a ni formule ni frais familial.',
     'cas_social_nature_obligatoire' => 'Indiquez la nature du cas social.',
     'cas_social_montant_obligatoire' => 'Indiquez le frais que l\'élève doit payer pour ce cas social.',
     'cas_social_montant_trop_eleve' => 'Le frais du cas social ne peut pas dépasser le montant de la formule (:montant F).',
@@ -223,4 +223,7 @@ return [
     'statut_subventionne_non_eligible' => 'Le statut « Subventionné » est réservé aux classes du secondaire des écoles privées.',
     'row_formule' => 'Formule de paiement',
     'not_specified_f' => 'Non renseignée',
+    'ne_vers' => 'Vers :annee',
+    'date_naissance_invalide' => 'La date de naissance est invalide. Utilisez JJ/MM/AAAA (ex. 22/04/2009) ou « vers 2009 » si seule l\'année est connue.',
+    'date_naissance_placeholder' => 'JJ/MM/AAAA ou vers 2009',
 ];

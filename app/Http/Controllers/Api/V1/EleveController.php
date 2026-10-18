@@ -53,7 +53,7 @@ class EleveController extends WebEleveController
             'id_classe' => 'required|integer|exists:classe,id_classe',
             'id_annee' => 'required|integer|exists:anneescolaire,id_anneeScolaire',
             'genre_eleve' => ['required', Rule::in(['Masculin', 'Féminin'])],
-            'date_naissance' => ['nullable', 'date_format:Y-m-d'],
+            'date_naissance' => ['nullable', 'string', 'max:30', \App\Support\DateNaissance::regle()],
             'lieu_naiss' => 'nullable',
             'adresse_eleve' => 'nullable',
             'cas_social' => 'nullable',
@@ -80,15 +80,9 @@ class EleveController extends WebEleveController
             ]);
         }
 
-        // Subventionné : la formule annuelle de la classe est appliquée d'office.
-        $planificationId = $subventionne
-            ? \App\Support\SubventionEtat::formulePourSubventionne((int) $classe->id_classe, (int) $data['id_annee'])
-            : ($data['id_planification'] ?? null);
-        if ($subventionne && !$planificationId) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
-                'subventionne_etat' => __('inscriptions.subvention_formule_annuelle_manquante', ['classe' => $classe->nom_classe]),
-            ]);
-        }
+        // Les frais des élèves subventionnés sont gérés par les versements
+        // globaux de l'État, sans formule ni montant dû par la famille.
+        $planificationId = $subventionne ? null : ($data['id_planification'] ?? null);
         if ($planificationId) {
             Planification::where('id_classe', $data['id_classe'])
                 ->where('id_annee', $data['id_annee'])
@@ -156,19 +150,7 @@ class EleveController extends WebEleveController
 
     private function validDateOrNull(?string $value, string $field): ?string
     {
-        $value = trim((string) $value);
-        if ($value === '') {
-            return null;
-        }
-
-        if (!preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $value, $matches)
-            || !checkdate((int) $matches[2], (int) $matches[3], (int) $matches[1])) {
-            throw ValidationException::withMessages([
-                $field => 'La date de naissance est invalide.',
-            ]);
-        }
-
-        return $value;
+        return \App\Support\DateNaissance::normaliser($value, $field);
     }
 
     private function generateMatricule(array $data): string
@@ -295,7 +277,7 @@ class EleveController extends WebEleveController
             'nom_eleve' => 'required|string|max:255',
             'matricule' => 'nullable|string|max:50',
             'genre_eleve' => 'required|string|in:Masculin,Féminin',
-            'date_naissance' => 'nullable|date',
+            'date_naissance' => ['nullable', 'string', 'max:30', \App\Support\DateNaissance::regle()],
             'lieu_naiss' => 'nullable|string|max:255',
             'adresse_eleve' => 'nullable|string|max:255',
             'cas_social' => 'nullable|string|max:255',
@@ -327,7 +309,7 @@ class EleveController extends WebEleveController
             'nom_eleve' => $data['nom_eleve'],
             'matricule' => ($data['matricule'] ?? null) ?: $eleve->matricule,
             'genre_eleve' => $data['genre_eleve'],
-            'date_naissance' => $data['date_naissance'] ?? null,
+            'date_naissance' => \App\Support\DateNaissance::normaliser($data['date_naissance'] ?? null),
             'lieu_naiss' => ($data['lieu_naiss'] ?? null) ?: 'Non renseigné',
             'adresse_eleve' => $data['adresse_eleve'] ?? null,
             'cas_social' => ($data['cas_social'] ?? null) ?: 'normal',

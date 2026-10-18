@@ -92,7 +92,7 @@ return [
     'cas_social_nature' => 'Nature of the social case',
     'cas_social_nature_placeholder' => 'E.g. orphan, staff child…',
     'cas_social_montant' => 'Corresponding fee (for the year)',
-    'cas_social_montant_help' => 'What the student pays for the year. The class annual plan is applied automatically, with this amount instead of its own.',
+    'cas_social_montant_help' => 'For a non-subsidized student, this amount replaces the annual plan amount. A subsidized student has no payment plan or family fee.',
     'cas_social_nature_obligatoire' => 'Enter the nature of the social case.',
     'cas_social_montant_obligatoire' => 'Enter the fee the student must pay for this social case.',
     'cas_social_montant_trop_eleve' => 'The social case fee cannot exceed the payment plan amount (:montant F).',
@@ -223,4 +223,7 @@ return [
     'statut_subventionne_non_eligible' => 'The “Subsidised” status is only available for secondary classes in private schools.',
     'row_formule' => 'Payment plan',
     'not_specified_f' => 'Not specified',
+    'ne_vers' => 'Around :annee',
+    'date_naissance_invalide' => 'The date of birth is invalid. Use DD/MM/YYYY (e.g. 22/04/2009) or “vers 2009” when only the year is known.',
+    'date_naissance_placeholder' => 'DD/MM/YYYY or vers 2009',
 ];

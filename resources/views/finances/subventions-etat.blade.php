@@ -56,7 +56,7 @@
         <div class="col-md-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
-                    <small class="text-muted text-uppercase fw-bold">{{ __('finances.eleves_subventionnes_dus') }}</small>
+                    <small class="text-muted text-uppercase fw-bold">{{ __('finances.eleves_subventionnes_title') }}</small>
                     <h4 class="fw-bold mb-0">{{ $subventionRows->count() }}</h4>
                 </div>
             </div>
@@ -64,8 +64,8 @@
         <div class="col-md-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
-                    <small class="text-muted text-uppercase fw-bold">{{ __('finances.montant_attendu_etat') }}</small>
-                    <h4 class="fw-bold text-warning mb-0">@devise($subventionRows->sum('reste'))</h4>
+                    <small class="text-muted text-uppercase fw-bold">{{ __('finances.montant_recu_etat') }}</small>
+                    <h4 class="fw-bold text-success mb-0">@devise($subventionRows->sum('deja_paye'))</h4>
                 </div>
             </div>
         </div>
@@ -90,7 +90,7 @@
                         <tr>
                             <th class="px-4">{{ __('finances.th_annee_subvention') }}</th>
                             <th class="text-end">{{ __('finances.th_nb_eleves') }}</th>
-                            <th class="text-end px-4">{{ __('finances.th_reste_etat') }}</th>
+                            <th class="text-end px-4">{{ __('finances.montant_recu_etat') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -98,7 +98,7 @@
                             <tr>
                                 <td class="px-4 fw-semibold">{{ $resume->annee?->annee }}</td>
                                 <td class="text-end">{{ $resume->eleves }}</td>
-                                <td class="text-end px-4 fw-bold text-warning">@devise($resume->reste)</td>
+                                <td class="text-end px-4 fw-bold text-success">@devise($resume->recu)</td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -119,10 +119,7 @@
                         <th>{{ __('eleves.label_matricule') }}</th>
                         <th>{{ __('finances.th_annee_subvention') }}</th>
                         <th>{{ __('finances.label_classe') }}</th>
-                        <th>{{ __('finances.th_formule') }}</th>
-                        <th class="text-end">{{ __('finances.th_montant_total') }}</th>
-                        <th class="text-end">{{ __('finances.th_deja_paye') }}</th>
-                        <th class="text-end px-4">{{ __('finances.th_reste_etat') }}</th>
+                        <th class="text-end px-4">{{ __('finances.montant_recu_etat') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -132,18 +129,11 @@
                             <td><span class="badge bg-light text-dark">{{ $row->eleve?->matricule ?: 'N/A' }}</span></td>
                             <td>{{ $row->annee?->annee }}</td>
                             <td>{{ $row->classe?->nom_classe }}</td>
-                            @if($row->planification)
-                                <td>{{ $row->libelle }}</td>
-                                <td class="text-end">@devise($row->montant_prevu)</td>
-                                <td class="text-end">@devise($row->deja_paye)</td>
-                                <td class="text-end px-4 fw-bold text-warning">@devise($row->reste)</td>
-                            @else
-                                <td colspan="4" class="text-danger small">{{ __('finances.subvention_sans_formule') }}</td>
-                            @endif
+                            <td class="text-end px-4 fw-bold text-success">@devise($row->deja_paye)</td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="text-center text-muted py-5">{{ __('finances.empty_subventions') }}</td>
+                            <td colspan="5" class="text-center text-muted py-5">{{ __('finances.empty_subventions') }}</td>
                         </tr>
                     @endforelse
                 </tbody>

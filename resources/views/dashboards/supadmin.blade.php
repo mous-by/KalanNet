@@ -175,7 +175,7 @@
     <div class="col-lg-8">
         <div class="card border-0 shadow-sm rounded-4 bg-card mb-4">
             <div class="card-header bg-transparent border-0 p-4 pb-0 d-flex align-items-center justify-content-between flex-wrap gap-2">
-                <h5 class="fw-bold mb-0"><i class="bi bi-calendar-check me-2"></i>Vue Globale des Écoles</h5>
+                <h5 class="fw-bold mb-0"><i class="bi bi-calendar-check me-2"></i>Vue Globale des Écoles <span class="badge bg-primary ms-2">{{ number_format($totalEcoles, 0, ',', ' ') }}</span></h5>
                 <a href="{{ route('configuration.ecoles') }}" class="btn btn-sm btn-outline-primary">Gérer Écoles</a>
             </div>
             <div class="card-body p-4">

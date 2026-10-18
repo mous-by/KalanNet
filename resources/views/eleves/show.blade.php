@@ -127,7 +127,7 @@
                     <div class="card-body">
                         <div class="info-row"><span>{{ __('eleves.row_prenom_nom') }}</span><strong>{{ $eleve->prenom_eleve }} {{ $eleve->nom_eleve }}</strong></div>
                         <div class="info-row"><span>{{ __('eleves.row_genre') }}</span><strong>{{ $eleve->genre_eleve ?: __('eleves.not_specified_m') }}</strong></div>
-                        <div class="info-row"><span>{{ __('eleves.row_naissance') }}</span><strong>{{ __('eleves.row_naissance_value', ['date' => $eleve->date_naissance ? \Carbon\Carbon::parse($eleve->date_naissance)->format('d/m/Y') : __('eleves.not_specified'), 'lieu' => $eleve->lieu_naiss ?: __('eleves.not_specified_m')]) }}</strong></div>
+                        <div class="info-row"><span>{{ __('eleves.row_naissance') }}</span><strong>{{ __('eleves.row_naissance_value', ['date' => \App\Support\DateNaissance::afficher($eleve->date_naissance, __('eleves.not_specified')), 'lieu' => $eleve->lieu_naiss ?: __('eleves.not_specified_m')]) }}</strong></div>
                         <div class="info-row"><span>{{ __('eleves.label_adresse') }}</span><strong>{{ $eleve->adresse_eleve ?: __('eleves.not_specified') }}</strong></div>
                         <div class="info-row"><span>{{ __('eleves.label_cas_social') }}</span><strong>{{ $eleve->cas_social ?: __('eleves.social_normal') }}</strong></div>
                         <div class="info-row"><span>{{ __('eleves.row_ecole') }}</span><strong>{{ $eleve->ecole?->nomEcole ?? session('nomEcole') ?? __('eleves.not_specified') }}</strong></div>

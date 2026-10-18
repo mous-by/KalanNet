@@ -7,6 +7,48 @@ use Illuminate\Support\Facades\DB;
 
 class CooperativePaymentsTest extends IntegrationTestCase
 {
+    public function test_payment_rows_are_built_with_bulk_paid_totals(): void
+    {
+        $student = DB::table('eleve as e')
+            ->join('ecole as school', 'school.idEcole', '=', 'e.id_ecole')
+            ->join('ligne_inscription as enrollment', function ($join) {
+                $join->on('enrollment.id_eleve', '=', 'e.id_eleve')
+                    ->on('enrollment.id_classe', '=', 'e.id_classe')
+                    ->on('enrollment.id_annee', '=', 'e.id_annee');
+            })
+            ->where('school.statut', 'public')
+            ->where('e.etat_dossier', 0)
+            ->whereNotNull('enrollment.id_planification')
+            ->whereExists(function ($query) {
+                $query->selectRaw('1')->from('caisse')
+                    ->whereColumn('caisse.id_ecole', 'e.id_ecole')
+                    ->where('caisse.status', 1);
+            })
+            ->whereExists(function ($query) {
+                $query->selectRaw('1')->from('ligneparents_eleves as relation')
+                    ->whereColumn('relation.id_eleve', 'e.id_eleve');
+            })
+            ->select('e.id_ecole', 'e.id_eleve', 'e.id_classe', 'e.id_annee', 'e.prenom_eleve', 'e.nom_eleve', 'enrollment.id_planification')
+            ->first();
+
+        if (!$student) {
+            $this->markTestSkipped('Aucun élève public avec planification disponible pour le test de performance des lignes de paiement.');
+        }
+
+        app('session')->put('idEcole', $student->id_ecole);
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        $controller = app(\App\Http\Controllers\FinanceController::class);
+        $method = new \ReflectionMethod($controller, 'legacyPaymentRows');
+        $method->setAccessible(true);
+
+        $rows = $method->invoke($controller, (int) $student->id_classe, (int) $student->id_annee, '', true);
+
+        $this->assertNotEmpty($rows);
+        $this->assertLessThanOrEqual(15, count(DB::getQueryLog()));
+    }
+
     public function test_public_students_without_linked_plan_use_the_class_cooperative(): void
     {
         $student = DB::table('eleve as e')

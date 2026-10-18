@@ -48,8 +48,8 @@ class FinanceController extends WebFinanceController
                     'prenom_eleve' => $row->eleve->prenom_eleve,
                     'nom_eleve' => $row->eleve->nom_eleve,
                 ],
-                'id_planification' => $row->planification->id_planification,
-                'motif' => $row->planification->motif,
+                'id_planification' => $row->planification?->id_planification,
+                'motif' => $row->planification?->motif,
                 'montant_total' => $row->montant_total,
                 'montant_deja_paye' => $row->montant_deja_paye,
                 'reste_a_payer' => $row->reste_a_payer,
@@ -203,7 +203,8 @@ class FinanceController extends WebFinanceController
                 $createdIds[] = $paiement->id_paiement;
             } catch (ValidationException $exception) {
                 $errors[] = "Élève #{$eleveId}: " . collect($exception->errors())->flatten()->first();
-            } catch (\Throwable) {
+            } catch (\Throwable $exception) {
+                report($exception);
                 $errors[] = "Élève #{$eleveId}: paiement non enregistré.";
             }
         }

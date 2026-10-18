@@ -13,7 +13,7 @@
         return;
     }
 
-    var EXCLUSIONS = '[data-sans-recherche], [size]:not([size="0"]):not([size="1"]), .dataTables_length select, .dt-length select, .select2-hidden-accessible';
+    var EXCLUSIONS = '[data-sans-recherche], .swal2-popup select, [size]:not([size="0"]):not([size="1"]), .dataTables_length select, .dt-length select, .select2-hidden-accessible';
 
     function estEnrichie(el) {
         return el && el.tagName === 'SELECT' && el.classList.contains('select2-hidden-accessible');

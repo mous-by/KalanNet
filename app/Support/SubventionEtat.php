@@ -9,8 +9,8 @@ use App\Models\Planification;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Un élève subventionné voit la totalité de ses frais scolaires de l'année
- * payée par l'État. Ce statut n'existe que dans les écoles privées, et
+ * Les élèves subventionnés reçoivent une part égale des versements globaux
+ * de l'État, sans formule de paiement ni dette familiale. Ce statut n'existe que dans les écoles privées, et
  * seulement pour les classes du secondaire (lycée général ou technique).
  *
  * L'État paie souvent en retard (une subvention 2024 peut arriver en 2026) :
@@ -19,6 +19,27 @@ use Illuminate\Support\Facades\DB;
  */
 class SubventionEtat
 {
+    /** @param list<int> $partsDejaRecuesCentimes @return list<int> parts en centimes */
+    public static function repartirEgalement(float $montant, int $nombreEleves, array $partsDejaRecuesCentimes = []): array
+    {
+        if ($montant <= 0 || $nombreEleves <= 0) {
+            return [];
+        }
+
+        $centimes = (int) round($montant * 100);
+        $part = intdiv($centimes, $nombreEleves);
+        $reste = $centimes % $nombreEleves;
+        $ordrePartsRestantes = range(0, $nombreEleves - 1);
+        usort($ordrePartsRestantes, fn ($a, $b) => ($partsDejaRecuesCentimes[$a] ?? 0) <=> ($partsDejaRecuesCentimes[$b] ?? 0) ?: $a <=> $b);
+        $parts = array_fill(0, $nombreEleves, $part);
+
+        foreach (array_slice($ordrePartsRestantes, 0, $reste) as $index) {
+            $parts[$index]++;
+        }
+
+        return $parts;
+    }
+
     public static function classeEligible(?Classe $classe, ?Ecole $ecole = null): bool
     {
         if (!$classe || !str_starts_with((string) $classe->ordreEnseignement, 'secondaire')) {
@@ -30,11 +51,7 @@ class SubventionEtat
         return $ecole !== null && !$ecole->estPublique();
     }
 
-    /**
-     * Formule appliquée d'office à un élève subventionné, que l'utilisateur
-     * n'a donc pas à choisir : la formule annuelle de la classe (coût complet
-     * de l'année), ou à défaut la seule formule existante.
-     */
+    /** Formule annuelle utilisée uniquement pour remplacer un frais de cas social non subventionné. */
     public static function formulePourSubventionne(int $classeId, int $anneeId): ?int
     {
         $formules = Planification::where('id_classe', $classeId)->where('id_annee', $anneeId)->get();
