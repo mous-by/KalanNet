@@ -15,6 +15,7 @@ class Ecole extends Model
         'nomEcole',
         'typeEcole',
         'logoEcole',
+        'cachet',
         'nomFondamental',
         'nomLycee',
         'nomProfessionnel',

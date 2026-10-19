@@ -69,6 +69,8 @@ Route::middleware(['auth'])->group(function () {
     Route::match(['get', 'post'], '/eleves/cartes-scolaires', [EleveController::class, 'cartes'])->name('eleves.cartes');
     Route::post('/eleves/cartes-scolaires/pdf', [EleveController::class, 'downloadCartesPdf'])->name('eleves.cartes.pdf');
     Route::post('/eleves/cartes-scolaires/apercu', [EleveController::class, 'apercuCartes'])->name('eleves.cartes.apercu');
+    Route::post('/eleves/cartes-scolaires/cachet', [EleveController::class, 'enregistrerCachet'])->name('eleves.cartes.cachet');
+    Route::delete('/eleves/cartes-scolaires/cachet', [EleveController::class, 'supprimerCachet'])->name('eleves.cartes.cachet.supprimer');
     Route::post('/eleves/liste/pdf', [EleveController::class, 'downloadListPdf'])->name('eleves.list.pdf');
     Route::post('/eleves/liste/excel', [EleveController::class, 'downloadListExcel'])->name('eleves.list.excel');
     Route::get('/eleves/transferts/{id}/fiche', [EleveController::class, 'transferCertificate'])->name('eleves.transfer.fiche');

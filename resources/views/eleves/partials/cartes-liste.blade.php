@@ -30,6 +30,7 @@
                     <input type="hidden" name="mali_flag_style" value="{{ request('mali_flag_style', 'corner') }}" data-card-config-target="mali_flag_style">
                     <input type="hidden" name="show_school_logo" value="{{ request('show_school_logo', '1') }}" data-card-config-target="show_school_logo">
                     <input type="hidden" name="show_qr" value="{{ request('show_qr', '1') }}" data-card-config-target="show_qr">
+                    <input type="hidden" name="show_cachet" value="{{ request('show_cachet', '1') }}" data-card-config-target="show_cachet">
                     <input type="hidden" name="entete_gauche" value="{{ $enteteGauche }}" data-card-config-target="entete_gauche">
                 <input type="hidden" name="entete_droite" value="{{ $enteteDroite }}" data-card-config-target="entete_droite">
                 <input type="hidden" name="selected_eleves" id="cards-selected-input">

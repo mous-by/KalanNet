@@ -426,7 +426,10 @@ class EleveController extends Controller
         $pays = Ecole::withoutGlobalScopes()->with('pays')->find($idEcole)?->pays;
         $enteteGauche = $request->input('entete_gauche', $pays?->entete_document_gauche);
         $enteteDroite = $request->input('entete_droite', $pays?->entete_document_droite);
-        $donnees = compact('classes', 'annees', 'eleves', 'showList', 'modeleDefaut', 'modeleActuel', 'couleur1', 'couleur2', 'enteteGauche', 'enteteDroite');
+        $ecoleCourante = Ecole::withoutGlobalScopes()->find($idEcole);
+        $cachetUrl = $this->cachetPath($ecoleCourante) ? asset($ecoleCourante->cachet) : null;
+        $peutGererCachet = $this->peutGererCachet();
+        $donnees = compact('classes', 'annees', 'eleves', 'showList', 'modeleDefaut', 'modeleActuel', 'couleur1', 'couleur2', 'enteteGauche', 'enteteDroite', 'cachetUrl', 'peutGererCachet');
 
         // Classe, année ou recherche changées : seule la liste est renvoyée (la page n'est pas rechargée).
         if ($request->header('X-Cartes-Liste')) {
@@ -480,14 +483,76 @@ class EleveController extends Controller
         return $this->cartesPdf($eleves->take(6), $classe, $annee, $ecole, $config)->stream('Apercu_carte_' . $config['template'] . '.pdf');
     }
 
+    /**
+     * Cachet électronique de l'école : enregistré une fois, apposé sur les
+     * cartes. Seuls l'Admin de l'école et le SupAdmin peuvent le changer.
+     */
+    public function enregistrerCachet(Request $request)
+    {
+        abort_unless($this->peutGererCachet(), 403);
+        $request->validate([
+            'cachet' => 'required|image|mimes:png,jpg,jpeg,webp|max:2048',
+        ], [], ['cachet' => __('cartes.cachet_label')]);
+
+        $ecole = Ecole::withoutGlobalScopes()->findOrFail(session('idEcole'));
+        $dossier = public_path('images_ecoles/cachets');
+        if (!\Illuminate\Support\Facades\File::exists($dossier)) {
+            \Illuminate\Support\Facades\File::makeDirectory($dossier, 0755, true);
+        }
+
+        $fichier = $request->file('cachet');
+        $nom = 'cachet_' . $ecole->idEcole . '_' . uniqid() . '.' . strtolower($fichier->getClientOriginalExtension());
+        $fichier->move($dossier, $nom);
+        $this->supprimerFichierCachet($ecole);
+        $ecole->forceFill(['cachet' => 'images_ecoles/cachets/' . $nom])->save();
+
+        return back()->with('success', __('cartes.cachet_enregistre'));
+    }
+
+    public function supprimerCachet()
+    {
+        abort_unless($this->peutGererCachet(), 403);
+        $ecole = Ecole::withoutGlobalScopes()->findOrFail(session('idEcole'));
+        $this->supprimerFichierCachet($ecole);
+        $ecole->forceFill(['cachet' => null])->save();
+
+        return back()->with('success', __('cartes.cachet_supprime'));
+    }
+
+    private function peutGererCachet(): bool
+    {
+        return in_array(Auth::user()?->droit, ['Admin', 'SupAdmin'], true) && session('idEcole');
+    }
+
+    private function supprimerFichierCachet(Ecole $ecole): void
+    {
+        $chemin = $this->cachetPath($ecole);
+        if ($chemin && str_starts_with($chemin, public_path('images_ecoles/cachets') . DIRECTORY_SEPARATOR)) {
+            \Illuminate\Support\Facades\File::delete($chemin);
+        }
+    }
+
+    private function cachetPath(?Ecole $ecole): ?string
+    {
+        if (!$ecole || empty($ecole->cachet)) {
+            return null;
+        }
+
+        $path = public_path(ltrim($ecole->cachet, '/'));
+
+        return file_exists($path) ? $path : null;
+    }
+
     private function cartesPdf($eleves, Classe $classe, AnneeScolaire $annee, ?Ecole $ecole, array $config)
     {
         $schoolName = $this->schoolCardName($ecole, $classe);
         $schoolLogoPath = $this->schoolLogoPath($ecole);
+        // Cachet apposé seulement si l'école en a un et que la case n'est pas décochée.
+        $cachetPath = $config['show_cachet'] ? $this->cachetPath($ecole) : null;
         $adminPhone = $this->schoolAdminPhone($ecole);
         $qrCodes = $this->studentQrCodes($eleves, $config, $classe, $annee, $schoolName, $adminPhone);
 
-        return Pdf::loadView('pdf.cartes_scolaires', compact('eleves', 'classe', 'annee', 'ecole', 'config', 'qrCodes', 'schoolName', 'schoolLogoPath', 'adminPhone'))
+        return Pdf::loadView('pdf.cartes_scolaires', compact('eleves', 'classe', 'annee', 'ecole', 'config', 'qrCodes', 'schoolName', 'schoolLogoPath', 'adminPhone', 'cachetPath'))
             ->setPaper('a4', 'portrait');
     }
 
@@ -631,6 +696,7 @@ class EleveController extends Controller
             'mali_flag_style' => 'nullable|string|in:corner,watermark',
             'show_school_logo' => 'nullable|boolean',
             'show_qr' => 'nullable|boolean',
+            'show_cachet' => 'nullable|boolean',
         ]);
 
         $template = \App\Support\ModelesCarte::normaliser($data['template'] ?? \App\Support\ModelesCarte::parDefaut(Ecole::withoutGlobalScopes()->find(session('idEcole'))));
@@ -650,6 +716,7 @@ class EleveController extends Controller
             'mali_flag_style' => $data['mali_flag_style'] ?? 'corner',
             'show_school_logo' => (bool) ($data['show_school_logo'] ?? true),
             'show_qr' => (bool) ($data['show_qr'] ?? true),
+            'show_cachet' => (bool) ($data['show_cachet'] ?? true),
         ];
     }
 

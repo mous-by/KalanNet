@@ -88,6 +88,9 @@
         .codebarres div { font-size: 4.6pt; letter-spacing: 0.15mm; line-height: 1.1; }
         .signature { right: 3.5mm; top: 39.5mm; width: 24mm; text-align: center; font-size: 5pt; color: #374151; }
         .signature img { max-width: 22mm; max-height: 8mm; }
+        /* Cachet de l'école : à gauche de la signature, qu'il chevauche légèrement. */
+        .signature .cachet { position: absolute; left: -9mm; top: -4.5mm; width: 15mm; height: auto; max-width: 15mm; max-height: 15mm; opacity: 0.85; }
+        .v .signature .cachet { left: 5.5mm; top: -4mm; }
 
         /* Élégant : bleu nuit et or. */
         .m-elegant .officiel, .m-elegant .titre { color: {{ ModelesCarte::eclaircir($c2, 0.35) }}; }

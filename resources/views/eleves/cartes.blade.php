@@ -13,6 +13,9 @@
         </div>
     </div>
 
+    @if(session('success'))
+        <div class="alert alert-success border-0 border-start border-success border-4">{{ session('success') }}</div>
+    @endif
     @if($errors->any())
         <div class="alert alert-danger border-0 border-start border-danger border-4">{{ $errors->first() }}</div>
     @endif
@@ -106,6 +109,40 @@
                         </div>
                         <input type="hidden" name="signature_image" id="signature-image-input" class="card-config" value="{{ request('signature_image') }}">
                     </div>
+                </div>
+                <div class="col-md-5">
+                    {{-- Cachet électronique : enregistré une fois pour l'école, apposé près de la signature. --}}
+                    <label class="form-label">{{ __('cartes.cachet_label') }}</label>
+                    @if($cachetUrl)
+                        <div class="d-flex align-items-center gap-3 mb-2">
+                            <img src="{{ $cachetUrl }}" alt="{{ __('cartes.cachet_label') }}" class="border rounded bg-white p-1" style="width:64px; height:64px; object-fit:contain;">
+                            <div>
+                                <label class="form-check mb-1">
+                                    <input type="hidden" name="show_cachet" value="0">
+                                    <input type="checkbox" name="show_cachet" value="1" class="form-check-input card-config" @checked(request('show_cachet', '1') === '1')>
+                                    <span class="form-check-label">{{ __('cartes.show_cachet_label') }}</span>
+                                </label>
+                                @if($peutGererCachet)
+                                    <form action="{{ route('eleves.cartes.cachet.supprimer') }}" method="POST" onsubmit="return confirm(@js(__('cartes.cachet_confirmer_suppression')))">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-link text-danger p-0"><i class="bi bi-trash me-1"></i>{{ __('cartes.cachet_supprimer') }}</button>
+                                    </form>
+                                @endif
+                            </div>
+                        </div>
+                    @endif
+                    @if($peutGererCachet)
+                        <form action="{{ route('eleves.cartes.cachet') }}" method="POST" enctype="multipart/form-data" class="d-flex gap-2">
+                            @csrf
+                            <input type="file" name="cachet" class="form-control form-control-sm" accept="image/png,image/jpeg,image/webp" required>
+                            <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap"><i class="bi bi-upload me-1"></i>{{ $cachetUrl ? __('cartes.cachet_remplacer') : __('cartes.cachet_ajouter') }}</button>
+                        </form>
+                        @error('cachet')<div class="small text-danger mt-1">{{ $message }}</div>@enderror
+                        <div class="form-text">{{ __('cartes.cachet_aide') }}</div>
+                    @elseif(!$cachetUrl)
+                        <div class="small text-muted">{{ __('cartes.cachet_absent') }}</div>
+                    @endif
                 </div>
                 <div class="col-12">
                     <div class="d-flex flex-wrap gap-3">

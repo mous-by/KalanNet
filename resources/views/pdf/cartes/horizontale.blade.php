@@ -40,6 +40,7 @@
     @endif
 
     <div class="abs signature">
+        @if(!empty($cachetPath))<img class="cachet" src="{{ $cachetPath }}" alt="">@endif
         <div>{{ $config['signature_label'] }}</div>
         @if(!empty($config['signature_image']))<div class="encre"><img src="{{ $config['signature_image'] }}" alt=""></div>@endif
     </div>
