@@ -65,7 +65,32 @@
     $nbPauses = collect($lignesGrille)->filter(fn ($h, $i) => (int) ($recesses[$h] ?? 0) > 0 && $i < count($lignesGrille) - 1)->count();
     // La grille occupe la page : place restante une fois l'en-tête posé ; journées chargées : lignes plus serrées.
     $placeGrille = 90 - ($logo && $m['entete'] === 'officiel' ? 8 : 0) - (count($officielGauche) > 3 ? 3 : 0) - ($bilingue ? 6 : 0);
-    $hauteurLigne = count($lignesGrille) ? max(7.5, min(20, ($placeGrille - $nbPauses * 7) / count($lignesGrille))) : 14;
+    // Beaucoup de lignes : présentation serrée (textes un peu plus petits) pour tout garder sur une page.
+    $serree = count($lignesGrille) * 8.5 + $nbPauses * 7 > $placeGrille;
+    $hauteurLigne = count($lignesGrille)
+        ? ($serree ? max(6, ($placeGrille - 6 - $nbPauses * 5.5) / count($lignesGrille)) : min(20, ($placeGrille - $nbPauses * 7) / count($lignesGrille)))
+        : 14;
+
+    // Un même cours (même matière, même enseignant) sur plusieurs heures de suite, le même jour : une seule case.
+    // Une récréation ou une pause entre deux heures interrompt la fusion.
+    $fusion = [];
+    foreach ($joursAffiches as $jourFusion) {
+        $precedent = null;
+        $debutBloc = null;
+        foreach ($lignesGrille as $i => $heureFusion) {
+            $coursFusion = $placement[$jourFusion][$heureFusion] ?? null;
+            $cleCours = $coursFusion ? $coursFusion->id_matiere.'|'.($coursFusion->id_enseignant ?? '') : null;
+            $suiteDirecte = $i > 0 && (int) ($recesses[$lignesGrille[$i - 1]] ?? 0) === 0;
+            if ($cleCours !== null && $cleCours === $precedent && $suiteDirecte) {
+                $fusion[$jourFusion][$debutBloc]++;
+                $fusion[$jourFusion][$heureFusion] = 0;
+            } else {
+                $fusion[$jourFusion][$heureFusion] = 1;
+                $debutBloc = $heureFusion;
+            }
+            $precedent = $cleCours;
+        }
+    }
 
     // Une couleur douce par matière (modèles « couleurs »), dans l'ordre des matières : deux matières n'ont pas la même.
     $palette = [
@@ -160,6 +185,25 @@
         .pause.recre td { background: {{ $clair }}; color: {{ $accent }}; border-color: {{ $clair }}; }
         .pause.soir td { background: {{ $pauseSoirFond }}; color: {{ $accent }}; border-color: {{ $pauseSoirFond }}; }
         .vide-grille { text-align: center; color: #64748b; padding: 12mm 0; font-size: 10pt; }
+        .grille td.fusion { background: #ffffff; }
+        /* Présentation serrée (beaucoup de lignes) */
+        .serree td { padding: 0.4mm 0.8mm; }
+        .serree th { padding: 1.2mm 1mm; font-size: 7.4pt; }
+        .serree td.heure { font-size: 7.4pt; line-height: 1.1; }
+        .serree td.heure .fin { font-size: 6.4pt; }
+        .serree .matiere { font-size: 7.6pt !important; }
+        .serree .prof { font-size: 6pt !important; margin-top: 0.2mm; }
+        .serree .cours { padding: 0.5mm 0.8mm; }
+        .serree .pause td { height: 5.5mm; font-size: 6.8pt; }
+        @if($serree)
+        .titre { margin-top: 1.6mm; }
+        .titre .doc { font-size: 13pt; padding: 1.1mm 9mm; }
+        .infos { margin-top: 1.4mm; }
+        .infos td { padding: 0.8mm 3mm; }
+        .grille { margin-top: 2mm; }
+        .pied { margin-top: 1.5mm; }
+        .pied .signature { height: 12mm; }
+        @endif
 
         /* Pied de page */
         .pied { width: 100%; margin-top: 3mm; border-collapse: collapse; }
@@ -238,7 +282,7 @@
     @if(empty($lignesGrille))
         <div class="vide-grille">{{ $t('Aucun cours enregistré pour cette classe.', 'No lessons recorded for this class.') }}</div>
     @else
-        <table class="grille">
+        <table class="grille {{ $serree ? 'serree' : '' }}">
             <thead>
                 <tr>
                     <th class="heures">{{ $bilingue ? 'Horaire' : 'Horaire' }}@if($bilingue)<small>Time</small>@endif</th>
@@ -255,8 +299,12 @@
                     <tr class="{{ $loop->even ? 'pair' : '' }}">
                         <td class="heure" style="height: {{ $hauteurLigne }}mm;">{{ $debut }}<span class="fin">{{ $fin }}</span></td>
                         @foreach($joursAffiches as $jour)
-                            @php $cours = $placement[$jour][$heure] ?? null; @endphp
-                            <td class="case">
+                            @php
+                                $cours = $placement[$jour][$heure] ?? null;
+                                $etendue = $fusion[$jour][$heure] ?? 1;
+                            @endphp
+                            @continue($etendue === 0)
+                            <td class="case {{ $etendue > 1 ? 'fusion' : '' }}" @if($etendue > 1) rowspan="{{ $etendue }}" @endif>
                                 @if($cours)
                                     @php $nomMatiere = \App\Support\ArabePdf::texte($cours->matiere->nom_matiere ?? 'Matière'); @endphp
                                     @if($m['cellules'] === 'couleurs')

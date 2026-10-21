@@ -221,4 +221,27 @@ class EmploiDuTempsGrilleTest extends IntegrationTestCase
             ->get("/api/v1/timetable/download-pdf?id_classe={$this->classe}&id_annee={$this->annee}&modele=primaire")
             ->assertOk()->assertHeader('content-type', 'application/pdf');
     }
+
+    /** Même matière et même enseignant sur des heures qui se suivent : une seule case ; une pause coupe la fusion. */
+    public function test_cours_consecutifs_fusionnes(): void
+    {
+        $admin = $this->adminComplet(1);
+        [$m1, $m2] = $this->matieres;
+        GrilleEmploiDuTemps::enregistrer($this->classe, $this->annee,
+            ['08:00' => ['debut' => '08:00', 'fin' => '09:00'], '09:00' => ['debut' => '09:00', 'fin' => '10:00'], '10:00' => ['debut' => '10:15', 'fin' => '11:15']],
+            ['09:00' => 15]);
+        foreach ([['08:00', '09:00', $m1], ['09:00', '10:00', $m1], ['10:15', '11:15', $m1], ['08:00', '09:00', $m2]] as $i => [$debut, $fin, $m]) {
+            DB::table('emploi_du_temps')->insert(['id_classe' => $this->classe, 'id_matiere' => $m, 'id_annee_scolaire' => $this->annee, 'jour' => $i < 3 ? 'Lundi' : 'Mardi', 'heure_debut' => $debut, 'heure_fin' => $fin]);
+        }
+        $cours = \App\Models\EmploiDuTemps::with(['matiere', 'enseignant'])->where('id_classe', $this->classe)->where('id_annee_scolaire', $this->annee)->get();
+        $d = GrilleEmploiDuTemps::disposer($this->classe, $this->annee, $cours);
+        $html = view('pdf.timetable', ['selectedClasse' => \App\Models\Classe::find($this->classe), 'selectedAnnee' => \App\Models\AnneeScolaire::find($this->annee), 'ecole' => null,
+            'timetable' => $cours->groupBy('jour'), 'recesses' => $d['recreations'], 'jours' => ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'],
+            'heures' => $d['horaires'], 'placement' => $d['placement'], 'modele' => 'classique'])->render();
+
+        // Lundi 8 h – 10 h : une case sur 2 lignes ; 10 h 15 (après la récréation) : une case à part.
+        $this->assertSame(1, substr_count($html, 'rowspan="2"'));
+        $nom = e(DB::table('matiere')->where('id_matiere', $m1)->value('nom_matiere'));
+        $this->assertSame(2, substr_count($html, '<div class="matiere">'.$nom.'</div>'), 'deux cases pour la matière du lundi');
+    }
 }
