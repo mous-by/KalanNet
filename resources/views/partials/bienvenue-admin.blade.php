@@ -19,11 +19,50 @@
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content bienvenue">
                 <div class="bienvenue-hero">
-                    <div class="bienvenue-motif" aria-hidden="true"></div>
-                    <div class="bienvenue-sceau" aria-hidden="true"><i class="bi bi-award-fill"></i></div>
+                    {{-- Photos de la page de connexion, en fondu, sous un voile qui garde le texte lisible. --}}
+                    <div class="bienvenue-diapos" aria-hidden="true">
+                        @foreach(range(1, 7) as $n)
+                            <div class="bienvenue-diapo {{ $n === 1 ? 'active' : '' }}" @if($n === 1) style="background-image: url('{{ asset('assets/images/bienvenue/fond1.jpg') }}')" @else data-image="{{ asset('assets/images/bienvenue/fond'.$n.'.jpg') }}" @endif></div>
+                        @endforeach
+                    </div>
+                    <div class="bienvenue-voile" aria-hidden="true"></div>
+
+                    <div class="bienvenue-sceau" aria-hidden="true">
+                        <svg viewBox="0 0 120 104" focusable="false">
+                            <path d="M25 76c14-7 28-7 42 0V42c-14-7-28-7-42 0v34z" fill="#ffffff" stroke="#0b1f3a" stroke-width="3" stroke-linejoin="round"/>
+                            <path d="M95 76c-14-7-28-7-42 0V42c14-7 28-7 42 0v34z" fill="#f8fafc" stroke="#0b1f3a" stroke-width="3" stroke-linejoin="round"/>
+                            <path d="M60 47v34" stroke="#d4af37" stroke-width="4" stroke-linecap="round"/>
+                            <path d="M22 79c15-8 31-8 45 0M98 79c-15-8-31-8-45 0" stroke="#d4af37" stroke-width="4" stroke-linecap="round" fill="none"/>
+                            <path d="M35 30l25-11 25 11-25 11-25-11z" fill="#0b1f3a"/>
+                            <path d="M46 36v11c8 6 20 6 28 0V36l-14 6-14-6z" fill="#d4af37"/>
+                            <path d="M84 31v17" stroke="#0b1f3a" stroke-width="3" stroke-linecap="round"/>
+                            <circle cx="84" cy="52" r="3.5" fill="#d4af37"/>
+                            <circle cx="60" cy="55" r="9" fill="#0b1f3a"/>
+                            <path d="M49 72c5-11 17-11 22 0" fill="#0b1f3a"/>
+                            <g transform="translate(10 10) scale(.78)">
+                                <clipPath id="bienvenue-drapeau"><path d="M16 7c9 2 15 8 15 17 0 5 4 9 7 13-5 7-12 11-21 9-8-2-12-10-10-19 1-6 4-13 9-20z"/></clipPath>
+                                <g clip-path="url(#bienvenue-drapeau)">
+                                    <rect x="5" y="5" width="11" height="44" fill="#14b53a"/>
+                                    <rect x="16" y="5" width="11" height="44" fill="#fcd116"/>
+                                    <rect x="27" y="5" width="13" height="44" fill="#ce1126"/>
+                                </g>
+                                <path d="M16 7c9 2 15 8 15 17 0 5 4 9 7 13-5 7-12 11-21 9-8-2-12-10-10-19 1-6 4-13 9-20z" fill="none" stroke="#0b1f3a" stroke-width="2"/>
+                            </g>
+                            <path d="M88 16c9 8 13 21 9 35M93 17c-6 4-11 10-14 19M97 51c-8-4-16-5-25-2" stroke="#0b1f3a" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+                            <circle cx="88" cy="16" r="3" fill="#d4af37"/>
+                            <circle cx="79" cy="36" r="3" fill="#d4af37"/>
+                            <circle cx="72" cy="49" r="3" fill="#d4af37"/>
+                            <circle cx="97" cy="51" r="3" fill="#d4af37"/>
+                        </svg>
+                    </div>
                     <p class="bienvenue-surtitre">{{ __('bienvenue.surtitre') }}</p>
-                    <h2 class="bienvenue-titre" id="bienvenueTitre">{{ __('bienvenue.titre', ['ecole' => $ecoleBienvenue?->nomEcole ?? session('nomEcole')]) }}</h2>
-                    <p class="bienvenue-devise">{{ __('bienvenue.phrase') }}</p>
+                    {{-- Texte complet pour les lecteurs d'écran ; à l'écran, il s'écrit mot par mot. --}}
+                    <h2 class="bienvenue-titre" id="bienvenueTitre" aria-label="{{ __('bienvenue.titre', ['ecole' => $ecoleBienvenue?->nomEcole ?? session('nomEcole')]) }}">
+                        <span class="bienvenue-ecrit" data-texte="{{ __('bienvenue.titre', ['ecole' => $ecoleBienvenue?->nomEcole ?? session('nomEcole')]) }}" aria-hidden="true"></span>
+                    </h2>
+                    <p class="bienvenue-devise" aria-label="{{ __('bienvenue.phrase') }}">
+                        <span class="bienvenue-ecrit" data-texte="{{ __('bienvenue.phrase') }}" aria-hidden="true"></span>
+                    </p>
                 </div>
 
                 <div class="bienvenue-corps">
@@ -63,28 +102,45 @@
     <style>
         .bienvenue { border: 0; border-radius: 22px; overflow: hidden; box-shadow: 0 30px 80px rgba(15, 23, 42, .35); }
         .bienvenue-hero {
-            position: relative; overflow: hidden; color: #fff; text-align: center; padding: 42px 36px 34px;
-            background: var(--theme-accent, #14532d);
+            position: relative; overflow: hidden; color: #fff; text-align: center; padding: 34px 36px 32px;
+            min-height: 330px; background: #0b1f1a;
         }
-        .bienvenue-hero::after {
-            content: ""; position: absolute; inset: 0;
-            background: linear-gradient(160deg, rgba(255, 255, 255, .16) 0%, rgba(255, 255, 255, 0) 45%, rgba(0, 0, 0, .28) 100%);
+        .bienvenue-diapos, .bienvenue-diapo, .bienvenue-voile { position: absolute; inset: 0; }
+        .bienvenue-diapo { background-size: cover; background-position: center; opacity: 0; transform: scale(1.04); transition: opacity 1.4s ease; }
+        .bienvenue-diapo.active { opacity: 1; animation: bienvenue-zoom 9s ease-out both; }
+        @keyframes bienvenue-zoom { from { transform: scale(1.04); } to { transform: scale(1.12); } }
+        /* Voile sombre aux couleurs du thème : les photos restent visibles, le texte reste lisible. */
+        .bienvenue-voile {
+            background:
+                linear-gradient(180deg, rgba(0, 0, 0, .55) 0%, rgba(0, 0, 0, .35) 45%, rgba(0, 0, 0, .7) 100%),
+                color-mix(in srgb, var(--theme-accent, #14532d) 45%, transparent);
         }
-        .bienvenue-motif {
-            position: absolute; inset: 0; opacity: .14;
-            background-image: radial-gradient(circle at 1px 1px, #fff 1.4px, transparent 0);
-            background-size: 22px 22px;
-        }
-        .bienvenue-hero > * { position: relative; z-index: 1; }
+        .bienvenue-hero > :not(.bienvenue-diapos):not(.bienvenue-voile) { position: relative; z-index: 1; }
         .bienvenue-sceau {
-            width: 74px; height: 74px; margin: 0 auto 16px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center; font-size: 34px;
-            background: rgba(255, 255, 255, .16); border: 2px solid rgba(255, 255, 255, .55);
-            box-shadow: 0 0 0 8px rgba(255, 255, 255, .08);
+            width: 92px; height: 92px; margin: 0 auto 14px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            background: #ffffff; box-shadow: 0 0 0 6px rgba(255, 255, 255, .22), 0 12px 28px rgba(0, 0, 0, .35);
         }
-        .bienvenue-surtitre { margin: 0 0 6px; font-size: .78rem; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; opacity: .9; }
-        .bienvenue-titre { margin: 0 auto; max-width: 30ch; font-size: clamp(1.45rem, 3.4vw, 2rem); font-weight: 800; line-height: 1.2; text-wrap: balance; color: #fff; }
-        .bienvenue-devise { margin: 14px auto 0; max-width: 46ch; font-size: 1.02rem; line-height: 1.55; opacity: .95; text-wrap: balance; }
+        .bienvenue-sceau svg { width: 70px; height: 61px; }
+        .bienvenue-surtitre { margin: 0 0 8px; font-size: .78rem; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; text-shadow: 0 1px 6px rgba(0, 0, 0, .6); }
+        .bienvenue-titre {
+            margin: 0 auto; max-width: 30ch; min-height: 2.4em; font-size: clamp(1.45rem, 3.4vw, 2rem); font-weight: 800; line-height: 1.2;
+            text-wrap: balance; color: #fff; text-shadow: 0 2px 10px rgba(0, 0, 0, .65);
+        }
+        .bienvenue-devise {
+            margin: 14px auto 0; max-width: 46ch; min-height: 4.6em; font-size: 1.04rem; line-height: 1.55; font-weight: 500;
+            text-wrap: balance; text-shadow: 0 1px 8px rgba(0, 0, 0, .7);
+        }
+        /* Écriture mot par mot, avec le stylo qui avance. */
+        .bienvenue-mot { opacity: 0; filter: blur(3px); transition: opacity .35s ease, filter .35s ease; }
+        .bienvenue-mot.ecrit { opacity: 1; filter: none; }
+        .bienvenue-stylo {
+            display: inline-block; width: 1.05em; margin-left: .15em; vertical-align: -0.1em; color: #fcd34d;
+            transform-origin: 10% 90%; animation: bienvenue-stylo .35s ease-in-out infinite alternate;
+            filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .5)); transition: opacity .4s ease;
+        }
+        .bienvenue-stylo.fini { opacity: 0; }
+        @keyframes bienvenue-stylo { from { transform: rotate(-8deg) translateY(0); } to { transform: rotate(6deg) translateY(-2px); } }
         .bienvenue-corps { padding: 28px 36px 32px; background: var(--bs-body-bg, #fff); }
         .bienvenue-statut {
             display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px;
@@ -117,11 +173,15 @@
         #bienvenueModal.show .bienvenue-sceau { animation: bienvenue-sceau .7s ease-out both; }
         @keyframes bienvenue-sceau { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         @media (prefers-reduced-motion: reduce) {
-            #bienvenueModal.show .bienvenue-sceau { animation: none; }
+            #bienvenueModal.show .bienvenue-sceau, .bienvenue-diapo.active, .bienvenue-stylo { animation: none; }
+            .bienvenue-diapo { transition: none; }
+            .bienvenue-mot { opacity: 1; filter: none; transition: none; }
             .bienvenue-bouton { transition: none; }
         }
         @media (max-width: 576px) {
-            .bienvenue-hero { padding: 32px 20px 26px; }
+            .bienvenue-hero { padding: 26px 18px 24px; min-height: 300px; }
+            .bienvenue-sceau { width: 76px; height: 76px; }
+            .bienvenue-sceau svg { width: 58px; height: 50px; }
             .bienvenue-corps { padding: 22px 18px 24px; }
             .bienvenue-ligne, .bienvenue-total { padding: 12px 14px; }
             .bienvenue-total strong { font-size: 1.3rem; }
@@ -132,6 +192,46 @@
             const fenetre = document.getElementById('bienvenueModal');
             if (!fenetre || !window.bootstrap) return;
             const modal = bootstrap.Modal.getOrCreateInstance(fenetre);
+            const sansAnimation = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            // Carrousel : chaque photo est chargée juste avant son tour.
+            const diapos = Array.from(fenetre.querySelectorAll('.bienvenue-diapo'));
+            const charger = (d) => { if (d && d.dataset.image) { d.style.backgroundImage = "url('" + d.dataset.image + "')"; delete d.dataset.image; } };
+            let courante = 0;
+            charger(diapos[1]);
+            if (!sansAnimation) {
+                setInterval(function () {
+                    diapos[courante].classList.remove('active');
+                    courante = (courante + 1) % diapos.length;
+                    diapos[courante].classList.add('active');
+                    charger(diapos[(courante + 1) % diapos.length]);
+                }, 4500);
+            }
+
+            // Le stylo écrit le titre puis la phrase, mot par mot.
+            const stylo = '<svg class="bienvenue-stylo" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm17.71-10.21a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
+            const zones = Array.from(fenetre.querySelectorAll('.bienvenue-ecrit'));
+            zones.forEach(function (zone) {
+                zone.innerHTML = zone.dataset.texte.split(/\s+/).map((mot) => '<span class="bienvenue-mot">' + mot.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</span>').join(' ');
+            });
+            function ecrire() {
+                const mots = zones.flatMap((zone) => Array.from(zone.querySelectorAll('.bienvenue-mot')));
+                if (sansAnimation) { mots.forEach((m) => m.classList.add('ecrit')); return; }
+                const plume = document.createElement('span');
+                plume.innerHTML = stylo;
+                const icone = plume.firstChild;
+                let i = 0;
+                (function suivant() {
+                    if (i >= mots.length) { icone.classList.add('fini'); return; }
+                    const mot = mots[i++];
+                    mot.classList.add('ecrit');
+                    mot.after(icone);
+                    // Petite pause entre le titre et la phrase.
+                    const finTitre = mot.parentElement === zones[0] && !mot.nextElementSibling?.classList.contains('bienvenue-mot') && i < mots.length && mots[i].parentElement !== zones[0];
+                    setTimeout(suivant, finTitre ? 650 : 170);
+                })();
+            }
+            fenetre.addEventListener('shown.bs.modal', ecrire, { once: true });
             modal.show();
             document.getElementById('bienvenueCommencer').addEventListener('click', function () {
                 fetch(@json(route('bienvenue.vue')), {
