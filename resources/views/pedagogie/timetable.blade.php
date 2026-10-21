@@ -201,7 +201,7 @@
                                                     @endif
                                                     @if($canEditTimetable)
                                                         <button type="button" class="btn btn-outline-warning btn-sm mt-2 px-2 py-1 no-print timetable-edit-block d-none" style="font-size: 10px; border-radius: 6px;" onclick="openRecessProposal('{{ $heure }}')">
-                                                            <i class="bi bi-clock me-1"></i>Récréation
+                                                            <i class="bi bi-clock me-1"></i>Pause
                                                         </button>
                                                     @endif
                                             </td>
@@ -281,9 +281,10 @@
                                         </tr>
 
                                         {{-- Recess Row --}}
-                                        <tr class="recess-row {{ $hasRecessAfter ? '' : 'd-none' }}" id="recess_row_{{ str_replace(':', '_', $heure) }}" data-after-hour="{{ $heure }}" style="background: linear-gradient(90deg, #fef3c7 0%, #fffbeb 50%, #fef3c7 100%);">
+                                        @php $pauseSoir = \App\Support\GrilleEmploiDuTemps::estPauseSoir($recessDuration); @endphp
+                                        <tr class="recess-row {{ $hasRecessAfter ? '' : 'd-none' }} {{ $pauseSoir ? 'pause-soir' : '' }}" id="recess_row_{{ str_replace(':', '_', $heure) }}" data-after-hour="{{ $heure }}">
                                             <td class="text-center fw-bold text-warning align-middle" style="white-space: nowrap; font-size: 12px; padding: 15px 6px; border: 1px solid #fde68a;">
-                                                <span class="d-block text-warning-emphasis" style="font-size: 12px; font-weight: 700;"><i class="bi bi-clock-fill"></i> Récréation</span>
+                                                <span class="d-block text-warning-emphasis pause-libelle" style="font-size: 12px; font-weight: 700;" id="recess_label_{{ str_replace(':', '_', $heure) }}"><i class="bi bi-clock-fill"></i> {{ $pauseSoir ? 'Pause' : 'Récréation' }}</span>
                                                 <span class="text-muted small recess-time-display fw-bold" id="recess_time_display_{{ str_replace(':', '_', $heure) }}">--:--</span>
                                             </td>
                                             <td colspan="6" class="align-middle text-center" style="border: 1px solid #fde68a; padding: 15px 0;">
@@ -297,13 +298,19 @@
                                                             <option value="15" @selected($recessDuration == 15 || $recessDuration == 0)>15 Min</option>
                                                             <option value="20" @selected($recessDuration == 20)>20 Min</option>
                                                             <option value="30" @selected($recessDuration == 30)>30 Min</option>
+                                                            @foreach([60 => '1 h', 90 => '1 h 30', 120 => '2 h', 150 => '2 h 30', 180 => '3 h'] as $minutes => $libelle)
+                                                                <option value="{{ $minutes }}" @selected($recessDuration == $minutes)>{{ $libelle }} · soir</option>
+                                                            @endforeach
+                                                            @if($recessDuration > 0 && !in_array($recessDuration, [10, 15, 20, 30, 60, 90, 120, 150, 180], true))
+                                                                <option value="{{ $recessDuration }}" selected>{{ $recessDuration }} Min</option>
+                                                            @endif
                                                         </select>
                                                     </div>
                                                     @endif
 
                                                     <div class="flex-grow-1 text-center">
-                                                        <h5 class="m-0 fw-extrabold text-warning-emphasis text-uppercase tracking-wider" style="font-size: 14px; font-weight: 800; letter-spacing: 3px;">
-                                                            RÉCRÉATION
+                                                        <h5 class="m-0 fw-extrabold text-warning-emphasis text-uppercase tracking-wider pause-titre" id="recess_title_{{ str_replace(':', '_', $heure) }}" style="font-size: 14px; font-weight: 800; letter-spacing: 3px;">
+                                                            {{ $pauseSoir ? 'PAUSE' : 'RÉCRÉATION' }}
                                                         </h5>
                                                     </div>
                                                     
@@ -341,17 +348,22 @@
                             <i class="bi bi-clock-fill fs-4 text-warning-emphasis"></i>
                         </div>
                         <div class="flex-grow-1 text-start">
-                            <h6 class="m-0 fw-bold text-dark" style="font-size: 13px; font-weight: 700;">Proposition de récréation</h6>
+                            <h6 class="m-0 fw-bold text-dark" style="font-size: 13px; font-weight: 700;">Proposition de pause</h6>
                             <p class="text-muted my-1" style="font-size: 11px; line-height: 1.3;">
-                                Voulez-vous planifier une récréation après le cours de <strong class="text-primary" id="proposal_hour_display">--:--</strong> ?
+                                Voulez-vous planifier une récréation (moins d'1 h) ou la pause avant le soir (1 h et plus) après le cours de <strong class="text-primary" id="proposal_hour_display">--:--</strong> ?
                             </p>
                             <div class="d-flex align-items-center gap-2 mt-2">
                                 <span class="small text-muted" style="font-size: 10px;">Durée :</span>
-                                <select id="proposal_recess_duration" class="form-select form-select-sm border-warning-subtle py-0 px-1" style="width: 80px; font-size: 11px; height: 24px;">
+                                <select id="proposal_recess_duration" class="form-select form-select-sm border-warning-subtle py-0 px-1" style="width: 130px; font-size: 11px; height: 24px;" data-sans-recherche>
                                     <option value="10">10 Min</option>
                                     <option value="15" selected>15 Min</option>
                                     <option value="20">20 Min</option>
                                     <option value="30">30 Min</option>
+                                    <option value="60">1 h · soir</option>
+                                    <option value="90">1 h 30 · soir</option>
+                                    <option value="120">2 h · soir</option>
+                                    <option value="150">2 h 30 · soir</option>
+                                    <option value="180">3 h · soir</option>
                                 </select>
                             </div>
                             <div class="d-flex justify-content-end gap-2 mt-3">
@@ -497,7 +509,12 @@
         }
         .recess-row {
             transition: all 0.3s ease;
+            background: linear-gradient(90deg, #fef3c7 0%, #fffbeb 50%, #fef3c7 100%);
         }
+        /* Grande pause de la mi-journée (1 h et plus) : le soir reprend après. */
+        .recess-row.pause-soir { background: linear-gradient(90deg, #dbeafe 0%, #eff6ff 50%, #dbeafe 100%); }
+        .recess-row.pause-soir td { border-color: #bfdbfe !important; }
+        .recess-row.pause-soir .pause-libelle, .recess-row.pause-soir .pause-titre, .recess-row.pause-soir .text-warning { color: #1e40af !important; }
 
         @keyframes slideUp {
             from {
@@ -803,7 +820,7 @@
         // Recalculate times
         recalculateAllTimes();
         
-        showToast(`Durée de la récréation mise à jour à ${duration} minutes. Les horaires suivants ont été recalculés.`, "success");
+        showToast(`Durée de la pause mise à jour (${duration} minutes). Les horaires suivants ont été recalculés.`, "success");
     }
 
     function markManualTime(input) {
@@ -918,11 +935,24 @@
                 if (recessDisplay) {
                     recessDisplay.textContent = `${recessStartTime} - ${recessEndTime}`;
                 }
+                majLibellePause(hr, recessDuration, recessEndTime);
                 
                 // The next row starts after the recess!
                 currentEndTime = recessEndTime;
             }
         }
+    }
+
+    /** Pause d'1 h ou plus : la grande pause de la mi-journée, après laquelle vient le soir. */
+    const PAUSE_SOIR_MINUTES = {{ \App\Support\GrilleEmploiDuTemps::PAUSE_SOIR_MINUTES }};
+    function majLibellePause(heure, duree, reprise) {
+        const key = heure.replace(':', '_');
+        const soir = duree >= PAUSE_SOIR_MINUTES;
+        document.getElementById('recess_row_' + key)?.classList.toggle('pause-soir', soir);
+        const libelle = document.getElementById('recess_label_' + key);
+        if (libelle) libelle.innerHTML = '<i class="bi bi-clock-fill"></i> ' + (soir ? 'Pause' : 'Récréation');
+        const titre = document.getElementById('recess_title_' + key);
+        if (titre) titre.textContent = soir ? `PAUSE · LE SOIR REPREND À ${reprise}` : 'RÉCRÉATION';
     }
 
     // Helper to add minutes to time string (HH:MM)

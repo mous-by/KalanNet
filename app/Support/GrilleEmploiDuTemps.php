@@ -134,6 +134,17 @@ class GrilleEmploiDuTemps
         return self::depuisCours($cours ?? collect());
     }
 
+    /**
+     * À partir de cette durée, une pause n'est plus une récréation : c'est la
+     * grande pause de la mi-journée (ex. 12 h – 14 h), après laquelle vient le soir.
+     */
+    public const PAUSE_SOIR_MINUTES = 60;
+
+    public static function estPauseSoir(int $minutes): bool
+    {
+        return $minutes >= self::PAUSE_SOIR_MINUTES;
+    }
+
     public static function enregistrer(int $idClasse, int $idAnnee, array $horaires, array $recreations): void
     {
         $horaires = array_filter(

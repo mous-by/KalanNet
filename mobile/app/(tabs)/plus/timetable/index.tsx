@@ -14,6 +14,9 @@ import { AnneeScolaire, Classe, Enseignant, LigneClasse, Matiere } from '@/types
 
 const JOURS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 
+/** À partir d'1 h, la pause est celle de la mi-journée : le soir reprend après (comme sur le site). */
+const PAUSE_SOIR_MINUTES = 60;
+
 interface Course {
   id: number;
   id_matiere: number;
@@ -214,9 +217,11 @@ export default function TimetableScreen() {
                   <Text style={styles.emptyDay}>Aucun cours</Text>
                 ) : (
                   elements.map((element) => element.type === 'pause' ? (
-                    <View key={`pause-${element.pause.debut}`} style={styles.recessRow}>
-                      <Text style={styles.recessText}>
-                        Récréation · {element.pause.debut} – {element.pause.fin} ({element.pause.minutes} min)
+                    <View key={`pause-${element.pause.debut}`} style={[styles.recessRow, element.pause.minutes >= PAUSE_SOIR_MINUTES && styles.pauseSoirRow]}>
+                      <Text style={[styles.recessText, element.pause.minutes >= PAUSE_SOIR_MINUTES && styles.pauseSoirText]}>
+                        {element.pause.minutes >= PAUSE_SOIR_MINUTES
+                          ? `Pause · ${element.pause.debut} – ${element.pause.fin} · le soir reprend à ${element.pause.fin}`
+                          : `Récréation · ${element.pause.debut} – ${element.pause.fin} (${element.pause.minutes} min)`}
                       </Text>
                     </View>
                   ) : ((course) => (
@@ -336,4 +341,6 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(245,158,11,0.45)',
   },
   recessText: { fontWeight: '600', textAlign: 'center' },
+  pauseSoirRow: { backgroundColor: 'rgba(59,130,246,0.12)', borderColor: 'rgba(59,130,246,0.45)' },
+  pauseSoirText: { color: '#1e40af' },
 });

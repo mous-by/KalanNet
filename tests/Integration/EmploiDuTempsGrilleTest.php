@@ -163,4 +163,31 @@ class EmploiDuTempsGrilleTest extends IntegrationTestCase
         $this->assertDoesNotMatchRegularExpression('#<option value="\d+"#', $select[0]);
         $this->assertStringContainsString('Aucune matière n\'est attribuée à la classe', $html);
     }
+
+    /** Pause de 2 h à midi : « Pause », le soir reprend après (web, PDF) ; une récréation reste une récréation. */
+    public function test_pause_de_midi_avant_le_soir(): void
+    {
+        $admin = $this->adminComplet(1);
+        [$m1, $m2] = $this->matieres;
+        GrilleEmploiDuTemps::enregistrer($this->classe, $this->annee,
+            ['08:00' => ['debut' => '10:00', 'fin' => '11:00'], '09:00' => ['debut' => '11:00', 'fin' => '12:00'], '10:00' => ['debut' => '14:00', 'fin' => '15:00']],
+            ['08:00' => 15, '09:00' => 120]);
+        foreach ([['10:00', '11:00', $m1], ['11:00', '12:00', $m2], ['14:00', '15:00', $m1]] as [$debut, $fin, $m]) {
+            DB::table('emploi_du_temps')->insert(['id_classe' => $this->classe, 'id_matiere' => $m, 'id_annee_scolaire' => $this->annee, 'jour' => 'Lundi', 'heure_debut' => $debut, 'heure_fin' => $fin]);
+        }
+        $session = ['idEcole' => 1, 'timetable_id_classe' => $this->classe, 'timetable_id_annee' => $this->annee];
+
+        $html = $this->actingAs($admin)->withSession($session)->get('/pedagogie/timetable')->assertOk()->getContent();
+        $this->assertSame(1, substr_count($html, 'pause-soir" id="recess_row_'), 'une seule pause de midi');
+        $this->assertMatchesRegularExpression('#id="recess_title_09_00"[^>]*>\s*PAUSE\s*<#', $html);
+        $this->assertMatchesRegularExpression('#id="recess_title_08_00"[^>]*>\s*RÉCRÉATION\s*<#', $html);
+        $this->assertStringContainsString('<option value="120" selected>2 h · soir</option>', $html);
+        $this->assertTrue(GrilleEmploiDuTemps::estPauseSoir(120));
+        $this->assertFalse(GrilleEmploiDuTemps::estPauseSoir(30));
+
+        $pdf = $this->actingAs($admin)->withSession($session)->get('/pedagogie/timetable/download-pdf')->assertOk()->getContent();
+        $texte = (new \Smalot\PdfParser\Parser())->parseContent($pdf)->getText();
+        $this->assertStringContainsString('LE SOIR REPREND À 14:00', $texte);
+        $this->assertStringContainsString('RÉCRÉATION (15 MIN)', $texte);
+    }
 }

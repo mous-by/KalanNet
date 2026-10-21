@@ -114,6 +114,7 @@
             border: 1px solid #fde68a !important;
             padding: 3px 0;
         }
+        .pause-soir .recess-hour, .pause-soir .recess-content { background-color: #eff6ff; color: #1e40af; border-color: #bfdbfe !important; }
     </style>
 </head>
 <body>
@@ -220,12 +221,17 @@
                         $recessStartTime = $rowEndTime;
                         $recessEndTime = date('H:i', strtotime($recessStartTime . ' +' . $recessDuration . ' minutes'));
                     @endphp
-                    <tr class="recess-row">
+                    @php $pauseSoir = \App\Support\GrilleEmploiDuTemps::estPauseSoir($recessDuration); @endphp
+                    <tr class="recess-row {{ $pauseSoir ? 'pause-soir' : '' }}">
                         <td class="recess-hour">
                             {{ $recessStartTime }} - {{ $recessEndTime }}
                         </td>
                         <td colspan="6" class="recess-content">
-                            RÉCRÉATION ({{ $recessDuration }} MIN)
+                            @if($pauseSoir)
+                                PAUSE · LE SOIR REPREND À {{ $recessEndTime }}
+                            @else
+                                RÉCRÉATION ({{ $recessDuration }} MIN)
+                            @endif
                         </td>
                     </tr>
                 @endif
