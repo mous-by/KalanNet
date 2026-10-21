@@ -99,13 +99,20 @@
     });
 
     // Afficher le modal ~1,2 s après chargement
+    // (après le message de bienvenue d'une nouvelle école, s'il est affiché : jamais l'un sur l'autre).
     window.addEventListener('DOMContentLoaded', function () {
-        setTimeout(function () {
+        function afficher() {
             const modalEl = document.getElementById('pwaInstallModal');
             if (!modalEl) return;
             const modal = new bootstrap.Modal(modalEl);
             modal.show();
-        }, 1200);
+        }
+        const bienvenue = document.getElementById('bienvenueModal');
+        if (bienvenue) {
+            bienvenue.addEventListener('hidden.bs.modal', function () { setTimeout(afficher, 800); }, { once: true });
+        } else {
+            setTimeout(afficher, 1200);
+        }
     });
 
     // ---- Helpers UI ----

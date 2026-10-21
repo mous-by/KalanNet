@@ -61,6 +61,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/documentation/download/{format}', [\App\Http\Controllers\DocumentationController::class, 'download'])->name('documentation.download');
     Route::post('/assistant/chat', [AssistantController::class, 'chat'])->name('assistant.chat');
     Route::post('/notifications/{id}/read', [DashboardController::class, 'markNotificationAsRead'])->name('notifications.read');
+    Route::post('/bienvenue/vue', [\App\Http\Controllers\BienvenueController::class, 'vue'])->name('bienvenue.vue');
     Route::put('/dashboard/abonnements/{abonnement}/dates', [DashboardController::class, 'updateSubscriptionDates'])->name('dashboard.abonnements.dates');
 
     // Élèves

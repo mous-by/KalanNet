@@ -107,6 +107,7 @@
             @auth
                 @include('partials.bandeau-assistance')
                 @include('partials.demande-assistance')
+                @include('partials.bienvenue-admin')
             @endauth
             @yield('content')
         </main>
