@@ -459,16 +459,24 @@ class ConfigurationController extends Controller
             : collect();
         $schoolFilter = $user->droit === 'SupAdmin' ? ($request->integer('idEcole') ?: null) : null;
 
+        // SupAdmin : tous les comptes, même si une école est sélectionnée (DAE, DCAP et revendeurs
+        // n'ont pas d'école) ; le filtre « école » de la page sert à réduire la liste.
+        $sansEcole = fn ($relation) => $user->droit === 'SupAdmin' ? $relation->withoutGlobalScopes() : $relation;
+        $requete = $user->droit === 'SupAdmin' ? User::withoutGlobalScope('school') : User::query();
         $utilisateurs = $this->userScope(
-            User::with(['ecole', 'academie', 'cap', 'enseignant.ecole', 'parent.ecole'])->withCount('permissions'),
+            $requete->with([
+                'ecole' => $sansEcole, 'academie', 'cap',
+                'enseignant' => $sansEcole, 'enseignant.ecole' => $sansEcole,
+                'parent' => $sansEcole, 'parent.ecole' => $sansEcole,
+            ])->withCount('permissions'),
             $user,
             $idEcole
         )
             ->when($schoolFilter && $availableSchools->contains('idEcole', $schoolFilter), function ($query) use ($schoolFilter) {
                 $query->where(function ($inner) use ($schoolFilter) {
                     $inner->where('idEcole', $schoolFilter)
-                        ->orWhereHas('enseignant', fn ($enseignant) => $enseignant->where('id_ecole', $schoolFilter))
-                        ->orWhereHas('parent', fn ($parent) => $parent->where('idEcole', $schoolFilter));
+                        ->orWhereHas('enseignant', fn ($enseignant) => $enseignant->withoutGlobalScopes()->where('id_ecole', $schoolFilter))
+                        ->orWhereHas('parent', fn ($parent) => $parent->withoutGlobalScopes()->where('idEcole', $schoolFilter));
                 });
             })
             ->when($search, function ($query) use ($search) {
@@ -1068,6 +1076,11 @@ class ConfigurationController extends Controller
     protected function userScope($query, User $user, ?int $idEcole)
     {
         if ($user->droit === 'SupAdmin') {
+            // Tous les comptes, même si une école est sélectionnée (modifier, permissions, statut…).
+            if ($query instanceof \Illuminate\Database\Eloquent\Builder) {
+                $query->withoutGlobalScope('school');
+            }
+
             return $query->where(function ($inner) use ($user) {
                 $inner->where('droit', '!=', 'SupAdmin')
                     ->orWhere('idUtilisateur', $user->idUtilisateur);
