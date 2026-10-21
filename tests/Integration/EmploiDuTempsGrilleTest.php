@@ -188,6 +188,8 @@ class EmploiDuTempsGrilleTest extends IntegrationTestCase
         $pdf = $this->actingAs($admin)->withSession($session)->get('/pedagogie/timetable/download-pdf')->assertOk()->getContent();
         $texte = (new \Smalot\PdfParser\Parser())->parseContent($pdf)->getText();
         $this->assertStringContainsString('LE SOIR REPREND À 14:00', $texte);
-        $this->assertStringContainsString('RÉCRÉATION (15 MIN)', $texte);
+        $this->assertStringContainsString('RÉCRÉATION · 15 MIN', $texte);
+        $this->assertStringContainsString('EMPLOI DU TEMPS', $texte);
+        $this->assertStringContainsString('ANNÉE SCOLAIRE', $texte);
     }
 }
