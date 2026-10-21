@@ -12,7 +12,10 @@ use Illuminate\Support\Facades\DB;
  */
 class TarifsBienvenue
 {
-    /** Montants en F CFA. L'abonnement annuel vient des offres d'abonnement s'il y en a une. */
+    /**
+     * Montants par défaut, en F CFA. Les frais d'adhésion viennent de la table
+     * frais_adhesion (réglables), l'abonnement annuel des offres d'abonnement.
+     */
     public const TARIFS = [
         'public' => ['adhesion' => 15000, 'annuel' => 10000],
         'prive' => ['adhesion' => 75000, 'annuel' => 25000],
@@ -28,6 +31,14 @@ class TarifsBienvenue
     {
         $statut = self::statut($ecole);
         $tarif = self::TARIFS[$statut];
+
+        // Frais d'adhésion réglés par le SupAdmin (page Abonnements), sinon les montants ci-dessus.
+        $adhesion = SchemaExiste::table('frais_adhesion')
+            ? DB::table('frais_adhesion')->where('statut', $statut)->value('montant')
+            : null;
+        if ($adhesion !== null) {
+            $tarif['adhesion'] = (int) round((float) $adhesion);
+        }
 
         $annuel = DB::table('abonnement_offres')
             ->where('actif', 1)->where('duree_jours', 365)->where('type_ecole_cible', $statut)

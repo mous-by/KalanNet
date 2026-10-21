@@ -201,6 +201,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/abonnements/offres', [AbonnementController::class, 'storeOffre'])->name('abonnements.offres.store');
     Route::put('/abonnements/offres/{offre}', [AbonnementController::class, 'updateOffre'])->name('abonnements.offres.update');
     Route::patch('/abonnements/offres/{offre}/statut', [AbonnementController::class, 'toggleOffre'])->name('abonnements.offres.toggle');
+    Route::put('/abonnements/frais-adhesion', [AbonnementController::class, 'updateFraisAdhesion'])->name('abonnements.frais_adhesion.update');
     Route::get('/abonnements/paiements/{reference}', [AbonnementController::class, 'paiement'])->name('abonnements.paiements.show');
     Route::get('/pedagogie/bulletins', [BulletinController::class, 'classes'])->name('pedagogie.bulletins.classes');
     Route::get('/pedagogie/classes/{idClasse}/bulletins', [BulletinController::class, 'index'])->name('pedagogie.bulletins.index');

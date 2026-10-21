@@ -47,4 +47,29 @@ class BienvenueAdminTest extends IntegrationTestCase
         $this->flushSession();
         $this->actingAs($enseignant->fresh())->withSession(['idEcole' => 1])->get('/dashboard')->assertDontSee('id="bienvenueModal"', false);
     }
+
+    /** Frais d'adhésion réglés par le SupAdmin (page Abonnements) : repris dans la bienvenue ; un Admin ne peut pas les changer. */
+    public function test_frais_d_adhesion_modifiables_par_le_supadmin(): void
+    {
+        $superAdmin = $this->compte('SupAdmin');
+        $page = $this->actingAs($superAdmin)->withSession(['idEcole' => 1])->get('/abonnements')->assertOk()->getContent();
+        $this->assertStringContainsString('name="public"', $page);
+        $this->assertStringContainsString('name="prive"', $page);
+
+        $this->actingAs($superAdmin)->withSession(['idEcole' => 1])->put('/abonnements/frais-adhesion', ['public' => 20000, 'prive' => 60000])
+            ->assertRedirect()->assertSessionHas('success');
+        $this->assertEquals(60000, DB::table('frais_adhesion')->where('statut', 'prive')->value('montant'));
+
+        // La bienvenue d'une nouvelle école privée annonce 60 000 + l'abonnement annuel.
+        $admin = $this->adminComplet(1);
+        DB::table('ecole')->where('idEcole', 1)->update(['statut' => 'prive']);
+        DB::table('utilisateurs')->where('idUtilisateur', $admin->idUtilisateur)->update(['bienvenue_vue_at' => null, 'doit_changer_mdp' => 0]);
+        $annuel = \App\Support\TarifsBienvenue::pour((new \App\Models\Ecole())->forceFill(['statut' => 'prive']))['annuel'];
+        $this->flushSession();
+        $html = $this->actingAs($admin->fresh())->withSession(['idEcole' => 1])->get('/dashboard')->assertOk()->getContent();
+        $this->assertStringContainsString('60 000 F CFA', $html);
+        $this->assertStringContainsString(\App\Support\TarifsBienvenue::montant(60000 + $annuel), $html);
+
+        $this->actingAs($admin->fresh())->withSession(['idEcole' => 1])->put('/abonnements/frais-adhesion', ['public' => 1, 'prive' => 1])->assertForbidden();
+    }
 }

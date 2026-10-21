@@ -78,7 +78,13 @@ class AbonnementController extends Controller
                 ->get();
         }
 
-        return view('abonnements.index', compact('offres', 'allOffres', 'abonnement', 'paiements', 'canConfigure', 'canReview', 'manualModes', 'adminPaiements', 'canSubmitManual'));
+        // Frais d'adhésion et ce que paie une nouvelle école (message de bienvenue), réglés par le SupAdmin.
+        $tarifsAdhesion = $canConfigure ? [
+            'public' => \App\Support\TarifsBienvenue::pour((new Ecole())->forceFill(['statut' => 'public'])),
+            'prive' => \App\Support\TarifsBienvenue::pour((new Ecole())->forceFill(['statut' => 'prive'])),
+        ] : [];
+
+        return view('abonnements.index', compact('offres', 'allOffres', 'abonnement', 'paiements', 'canConfigure', 'canReview', 'manualModes', 'adminPaiements', 'canSubmitManual', 'tarifsAdhesion'));
     }
 
     public function payer(Request $request, AbonnementPaymentService $payments)
@@ -269,6 +275,27 @@ class AbonnementController extends Controller
         $offre->update($this->validatedOffre($request, $offre->id));
 
         return back()->with('success', 'Formule d’abonnement mise à jour.');
+    }
+
+    /** Frais d'adhésion d'une nouvelle école, publique ou privée (SupAdmin). */
+    public function updateFraisAdhesion(Request $request)
+    {
+        if (!$this->canConfigureAbonnements(Auth::user())) {
+            abort(403);
+        }
+        $data = $request->validate([
+            'public' => 'required|integer|min:0|max:100000000',
+            'prive' => 'required|integer|min:0|max:100000000',
+        ], [], ['public' => 'frais d’adhésion des écoles publiques', 'prive' => 'frais d’adhésion des écoles privées']);
+
+        foreach (['public', 'prive'] as $statut) {
+            \Illuminate\Support\Facades\DB::table('frais_adhesion')->updateOrInsert(
+                ['statut' => $statut],
+                ['montant' => $data[$statut], 'modifie_par' => Auth::id(), 'updated_at' => now()]
+            );
+        }
+
+        return back()->with('success', 'Frais d’adhésion mis à jour : ils s’appliquent au message de bienvenue des nouvelles écoles.');
     }
 
     public function toggleOffre(AbonnementOffre $offre)

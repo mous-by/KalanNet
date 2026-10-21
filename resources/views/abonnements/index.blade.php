@@ -232,6 +232,50 @@
 @endif
 
 @if($canConfigure)
+{{-- Frais d'adhésion : payés une fois par une nouvelle école, annoncés dans son message de bienvenue. --}}
+@php $fmt = [\App\Support\TarifsBienvenue::class, 'montant']; @endphp
+<div class="card theme-card shadow-sm mt-4">
+    <div class="card-header theme-header d-flex align-items-center justify-content-between">
+        <h5 class="fw-bold mb-0"><i class="bi bi-door-open me-2"></i>Frais d’adhésion des nouvelles écoles</h5>
+        <span class="badge bg-primary">Superadmin</span>
+    </div>
+    <div class="card-body">
+        <p class="text-muted small mb-3">Payés une seule fois, à l’inscription d’une école, en plus de l’abonnement annuel. Ces montants apparaissent dans le message de bienvenue de l’Admin d’une nouvelle école. L’abonnement annuel vient de la tarification ci-dessous (formule de 365 jours de chaque type d’école).</p>
+        <form method="POST" action="{{ route('abonnements.frais_adhesion.update') }}" class="row g-3">
+            @csrf
+            @method('PUT')
+            @foreach(['public' => ['Écoles publiques', 'bi-bank2'], 'prive' => ['Écoles privées', 'bi-building']] as $statut => [$libelle, $icone])
+                @php $tarif = $tarifsAdhesion[$statut]; @endphp
+                <div class="col-md-6">
+                    <div class="border rounded-3 p-3 h-100">
+                        <label class="form-label fw-bold" for="adhesion-{{ $statut }}"><i class="bi {{ $icone }} me-1"></i>{{ $libelle }} — frais d’adhésion</label>
+                        <div class="input-group">
+                            <input type="number" min="0" step="1" class="form-control text-end frais-adhesion" id="adhesion-{{ $statut }}" name="{{ $statut }}" value="{{ old($statut, $tarif['adhesion']) }}" data-annuel="{{ $tarif['annuel'] }}" data-total="#total-{{ $statut }}" required>
+                            <span class="input-group-text">F CFA</span>
+                        </div>
+                        <div class="small mt-2 text-muted">
+                            + abonnement annuel {{ $fmt($tarif['annuel']) }} =
+                            <strong class="text-body">première année <span id="total-{{ $statut }}">{{ $fmt($tarif['premiere_annee']) }}</span></strong>,
+                            puis {{ $fmt($tarif['annuel']) }} par an.
+                        </div>
+                    </div>
+                </div>
+            @endforeach
+            <div class="col-12 text-end">
+                <button class="btn theme-action-btn" type="submit"><i class="bi bi-check2 me-1"></i>Enregistrer les frais d’adhésion</button>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+    document.querySelectorAll('.frais-adhesion').forEach(function (champ) {
+        champ.addEventListener('input', function () {
+            const total = (parseInt(champ.value, 10) || 0) + parseInt(champ.dataset.annuel, 10);
+            document.querySelector(champ.dataset.total).textContent = total.toLocaleString('fr-FR').replace(/\u202f|\u00a0/g, ' ') + ' F CFA';
+        });
+    });
+</script>
+
 <div class="card theme-card shadow-sm mt-4">
     <div class="card-header theme-header d-flex align-items-center justify-content-between">
         <h5 class="fw-bold mb-0"><i class="bi bi-sliders me-2"></i>Tarification abonnement</h5>
