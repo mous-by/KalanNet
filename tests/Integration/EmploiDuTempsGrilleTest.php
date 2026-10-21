@@ -192,4 +192,26 @@ class EmploiDuTempsGrilleTest extends IntegrationTestCase
         $this->assertStringContainsString('EMPLOI DU TEMPS', $texte);
         $this->assertStringContainsString('ANNÉE SCOLAIRE', $texte);
     }
+
+    /** Les 6 modèles de PDF, pour toutes les écoles (web et mobile) ; un modèle inconnu donne celui de la classe. */
+    public function test_six_modeles_de_pdf(): void
+    {
+        $admin = $this->adminComplet(1);
+        DB::table('emploi_du_temps')->insert(['id_classe' => $this->classe, 'id_matiere' => $this->matieres[0], 'id_annee_scolaire' => $this->annee, 'jour' => 'Lundi', 'heure_debut' => '08:00', 'heure_fin' => '09:00']);
+        $session = ['idEcole' => 1, 'timetable_id_classe' => $this->classe, 'timetable_id_annee' => $this->annee];
+        $html = $this->actingAs($admin)->withSession($session)->get('/pedagogie/timetable')->assertOk()->getContent();
+
+        foreach (array_keys(\App\Support\ModelesEdt::MODELES) as $modele) {
+            $this->assertStringContainsString('name="modele_edt" value="'.$modele.'"', $html, "modèle $modele proposé");
+            $reponse = $this->actingAs($admin)->withSession($session)->get("/pedagogie/timetable/download-pdf?modele=$modele&affichage=1")->assertOk();
+            $this->assertStringStartsWith('inline;', $reponse->headers->get('content-disposition'));
+            $texte = (new \Smalot\PdfParser\Parser())->parseContent($reponse->getContent())->getText();
+            $this->assertStringContainsString($modele === 'bilingue' ? 'TIMETABLE' : 'EMPLOI DU TEMPS', $texte);
+        }
+        $this->assertStringStartsWith('attachment;', $this->actingAs($admin)->withSession($session)->get('/pedagogie/timetable/download-pdf?modele=inconnu')->assertOk()->headers->get('content-disposition'));
+
+        $this->withToken($admin->createToken('mobile')->plainTextToken)
+            ->get("/api/v1/timetable/download-pdf?id_classe={$this->classe}&id_annee={$this->annee}&modele=primaire")
+            ->assertOk()->assertHeader('content-type', 'application/pdf');
+    }
 }

@@ -67,9 +67,110 @@
     <div class="row align-items-center mb-3">
         <div class="col-md-12 pt-2">
             @if($selectedClasse && $selectedAnnee)
-                <a href="{{ route('pedagogie.timetable.download_pdf') }}" class="btn btn-primary w-100 py-2.5 fw-bold shadow-sm" style="font-size: 14px; border-radius: 8px;">
-                    <i class="bi bi-file-earmark-pdf-fill me-2 fs-5"></i>Télécharger / Imprimer l'Emploi du Temps en PDF (Paysage, Une Page)
-                </a>
+                <button type="button" class="btn btn-primary w-100 py-2.5 fw-bold shadow-sm" style="font-size: 14px; border-radius: 8px;" data-bs-toggle="modal" data-bs-target="#modelesEdtModal">
+                    <i class="bi bi-file-earmark-pdf-fill me-2 fs-5"></i>Imprimer / télécharger l'emploi du temps (choisir un modèle)
+                </button>
+
+                {{-- Choix du modèle : les 6 modèles pour toutes les écoles ; celui de la classe est proposé d'office. --}}
+                @php $modeleEdtConseille = \App\Support\ModelesEdt::parDefaut($selectedClasse->ordreEnseignement); @endphp
+                <div class="modal fade" id="modelesEdtModal" tabindex="-1" aria-labelledby="modelesEdtTitre" aria-hidden="true">
+                    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title fw-bold" id="modelesEdtTitre"><i class="bi bi-palette me-2"></i>Modèle de l'emploi du temps · {{ $selectedClasse->nom_classe }}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row g-3" id="modelesEdtListe">
+                                    @foreach(\App\Support\ModelesEdt::MODELES as $code => $infos)
+                                        <div class="col-sm-6 col-lg-4">
+                                            <label class="modele-edt d-flex flex-column h-100">
+                                                <img src="{{ asset('assets/images/edt/'.$code.'.png') }}" alt="" class="modele-edt-vignette mb-2" loading="lazy">
+                                                <span>
+                                                    <input type="radio" name="modele_edt" value="{{ $code }}" class="form-check-input me-2" @checked($code === $modeleEdtConseille)>
+                                                    <span class="fw-bold">{{ $infos['nom'] }}</span>
+                                                    @if($code === $modeleEdtConseille)<span class="badge bg-success-subtle text-success ms-1">Conseillé</span>@endif
+                                                </span>
+                                                <small class="text-muted mt-1 mb-2">{{ $infos['description'] }}</small>
+                                                <span class="d-flex mt-auto">
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary ms-auto edt-apercu" data-modele="{{ $code }}"><i class="bi bi-eye me-1"></i>Aperçu</button>
+                                                </span>
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                <div class="mt-3 d-none" id="edtApercuZone">
+                                    <iframe name="edtApercuCadre" id="edtApercuCadre" title="Aperçu de l'emploi du temps" style="width:100%; height:70vh; border:1px solid var(--bs-border-color); border-radius:8px;"></iframe>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Fermer</button>
+                                <button type="button" class="btn btn-outline-primary" id="edtTelecharger"><i class="bi bi-download me-1"></i>Télécharger le PDF</button>
+                                <button type="button" class="btn btn-primary" id="edtImprimer"><i class="bi bi-printer me-1"></i>Imprimer</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <iframe name="edtImpressionCadre" id="edtImpressionCadre" title="Impression" style="position:fixed; right:0; bottom:0; width:0; height:0; border:0;"></iframe>
+                <style>
+                    .modele-edt { border: 1px solid var(--bs-border-color); border-radius: 10px; padding: 10px 12px; cursor: pointer; background: var(--bs-body-bg); }
+                    .modele-edt:has(input:checked) { border-color: var(--theme-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-accent) 18%, transparent); }
+                    .modele-edt-vignette { width: 100%; height: auto; border-radius: 6px; box-shadow: 0 1px 4px rgba(15, 23, 42, .18); }
+                </style>
+                <script>
+                    document.addEventListener('DOMContentLoaded', function () {
+                        const base = @json(route('pedagogie.timetable.download_pdf'));
+                        const cle = 'kalannet_modele_edt_{{ session('idEcole') }}';
+                        const choisi = () => document.querySelector('input[name="modele_edt"]:checked')?.value || @json($modeleEdtConseille);
+                        const adresse = (modele, affichage) => base + '?modele=' + encodeURIComponent(modele) + (affichage ? '&affichage=1' : '');
+                        // Dernier modèle choisi par l'école (sur cet appareil).
+                        try {
+                            const memo = localStorage.getItem(cle);
+                            const radio = memo && document.querySelector('input[name="modele_edt"][value="' + memo + '"]');
+                            if (radio) radio.checked = true;
+                        } catch (e) {}
+                        const memoriser = () => { try { localStorage.setItem(cle, choisi()); } catch (e) {} };
+
+                        document.querySelectorAll('.edt-apercu').forEach(function (bouton) {
+                            bouton.addEventListener('click', function (event) {
+                                event.preventDefault();
+                                const radio = document.querySelector('input[name="modele_edt"][value="' + bouton.dataset.modele + '"]');
+                                if (radio) radio.checked = true;
+                                document.getElementById('edtApercuZone').classList.remove('d-none');
+                                document.getElementById('edtApercuCadre').src = adresse(bouton.dataset.modele, true);
+                                document.getElementById('edtApercuZone').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            });
+                        });
+                        document.getElementById('edtTelecharger').addEventListener('click', function () {
+                            memoriser();
+                            window.location.href = adresse(choisi(), false);
+                        });
+                        const cadre = document.getElementById('edtImpressionCadre');
+                        let impression = false;
+                        document.getElementById('edtImprimer').addEventListener('click', function () {
+                            memoriser();
+                            impression = true;
+                            this.disabled = true;
+                            this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Préparation…';
+                            cadre.src = adresse(choisi(), true);
+                        });
+                        cadre.addEventListener('load', function () {
+                            if (!impression) return;
+                            impression = false;
+                            const bouton = document.getElementById('edtImprimer');
+                            bouton.disabled = false;
+                            bouton.innerHTML = '<i class="bi bi-printer me-1"></i>Imprimer';
+                            setTimeout(function () {
+                                try { cadre.contentWindow.focus(); cadre.contentWindow.print(); }
+                                catch (e) { window.open(adresse(choisi(), true), '_blank'); }
+                            }, 300);
+                        });
+                        document.getElementById('modelesEdtModal').addEventListener('hidden.bs.modal', function () {
+                            document.getElementById('edtApercuCadre').src = 'about:blank';
+                            document.getElementById('edtApercuZone').classList.add('d-none');
+                        });
+                    });
+                </script>
             @else
                 <button type="button" class="btn btn-primary w-100 py-2.5 fw-bold shadow-sm" disabled style="font-size: 14px; border-radius: 8px;">
                     <i class="bi bi-file-earmark-pdf-fill me-2 fs-5"></i>Imprimer l'Emploi du Temps (Sélectionnez une classe)

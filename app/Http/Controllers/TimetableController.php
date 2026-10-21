@@ -336,10 +336,13 @@ class TimetableController extends Controller
         $jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
         $heures = $disposition['horaires'];
 
-        $pdf = Pdf::loadView('pdf.timetable', compact('selectedClasse', 'selectedAnnee', 'ecole', 'timetable', 'recesses', 'jours', 'heures', 'placement'));
+        $pdf = Pdf::loadView('pdf.timetable', compact('selectedClasse', 'selectedAnnee', 'ecole', 'timetable', 'recesses', 'jours', 'heures', 'placement') + ['modele' => \App\Support\ModelesEdt::normaliser($request->query('modele'))]);
         $pdf->setPaper('a4', 'landscape');
         
-        return $pdf->download('Emploi_du_temps_' . str_replace(' ', '_', $selectedClasse->nom_classe) . '.pdf');
+        $fichier = 'Emploi_du_temps_' . str_replace(' ', '_', $selectedClasse->nom_classe) . '.pdf';
+
+        // ?affichage=1 : affiché dans la page (aperçu d'un modèle, impression directe).
+        return $request->boolean('affichage') ? $pdf->stream($fichier) : $pdf->download($fichier);
     }
 
     protected function ensureCanManageTimetable(): void
