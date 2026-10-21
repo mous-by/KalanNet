@@ -27,34 +27,8 @@
                     </div>
                     <div class="bienvenue-voile" aria-hidden="true"></div>
 
-                    <div class="bienvenue-sceau" aria-hidden="true">
-                        <svg viewBox="0 0 120 104" focusable="false">
-                            <path d="M25 76c14-7 28-7 42 0V42c-14-7-28-7-42 0v34z" fill="#ffffff" stroke="#0b1f3a" stroke-width="3" stroke-linejoin="round"/>
-                            <path d="M95 76c-14-7-28-7-42 0V42c14-7 28-7 42 0v34z" fill="#f8fafc" stroke="#0b1f3a" stroke-width="3" stroke-linejoin="round"/>
-                            <path d="M60 47v34" stroke="#d4af37" stroke-width="4" stroke-linecap="round"/>
-                            <path d="M22 79c15-8 31-8 45 0M98 79c-15-8-31-8-45 0" stroke="#d4af37" stroke-width="4" stroke-linecap="round" fill="none"/>
-                            <path d="M35 30l25-11 25 11-25 11-25-11z" fill="#0b1f3a"/>
-                            <path d="M46 36v11c8 6 20 6 28 0V36l-14 6-14-6z" fill="#d4af37"/>
-                            <path d="M84 31v17" stroke="#0b1f3a" stroke-width="3" stroke-linecap="round"/>
-                            <circle cx="84" cy="52" r="3.5" fill="#d4af37"/>
-                            <circle cx="60" cy="55" r="9" fill="#0b1f3a"/>
-                            <path d="M49 72c5-11 17-11 22 0" fill="#0b1f3a"/>
-                            <g transform="translate(10 10) scale(.78)">
-                                <clipPath id="bienvenue-drapeau"><path d="M16 7c9 2 15 8 15 17 0 5 4 9 7 13-5 7-12 11-21 9-8-2-12-10-10-19 1-6 4-13 9-20z"/></clipPath>
-                                <g clip-path="url(#bienvenue-drapeau)">
-                                    <rect x="5" y="5" width="11" height="44" fill="#14b53a"/>
-                                    <rect x="16" y="5" width="11" height="44" fill="#fcd116"/>
-                                    <rect x="27" y="5" width="13" height="44" fill="#ce1126"/>
-                                </g>
-                                <path d="M16 7c9 2 15 8 15 17 0 5 4 9 7 13-5 7-12 11-21 9-8-2-12-10-10-19 1-6 4-13 9-20z" fill="none" stroke="#0b1f3a" stroke-width="2"/>
-                            </g>
-                            <path d="M88 16c9 8 13 21 9 35M93 17c-6 4-11 10-14 19M97 51c-8-4-16-5-25-2" stroke="#0b1f3a" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-                            <circle cx="88" cy="16" r="3" fill="#d4af37"/>
-                            <circle cx="79" cy="36" r="3" fill="#d4af37"/>
-                            <circle cx="72" cy="49" r="3" fill="#d4af37"/>
-                            <circle cx="97" cy="51" r="3" fill="#d4af37"/>
-                        </svg>
-                    </div>
+                    {{-- Icône de l'application KalanNet (celle du Play Store). --}}
+                    <div class="bienvenue-sceau" aria-hidden="true"><img src="{{ asset('assets/images/bienvenue/kalannet-icone.png') }}" alt=""></div>
                     <p class="bienvenue-surtitre">{{ __('bienvenue.surtitre') }}</p>
                     {{-- Texte complet pour les lecteurs d'écran ; à l'écran, il s'écrit mot par mot. --}}
                     <h2 class="bienvenue-titre" id="bienvenueTitre" aria-label="{{ __('bienvenue.titre', ['ecole' => $ecoleBienvenue?->nomEcole ?? session('nomEcole')]) }}">
@@ -117,11 +91,10 @@
         }
         .bienvenue-hero > :not(.bienvenue-diapos):not(.bienvenue-voile) { position: relative; z-index: 1; }
         .bienvenue-sceau {
-            width: 92px; height: 92px; margin: 0 auto 14px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            background: #ffffff; box-shadow: 0 0 0 6px rgba(255, 255, 255, .22), 0 12px 28px rgba(0, 0, 0, .35);
+            width: 96px; height: 96px; margin: 0 auto 14px; border-radius: 24px; overflow: hidden;
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, .85), 0 14px 30px rgba(0, 0, 0, .4);
         }
-        .bienvenue-sceau svg { width: 70px; height: 61px; }
+        .bienvenue-sceau img { width: 100%; height: 100%; display: block; }
         .bienvenue-surtitre { margin: 0 0 8px; font-size: .78rem; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; text-shadow: 0 1px 6px rgba(0, 0, 0, .6); }
         .bienvenue-titre {
             margin: 0 auto; max-width: 30ch; min-height: 2.4em; font-size: clamp(1.45rem, 3.4vw, 2rem); font-weight: 800; line-height: 1.2;
@@ -180,8 +153,7 @@
         }
         @media (max-width: 576px) {
             .bienvenue-hero { padding: 26px 18px 24px; min-height: 300px; }
-            .bienvenue-sceau { width: 76px; height: 76px; }
-            .bienvenue-sceau svg { width: 58px; height: 50px; }
+            .bienvenue-sceau { width: 78px; height: 78px; border-radius: 20px; }
             .bienvenue-corps { padding: 22px 18px 24px; }
             .bienvenue-ligne, .bienvenue-total { padding: 12px 14px; }
             .bienvenue-total strong { font-size: 1.3rem; }
