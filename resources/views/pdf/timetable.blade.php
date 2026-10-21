@@ -3,6 +3,11 @@
     $ordre = trim((string) ($selectedClasse->ordreEnseignement ?? ''));
     $m = \App\Support\ModelesEdt::pour($modele ?? null, $ordre);
     [$accent, $clair] = $m['couleurs'];
+    // Noir et blanc par défaut (la plupart des écoles n'ont pas d'imprimante couleur) ; ?couleur=1 sinon.
+    $enCouleur = !empty($couleur);
+    if (!$enCouleur) {
+        [$accent, $clair] = ['#111111', '#f1f1f1'];
+    }
     $bilingue = !empty($m['bilingue']);
     $decor = $m['decor'] ?? null;
     $t = fn (string $fr, string $en) => $bilingue ? $fr.' / '.$en : $fr;
@@ -73,13 +78,18 @@
 
     $signataire = \App\Support\PresentationBulletin::signataire($ecole ?? (object) [], $ordre);
     $signataireEn = ['Le Proviseur' => 'The Principal', 'Le Directeur des Études' => 'Director of Studies'][$signataire] ?? 'The Head Teacher';
-    $pauseSoirFond = \App\Support\ModelesCarte::eclaircir($accent, 0.86);
+    $pauseSoirFond = $enCouleur ? \App\Support\ModelesCarte::eclaircir($accent, 0.86) : '#e2e2e2';
+    if (!$enCouleur) {
+        // Étiquettes de matières : blanches, filet noir.
+        $couleur = fn ($cours) => ['#ffffff', '#111111'];
+    }
+    $gris = fn (string $couleur, string $remplacement) => $enCouleur ? $couleur : $remplacement;
 
     // ---- Décors (dessins SVG) des modèles Primaire et Technique.
     $svg = fn (string $corps, int $l, int $h) => 'data:image/svg+xml;base64,'.base64_encode('<svg xmlns="http://www.w3.org/2000/svg" width="'.$l.'" height="'.$h.'" viewBox="0 0 '.$l.' '.$h.'">'.$corps.'</svg>');
-    $soleil = $svg('<circle cx="50" cy="50" r="22" fill="#facc15"/>'.collect(range(0, 330, 30))->map(fn ($a) => sprintf('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="#facc15" stroke-width="6" stroke-linecap="round"/>', 50 + 30 * cos(deg2rad($a)), 50 + 30 * sin(deg2rad($a)), 50 + 44 * cos(deg2rad($a)), 50 + 44 * sin(deg2rad($a))))->implode(''), 100, 100);
-    $crayons = $svg(collect([['#ef4444', 10], ['#facc15', 34], ['#22c55e', 58], ['#3b82f6', 82]])->map(fn ($c) => '<rect x="'.$c[1].'" y="18" width="18" height="70" rx="3" fill="'.$c[0].'"/><polygon points="'.$c[1].',18 '.($c[1] + 18).',18 '.($c[1] + 9).',0" fill="#f5d0a9"/>')->implode(''), 110, 90);
-    $engrenage = $svg(collect(range(0, 315, 45))->map(fn ($a) => sprintf('<rect x="44" y="4" width="12" height="18" rx="2" fill="%s" transform="rotate(%d 50 50)"/>', $accent, $a))->implode('').'<circle cx="50" cy="50" r="32" fill="'.$accent.'"/><circle cx="50" cy="50" r="13" fill="#ffffff"/>', 100, 100);
+    $soleil = $svg('<circle cx="50" cy="50" r="22" fill="'.$gris('#facc15', '#c4c4c4').'"/>'.collect(range(0, 330, 30))->map(fn ($a) => sprintf('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="'.$gris('#facc15', '#c4c4c4').'" stroke-width="6" stroke-linecap="round"/>', 50 + 30 * cos(deg2rad($a)), 50 + 30 * sin(deg2rad($a)), 50 + 44 * cos(deg2rad($a)), 50 + 44 * sin(deg2rad($a))))->implode(''), 100, 100);
+    $crayons = $svg(collect([[$gris('#ef4444', '#9a9a9a'), 10], [$gris('#facc15', '#cfcfcf'), 34], [$gris('#22c55e', '#6f6f6f'), 58], [$gris('#3b82f6', '#b5b5b5'), 82]])->map(fn ($c) => '<rect x="'.$c[1].'" y="18" width="18" height="70" rx="3" fill="'.$c[0].'"/><polygon points="'.$c[1].',18 '.($c[1] + 18).',18 '.($c[1] + 9).',0" fill="#f5d0a9"/>')->implode(''), 110, 90);
+    $engrenage = $svg(collect(range(0, 315, 45))->map(fn ($a) => sprintf('<rect x="44" y="4" width="12" height="18" rx="2" fill="%s" transform="rotate(%d 50 50)"/>', $gris($accent, '#8a8a8a'), $a))->implode('').'<circle cx="50" cy="50" r="32" fill="'.$gris($accent, '#8a8a8a').'"/><circle cx="50" cy="50" r="13" fill="#ffffff"/>', 100, 100);
 @endphp
 <!DOCTYPE html>
 <html lang="fr">
@@ -152,6 +162,18 @@
         .pied td { vertical-align: top; font-size: 7.4pt; color: #4b5563; }
         .pied .signature { text-align: center; width: 60mm; height: 16mm; color: #111827; font-weight: bold; text-decoration: underline; }
         .pied .decor img { width: 22mm; }
+        @if(!$enCouleur)
+        /* Noir et blanc : titres et en-têtes encadrés plutôt que remplis (lisible en photocopie, peu d'encre). */
+        .titre .doc { background: #ffffff; color: #111111; border: 0.6mm solid #111111; }
+        .grille th { background: #e6e6e6; color: #111111; border: 0.3mm solid #111111; }
+        .grille td { border-color: #6b6b6b; }
+        .grille td.heure .fin { color: #444444; }
+        .tete-logo .pastille { background: #ffffff; color: #111111; border: 0.4mm solid #111111; }
+        .pause td { border-color: #6b6b6b !important; }
+        .cours { border: 0.2mm solid #9a9a9a; border-left: 1mm solid #111111; }
+        .cours .prof, .simple .prof { color: #444444; }
+        .infos td { background: #ffffff; border-color: #6b6b6b; }
+        @endif
     </style>
 </head>
 <body>

@@ -81,11 +81,18 @@
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
                             </div>
                             <div class="modal-body">
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="edtCouleur">
+                                    <label class="form-check-label" for="edtCouleur">
+                                        <strong>Imprimer en couleur</strong>
+                                        <span class="text-muted small d-block">Laissez décoché pour une imprimante noir et blanc : le document reste net et lisible, avec peu d'encre.</span>
+                                    </label>
+                                </div>
                                 <div class="row g-3" id="modelesEdtListe">
                                     @foreach(\App\Support\ModelesEdt::MODELES as $code => $infos)
                                         <div class="col-sm-6 col-lg-4">
                                             <label class="modele-edt d-flex flex-column h-100">
-                                                <img src="{{ asset('assets/images/edt/'.$code.'.png') }}" alt="" class="modele-edt-vignette mb-2" loading="lazy">
+                                                <img src="{{ asset('assets/images/edt/'.$code.'.png') }}" data-nb="{{ asset('assets/images/edt/'.$code.'.png') }}" data-couleur="{{ asset('assets/images/edt/'.$code.'-couleur.png') }}" alt="" class="modele-edt-vignette mb-2" loading="lazy">
                                                 <span>
                                                     <input type="radio" name="modele_edt" value="{{ $code }}" class="form-check-input me-2" @checked($code === $modeleEdtConseille)>
                                                     <span class="fw-bold">{{ $infos['nom'] }}</span>
@@ -122,7 +129,18 @@
                         const base = @json(route('pedagogie.timetable.download_pdf'));
                         const cle = 'kalannet_modele_edt_{{ session('idEcole') }}';
                         const choisi = () => document.querySelector('input[name="modele_edt"]:checked')?.value || @json($modeleEdtConseille);
-                        const adresse = (modele, affichage) => base + '?modele=' + encodeURIComponent(modele) + (affichage ? '&affichage=1' : '');
+                        const caseCouleur = document.getElementById('edtCouleur');
+                        const adresse = (modele, affichage) => base + '?modele=' + encodeURIComponent(modele) + (caseCouleur.checked ? '&couleur=1' : '') + (affichage ? '&affichage=1' : '');
+                        // Noir et blanc par défaut ; la case « couleur » est retenue et change les vignettes.
+                        const vignettes = () => document.querySelectorAll('.modele-edt-vignette').forEach((img) => { img.src = caseCouleur.checked ? img.dataset.couleur : img.dataset.nb; });
+                        try { caseCouleur.checked = localStorage.getItem(cle + '_couleur') === '1'; } catch (e) {}
+                        vignettes();
+                        caseCouleur.addEventListener('change', function () {
+                            try { localStorage.setItem(cle + '_couleur', caseCouleur.checked ? '1' : '0'); } catch (e) {}
+                            vignettes();
+                            const cadreApercu = document.getElementById('edtApercuCadre');
+                            if (!document.getElementById('edtApercuZone').classList.contains('d-none')) cadreApercu.src = adresse(choisi(), true);
+                        });
                         // Dernier modèle choisi par l'école (sur cet appareil).
                         try {
                             const memo = localStorage.getItem(cle);

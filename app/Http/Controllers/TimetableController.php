@@ -336,7 +336,7 @@ class TimetableController extends Controller
         $jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
         $heures = $disposition['horaires'];
 
-        $pdf = Pdf::loadView('pdf.timetable', compact('selectedClasse', 'selectedAnnee', 'ecole', 'timetable', 'recesses', 'jours', 'heures', 'placement') + ['modele' => \App\Support\ModelesEdt::normaliser($request->query('modele'))]);
+        $pdf = Pdf::loadView('pdf.timetable', compact('selectedClasse', 'selectedAnnee', 'ecole', 'timetable', 'recesses', 'jours', 'heures', 'placement') + ['modele' => \App\Support\ModelesEdt::normaliser($request->query('modele')), 'couleur' => $request->boolean('couleur')]);
         $pdf->setPaper('a4', 'landscape');
         
         $fichier = 'Emploi_du_temps_' . str_replace(' ', '_', $selectedClasse->nom_classe) . '.pdf';
