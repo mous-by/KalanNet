@@ -88,6 +88,14 @@
                                         <span class="text-muted small d-block">Laissez décoché pour une imprimante noir et blanc : le document reste net et lisible, avec peu d'encre.</span>
                                     </label>
                                 </div>
+                                @php $signataireEdtParDefaut = \App\Support\PresentationBulletin::signataire(\App\Models\Ecole::withoutGlobalScopes()->find(session('idEcole')) ?? (object) [], $selectedClasse->ordreEnseignement); @endphp
+                                <div class="row g-2 align-items-end mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold" for="edtSignataire">Signataire</label>
+                                        <input type="text" class="form-control" id="edtSignataire" maxlength="80" value="{{ $signataireEdtParDefaut }}" data-defaut="{{ $signataireEdtParDefaut }}" placeholder="{{ $signataireEdtParDefaut }}">
+                                        <div class="form-text">Ex. : Le Directeur, Le Proviseur, Le Censeur, Le Directeur des Études…</div>
+                                    </div>
+                                </div>
                                 <div class="row g-3" id="modelesEdtListe">
                                     @foreach(\App\Support\ModelesEdt::MODELES as $code => $infos)
                                         <div class="col-sm-6 col-lg-4">
@@ -130,7 +138,20 @@
                         const cle = 'kalannet_modele_edt_{{ session('idEcole') }}';
                         const choisi = () => document.querySelector('input[name="modele_edt"]:checked')?.value || @json($modeleEdtConseille);
                         const caseCouleur = document.getElementById('edtCouleur');
-                        const adresse = (modele, affichage) => base + '?modele=' + encodeURIComponent(modele) + (caseCouleur.checked ? '&couleur=1' : '') + (affichage ? '&affichage=1' : '');
+                        const champSignataire = document.getElementById('edtSignataire');
+                        const signataire = () => champSignataire.value.trim();
+                        const adresse = (modele, affichage) => base + '?modele=' + encodeURIComponent(modele) + (caseCouleur.checked ? '&couleur=1' : '')
+                            + (signataire() && signataire() !== champSignataire.dataset.defaut ? '&signataire=' + encodeURIComponent(signataire()) : '')
+                            + (affichage ? '&affichage=1' : '');
+                        // Signataire retenu par l'école (sur cet appareil).
+                        try { const memoSignataire = localStorage.getItem(cle + '_signataire'); if (memoSignataire) champSignataire.value = memoSignataire; } catch (e) {}
+                        champSignataire.addEventListener('change', function () {
+                            try {
+                                if (signataire() && signataire() !== champSignataire.dataset.defaut) localStorage.setItem(cle + '_signataire', signataire());
+                                else localStorage.removeItem(cle + '_signataire');
+                            } catch (e) {}
+                            if (!document.getElementById('edtApercuZone').classList.contains('d-none')) document.getElementById('edtApercuCadre').src = adresse(choisi(), true);
+                        });
                         // Noir et blanc par défaut ; la case « couleur » est retenue et change les vignettes.
                         const vignettes = () => document.querySelectorAll('.modele-edt-vignette').forEach((img) => { img.src = caseCouleur.checked ? img.dataset.couleur : img.dataset.nb; });
                         try { caseCouleur.checked = localStorage.getItem(cle + '_couleur') === '1'; } catch (e) {}

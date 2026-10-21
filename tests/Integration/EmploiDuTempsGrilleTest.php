@@ -210,6 +210,13 @@ class EmploiDuTempsGrilleTest extends IntegrationTestCase
         }
         $this->assertStringStartsWith('attachment;', $this->actingAs($admin)->withSession($session)->get('/pedagogie/timetable/download-pdf?modele=inconnu')->assertOk()->headers->get('content-disposition'));
 
+        // Signataire choisi par l'école ; sinon celui de la classe.
+        $avecSignataire = $this->actingAs($admin)->withSession($session)->get('/pedagogie/timetable/download-pdf?signataire='.urlencode('Le Censeur'))->assertOk()->getContent();
+        $this->assertStringContainsString('Le Censeur', (new \Smalot\PdfParser\Parser())->parseContent($avecSignataire)->getText());
+        $parDefaut = $this->actingAs($admin)->withSession($session)->get('/pedagogie/timetable/download-pdf')->assertOk()->getContent();
+        $this->assertMatchesRegularExpression('/Le (Directeur|Proviseur)/', (new \Smalot\PdfParser\Parser())->parseContent($parDefaut)->getText());
+        $this->assertStringContainsString('id="edtSignataire"', $html);
+
         $this->withToken($admin->createToken('mobile')->plainTextToken)
             ->get("/api/v1/timetable/download-pdf?id_classe={$this->classe}&id_annee={$this->annee}&modele=primaire")
             ->assertOk()->assertHeader('content-type', 'application/pdf');

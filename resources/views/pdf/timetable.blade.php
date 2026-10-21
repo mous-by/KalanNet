@@ -76,8 +76,12 @@
     $ordreMatieres = collect($placement)->flatten(1)->filter()->pluck('id_matiere')->unique()->sort()->values()->flip();
     $couleur = fn ($cours) => $palette[((int) ($ordreMatieres[$cours->id_matiere] ?? 0)) % count($palette)];
 
-    $signataire = \App\Support\PresentationBulletin::signataire($ecole ?? (object) [], $ordre);
-    $signataireEn = ['Le Proviseur' => 'The Principal', 'Le Directeur des Études' => 'Director of Studies'][$signataire] ?? 'The Head Teacher';
+    // Signataire saisi par l'école (fenêtre d'impression), sinon le Directeur ou le Proviseur selon la classe.
+    $signataireParDefaut = \App\Support\PresentationBulletin::signataire($ecole ?? (object) [], $ordre);
+    $signataire = $signataireChoisi ?? $signataireParDefaut;
+    $signataireEn = $signataire === $signataireParDefaut
+        ? (['Le Proviseur' => 'The Principal', 'Le Directeur des Études' => 'Director of Studies'][$signataire] ?? 'The Head Teacher')
+        : null;
     $pauseSoirFond = $enCouleur ? \App\Support\ModelesCarte::eclaircir($accent, 0.86) : '#e2e2e2';
     if (!$enCouleur) {
         // Étiquettes de matières : blanches, filet noir.
@@ -299,7 +303,7 @@
                 {{ $t('Fait à ……………………, le ……………………', 'Done at ……………………, on ……………………') }}
                 <div style="margin-top:1mm; font-size:6.4pt; color:#9ca3af;">{{ $t('Édité le', 'Printed on') }} {{ now()->format('d/m/Y') }}</div>
             </td>
-            <td class="signature">{{ $bilingue ? $signataire.' / '.$signataireEn : $signataire }}</td>
+            <td class="signature">{{ $bilingue && $signataireEn ? $signataire.' / '.$signataireEn : $signataire }}</td>
         </tr>
     </table>
 </body>
