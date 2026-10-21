@@ -105,11 +105,11 @@
             text-wrap: balance; text-shadow: 0 1px 8px rgba(0, 0, 0, .7);
         }
         /* Écriture mot par mot, avec le stylo qui avance. */
-        .bienvenue-mot { opacity: 0; filter: blur(3px); transition: opacity .35s ease, filter .35s ease; }
+        .bienvenue-mot { opacity: 0; filter: blur(3px); transition: opacity .6s ease, filter .6s ease; }
         .bienvenue-mot.ecrit { opacity: 1; filter: none; }
         .bienvenue-stylo {
             display: inline-block; width: 1.05em; margin-left: .15em; vertical-align: -0.1em; color: #fcd34d;
-            transform-origin: 10% 90%; animation: bienvenue-stylo .35s ease-in-out infinite alternate;
+            transform-origin: 10% 90%; animation: bienvenue-stylo .6s ease-in-out infinite alternate;
             filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .5)); transition: opacity .4s ease;
         }
         .bienvenue-stylo.fini { opacity: 0; }
@@ -200,7 +200,7 @@
                     mot.after(icone);
                     // Petite pause entre le titre et la phrase.
                     const finTitre = mot.parentElement === zones[0] && !mot.nextElementSibling?.classList.contains('bienvenue-mot') && i < mots.length && mots[i].parentElement !== zones[0];
-                    setTimeout(suivant, finTitre ? 650 : 170);
+                    setTimeout(suivant, finTitre ? 1100 : 350);
                 })();
             }
             fenetre.addEventListener('shown.bs.modal', ecrire, { once: true });
