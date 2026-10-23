@@ -285,6 +285,13 @@ html[data-theme] ::selection {
 html[data-theme] .text-primary { color: var(--theme-accent) !important; }
 html[data-theme] .sidebar-wrapper .metismenu a { color: var(--text-sidebar) !important; }
 html[data-theme] .sidebar-wrapper .metismenu a:hover { color: var(--sidebar-text-active) !important; background: rgba(255,255,255,0.05); }
+/* Thèmes clairs : style.css force les icônes du menu en blanc, invisibles sur le fond clair */
+html[data-theme="light"] .sidebar-wrapper .metismenu .parent-icon,
+html[data-theme="light"] .sidebar-wrapper .metismenu .parent-icon i,
+html[data-theme="brume"] .sidebar-wrapper .metismenu .parent-icon,
+html[data-theme="brume"] .sidebar-wrapper .metismenu .parent-icon i { color: var(--text-sidebar) !important; fill: var(--text-sidebar) !important; }
+html[data-theme="light"] .top-header .notifications,
+html[data-theme="brume"] .top-header .notifications { color: var(--text-navbar) !important; background-color: var(--accent-light) !important; }
 
 /* Language switcher stays readable on every navbar theme */
 html[data-theme] .language-switcher .dropdown-menu {
