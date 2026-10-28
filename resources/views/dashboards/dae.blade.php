@@ -71,6 +71,6 @@
 
 @include('dashboards.partials.annonces-territoire', [
     'titreAnnonces' => "Annonces de l'académie",
-    'aideDiffusion' => "L'annonce est envoyée aux destinataires choisis dans toutes les écoles de l'académie. « Directeurs de CAP » la réserve aux DCAP.",
+    'aideDiffusion' => "L'annonce est envoyée aux destinataires choisis dans les établissements du secondaire de l'académie ; le jardin et le fondamental passent par les CAP. « Directeurs de CAP » la réserve aux DCAP.",
 ])
 @endsection

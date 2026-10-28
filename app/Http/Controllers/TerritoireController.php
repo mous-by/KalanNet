@@ -132,7 +132,13 @@ class TerritoireController extends Controller
             'type_annonce' => $data['type_annonce'] ?? 'information',
         ], $fichier ?? []));
 
-        return back()->with('success', 'Annonce publiée à '.($user->droit === 'DAE' ? "l'académie." : 'votre CAP.'));
+        $destinataires = match (true) {
+            $user->droit !== 'DAE' => 'à votre CAP.',
+            $data['public_cible'] === 'dcap' => "aux directeurs de CAP de l'académie.",
+            default => "aux établissements du secondaire de l'académie.",
+        };
+
+        return back()->with('success', 'Annonce publiée '.$destinataires);
     }
 
     public function destroyAnnonce(int $id)
