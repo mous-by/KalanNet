@@ -37,7 +37,7 @@
 @include('dashboards.partials.annonces-territoire', [
     'titreAnnonces' => Auth::user()->droit === 'DAE' ? "Annonces de l'académie" : 'Annonces du CAP',
     'aideDiffusion' => Auth::user()->droit === 'DAE'
-        ? "L'annonce est envoyée aux destinataires choisis dans toutes les écoles de l'académie. « Directeurs de CAP » la réserve aux DCAP."
+        ? "L'annonce est envoyée aux destinataires choisis dans les établissements du secondaire de l'académie ; le jardin et le fondamental passent par les CAP. « Directeurs de CAP » la réserve aux DCAP."
         : "L'annonce est envoyée aux destinataires choisis dans toutes les écoles du CAP.",
 ])
 @endsection

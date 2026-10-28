@@ -35,6 +35,13 @@ return [
         ],
     ],
 
+    // Support de Computer Service Barry (CSB) : les utilisateurs ouvrent et suivent leurs tickets depuis KalanNet.
+    // Jeton créé dans l'administration du site CSB (Tickets → Applications connectées). Vides = menu masqué.
+    'csb_support' => [
+        'url' => env('CSB_SUPPORT_URL'),
+        'token' => env('CSB_SUPPORT_TOKEN'),
+    ],
+
     'abonnements' => [
         'orange_money' => [
             'endpoint' => env('ABONNEMENT_ORANGE_MONEY_ENDPOINT'),

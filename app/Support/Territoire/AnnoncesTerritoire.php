@@ -45,6 +45,9 @@ class AnnoncesTerritoire
     /**
      * Annonces visibles par un utilisateur : celles du CAP et de l'académie de
      * son école ; pour un DCAP, celles de l'académie de son CAP.
+     * Le DAE ne s'adresse directement qu'au secondaire : le jardin et le
+     * fondamental relèvent du CAP, donc une école sans classe du secondaire
+     * ne reçoit pas les annonces de l'académie.
      */
     public static function visibles(User $user, ?int $schoolId, ?int $limite = null, bool $nonLuesSeulement = false): Collection
     {
@@ -54,6 +57,9 @@ class AnnoncesTerritoire
 
         if ($idCap && $user->droit !== 'DCAP') {
             $annonces = $annonces->merge(self::requete('cap', 'id_cap', $idCap, $cibles, $user, $nonLuesSeulement));
+        }
+        if ($idAcademie && $user->droit !== 'DCAP' && !self::aDuSecondaire((int) $schoolId)) {
+            $idAcademie = null;
         }
         if ($idAcademie) {
             $annonces = $annonces->merge(self::requete('academie', 'id_academie', $idAcademie, $cibles, $user, $nonLuesSeulement));
@@ -116,6 +122,12 @@ class AnnoncesTerritoire
         $ecole = Ecole::withoutGlobalScopes()->find($schoolId, ['idEcole', 'id_cap', 'id_academie']);
 
         return [$ecole?->id_cap, $ecole?->id_academie];
+    }
+
+    /** L'école a-t-elle au moins une classe du secondaire (général, technique et professionnel) ? */
+    private static function aDuSecondaire(int $schoolId): bool
+    {
+        return DB::table('classe')->where('idEcole', $schoolId)->where('ordreEnseignement', 'like', 'secondaire%')->exists();
     }
 
     private static function requete(string $source, string $colonne, int $id, array $cibles, User $user, bool $nonLuesSeulement): Collection
