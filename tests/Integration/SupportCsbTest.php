@@ -4,6 +4,7 @@ namespace Tests\Integration;
 
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
 /** Support CSB : un utilisateur ouvre et suit ses tickets auprès de CSB (API du site CSB simulée). */
@@ -61,5 +62,28 @@ class SupportCsbTest extends IntegrationTestCase
         $this->get('/support-csb')->assertOk()->assertSee(__('support_csb.injoignable'));
         $this->from('/support-csb/nouveau')->post('/support-csb', ['subject' => 'Panne', 'category' => 'logiciel', 'priority' => 'haute', 'message' => 'Plus rien ne marche depuis ce matin.'])
             ->assertRedirect('/support-csb/nouveau')->assertSessionHas('error')->assertSessionHasInput('subject', 'Panne');
+    }
+
+    public function test_dae_dcap_et_ecole_a_l_abonnement_expire_contactent_csb(): void
+    {
+        config(['services.csb_support.url' => 'https://csb.test', 'services.csb_support.token' => 'csb_test']);
+        Cache::forget('csb_support.options');
+        Http::fake([
+            'csb.test/api/v1/tickets/options' => Http::response(['categories' => ['logiciel' => 'Assistance sur un logiciel'], 'priorities' => ['normale' => 'Normale']]),
+            'csb.test/api/v1/tickets*' => Http::response(['data' => [$this->ticket()]]),
+        ]);
+
+        // DAE / DCAP : écrans d'école interdits, mais le support CSB est ouvert.
+        foreach (['DAE', 'DCAP'] as $droit) {
+            $this->actingAs($this->compte($droit))->get('/support-csb')->assertOk()->assertSee('Bulletins vides');
+            $this->get('/support-csb/nouveau')->assertOk();
+            $this->get('/eleves')->assertRedirect('/dashboard');
+        }
+
+        // Abonnement expiré : redirection vers l'abonnement, sauf pour le support CSB.
+        DB::table('abonnements')->where('ecole_id', 1)->update(['fin_at' => now()->subMonth()]);
+        $this->actingAs($this->compte('enseignant', 1))->withSession(['idEcole' => 1]);
+        $this->get('/eleves')->assertRedirect(route('abonnements.index'));
+        $this->get('/support-csb')->assertOk()->assertSee('Bulletins vides');
     }
 }

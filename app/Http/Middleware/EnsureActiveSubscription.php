@@ -60,7 +60,9 @@ class EnsureActiveSubscription
             'dashboard',
             'abonnements.index',
             'abonnements.paiements.manual',
-            'abonnements.paiements.show'
+            'abonnements.paiements.show',
+            // Une école dont l'abonnement a expiré doit pouvoir contacter CSB (paiement, renouvellement…).
+            'support-csb.*'
         );
     }
 
