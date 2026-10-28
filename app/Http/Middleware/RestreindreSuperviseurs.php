@@ -12,6 +12,7 @@ use Symfony\Component\HttpFoundation\Response;
  * effectifs, évaluations communes, annonces de territoire. Ils n'accèdent à
  * aucun écran de gestion d'école (élèves, enseignants, notes, finances…) et
  * ne peuvent rien y créer, modifier ni supprimer — y compris par l'assistant.
+ * Ils peuvent ouvrir et suivre leurs tickets auprès de CSB (« support-csb.* »).
  */
 class RestreindreSuperviseurs
 {
@@ -25,6 +26,7 @@ class RestreindreSuperviseurs
         'logout', 'login', 'login.post', 'login.select-school',
         'annonces.read-visible', 'notifications.read',
         'language.update', 'theme.store',
+        'support-csb.*',
     ];
 
     /** Chemins API permis (application mobile). */
