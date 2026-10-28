@@ -89,6 +89,16 @@
                 </li>
 
 
+                {{-- Support CSB : chaque utilisateur écrit à Computer Service Barry (masqué tant que non configuré). --}}
+                @if(filled(config('services.csb_support.url')) && filled(config('services.csb_support.token')))
+                <li class="nav-item me-2">
+                    <a class="nav-link d-flex align-items-center gap-2 px-2 py-1 border rounded-pill {{ request()->routeIs('support-csb.*') ? 'active' : '' }}" href="{{ route('support-csb.index') }}" title="{{ __('support_csb.sous_titre') }}" style="border-color: rgba(128, 128, 128, 0.3) !important;">
+                        <i class="bi bi-headset"></i>
+                        <span class="d-none d-md-inline fw-semibold fs-6">{{ __('support_csb.menu') }}</span>
+                    </a>
+                </li>
+                @endif
+
                 <!-- Theme Selector Dropdown -->
                 <li class="nav-item dropdown dropdown-large">
                     <a class="nav-link dropdown-toggle dropdown-toggle-nocaret" href="#" data-bs-toggle="dropdown" title="{{ __('messages.theme.change') }}">

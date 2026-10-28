@@ -59,6 +59,14 @@ Route::middleware(['auth'])->group(function () {
         return view('documentation.index');
     })->name('documentation.index');
     Route::get('/documentation/download/{format}', [\App\Http\Controllers\DocumentationController::class, 'download'])->name('documentation.download');
+
+    // Support CSB : tickets auprès de Computer Service Barry, pour chaque utilisateur.
+    Route::get('/support-csb', [\App\Http\Controllers\SupportCsbController::class, 'index'])->name('support-csb.index');
+    Route::get('/support-csb/nouveau', [\App\Http\Controllers\SupportCsbController::class, 'create'])->name('support-csb.create');
+    Route::post('/support-csb', [\App\Http\Controllers\SupportCsbController::class, 'store'])->middleware('throttle:10,1')->name('support-csb.store');
+    Route::get('/support-csb/{numero}', [\App\Http\Controllers\SupportCsbController::class, 'show'])->where('numero', 'TCK-\d{4}-\d+')->name('support-csb.show');
+    Route::post('/support-csb/{numero}/messages', [\App\Http\Controllers\SupportCsbController::class, 'reply'])->where('numero', 'TCK-\d{4}-\d+')->middleware('throttle:20,1')->name('support-csb.reply');
+    Route::get('/support-csb/{numero}/messages/{message}/piece-jointe', [\App\Http\Controllers\SupportCsbController::class, 'attachment'])->where('numero', 'TCK-\d{4}-\d+')->whereNumber('message')->name('support-csb.attachment');
     Route::post('/assistant/chat', [AssistantController::class, 'chat'])->name('assistant.chat');
     Route::post('/notifications/{id}/read', [DashboardController::class, 'markNotificationAsRead'])->name('notifications.read');
     Route::post('/bienvenue/vue', [\App\Http\Controllers\BienvenueController::class, 'vue'])->name('bienvenue.vue');
