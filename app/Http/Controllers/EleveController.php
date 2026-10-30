@@ -191,6 +191,7 @@ class EleveController extends Controller
             'id_annee' => 'required|integer|exists:anneescolaire,id_anneeScolaire',
             'date_inscription' => 'nullable|date',
             'id_matiere_lv2' => ['nullable', 'integer', Rule::exists('matiere', 'id_matiere')->where('est_lv2', true)],
+            ...\App\Support\PhotoEleve::regles(false),
         ], \App\Support\CasSocial::messages());
 
         $classe = Classe::where('idEcole', session('idEcole'))->findOrFail($data['id_classe']);
@@ -249,7 +250,60 @@ class EleveController extends Controller
         \App\Support\SubventionEtat::synchroniser($eleve->fresh());
         \App\Support\CasSocial::enregistrer((int) $eleve->id_eleve, (int) $data['id_annee'], $casSocialNature, $casSocialMontant);
 
+        if ($request->hasFile('photo')) {
+            \App\Support\PhotoEleve::enregistrer($eleve->fresh(), $request->file('photo'));
+        }
+
         return redirect()->route('eleves.index')->with('success', 'Élève modifié avec succès.');
+    }
+
+    /**
+     * Ajoute ou change la photo d'un élève déjà inscrit (fiche, « Photos de la classe », application mobile).
+     * Réponse JSON pour l'API et les envois AJAX, retour à la page sinon.
+     */
+    public function updatePhoto(Request $request, $id)
+    {
+        $this->authorizePermission('eleves_modification');
+        $eleve = Eleve::where('id_ecole', session('idEcole'))->findOrFail($id);
+        $request->validate(\App\Support\PhotoEleve::regles());
+
+        $image = \App\Support\PhotoEleve::enregistrer($eleve, $request->file('photo'));
+
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'message' => __('eleves.photo_enregistree'),
+                'image' => $image,
+                'image_url' => \App\Support\PhotoEleve::url($image),
+            ]);
+        }
+
+        return back()->with('success', __('eleves.photo_enregistree'));
+    }
+
+    /** « Photos de la classe » : les élèves d'une classe, ceux sans photo d'abord, photo prise ou choisie un par un. */
+    public function photos(Request $request)
+    {
+        $this->authorizePermission('eleves_modification');
+        $idEcole = session('idEcole');
+        $classes = Classe::where('idEcole', $idEcole)->orderBy('nom_classe')->get(['id_classe', 'nom_classe']);
+        $classe = $request->filled('classe') ? $classes->firstWhere('id_classe', $request->integer('classe')) : null;
+
+        $eleves = $classe ? $this->elevesPourPhotos($idEcole, (int) $classe->id_classe) : collect();
+
+        return view('eleves.photos', compact('classes', 'classe', 'eleves'));
+    }
+
+    /** Élèves actifs d'une classe, sans photo d'abord, puis par nom. */
+    protected function elevesPourPhotos($idEcole, int $idClasse)
+    {
+        return Eleve::where('id_ecole', $idEcole)->where('id_classe', $idClasse)->where('etat_dossier', 0)
+            ->orderBy('nom_eleve')->orderBy('prenom_eleve')
+            ->get(['id_eleve', 'prenom_eleve', 'nom_eleve', 'matricule', 'image'])
+            ->each(function ($eleve) {
+                $eleve->sans_photo = \App\Support\PhotoEleve::manquante($eleve->image);
+                $eleve->image_url = \App\Support\PhotoEleve::url($eleve->image);
+            })
+            ->sortByDesc('sans_photo')->values();
     }
 
     /**

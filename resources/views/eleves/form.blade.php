@@ -23,7 +23,7 @@
             <h5 class="mb-0 fw-bold">{{ __('eleves.edit_title') }}</h5>
         </div>
         <div class="card-body p-4 p-lg-5">
-            <form action="{{ route('eleves.update', $eleve->id_eleve) }}" method="POST">
+            <form action="{{ route('eleves.update', $eleve->id_eleve) }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
                 <div class="row g-4">
@@ -57,6 +57,17 @@
                     <div class="col-md-4">
                         <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_adresse') }}</label>
                         <input type="text" name="adresse_eleve" class="form-control" value="{{ old('adresse_eleve', $eleve->adresse_eleve) }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold text-uppercase" for="photo">{{ __('eleves.photo_label') }}</label>
+                        <div class="d-flex align-items-center gap-2">
+                            @if ($photoUrl = \App\Support\PhotoEleve::url($eleve->image))
+                                <img src="{{ $photoUrl }}" alt="" class="rounded-circle flex-shrink-0" style="width: 44px; height: 44px; object-fit: cover;">
+                            @endif
+                            <input type="file" name="photo" id="photo" class="form-control @error('photo') is-invalid @enderror" accept="image/jpeg,image/png,image/webp">
+                        </div>
+                        @error('photo')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                        <div class="form-text">{{ __('eleves.photo_help') }}</div>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_classe') }} <span class="text-danger">*</span></label>

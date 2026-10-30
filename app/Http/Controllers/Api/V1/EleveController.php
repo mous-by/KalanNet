@@ -184,6 +184,22 @@ class EleveController extends WebEleveController
         return strtoupper($value ?: 'XXXX');
     }
 
+    /** Application mobile, « Photos de la classe » : classes, puis élèves de la classe choisie (sans photo d'abord). */
+    public function photos(Request $request)
+    {
+        $this->authorizePermission('eleves_modification');
+        $idEcole = session('idEcole');
+        $classes = Classe::where('idEcole', $idEcole)->orderBy('nom_classe')->get(['id_classe', 'nom_classe']);
+        $idClasse = $request->integer('id_classe');
+        $eleves = $idClasse && $classes->contains('id_classe', $idClasse) ? $this->elevesPourPhotos($idEcole, $idClasse) : collect();
+
+        return response()->json([
+            'classes' => $classes,
+            'eleves' => $eleves,
+            'sans_photo' => $eleves->where('sans_photo', true)->count(),
+        ]);
+    }
+
     private function storeImage(Request $request): string
     {
         if (!$request->hasFile('image')) {
@@ -258,6 +274,7 @@ class EleveController extends WebEleveController
 
         return response()->json([
             'eleve' => $eleve,
+            'image_url' => \App\Support\PhotoEleve::url($eleve->image),
             'annee' => $annee,
             'paiements_recents' => $paiements->take(8)->values(),
             'payment_summary' => $this->studentPaymentSummary($eleve, $paiements),

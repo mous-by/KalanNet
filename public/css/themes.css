@@ -185,6 +185,22 @@ html[data-theme] .btn-primary-soft {
 html[data-theme="light"] .btn-primary,
 html[data-theme="light"] .btn-success { color: #ffffff !important; }
 
+/* Boutons « contour » : bordure et texte à la couleur du thème, remplis au survol. */
+html[data-theme] .btn-outline-primary {
+    color: var(--theme-accent) !important;
+    border-color: var(--theme-accent) !important;
+    background-color: transparent !important;
+}
+html[data-theme] .btn-outline-primary:hover,
+html[data-theme] .btn-outline-primary:focus-visible,
+html[data-theme] .btn-outline-primary:active,
+html[data-theme] .btn-outline-primary.active,
+html[data-theme] .btn-check:checked + .btn-outline-primary {
+    background-color: var(--theme-accent) !important;
+    border-color: var(--theme-accent) !important;
+    color: var(--text-on-accent, #ffffff) !important;
+}
+
 /* Elements restants en blanc pour lisibilité */
 html[data-theme] .card { background-color: var(--bg-card) !important; border: 1px solid var(--border-color) !important; color: var(--text-main) !important; }
 html[data-theme] .bg-white { background-color: #ffffff !important; }
