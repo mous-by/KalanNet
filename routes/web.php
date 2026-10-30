@@ -83,6 +83,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/eleves/liste/pdf', [EleveController::class, 'downloadListPdf'])->name('eleves.list.pdf');
     Route::post('/eleves/liste/excel', [EleveController::class, 'downloadListExcel'])->name('eleves.list.excel');
     Route::get('/eleves/transferts/{id}/fiche', [EleveController::class, 'transferCertificate'])->name('eleves.transfer.fiche');
+    Route::get('/eleves/photos', [EleveController::class, 'photos'])->name('eleves.photos');
+    Route::post('/eleves/{id}/photo', [EleveController::class, 'updatePhoto'])->whereNumber('id')->middleware('throttle:60,1')->name('eleves.photo');
     Route::get('/eleves/{id}/edit', [EleveController::class, 'edit'])->name('eleves.edit');
     Route::put('/eleves/{id}', [EleveController::class, 'update'])->name('eleves.update');
     Route::post('/eleves/{id}/transfert', [EleveController::class, 'transfer'])->name('eleves.transfer');

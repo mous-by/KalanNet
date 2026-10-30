@@ -5,6 +5,7 @@ import { ActivityIndicator, Text, TextInput } from 'react-native-paper';
 
 import DateField from '@/components/DateField';
 import OfflineBanner from '@/components/OfflineBanner';
+import PhotoEleve from '@/components/PhotoEleve';
 import requiredLabel from '@/components/RequiredLabel';
 import SelectField from '@/components/SelectField';
 import SubmitButton from '@/components/SubmitButton';
@@ -42,7 +43,7 @@ export default function EditEleveScreen() {
     { value: 'Malade', label: t('eleves.cas_social_malade') },
   ];
 
-  const { data, isLoading: isLoadingEleve, error: eleveError } = useApiGet<{ eleve: Eleve }>(`/eleves/${id}`, [id], {
+  const { data, isLoading: isLoadingEleve, error: eleveError } = useApiGet<{ eleve: Eleve; image_url?: string | null }>(`/eleves/${id}`, [id], {
     cacheKey: `eleve-${id}`,
   });
   const { data: options } = useApiGet<{ classes: Classe[]; annees: AnneeScolaire[]; matieres_lv2: Matiere[] }>('/eleves/inscription-options', [], {
@@ -128,6 +129,7 @@ export default function EditEleveScreen() {
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <OfflineBanner />
+      <PhotoEleve idEleve={form.id_eleve} imageUrl={data?.image_url ?? null} />
       <TextInput mode="outlined" label={requiredLabel(t('eleves.label_prenom'))} value={form.prenom_eleve ?? ''} onChangeText={(v) => set('prenom_eleve', v)} style={styles.input} />
       <TextInput mode="outlined" label={requiredLabel(t('eleves.label_nom'))} value={form.nom_eleve ?? ''} onChangeText={(v) => set('nom_eleve', v)} style={styles.input} />
       <TextInput mode="outlined" label={t('eleves.label_matricule_short')} value={form.matricule ?? ''} onChangeText={(v) => set('matricule', v)} style={styles.input} />

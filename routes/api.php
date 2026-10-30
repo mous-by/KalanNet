@@ -68,6 +68,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/eleves/liste/pdf', [WebEleveController::class, 'downloadListPdf']);
         Route::post('/eleves/liste/excel', [WebEleveController::class, 'downloadListExcel']);
         Route::get('/eleves/transferts/{id}/fiche', [WebEleveController::class, 'transferCertificate']);
+        Route::get('/eleves/photos', [EleveController::class, 'photos']);
+        Route::post('/eleves/{id}/photo', [EleveController::class, 'updatePhoto'])->whereNumber('id')->middleware('throttle:60,1');
         Route::get('/eleves/{id}', [EleveController::class, 'show']);
         Route::put('/eleves/{id}', [EleveController::class, 'update']);
         Route::post('/eleves/{id}/transfert', [EleveController::class, 'transfer']);

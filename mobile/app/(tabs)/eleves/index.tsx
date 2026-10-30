@@ -54,6 +54,7 @@ function StaffEleveList() {
   });
   const [selectedClasse, setSelectedClasse] = useState<number | null>(null);
   const canManage = hasPermission(user, 'inscriptions_inscrire');
+  const canPhotos = hasPermission(user, 'eleves_modification');
   const queuedEleves = queue.filter((item) => item.kind === 'eleve');
 
   const params = useMemo(
@@ -81,8 +82,13 @@ function StaffEleveList() {
         searchPlaceholder={t('eleves.search_placeholder')}
         emptyLabel={t('eleves.empty_list')}
         header={
-          queuedEleves.length > 0 || (filterOptions?.classes?.length ?? 0) > 0 ? (
+          canPhotos || queuedEleves.length > 0 || (filterOptions?.classes?.length ?? 0) > 0 ? (
             <View>
+              {canPhotos ? (
+                <Button mode="outlined" icon="camera" style={styles.photosButton} onPress={() => router.push('/eleves/photos')}>
+                  {t('eleves.photos_title')}
+                </Button>
+              ) : null}
               {queuedEleves.length > 0 ? (
                 <View style={styles.queuedSection}>
                   {queuedEleves.map((item) => (
@@ -136,6 +142,10 @@ export default function ElevesScreen() {
 }
 
 const styles = StyleSheet.create({
+  photosButton: {
+    marginHorizontal: 16,
+    marginTop: 12,
+  },
   content: {
     padding: 16,
   },

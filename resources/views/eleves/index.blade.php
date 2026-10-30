@@ -157,6 +157,11 @@
                     <a href="{{ route('inscriptions.group.create') }}" class="btn btn-primary px-4 ms-2">
                         <i class="bi bi-people me-2"></i>{{ __('eleves.add_group') }}
                     </a>
+                    @if($canEditEleve)
+                        <a href="{{ route('eleves.photos') }}" class="btn btn-outline-primary px-4 ms-2">
+                            <i class="bi bi-camera me-2"></i>{{ __('eleves.photos_classe') }}
+                        </a>
+                    @endif
                 </div>
             </div>
 

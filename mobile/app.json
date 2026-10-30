@@ -47,6 +47,14 @@
             "enableShrinkResourcesInReleaseBuilds": true
           }
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "KalanNet utilise vos photos pour la photo des élèves et des enseignants.",
+          "cameraPermission": "KalanNet utilise l'appareil photo pour prendre la photo des élèves.",
+          "microphonePermission": false
+        }
       ]
     ],
     "experiments": {

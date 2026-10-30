@@ -26,11 +26,23 @@
 
     <div class="student-file-shell">
         <section class="student-file-hero">
-            <div class="student-photo">
-                @if($eleve->image)
-                    <img src="{{ asset($eleve->image) }}" alt="">
-                @else
-                    <i class="bi bi-person"></i>
+            <div class="student-photo-wrap">
+                <div class="student-photo">
+                    @if($photoUrl = \App\Support\PhotoEleve::url($eleve->image))
+                        <img src="{{ $photoUrl }}" alt="">
+                    @else
+                        <i class="bi bi-person"></i>
+                    @endif
+                </div>
+                @if($user && ($user->droit === 'SupAdmin' || $user->userHasPermission('eleves_modification')))
+                    <form method="POST" action="{{ route('eleves.photo', $eleve->id_eleve) }}" enctype="multipart/form-data" class="mt-2 text-center">
+                        @csrf
+                        <label class="btn btn-sm btn-light border mb-0" title="{{ $photoUrl ? __('eleves.photo_changer') : __('eleves.photo_ajouter') }}">
+                            <i class="bi bi-camera me-1"></i>{{ $photoUrl ? __('eleves.photo_changer') : __('eleves.photo_ajouter') }}
+                            <input type="file" name="photo" accept="image/*" class="d-none" onchange="this.form.requestSubmit()">
+                        </label>
+                        @error('photo')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                    </form>
                 @endif
             </div>
             <div class="student-title">
@@ -347,6 +359,7 @@
             flex: 0 0 auto;
         }
         .student-photo img { width: 100%; height: 100%; object-fit: cover; }
+        .student-photo-wrap { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; }
         .student-title { flex: 1 1 auto; min-width: 220px; }
         .student-subtitle { color: #6b7280; margin-top: 5px; }
         .student-actions, .quick-actions { display: flex; gap: 8px; flex-wrap: wrap; }
