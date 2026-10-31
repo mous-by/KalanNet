@@ -37,6 +37,8 @@
             background: linear-gradient(135deg, var(--theme-dark) 0%, var(--theme-accent) 100%);
         }
         .guest-card {
+            position: relative;
+            z-index: 10;
             width: 100%;
             max-width: 440px;
             background: #ffffff;
@@ -51,9 +53,14 @@
         .form-control:focus { border-color: var(--theme-accent); box-shadow: 0 0 0 .2rem var(--theme-ring); }
         .btn-guest { background: var(--theme-accent); color: #fff; font-weight: 600; }
         .btn-guest:hover, .btn-guest:focus { background: var(--theme-dark); color: #fff; }
+        /* Grand écran : la carte à droite, comme la connexion, pour laisser lisibles les textes du carrousel. */
+        @media (min-width: 992px) {
+            body { justify-content: flex-end; padding-inline-end: clamp(16px, 5vw, 72px); }
+        }
     </style>
 </head>
 <body>
+    @include('partials.fond-carrousel')
     <main class="guest-card">
         <div class="guest-brand">
             <img src="{{ asset('assets/images/favicon-32x32.png') }}" alt="" aria-hidden="true">

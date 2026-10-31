@@ -177,6 +177,11 @@
     </script>
     <script src="{{ asset('assets/mon_js/save-button-spinner.js') }}?v={{ filemtime(public_path('assets/mon_js/save-button-spinner.js')) }}"></script>
     <script>
+        // Langue et thème retenus pour la page hors connexion (public/offline.html), qui ne peut pas les demander au serveur.
+        try {
+            localStorage.setItem('kalannet_locale', @json($currentLocale));
+            localStorage.setItem('kalannet_theme', document.documentElement.getAttribute('data-theme') || 'vert');
+        } catch (e) {}
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function () {
                 navigator.serviceWorker.register('/sw.js').catch(function () {});
