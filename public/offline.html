@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="vert">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#14532d">
+    <title>Hors connexion — KalanNet</title>
+    <!--
+        Page affichée par le service worker (sw.js) quand une page de KalanNet ne peut pas être chargée faute de réseau.
+        Entièrement autonome (styles, illustration et textes dans ce fichier) : elle doit s'afficher sans rien télécharger.
+    -->
+    <style>
+        :root { --accent: #14532d; --dark: #0f3d23; --light: #dcfce7; }
+        [data-theme="bleu-sombre"] { --accent: #001529; --dark: #00101f; --light: #dbeafe; }
+        [data-theme="light"]       { --accent: #475569; --dark: #334155; --light: #e2e8f0; }
+        [data-theme="dark"]        { --accent: #831843; --dark: #641336; --light: #fce7f3; }
+        [data-theme="rouge"]       { --accent: #450a0a; --dark: #320707; --light: #fee2e2; }
+        [data-theme="violet"]      { --accent: #2e1065; --dark: #230c4d; --light: #ede9fe; }
+        [data-theme="orange"]      { --accent: #431407; --dark: #2f0e05; --light: #ffedd5; }
+        [data-theme="ocean"]       { --accent: #0b2e33; --dark: #071f22; --light: #cffafe; }
+        [data-theme="ambre"]       { --accent: #241b12; --dark: #18120c; --light: #fef3c7; }
+        [data-theme="ardoise"]     { --accent: #1e293b; --dark: #0f172a; --light: #e2e8f0; }
+        [data-theme="brume"]       { --accent: #334155; --dark: #1e293b; --light: #eef2f9; }
+
+        * { box-sizing: border-box; }
+        html, body { margin: 0; min-height: 100%; }
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 16px;
+            font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            color: #172033;
+            background: radial-gradient(circle at 20% 15%, rgba(255,255,255,.12), transparent 40%),
+                        linear-gradient(135deg, var(--dark) 0%, var(--accent) 100%);
+        }
+        .carte {
+            width: 100%;
+            max-width: 560px;
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 24px 60px rgba(0,0,0,.3);
+            overflow: hidden;
+        }
+        .haut {
+            background: var(--light);
+            padding: 28px 24px 8px;
+            text-align: center;
+        }
+        .marque { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; font-size: 1.1rem; color: var(--dark); letter-spacing: .02em; }
+        .marque span { color: #f59e0b; }
+        .illustration { display: block; width: 190px; max-width: 70%; height: auto; margin: 14px auto 0; }
+        .illustration .onde { animation: clignote 2.4s ease-in-out infinite; transform-origin: center; }
+        .illustration .onde:nth-of-type(2) { animation-delay: .3s; }
+        .illustration .onde:nth-of-type(3) { animation-delay: .6s; }
+        @keyframes clignote { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+        .corps { padding: 22px 26px 26px; }
+        h1 { font-size: 1.45rem; margin: 0 0 8px; color: var(--dark); text-align: center; }
+        .intro { margin: 0 0 18px; text-align: center; color: #475569; line-height: 1.5; }
+        .etat {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            font-size: .9rem; font-weight: 600; color: #b45309; background: #fffbeb; border: 1px solid #fde68a;
+            border-radius: 999px; padding: 6px 14px; margin: 0 auto 18px; width: fit-content;
+        }
+        .etat.ok { color: #166534; background: #f0fdf4; border-color: #bbf7d0; }
+        .point { width: 9px; height: 9px; border-radius: 50%; background: currentColor; animation: clignote 1.4s infinite; }
+        h2 { font-size: .95rem; margin: 18px 0 10px; color: var(--dark); text-transform: uppercase; letter-spacing: .04em; }
+        ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+        li { display: flex; gap: 12px; align-items: flex-start; line-height: 1.45; color: #334155; font-size: .95rem; }
+        .ico {
+            flex: 0 0 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            background: var(--light); color: var(--accent);
+        }
+        .ico svg { width: 18px; height: 18px; }
+        .boutons { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; }
+        button, .lien {
+            flex: 1 1 180px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            border: 0; border-radius: 12px; padding: 13px 18px; font: inherit; font-weight: 700; cursor: pointer; text-decoration: none;
+        }
+        .principal { background: var(--accent); color: #fff; }
+        .principal:hover, .principal:focus-visible { background: var(--dark); }
+        .secondaire { background: #f1f5f9; color: var(--dark); }
+        .secondaire:hover, .secondaire:focus-visible { background: #e2e8f0; }
+        .note { margin: 18px 0 0; font-size: .82rem; color: #64748b; text-align: center; }
+        [dir="rtl"] body { font-family: "Segoe UI", Tahoma, system-ui, sans-serif; }
+        @media (prefers-reduced-motion: reduce) { .onde, .point { animation: none !important; } }
+    </style>
+</head>
+<body>
+    <main class="carte" role="main">
+        <div class="haut">
+            <div class="marque">
+                <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3 1 9l11 6 9-4.9V17h2V9L12 3Zm-6.5 9.8V16c0 1.7 2.9 3.5 6.5 3.5s6.5-1.8 6.5-3.5v-3.2L12 16.4l-6.5-3.6Z"/></svg>
+                <b dir="ltr">Kalan<span>Net</span></b>
+            </div>
+            <svg class="illustration" viewBox="0 0 200 150" role="img" aria-labelledby="titre-illu">
+                <title id="titre-illu">Pas de connexion internet</title>
+                <ellipse cx="100" cy="138" rx="70" ry="7" fill="rgba(15,23,42,.08)"/>
+                <path d="M55 112a28 28 0 0 1 4-55.7A36 36 0 0 1 128 46a30 30 0 0 1 17 55.7V112Z" fill="#fff" stroke="var(--accent)" stroke-width="4" stroke-linejoin="round"/>
+                <g fill="none" stroke="var(--accent)" stroke-width="5" stroke-linecap="round">
+                    <path class="onde" d="M72 80a40 40 0 0 1 56 0"/>
+                    <path class="onde" d="M83 91a24 24 0 0 1 34 0"/>
+                    <path class="onde" d="M94 102a8 8 0 0 1 12 0"/>
+                </g>
+                <line x1="66" y1="62" x2="134" y2="118" stroke="#dc2626" stroke-width="6" stroke-linecap="round"/>
+            </svg>
+        </div>
+
+        <div class="corps">
+            <h1 data-t="titre">Vous êtes hors connexion</h1>
+            <p class="intro" data-t="intro">KalanNet n'arrive pas à joindre internet pour le moment. Vos données sont en sécurité sur le serveur : rien n'est perdu.</p>
+
+            <div class="etat" id="etat" aria-live="polite"><span class="point" aria-hidden="true"></span><span id="etat-texte" data-t="attente">En attente du réseau… la page se rechargera toute seule.</span></div>
+
+            <h2 data-t="verifier">À vérifier</h2>
+            <ul>
+                <li><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 21 1 8.5A16.5 16.5 0 0 1 23 8.5L12 21Zm0-3.2 7.5-8.6a13.5 13.5 0 0 0-15 0l7.5 8.6Z"/></svg></span><span data-t="wifi">Le Wi-Fi ou les données mobiles sont activés, et le mode avion est désactivé.</span></li>
+                <li><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 4h16v12H4V4Zm2 2v8h12V6H6Zm-3 12h18v2H3v-2Z"/></svg></span><span data-t="credit">Votre forfait internet n'est pas épuisé (crédit, pass data).</span></li>
+                <li><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm1 5h-2v6l5 3 1-1.7-4-2.3V7Z"/></svg></span><span data-t="routeur">Le routeur ou la box est allumé ; au besoin, redémarrez-le et patientez une minute.</span></li>
+            </ul>
+
+            <h2 data-t="conseils">En attendant</h2>
+            <ul>
+                <li><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17 1H7a2 2 0 0 0-2 2v18a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2Zm0 18H7V5h10v14Z"/></svg></span><span data-t="mobile">L'application mobile KalanNet continue de fonctionner hors connexion : vos saisies y sont gardées et envoyées au retour du réseau.</span></li>
+                <li><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 3h11l3 3v15H5V3Zm2 2v14h10V7h-2V5H7Zm2 6h6v2H9v-2Zm0 4h6v2H9v-2Z"/></svg></span><span data-t="formulaire">Si vous remplissiez un formulaire, revenez en arrière quand le réseau est revenu : vérifiez qu'il a bien été enregistré avant de le renvoyer.</span></li>
+            </ul>
+
+            <div class="boutons">
+                <button type="button" class="principal" id="reessayer">
+                    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17.7 6.3A8 8 0 1 0 20 12h-2a6 6 0 1 1-1.8-4.3L13 11h7V4l-2.3 2.3Z"/></svg>
+                    <span data-t="reessayer">Réessayer</span>
+                </button>
+                <button type="button" class="secondaire" id="retour"><span data-t="retour">Page précédente</span></button>
+            </div>
+            <p class="note" data-t="note">Besoin d'aide ? Contactez l'administration de votre école ou le support CSB.</p>
+        </div>
+    </main>
+
+    <script>
+        (function () {
+            var textes = {
+                en: {
+                    titre: 'You are offline', intro: 'KalanNet cannot reach the internet right now. Your data is safe on the server: nothing is lost.',
+                    attente: 'Waiting for the network… the page will reload by itself.', ok: 'Connection is back! Reloading…', verifier: 'Please check',
+                    wifi: 'Wi-Fi or mobile data is on, and airplane mode is off.', credit: 'Your internet plan still has credit (data bundle).',
+                    routeur: 'The router or box is on; if needed, restart it and wait a minute.', conseils: 'In the meantime',
+                    mobile: 'The KalanNet mobile app keeps working offline: your entries are saved and sent when the network is back.',
+                    formulaire: 'If you were filling in a form, go back once the network is back: check it was saved before sending it again.',
+                    reessayer: 'Try again', retour: 'Previous page', note: 'Need help? Contact your school administration or CSB support.'
+                },
+                ar: {
+                    titre: 'أنت غير متصل بالإنترنت', intro: 'لا يستطيع KalanNet الوصول إلى الإنترنت حاليًا. بياناتك محفوظة على الخادم: لم يضع شيء.',
+                    attente: 'في انتظار الشبكة… ستُعاد تحميل الصفحة تلقائيًا.', ok: 'عاد الاتصال! جارٍ إعادة التحميل…', verifier: 'تحقق من',
+                    wifi: 'تفعيل الواي فاي أو بيانات الهاتف، وإيقاف وضع الطيران.', credit: 'أن رصيد الإنترنت لم ينفد.',
+                    routeur: 'أن جهاز الراوتر يعمل؛ وعند الحاجة أعد تشغيله وانتظر دقيقة.', conseils: 'في الأثناء',
+                    mobile: 'يواصل تطبيق KalanNet للهاتف العمل دون اتصال: تُحفظ إدخالاتك وتُرسل عند عودة الشبكة.',
+                    formulaire: 'إذا كنت تملأ استمارة، فارجع عند عودة الشبكة وتحقق من حفظها قبل إرسالها مجددًا.',
+                    reessayer: 'إعادة المحاولة', retour: 'الصفحة السابقة', note: 'تحتاج مساعدة؟ اتصل بإدارة مدرستك أو بدعم CSB.'
+                }
+            };
+            var langue = 'fr';
+            try { langue = localStorage.getItem('kalannet_locale') || (navigator.language || 'fr').slice(0, 2); } catch (e) {}
+            try { document.documentElement.setAttribute('data-theme', localStorage.getItem('kalannet_theme') || 'vert'); } catch (e) {}
+            if (textes[langue]) {
+                document.documentElement.lang = langue;
+                if (langue === 'ar') document.documentElement.dir = 'rtl';
+                document.querySelectorAll('[data-t]').forEach(function (el) {
+                    if (textes[langue][el.dataset.t]) el.textContent = textes[langue][el.dataset.t];
+                });
+                document.title = textes[langue].titre + ' — KalanNet';
+            }
+            var ok = (textes[langue] || {}).ok || 'La connexion est revenue ! Rechargement…';
+
+            function recharger() {
+                var etat = document.getElementById('etat');
+                etat.classList.add('ok');
+                document.getElementById('etat-texte').textContent = ok;
+                setTimeout(function () { location.reload(); }, 600);
+            }
+            // Le navigateur signale le retour du réseau ; on vérifie aussi toutes les 10 s (signal parfois absent).
+            window.addEventListener('online', recharger);
+            setInterval(function () {
+                fetch(location.href, { method: 'HEAD', cache: 'no-store' }).then(function (r) { if (r.ok || r.status < 500) recharger(); }).catch(function () {});
+            }, 10000);
+            document.getElementById('reessayer').addEventListener('click', function () { location.reload(); });
+            document.getElementById('retour').addEventListener('click', function () { history.length > 1 ? history.back() : location.reload(); });
+        })();
+    </script>
+</body>
+</html>
