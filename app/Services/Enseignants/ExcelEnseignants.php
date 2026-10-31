@@ -43,16 +43,7 @@ class ExcelEnseignants
     {
         $classeur = new Spreadsheet;
         $classeur->getProperties()->setTitle('Modèle d\'import des enseignants')->setCreator('KalanNet');
-
-        $listes = $classeur->getActiveSheet()->setTitle('Listes');
-        $listes->fromArray(['Genre', 'Type de contrat'], null, 'A1');
-        $listes->fromArray([['Masculin'], ['Féminin']], null, 'A2');
-        foreach (array_values($contrats) as $i => $contrat) {
-            $listes->setCellValue('B'.($i + 2), $contrat);
-        }
-        $this->styleEntete($listes, 'A1:B1');
-        $listes->getColumnDimension('A')->setWidth(14);
-        $listes->getColumnDimension('B')->setWidth(18);
+        $this->feuilleListes($classeur, $contrats);
 
         $feuille = $classeur->createSheet(0)->setTitle('Enseignants');
         $this->entetes($feuille, true);
@@ -89,12 +80,18 @@ class ExcelEnseignants
         return $classeur;
     }
 
-    /** Liste des enseignants, avec les colonnes du modèle d'import et leur statut. */
-    public function export(Collection $enseignants, ?string $nomEcole): Spreadsheet
+    /**
+     * Liste des enseignants, avec les colonnes du modèle d'import et leur statut. Genre et Type de contrat gardent
+     * leurs listes déroulantes (comme le modèle), pour compléter ou corriger le fichier sans faute de frappe.
+     *
+     * @param  list<string>  $contrats
+     */
+    public function export(Collection $enseignants, ?string $nomEcole, array $contrats = []): Spreadsheet
     {
         $classeur = new Spreadsheet;
         $classeur->getProperties()->setTitle('Liste des enseignants')->setCreator('KalanNet');
-        $feuille = $classeur->getActiveSheet()->setTitle('Enseignants');
+        $this->feuilleListes($classeur, $contrats);
+        $feuille = $classeur->createSheet(0)->setTitle('Enseignants');
         $this->entetes($feuille, false);
         $feuille->setCellValue('N1', 'Statut');
         $feuille->getColumnDimension('N')->setWidth(12);
@@ -132,6 +129,13 @@ class ExcelEnseignants
         if ($nomEcole) {
             $classeur->getProperties()->setSubject($nomEcole);
         }
+
+        $fin = max($ligne - 1, 1) + self::MAX_LIGNES;
+        $this->liste($feuille, "C2:C{$fin}", '=Listes!$A$2:$A$3', 'Genre', 'Masculin ou Féminin.');
+        if ($contrats !== []) {
+            $this->liste($feuille, "I2:I{$fin}", '=Listes!$B$2:$B$'.(count($contrats) + 1), 'Type de contrat', 'Choisissez dans la liste. Laissez vide si inconnu.');
+        }
+        $classeur->setActiveSheetIndex(0);
 
         return $classeur;
     }
@@ -216,6 +220,22 @@ class ExcelEnseignants
         $style = $feuille->getStyle($plage);
         $style->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
         $style->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('1D4E89');
+    }
+
+    /** Feuille « Listes » (valeurs des listes déroulantes) : Genre en A, types de contrat en B. */
+    private function feuilleListes(Spreadsheet $classeur, array $contrats): Worksheet
+    {
+        $listes = $classeur->getActiveSheet()->setTitle('Listes');
+        $listes->fromArray(['Genre', 'Type de contrat'], null, 'A1');
+        $listes->fromArray([['Masculin'], ['Féminin']], null, 'A2');
+        foreach (array_values($contrats) as $i => $contrat) {
+            $listes->setCellValue('B'.($i + 2), $contrat);
+        }
+        $this->styleEntete($listes, 'A1:B1');
+        $listes->getColumnDimension('A')->setWidth(14);
+        $listes->getColumnDimension('B')->setWidth(18);
+
+        return $listes;
     }
 
     private function liste(Worksheet $feuille, string $plage, string $formule, string $titre, string $aide): void

@@ -100,4 +100,5 @@ return [
     'Configuration' => 'Configuration',
     'Documentation' => 'Documentation',
     'Announcements' => 'Annonces',
+    'retour' => 'Retour',
 ];

@@ -12,11 +12,6 @@
             </ol>
         </nav>
     </div>
-    <div class="ms-auto">
-        <a href="{{ route('finances.paiements') }}" class="btn theme-outline-btn">
-            <i class="bi bi-arrow-left me-1"></i>{{ __('finances.back_button') }}
-        </a>
-    </div>
 </div>
 
 <div class="row g-0">

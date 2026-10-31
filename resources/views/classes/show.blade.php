@@ -19,6 +19,11 @@
         </div>
     </div>
 
+    {{-- Téléphone : « Modifier » (le fil d'Ariane, qui le contient, est masqué). --}}
+    <div class="d-flex d-sm-none justify-content-end mb-3" data-classe-actions>
+        <a href="{{ route('classes.edit', $classe->id_classe) }}" class="btn theme-action-btn"><i class="bi bi-pencil me-1"></i>{{ __('classes.action_edit') }}</a>
+    </div>
+
     <div class="row g-4">
         <!-- Stats Row -->
         <div class="col-md-4">

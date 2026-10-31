@@ -108,6 +108,12 @@
                 @include('partials.bandeau-assistance')
                 @include('partials.demande-assistance')
                 @include('partials.bienvenue-admin')
+                @unless(request()->routeIs('dashboard') || View::hasSection('sans_retour'))
+                    {{-- Flèche retour de toutes les pages : vers la page parente du fil d'Ariane (lien posé par le script plus bas), sinon le tableau de bord. --}}
+                    <div class="page-retour mb-2" data-page-retour>
+                        <a href="{{ route('dashboard') }}" class="page-retour-fleche" data-page-retour-lien title="{{ __('ui.retour') }}" aria-label="{{ __('ui.retour') }}"><i class="bi bi-arrow-left"></i></a>
+                    </div>
+                @endunless
             @endauth
             @yield('content')
         </main>
@@ -148,13 +154,27 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <!--app JS-->
-    <script src="{{ asset('assets/js/app.js') }}"></script>
+    <script src="{{ asset('assets/js/app.js') }}?v={{ filemtime(public_path('assets/js/app.js')) }}"></script>
     <script src="{{ asset('assets/mon_js/auto_filter.js') }}?v={{ filemtime(public_path('assets/mon_js/auto_filter.js')) }}"></script>
     
     @include('partials.localized-inputs-script')
     @include('partials.ui-translator-script')
     @include('partials.mot-de-passe-temporaire')
     @stack('scripts')
+    <script>
+        // Flèche retour : page parente du fil d'Ariane ; masquée si la page a déjà sa propre flèche (lien sans texte).
+        (function () {
+            const barre = document.querySelector('[data-page-retour]');
+            if (!barre) return;
+            const contenu = barre.parentElement;
+            const autre = [...contenu.querySelectorAll('a .bi-arrow-left, button .bi-arrow-left')]
+                .some((i) => !barre.contains(i) && i.closest('a, button').textContent.trim() === '');
+            if (autre) { barre.remove(); return; }
+            const liens = [...contenu.querySelectorAll('.page-breadcrumb .breadcrumb-item:not(.active) a[href]')];
+            const parent = liens.length ? liens[liens.length - 1] : null;
+            if (parent) barre.querySelector('[data-page-retour-lien]').href = parent.href;
+        })();
+    </script>
     <script src="{{ asset('assets/mon_js/save-button-spinner.js') }}?v={{ filemtime(public_path('assets/mon_js/save-button-spinner.js')) }}"></script>
     <script>
         if ('serviceWorker' in navigator) {
