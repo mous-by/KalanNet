@@ -113,8 +113,9 @@ $(function() {
 	})
 
 
-	new PerfectScrollbar(".header-message-list")
-    new PerfectScrollbar(".header-notifications-list")
+	// Barres de défilement du gabarit : seulement si la liste existe dans la page (KalanNet n'a pas de liste de
+	// messages : l'appel levait une erreur sur chaque page). La liste des notifications garde son défilement natif.
+	document.querySelectorAll(".header-message-list").forEach(function (liste) { new PerfectScrollbar(liste) })
 
 
 
