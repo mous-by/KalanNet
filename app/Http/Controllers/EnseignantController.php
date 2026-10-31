@@ -375,7 +375,7 @@ class EnseignantController extends Controller
         $ecole = \App\Models\Ecole::withoutGlobalScopes()->find($schoolId);
         $enseignants = Enseignant::withoutGlobalScopes()->where('id_ecole', $schoolId)
             ->orderBy('is_deleted')->orderBy('nom_prenom_enseignant')->get();
-        $classeur = app(ExcelEnseignants::class)->export($enseignants, $ecole?->nomEcole);
+        $classeur = app(ExcelEnseignants::class)->export($enseignants, $ecole?->nomEcole, array_values($this->contratsAutorises($ecole)));
         $fichier = 'Enseignants_'.\Illuminate\Support\Str::slug($ecole?->nomEcole ?: 'ecole', '_').'_'.now()->format('Y-m-d').'.xlsx';
 
         return response()->streamDownload(function () use ($classeur) {

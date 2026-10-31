@@ -121,6 +121,11 @@
             @method('PUT')
         @endif
 
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <a href="{{ route('classes.index') }}" class="btn btn-light border px-3"><i class="bi bi-arrow-left me-1"></i>{{ __('classes.breadcrumb_list') }}</a>
+            <button type="submit" class="btn btn-primary px-4"><i class="bi bi-check2-circle me-1"></i>{{ $isEdit ? __('classes.action_edit') : __('classes.save') }}</button>
+        </div>
+
         <div class="card border-top border-4 border-primary shadow-sm mb-4">
             <div class="card-header">
                 <h5 class="mb-0 fw-bold">{{ $isEdit ? __('classes.edit_title') : __('classes.new_title') }}</h5>
@@ -305,9 +310,9 @@
         </div>
 
         {{-- Hors de la carte des matières : reste visible au Jardin, qui n'a pas de matières. --}}
-        <div class="d-flex justify-content-between align-items-center mt-4">
-            <a href="{{ route('classes.index') }}" class="btn btn-light px-4">{{ __('classes.back') }}</a>
-            <button type="submit" class="btn btn-primary px-4">{{ $isEdit ? __('classes.action_edit') : __('classes.save') }}</button>
+        <div class="d-flex justify-content-between align-items-center mt-4 form-actions-sticky">
+            <a href="{{ route('classes.index') }}" class="btn btn-light border px-4"><i class="bi bi-arrow-left me-1"></i>{{ __('classes.back') }}</a>
+            <button type="submit" class="btn btn-primary btn-lg px-5 fw-semibold"><i class="bi bi-check2-circle me-1"></i>{{ $isEdit ? __('classes.action_edit') : __('classes.save') }}</button>
         </div>
     </form>
 
