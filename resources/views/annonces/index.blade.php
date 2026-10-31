@@ -308,11 +308,19 @@
                             data.lecteurs.forEach(function (lecteur) {
                                 const item = document.createElement('li');
                                 item.className = 'list-group-item d-flex justify-content-between align-items-center';
-                                const ecole = lecteur.ecole ? ' <span class="text-muted small">(' + lecteur.ecole + ')</span>' : '';
-                                item.innerHTML = '<span>' + lecteur.nom + ecole + '</span>' +
-                                    (lecteur.lu_le
-                                        ? '<span class="badge bg-success">Lu le ' + lecteur.lu_le + '</span>'
-                                        : '<span class="badge bg-secondary">Non lu</span>');
+                                // Noms affichés comme du texte : un nom modifiable par son titulaire ne doit pas contenir de HTML exécuté.
+                                const nom = document.createElement('span');
+                                nom.textContent = lecteur.nom;
+                                if (lecteur.ecole) {
+                                    const ecole = document.createElement('span');
+                                    ecole.className = 'text-muted small';
+                                    ecole.textContent = ' (' + lecteur.ecole + ')';
+                                    nom.appendChild(ecole);
+                                }
+                                const badge = document.createElement('span');
+                                badge.className = 'badge ' + (lecteur.lu_le ? 'bg-success' : 'bg-secondary');
+                                badge.textContent = lecteur.lu_le ? 'Lu le ' + lecteur.lu_le : 'Non lu';
+                                item.append(nom, badge);
                                 list.appendChild(item);
                             });
                             if (data.lecteurs.length === 0) {

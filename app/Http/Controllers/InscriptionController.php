@@ -305,7 +305,7 @@ class InscriptionController extends Controller
             'mode_paiement' => 'nullable',
             'date_inscription' => ['nullable', 'date_format:Y-m-d'],
             'matricule' => 'nullable|string|max:50',
-            'image' => 'nullable|image|max:5120',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120',
             'parent_id' => 'nullable|exists:parents,id_parent',
             'lien_parent' => 'nullable|string|max:100',
             'informer' => 'nullable|string|in:Oui,Non',
@@ -1259,7 +1259,7 @@ class InscriptionController extends Controller
         }
 
         $file = $request->file('image');
-        $name = uniqid('eleve_', true) . '.' . $file->getClientOriginalExtension();
+        $name = \App\Support\FichierTeleverse::nom($file, 'eleve_', \App\Support\FichierTeleverse::IMAGES, 'image');
         $file->move($directory, $name);
 
         return 'image_eleves/' . $name;

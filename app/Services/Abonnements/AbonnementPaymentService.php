@@ -403,12 +403,34 @@ class AbonnementPaymentService
         ];
     }
 
+    /**
+     * Le webhook est public : sans preuve que l'appel vient de l'opérateur, n'importe qui pourrait marquer payé un
+     * paiement dont il connaît la référence (affichée à l'école qui l'a lancé). Aucun secret configuré = webhook refusé.
+     *
+     *  - Wave : en-tête Wave-Signature (t=…, v1=HMAC-SHA256 de « t + corps »), secret ABONNEMENT_WAVE_WEBHOOK_SECRET ;
+     *  - autres opérateurs : en-tête X-Webhook-Signature = HMAC-SHA256 du corps brut, secret
+     *    ABONNEMENT_{OPERATEUR}_WEBHOOK_SECRET (à convenir avec l'opérateur lors de son branchement).
+     */
+    public function verifyWebhook(string $provider, string $rawBody, ?string $waveSignature, ?string $signature): bool
+    {
+        if ($provider === 'wave') {
+            return $this->verifyWaveWebhookSignature($rawBody, $waveSignature);
+        }
+
+        $secret = (string) config("services.abonnements.{$provider}.webhook_secret");
+        if ($secret === '' || !$signature) {
+            return false;
+        }
+
+        return hash_equals(hash_hmac('sha256', $rawBody, $secret), strtolower(trim($signature)));
+    }
+
     public function verifyWaveWebhookSignature(string $rawBody, ?string $header): bool
     {
         $secret = config('services.abonnements.wave.webhook_secret');
 
         if (!$secret) {
-            return true;
+            return false;
         }
 
         $parts = collect(explode(',', $header ?: ''))

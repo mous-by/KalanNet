@@ -125,7 +125,8 @@ class ExcelEnseignants
             $feuille->getStyle('A1:N'.($ligne - 1))->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
         }
         $feuille->getStyle('J2:K'.max(2, $ligne - 1))->getNumberFormat()->setFormatCode('#,##0');
-        $feuille->setAutoFilter('A1:N'.max(1, $ligne - 1));
+        // Pas de filtre automatique sur les titres : ses boutons se confondaient avec les listes déroulantes de saisie.
+        $feuille->freezePane('A2');
         if ($nomEcole) {
             $classeur->getProperties()->setSubject($nomEcole);
         }

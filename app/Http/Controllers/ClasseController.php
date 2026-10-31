@@ -417,7 +417,7 @@ class ClasseController extends Controller
             'id_enseignants' => 'nullable|array',
             'id_enseignants.*' => 'nullable|integer|exists:enseignants,id_enseignant',
             'coefficient' => 'exclude_if:ordre_enseignement,jardin|required|array|min:1',
-            'coefficient.*' => 'required|numeric|min:0|max:5',
+            'coefficient.*' => 'required|numeric|min:0|max:10',
             'serie' => ['nullable', Rule::in(array_keys(\App\Support\Series::SERIES))],
             'groupe' => 'nullable|array',
             'groupe.*' => 'nullable|in:principale,secondaire',
@@ -440,7 +440,7 @@ class ClasseController extends Controller
 
         return $request->validate($rules, [
             'id_matiere.required' => 'Au moins une matière doit être sélectionnée.',
-            'coefficient.*.max' => 'Le coefficient ne peut pas dépasser 5.',
+            'coefficient.*.max' => 'Le coefficient ne peut pas dépasser 10.',
             'id_filiere.required' => 'La filière est obligatoire pour une École de Santé.',
             'id_filiere.exists' => 'La filière sélectionnée n’appartient pas à cette école.',
             'id_maitre_arabe.required' => 'Choisissez le maître de la partie arabe.',

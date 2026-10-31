@@ -49,7 +49,7 @@ class PhotoEleve
         $nom = 'eleve_'.$eleve->id_eleve.'_'.Str::lower(Str::random(10)).'.jpg';
         if (!self::reduire($fichier, $dossier.'/'.$nom)) {
             // Format que GD ne sait pas lire : le fichier est gardé tel quel.
-            $nom = 'eleve_'.$eleve->id_eleve.'_'.Str::lower(Str::random(10)).'.'.strtolower($fichier->getClientOriginalExtension() ?: 'jpg');
+            $nom = FichierTeleverse::nom($fichier, 'eleve_'.$eleve->id_eleve.'_', FichierTeleverse::IMAGES, 'photo');
             $fichier->move($dossier, $nom);
         }
 

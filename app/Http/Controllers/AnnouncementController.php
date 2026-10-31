@@ -380,7 +380,7 @@ class AnnouncementController extends Controller
                 continue;
             }
 
-            $fileName = uniqid('annonce_', true) . '.' . $file->getClientOriginalExtension();
+            $fileName = \App\Support\FichierTeleverse::nom($file, 'annonce_', \App\Support\FichierTeleverse::DOCUMENTS, 'fichiers');
             // getSize() doit etre lu AVANT move() : une fois le fichier
             // deplace, le chemin temporaire PHP d'origine n'existe plus et
             // getSize() echoue (stat failed) alors que getClientOriginalName()

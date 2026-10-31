@@ -112,7 +112,7 @@ class TerritoireController extends Controller
             $dossier = public_path('uploads/annonces_territoire');
             File::ensureDirectoryExists($dossier, 0755);
             $upload = $request->file('fichier');
-            $nom = uniqid('annonce_', true).'.'.strtolower($upload->getClientOriginalExtension());
+            $nom = \App\Support\FichierTeleverse::nom($upload, 'annonce_', \App\Support\FichierTeleverse::DOCUMENTS, 'fichier');
             $fichier = [
                 'fichier_joint' => 'uploads/annonces_territoire/'.$nom,
                 'type_fichier' => $upload->getClientMimeType(),

@@ -44,8 +44,8 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::view('/politique-confidentialite', 'legal.confidentialite')->name('legal.confidentialite');
 
 // Public payment-provider callback (server-to-server) — no auth, CSRF-exempt
-// via bootstrap/app.php ('abonnements/webhook/*'). Signature is verified
-// inside AbonnementController::webhook()/AbonnementPaymentService for Wave.
+// via bootstrap/app.php ('abonnements/webhook/*'). Signature verified for EVERY provider
+// (AbonnementPaymentService::verifyWebhook) : no configured secret = rejected.
 Route::post('/abonnements/webhook/{provider}', [AbonnementController::class, 'webhook'])->name('abonnements.webhook');
 
 Route::middleware(['auth'])->group(function () {

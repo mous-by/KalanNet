@@ -38,7 +38,7 @@ class CreerClasseTool extends AbstractKalanbotTool
                         'properties' => [
                             'id_matiere' => ['type' => 'INTEGER'],
                             'id_enseignant' => ['type' => 'INTEGER', 'description' => 'Optionnel.'],
-                            'coefficient' => ['type' => 'NUMBER', 'description' => 'Entre 0 et 5.'],
+                            'coefficient' => ['type' => 'NUMBER', 'description' => 'Entre 0 et 10.'],
                         ],
                         'required' => ['id_matiere', 'coefficient'],
                     ],
@@ -56,7 +56,7 @@ class CreerClasseTool extends AbstractKalanbotTool
             'matieres' => 'required|array|min:1',
             'matieres.*.id_matiere' => 'required|integer|exists:matiere,id_matiere',
             'matieres.*.id_enseignant' => 'nullable|integer|exists:enseignants,id_enseignant',
-            'matieres.*.coefficient' => 'required|numeric|min:0|max:5',
+            'matieres.*.coefficient' => 'required|numeric|min:0|max:10',
         ];
     }
 

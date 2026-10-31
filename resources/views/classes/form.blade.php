@@ -286,7 +286,7 @@
                                         </select>
                                     </td>
                                     <td>
-                                        <input type="number" name="coefficient[]" class="form-control" min="0" max="5" step="0.01" value="{{ $row['coefficient'] }}" required>
+                                        <input type="number" name="coefficient[]" class="form-control" min="0" max="10" step="0.01" value="{{ $row['coefficient'] }}" required>
                                     </td>
                                     <td class="col-groupe">
                                         <select class="form-select" name="groupe[]">
@@ -510,7 +510,7 @@
                     '<td><span class="fw-bold">' + escapeHtml(matiere.nom) + '</span><input type="hidden" name="id_matiere[]" value="' + matiere.id + '"></td>' +
                     (afficherDomaines ? '<td><select class="form-select domaine-select" name="id_domaine[]">' + domaineOptions(matiere.domaine) + '</select></td>' : '') +
                     '<td><select class="form-select enseignant-select" name="id_enseignants[]">' + enseignantOptions() + '</select></td>' +
-                    '<td><input type="number" name="coefficient[]" class="form-control" min="0" max="5" step="0.01" value="1" required></td>' +
+                    '<td><input type="number" name="coefficient[]" class="form-control" min="0" max="10" step="0.01" value="1" required></td>' +
                     '<td class="col-groupe"><select class="form-select" name="groupe[]"><option value="">' + escapeHtml(i18n.groupeAuto) + '</option><option value="principale">' + escapeHtml(i18n.groupePrincipale) + '</option><option value="secondaire">' + escapeHtml(i18n.groupeSecondaire) + '</option></select></td>' +
                     '<td class="text-center"><button type="button" class="btn btn-light btn-sm remove-row" title="' + i18n.remove + '"><i class="bi bi-trash text-danger"></i></button></td>' +
                     '</tr>'

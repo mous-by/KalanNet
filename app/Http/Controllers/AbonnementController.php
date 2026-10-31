@@ -242,8 +242,8 @@ class AbonnementController extends Controller
             abort(404);
         }
 
-        if ($provider === 'wave' && !$payments->verifyWaveWebhookSignature($request->getContent(), $request->header('Wave-Signature'))) {
-            return response()->json(['ok' => false, 'message' => 'Signature Wave invalide.'], 401);
+        if (!$payments->verifyWebhook($provider, $request->getContent(), $request->header('Wave-Signature'), $request->header('X-Webhook-Signature'))) {
+            return response()->json(['ok' => false, 'message' => 'Signature invalide ou webhook non configuré.'], 401);
         }
 
         $paiement = $payments->markFromWebhook($provider, $request->all());
@@ -369,7 +369,7 @@ class AbonnementController extends Controller
             mkdir($directory, 0755, true);
         }
 
-        $filename = 'receipt_' . (int) (session('idEcole') ?: Auth::user()->idEcole) . '_' . time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
+        $filename = \App\Support\FichierTeleverse::nom($file, 'receipt_' . (int) (session('idEcole') ?: Auth::user()->idEcole) . '_' . Str::random(8) . '_', \App\Support\FichierTeleverse::IMAGES, 'receipt');
         $file->move($directory, $filename);
 
         return '/uploads/subscription_receipts/' . $filename;
