@@ -58,9 +58,6 @@
                     {{ $annee?->annee ?? __('eleves.annee_non_renseignee') }}
                 </div>
             </div>
-            <div class="student-actions">
-                <a href="{{ route('eleves.dossiers') }}" class="btn btn-light"><i class="bi bi-arrow-left me-1"></i>{{ __('eleves.back') }}</a>
-            </div>
         </section>
 
         @if(!empty($dossierAlerts))

@@ -532,4 +532,5 @@ return [
     'Changer la date, la classe, la matière ou la période' => 'تغيير التاريخ أو القسم أو المادة أو الفترة',
     'Entrer ou corriger les notes des élèves' => 'إدخال أو تصحيح نقاط التلاميذ',
     'Valider les notes' => 'اعتماد النقاط',
+    'retour' => 'رجوع',
 ];

@@ -222,7 +222,7 @@
 
                 <div class="d-flex justify-content-between flex-wrap gap-2 mt-4">
                     <a href="{{ route('pedagogie.parents') }}" class="btn btn-light px-4">
-                        <i class="bi bi-arrow-left me-2"></i>{{ __('parents.back') }}
+                        {{ __('parents.back') }}
                     </a>
                     <button type="submit" class="btn btn-primary px-5">
                         <i class="bi bi-check2-circle me-2"></i>{{ $isEdit ? __('parents.save') : __('parents.validate') }}

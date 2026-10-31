@@ -19,10 +19,9 @@
         </div>
     </div>
 
-    {{-- Retour à la liste toujours visible (le fil d'Ariane est masqué sur téléphone). --}}
-    <div class="d-flex justify-content-between align-items-center gap-2 mb-3" data-classe-retour>
-        <a href="{{ route('classes.index') }}" class="btn btn-light border"><i class="bi bi-arrow-left me-1"></i>{{ __('classes.breadcrumb_list') }}</a>
-        <a href="{{ route('classes.edit', $classe->id_classe) }}" class="btn theme-action-btn d-sm-none"><i class="bi bi-pencil me-1"></i>{{ __('classes.action_edit') }}</a>
+    {{-- Téléphone : « Modifier » (le fil d'Ariane, qui le contient, est masqué). --}}
+    <div class="d-flex d-sm-none justify-content-end mb-3" data-classe-actions>
+        <a href="{{ route('classes.edit', $classe->id_classe) }}" class="btn theme-action-btn"><i class="bi bi-pencil me-1"></i>{{ __('classes.action_edit') }}</a>
     </div>
 
     <div class="row g-4">

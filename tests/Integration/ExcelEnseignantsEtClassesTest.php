@@ -47,7 +47,7 @@ class ExcelEnseignantsEtClassesTest extends IntegrationTestCase
         $classe = DB::table('classe')->where('idEcole', 1)->value('id_classe');
         if ($classe) {
             $this->get("/classes/{$classe}/edit")->assertOk()->assertSee('form-actions-sticky', false);
-            $this->get("/classes/{$classe}")->assertOk()->assertSee('data-classe-retour', false)->assertSee(route('classes.index'), false);
+            $this->get("/classes/{$classe}")->assertOk()->assertSee('data-page-retour', false)->assertSee('data-classe-actions', false);
         }
     }
 }

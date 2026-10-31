@@ -527,4 +527,5 @@ return [
     'Changer la date, la classe, la matière ou la période' => 'Change date, class, subject or period',
     'Entrer ou corriger les notes des élèves' => 'Enter or correct student grades',
     'Valider les notes' => 'Validate grades',
+    'retour' => 'Back',
 ];
