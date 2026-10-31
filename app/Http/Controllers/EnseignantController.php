@@ -410,7 +410,7 @@ class EnseignantController extends Controller
         }
 
         return $request->validate($this->reglesEnseignant($schoolId, $ignoreId) + [
-            'avatar' => 'nullable|image|max:5120',
+            'avatar' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120',
         ]);
     }
 
@@ -707,7 +707,7 @@ class EnseignantController extends Controller
         }
 
         $file = $request->file('avatar');
-        $name = uniqid('enseignant_', true) . '.' . $file->getClientOriginalExtension();
+        $name = \App\Support\FichierTeleverse::nom($file, 'enseignant_', \App\Support\FichierTeleverse::IMAGES, 'avatar');
         $file->move($directory, $name);
 
         return 'images_enseignant/' . $name;

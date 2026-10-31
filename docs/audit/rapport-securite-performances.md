@@ -149,3 +149,73 @@ Test : `TableauDeBordTest`.
 - Tables sans clé primaire : `user_permission` (utilisée), `roles`, `role_permission`,
   `user_role` (inutilisées), `evaluationprof`, `indiscipline` (vides).
 - `user_permission` sans clé primaire ni contrainte d'unicité (0 doublon aujourd'hui).
+
+---
+
+## 3. Audit complémentaire du 31/10/2026
+
+Domaines vérifiés en plus de l'isolation des écoles (section 1) : envois de fichiers, injection SQL, XSS, redirections,
+téléchargements, routes publiques, webhook de paiement, en-têtes, fichiers exposés en production. Test :
+`tests/Integration/SecuriteRenforceeTest.php`.
+
+### 3.1 Webhook de paiement des abonnements — critique, corrigée
+
+- **Constat (confirmé par le code et par test).** `POST /abonnements/webhook/{fournisseur}` est public. Pour Orange
+  Money, Mobile Money et Mobicash, aucune vérification : envoyer `{"reference": "ABN-…", "status": "paid"}` marquait
+  le paiement payé et **activait l'abonnement sans paiement**. La référence est affichée à l'école qui lance le
+  paiement, et le lancement est permis même quand l'opérateur n'est pas branché. Wave n'était vérifié que si
+  `ABONNEMENT_WAVE_WEBHOOK_SECRET` était renseigné.
+- **Correction.** `AbonnementPaymentService::verifyWebhook` : tout webhook sans signature valide est refusé (401).
+  Wave : en-tête `Wave-Signature`, secret obligatoire. Autres opérateurs : en-tête `X-Webhook-Signature` =
+  HMAC-SHA256 du corps brut avec `ABONNEMENT_{OPERATEUR}_WEBHOOK_SECRET` (vide = refusé).
+- **En production** : si Wave est utilisé, renseigner `ABONNEMENT_WAVE_WEBHOOK_SECRET` (tableau de bord Wave), sinon
+  les paiements Wave ne sont plus validés automatiquement (la validation manuelle reste possible).
+
+### 3.2 Fichiers envoyés servis comme pages web — élevée, corrigée
+
+- **Constat (confirmé par test).** La règle `image` contrôle le contenu, pas le nom : un vrai GIF nommé `photo.html`
+  (ou `.svg`, `.xhtml`) était accepté et rangé dans `public/` avec cette extension, donc servi comme page du site
+  (script exécuté chez l'administrateur qui ouvre le lien). Concernés : photo de profil (web, API), photo d'élève à
+  l'inscription (web, API), photo d'enseignant. Les extensions PHP étaient déjà bloquées par Laravel.
+- **Correction.** `App\Support\FichierTeleverse::nom` : extension déduite du contenu (type détecté par le serveur),
+  liste fermée (images ; documents pour les annonces), appliqué aux 11 envois rangés dans `public/`. Règles `mimes`
+  ajoutées aux champs qui n'avaient que `image`. Défense en profondeur : `.htaccess` dans `image_eleves`,
+  `images_*` et `uploads` qui refuse de servir scripts, pages HTML, SVG et JS (vérifié avec Apache : `.html` 403,
+  `.png` 200).
+
+### 3.3 XSS : nom d'un lecteur d'annonce — moyenne, corrigée
+
+- **Constat.** La liste « qui a lu l'annonce » insérait le nom de chaque lecteur en HTML. Un utilisateur (un parent,
+  par exemple) peut modifier son nom dans son profil : un nom contenant du HTML s'exécutait chez l'administrateur.
+- **Correction.** Noms insérés comme texte (`textContent`).
+- **Code mort** (non chargé par aucune page, à supprimer un jour) : `public/assets/mon_js/dashboard-dcap-dae.js`,
+  `filtre_enregistrement_emargement.js`, `filtre_emargement.js`, `filtre__presence.js`,
+  `recuperation_modal_emargement.js` ; ils insèrent aussi des données sans échappement.
+
+### 3.4 En-têtes de sécurité — ajoutés
+
+`App\Http\Middleware\EnTetesSecurite` (toutes les réponses) : `X-Frame-Options: SAMEORIGIN`,
+`X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` (caméra
+et micro pour KalanNet seulement, pas de géolocalisation), `Strict-Transport-Security` en HTTPS. Pas de
+Content-Security-Policy : les pages contiennent beaucoup de scripts en ligne (chantier séparé).
+
+### 3.5 Service worker — corrigé
+
+L'ancien service worker gardait en cache **toutes les pages** consultées (données d'élèves, paiements), relisibles
+hors connexion sur un ordinateur partagé. Il ne garde plus que les fichiers techniques ; les pages ont une page
+« Hors connexion » (`public/offline.html`). Le cache v1 est supprimé à la première visite.
+
+### 3.6 Vérifié sans faille
+
+- **SQL** : aucune requête construite avec une donnée de l'utilisateur (les `*Raw` n'utilisent que des valeurs du
+  code ou des paramètres liés).
+- **Affichage** : les 16 `{!! !!}` des vues passent tous par `e()` ou des textes de traduction ; l'assistant affiche
+  ses réponses en texte.
+- **Redirections, téléchargements** : aucune redirection vers une adresse fournie par l'utilisateur, aucun chemin
+  de fichier venant de la requête.
+- **Routes publiques** : 11 (connexion, choix de l'école, langue, thème, politique de confidentialité, webhook) ;
+  connexion limitée à 5 tentatives (web et API).
+- **Kalanbot** : permission vérifiée avant chaque action, puis passage par les mêmes contrôleurs que le site.
+- **Production (kalannet.com, lecture seule)** : `.env`, `.git`, journaux, `composer.lock`, listes de dossiers
+  refusés ; pages d'erreur sans détail technique ; cookies `secure`, `httponly`, `samesite=lax`.
+

@@ -22,6 +22,9 @@ return Application::configure(basePath: dirname(__DIR__))
                 | Request::HEADER_X_FORWARDED_PREFIX
         );
 
+        // En-têtes de sécurité sur toutes les réponses (site, API, erreurs).
+        $middleware->append(\App\Http\Middleware\EnTetesSecurite::class);
+
         $middleware->web(append: [
             // Doit passer avant SetLocale/EnsureSchoolSelected/EnsureActiveSubscription
             // (aucun intérêt à les évaluer si l'app est en maintenance), mais après

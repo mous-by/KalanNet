@@ -38,3 +38,8 @@ Thumbs.db
 !/public/images_enseignant/.gitkeep
 !/public/images_ecoles/.gitkeep
 !/public/uploads/.gitkeep
+!/public/image_eleves/.htaccess
+!/public/images_utilisateurs/.htaccess
+!/public/images_enseignant/.htaccess
+!/public/images_ecoles/.htaccess
+!/public/uploads/.htaccess

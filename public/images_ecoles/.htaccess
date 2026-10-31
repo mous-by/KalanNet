@@ -1,0 +1,6 @@
+# Dossier de fichiers envoyés par les utilisateurs : jamais de script ni de page web servis d'ici (défense en
+# profondeur : les noms de fichiers sont déjà choisis par le serveur, voir App\Support\FichierTeleverse).
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule (?:^|/)\.|\.(?:php\d?|phtml|phar|pht|phps|cgi|pl|py|sh|asp|aspx|jsp|html?|xhtml|shtml|svgz?|xml|js|mjs|swf)$ - [F,NC]
+</IfModule>

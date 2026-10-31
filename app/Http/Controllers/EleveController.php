@@ -555,7 +555,7 @@ class EleveController extends Controller
         }
 
         $fichier = $request->file('cachet');
-        $nom = 'cachet_' . $ecole->idEcole . '_' . uniqid() . '.' . strtolower($fichier->getClientOriginalExtension());
+        $nom = \App\Support\FichierTeleverse::nom($fichier, 'cachet_' . $ecole->idEcole . '_', \App\Support\FichierTeleverse::IMAGES, 'cachet');
         $fichier->move($dossier, $nom);
         $this->supprimerFichierCachet($ecole);
         $ecole->forceFill(['cachet' => 'images_ecoles/cachets/' . $nom])->save();

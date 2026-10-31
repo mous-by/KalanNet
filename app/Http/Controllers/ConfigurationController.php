@@ -1806,7 +1806,7 @@ class ConfigurationController extends Controller
         }
 
         $file = $request->file('logoEcole');
-        $name = uniqid('ecole_', true) . '.' . $file->getClientOriginalExtension();
+        $name = \App\Support\FichierTeleverse::nom($file, 'ecole_', \App\Support\FichierTeleverse::IMAGES, 'logoEcole');
         $file->move($directory, $name);
 
         if ($currentLogo) {

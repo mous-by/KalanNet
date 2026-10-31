@@ -35,6 +35,7 @@ class ExcelEnseignantsEtClassesTest extends IntegrationTestCase
         $nombre = \App\Models\Enseignant::withoutGlobalScopes()->where('id_ecole', 1)->count();
         $feuille = $this->classeur('/enseignants/exporter')->getSheetByName('Enseignants');
         $this->assertSame('list', $feuille->getCell('C'.($nombre + 5))->getDataValidation()->getType());
+        $this->assertNull($feuille->getAutoFilter()->getRange() ?: null, 'pas de bouton de filtre sur les titres');
     }
 
     public function test_formulaire_de_classe_enregistrer_en_haut_et_en_bas(): void

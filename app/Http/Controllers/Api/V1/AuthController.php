@@ -194,7 +194,7 @@ class AuthController extends Controller
             'nomPrenom' => 'required|string|max:150',
             'email' => ['required', 'email', 'max:150', Rule::unique('utilisateurs', 'email')->ignore($user->idUtilisateur, 'idUtilisateur')],
             'telephone' => ['nullable', 'string', 'max:20', new PaysPhone($user->idEcole)],
-            'image' => ['nullable', 'image', 'max:5120'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],
         ]);
 
         if ($request->hasFile('image')) {
@@ -216,7 +216,7 @@ class AuthController extends Controller
         }
 
         $file = $request->file('image');
-        $name = uniqid('user_', true) . '.' . $file->getClientOriginalExtension();
+        $name = \App\Support\FichierTeleverse::nom($file, 'user_', \App\Support\FichierTeleverse::IMAGES, 'image');
         $file->move($directory, $name);
 
         return 'images_utilisateurs/' . $name;

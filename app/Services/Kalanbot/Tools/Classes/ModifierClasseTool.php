@@ -61,7 +61,7 @@ class ModifierClasseTool extends AbstractKalanbotTool
             'matieres' => 'required|array|min:1',
             'matieres.*.id_matiere' => 'required|integer|exists:matiere,id_matiere',
             'matieres.*.id_enseignant' => 'nullable|integer|exists:enseignants,id_enseignant',
-            'matieres.*.coefficient' => 'required|numeric|min:0|max:5',
+            'matieres.*.coefficient' => 'required|numeric|min:0|max:10',
         ];
     }
 

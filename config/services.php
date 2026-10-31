@@ -46,14 +46,17 @@ return [
         'orange_money' => [
             'endpoint' => env('ABONNEMENT_ORANGE_MONEY_ENDPOINT'),
             'token' => env('ABONNEMENT_ORANGE_MONEY_TOKEN'),
+            'webhook_secret' => env('ABONNEMENT_ORANGE_MONEY_WEBHOOK_SECRET'),
         ],
         'mobile_money' => [
             'endpoint' => env('ABONNEMENT_MOBILE_MONEY_ENDPOINT'),
             'token' => env('ABONNEMENT_MOBILE_MONEY_TOKEN'),
+            'webhook_secret' => env('ABONNEMENT_MOBILE_MONEY_WEBHOOK_SECRET'),
         ],
         'mobicash' => [
             'endpoint' => env('ABONNEMENT_MOBICASH_ENDPOINT'),
             'token' => env('ABONNEMENT_MOBICASH_TOKEN'),
+            'webhook_secret' => env('ABONNEMENT_MOBICASH_WEBHOOK_SECRET'),
         ],
         'wave' => [
             'endpoint' => env('ABONNEMENT_WAVE_ENDPOINT', 'https://api.wave.com/v1/checkout/sessions'),
