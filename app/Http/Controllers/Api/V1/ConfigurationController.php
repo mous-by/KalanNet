@@ -137,6 +137,7 @@ class ConfigurationController extends WebConfigurationController
         ]);
 
         $data['id_ecole'] = session('idEcole') ?: $user->idEcole;
+        $this->refuserAnneeEnDouble($data['annee'], (int) $data['id_ecole']);
 
         $annee = AnneeScolaire::create($data);
 

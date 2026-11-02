@@ -120,4 +120,6 @@ return [
     'import_dont_subventionnes' => 'Including :count student(s) subsidised by the State.',
     'excel_subvention_help' => 'State-subsidised students: choose “Oui” in the matching Excel column. No payment plan or school debt is assigned; State payments are shared among beneficiaries.',
     'formule_obligatoire' => 'Choose the student\'s payment plan (or tick “Subsidised by the State” if applicable).',
+    'decision_a_choisir' => '— Choose —',
+    'reinscription_decision_requise' => 'Choose a decision for each ticked student (students without an average have no proposed decision).',
 ];

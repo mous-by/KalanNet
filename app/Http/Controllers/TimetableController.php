@@ -71,7 +71,7 @@ class TimetableController extends Controller
                 session(['timetable_id_classe' => $id_classe]);
             }
             if (!$id_annee && $annees->isNotEmpty()) {
-                $id_annee = $annees->first()->id_anneeScolaire;
+                $id_annee = (AnneeScolaire::enCours() ?? $annees->first())->id_anneeScolaire;
                 session(['timetable_id_annee' => $id_annee]);
             }
         }

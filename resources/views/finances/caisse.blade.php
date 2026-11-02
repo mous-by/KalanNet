@@ -213,7 +213,7 @@
                                     <label class="form-label">{{ __('eleves.label_annee') }} <span class="text-danger">*</span></label>
                                     <select name="id_annee_scolaire" class="form-select" required>
                                         @foreach($annees as $annee)
-                                            <option value="{{ $annee->id_anneeScolaire }}">{{ $annee->annee }}</option>
+                                            <option value="{{ $annee->id_anneeScolaire }}" @selected($annee->id_anneeScolaire === \App\Models\AnneeScolaire::enCours()?->id_anneeScolaire)>{{ $annee->annee }}</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -267,7 +267,7 @@
                                     <label class="form-label">{{ __('eleves.label_annee') }} <span class="text-danger">*</span></label>
                                     <select name="id_annee_scolaire" class="form-select" required>
                                         @foreach($annees as $annee)
-                                            <option value="{{ $annee->id_anneeScolaire }}">{{ $annee->annee }}</option>
+                                            <option value="{{ $annee->id_anneeScolaire }}" @selected($annee->id_anneeScolaire === \App\Models\AnneeScolaire::enCours()?->id_anneeScolaire)>{{ $annee->annee }}</option>
                                         @endforeach
                                     </select>
                                 </div>

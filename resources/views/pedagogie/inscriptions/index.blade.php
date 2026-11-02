@@ -393,7 +393,7 @@
                                                     preg_match('/\d+/', \Illuminate\Support\Str::ascii((string) $classe->nom_classe), $classeLevelMatch);
                                                     $classeLevel = $classeLevelMatch[0] ?? '';
                                                 @endphp
-                                                <option value="{{ $classe->id_classe }}" data-level="{{ $classeLevel }}" @selected(($reinscriptionFilters['source_classe_id'] ?? old('source_classe_id')) == $classe->id_classe)>{{ $classe->nom_classe }}@if($classe->ordreEnseignement) - {{ $classe->ordreEnseignement }}@endif</option>
+                                                <option value="{{ $classe->id_classe }}" data-level="{{ $classeLevel }}" data-groupe="{{ \App\Support\ClasseSuivante::groupe($classe->nom_classe) }}" @selected(($reinscriptionFilters['source_classe_id'] ?? old('source_classe_id')) == $classe->id_classe)>{{ $classe->nom_classe }}@if($classe->ordreEnseignement) - {{ $classe->ordreEnseignement }}@endif</option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -433,7 +433,7 @@
                                                     preg_match('/\d+/', \Illuminate\Support\Str::ascii((string) $classe->nom_classe), $targetClasseLevelMatch);
                                                     $targetClasseLevel = $targetClasseLevelMatch[0] ?? '';
                                                 @endphp
-                                                <option value="{{ $classe->id_classe }}" data-level="{{ $targetClasseLevel }}" @selected(($reinscriptionFilters['target_classe_id'] ?? old('target_classe_id')) == $classe->id_classe)>{{ $classe->nom_classe }}</option>
+                                                <option value="{{ $classe->id_classe }}" data-level="{{ $targetClasseLevel }}" data-groupe="{{ \App\Support\ClasseSuivante::groupe($classe->nom_classe) }}" @selected(($reinscriptionFilters['target_classe_id'] ?? old('target_classe_id')) == $classe->id_classe)>{{ $classe->nom_classe }}</option>
                                             @endforeach
                                         </select>
                                         <div class="alert alert-warning py-2 px-3 mt-2 mb-0 d-none" data-reinscription-class-help></div>
@@ -544,12 +544,14 @@
                                                     @php
                                                         $eleve = $row['eleve'];
                                                         $key = $eleve->id_eleve;
-                                                        $proposal = $row['decision_proposee'] === 'non_defini' ? 'redoublant' : $row['decision_proposee'];
+                                                        // Sans moyenne : ni décision présélectionnée ni case cochée, l'école vérifie et choisit.
+                                                        $aVerifier = $row['decision_proposee'] === 'non_defini' && !$row['deja_reinscrit'];
+                                                        $proposal = $aVerifier ? '' : $row['decision_proposee'];
                                                         $blockedDecision = $row['decision_proposee'] === 'en_attente_resultat';
                                                     @endphp
-                                                    <tr class="{{ $row['deja_reinscrit'] ? 'table-warning' : '' }}">
+                                                    <tr class="{{ $row['deja_reinscrit'] || $aVerifier ? 'table-warning' : '' }}">
                                                         <td class="text-center">
-                                                            <input type="checkbox" class="form-check-input" name="eleves[{{ $key }}][selected]" value="1" data-reinscription-check @checked(!$row['deja_reinscrit'] && !$blockedDecision) @disabled($row['deja_reinscrit'] || $blockedDecision)>
+                                                            <input type="checkbox" class="form-check-input" name="eleves[{{ $key }}][selected]" value="1" data-reinscription-check @checked(!$row['deja_reinscrit'] && !$blockedDecision && !$aVerifier) @disabled($row['deja_reinscrit'] || $blockedDecision)>
                                                             <input type="hidden" name="eleves[{{ $key }}][id_eleve]" value="{{ $eleve->id_eleve }}">
                                                         </td>
                                                         <td>
@@ -581,6 +583,9 @@
                                                         <td>{{ $proposalLabels[$row['decision_proposee']] ?? $row['decision_proposee'] }}</td>
                                                         <td>
                                                             <select name="eleves[{{ $key }}][decision]" class="form-select form-select-sm" data-reinscription-decision data-pass-classe="{{ $row['classe_cible_id'] }}" data-source-classe="{{ $reinscriptionPreview['sourceClasse']->id_classe }}" @disabled($row['deja_reinscrit'] || $blockedDecision)>
+                                                                @if($aVerifier)
+                                                                    <option value="" selected>{{ __('inscriptions.decision_a_choisir') }}</option>
+                                                                @endif
                                                                 @foreach($decisionLabels as $value => $label)
                                                                     <option value="{{ $value }}" @selected($proposal === $value)>{{ $label }}</option>
                                                                 @endforeach
@@ -834,7 +839,9 @@
             }
 
             const expected = String(sourceLevel + 1);
-            const target = Array.from(targetClassSelect.options).find((option) => option.dataset.level === expected);
+            // Plusieurs classes du niveau suivant : la même section d'abord (7ème B -> 8ème B).
+            const candidates = Array.from(targetClassSelect.options).filter((option) => option.dataset.level === expected);
+            const target = candidates.find((option) => option.dataset.groupe === selected.dataset.groupe) ?? candidates[0];
             if (target) {
                 targetClassSelect.value = target.value;
                 if (classHelp) {
@@ -943,7 +950,10 @@
                 const syncClass = () => {
                     if (!classSelect) return;
                     const decision = select.value;
-                    if (decision === 'passant') {
+                    if (decision === '') {
+                        classSelect.value = '';
+                        classSelect.disabled = true;
+                    } else if (decision === 'passant') {
                         classSelect.value = select.dataset.passClasse;
                         classSelect.disabled = false;
                     } else if (decision === 'redoublant') {
@@ -983,12 +993,18 @@
                     planificationSelect.disabled = !staysInSchool || select.disabled;
                     planificationSelect.required = staysInSchool && planificationSelect.dataset.required === '1' && !!rowCheck?.checked;
                 };
+                const syncDecisionRequise = () => {
+                    select.required = !!rowCheck?.checked && !select.disabled;
+                };
                 const rowCheck = row?.querySelector('[data-reinscription-check]');
                 select.addEventListener('change', syncClass);
                 classSelect?.addEventListener('change', syncPlanification);
                 rowCheck?.addEventListener('change', syncPlanification);
+                rowCheck?.addEventListener('change', syncDecisionRequise);
                 checkAll?.addEventListener('change', syncPlanification);
+                checkAll?.addEventListener('change', syncDecisionRequise);
                 syncClass();
+                syncDecisionRequise();
             });
 
             updateCheckAll();

@@ -386,4 +386,5 @@ return [
     'eco_suppression_faite' => 'L\'école « :nom » et toutes ses données ont été supprimées.',
     'eco_suppression_web_seulement' => 'La suppression d\'une école se fait depuis le site web, où une confirmation est demandée.',
     'eco_suppression_chargement' => 'Impossible de charger les informations de l\'école. Réessayez.',
+    'annee_deja_existante' => 'L\'année :annee existe déjà : utilisez-la plutôt que d\'en créer une seconde.',
 ];

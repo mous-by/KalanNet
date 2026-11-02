@@ -31,6 +31,8 @@ class InscriptionController extends Controller
         abort_unless($user && ($user->droit === 'SupAdmin' || $user->userHasAnyPermission(['inscriptions_apercu', 'inscriptions_inscrire'])), 403, 'Permission insuffisante.');
         $classes = Classe::where('idEcole', session('idEcole'))->orderBy('nom_classe')->get();
         $classeIds = $classes->pluck('id_classe');
+        // L'année suivante doit exister quand les résultats sortent (fin juin à fin juillet), sans démarche de l'école.
+        AnneeScolaire::assurerAnneesCommunes();
         $annees = AnneeScolaire::orderByDesc('id_anneeScolaire')->get();
         $parents = ParentModel::where('idEcole', session('idEcole'))->orderBy('nom_prenom_parent')->get();
         $planifications = Planification::whereIn('id_classe', $classeIds)->orderBy('motif')->get();
@@ -546,6 +548,8 @@ class InscriptionController extends Controller
     {
         $classes = Classe::where('idEcole', session('idEcole'))->orderBy('nom_classe')->get();
         $classeIds = $classes->pluck('id_classe');
+        // L'année suivante doit exister quand les résultats sortent (fin juin à fin juillet), sans démarche de l'école.
+        AnneeScolaire::assurerAnneesCommunes();
         $annees = AnneeScolaire::orderByDesc('id_anneeScolaire')->get();
         $parents = ParentModel::where('idEcole', session('idEcole'))->orderBy('nom_prenom_parent')->get();
         $planifications = Planification::whereIn('id_classe', $classeIds)->orderBy('motif')->get();
@@ -706,6 +710,11 @@ class InscriptionController extends Controller
         if ($selectedRows->isEmpty()) {
             return redirect()->route('inscriptions.index', ['tab' => 'reinscription'])
                 ->with('error', 'Veuillez cocher au moins un élève à réinscrire.');
+        }
+
+        // Élève sans moyenne : aucune décision n'est présélectionnée, l'école doit la choisir.
+        if ($selectedRows->contains(fn ($row) => empty($row['decision']))) {
+            throw ValidationException::withMessages(['eleves' => __('inscriptions.reinscription_decision_requise')]);
         }
 
         $missingMotif = $selectedRows->first(function ($row) {
@@ -1050,10 +1059,13 @@ class InscriptionController extends Controller
             return null;
         }
 
-        return $classes->first(function ($classe) use ($currentLevel, $sourceClasse) {
-            return (int) $classe->id_classe !== (int) $sourceClasse->id_classe
-                && $this->extractClasseLevel($classe->nom_classe) === $currentLevel + 1;
-        });
+        $niveauSuivant = $classes->filter(fn ($classe) => (int) $classe->id_classe !== (int) $sourceClasse->id_classe
+            && $this->extractClasseLevel($classe->nom_classe) === $currentLevel + 1);
+
+        // Plusieurs classes du niveau suivant : la même section d'abord (7ème B -> 8ème B).
+        $groupe = ClasseSuivante::groupe($sourceClasse->nom_classe);
+
+        return $niveauSuivant->first(fn ($classe) => ClasseSuivante::groupe($classe->nom_classe) === $groupe) ?? $niveauSuivant->first();
     }
 
     private function extractClasseLevel(?string $name): ?int

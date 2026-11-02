@@ -33,7 +33,7 @@
                 <div class="col-12">
                     <label class="form-label">Année</label>
                     <select name="annee_scolaire_id" class="form-select" required>
-                        @foreach($annees as $annee)<option value="{{ $annee->id_anneeScolaire }}">{{ $annee->annee }}</option>@endforeach
+                        @foreach($annees as $annee)<option value="{{ $annee->id_anneeScolaire }}" @selected($annee->id_anneeScolaire === \App\Models\AnneeScolaire::enCours()?->id_anneeScolaire)>{{ $annee->annee }}</option>@endforeach
                     </select>
                 </div>
                 <div class="col-12"><label class="form-label">Montant</label><input type="number" name="montant" class="form-control" min="0" step="1" required></div>
