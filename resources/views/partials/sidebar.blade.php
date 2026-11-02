@@ -141,6 +141,12 @@
                     <div class="menu-title">Effectifs</div>
                 </a>
             </li>
+            <li>
+                <a href="{{ route('territoire.rapports-succincts') }}">
+                    <div class="parent-icon"><i class="bi bi-file-earmark-text"></i></div>
+                    <div class="menu-title">Rapports succincts</div>
+                </a>
+            </li>
             @if(\App\Http\Controllers\EvaluationCommuneController::autorise($user))
             <li>
                 <a href="{{ route('territoire.evaluations.index') }}">
@@ -267,6 +273,16 @@
         @endif
 
         <li class="menu-label">{{ __('messages.menu.management') }}</li>
+
+        {{-- Rapport succinct de rentrée : écoles du préscolaire et du fondamental. --}}
+        @if(session('idEcole') && \App\Http\Controllers\RapportSuccinctController::autorise($user) && \App\Support\RapportSuccinctDonnees::ecoleConcernee((int) session('idEcole')))
+            <li>
+                <a href="{{ route('rapport-succinct.index') }}">
+                    <div class="parent-icon"><i class="bi bi-file-earmark-text"></i></div>
+                    <div class="menu-title">Rapport succinct</div>
+                </a>
+            </li>
+        @endif
 
         {{-- Évaluations communes reçues de l'académie / du CAP : Admin et Gestionnaire. --}}
         @if(in_array($user->droit, ['Admin', 'Gestionnaire'], true) && \App\Http\Controllers\EvaluationCommuneController::autorise($user))

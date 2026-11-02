@@ -151,6 +151,13 @@
     <strong>Réinscription</strong> : KalanNet propose automatiquement une décision par élève selon sa moyenne, que
     vous pouvez ajuster avant de valider.</p>
 
+    <h5 class="fw-bold mt-4">Rapport succinct de rentrée</h5>
+    <p>Préscolaire et fondamental : ouvrez <strong>Rapport succinct</strong>. La fiche est pré-remplie avec les élèves
+    de l'année, les classes, les redoublants et les enseignants ; vérifiez-la, complétez les renseignements et le nombre
+    de salles. Le bouton <strong>Télécharger le PDF</strong> reste toujours disponible. Si votre CAP utilise KalanNet,
+    <strong>Envoyer au CAP</strong> le prévient aussitôt ; sinon, imprimez la fiche, remettez-la, puis marquez-la comme
+    remise. Après une correction, renvoyez la fiche : le CAP garde la dernière version reçue.</p>
+
     <h5 class="fw-bold mt-4">Retrouver et suivre un élève</h5>
     <ul>
         <li><strong>Liste des Élèves</strong> : recherche par classe, impression de la liste, export Excel

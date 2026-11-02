@@ -62,6 +62,7 @@ class SuppressionEcole
             try {
                 $suppressions = [
                     // Pédagogie
+                    ['rapports_succincts', ['id_ecole' => $e]],
                     ['lecons_presence', ['id_presence' => $ids['presences']]],
                     ['presences', ['id_presence' => $ids['presences']]],
                     ['emargement', ['id_ecole' => $e, 'id_classe' => $ids['classes'], 'id_enseignant' => $ids['enseignants']]],

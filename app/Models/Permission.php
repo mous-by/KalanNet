@@ -37,6 +37,7 @@ class Permission extends Model
                 'parents_creation' => 'Créer un parent',
                 'parents_modification' => 'Modifier les parents',
                 'parents_supprimer' => 'Supprimer les parents',
+                'rapport_succinct_gerer' => 'Remplir et remettre le rapport succinct de rentrée',
             ],
         ],
         'communications' => [
@@ -266,6 +267,7 @@ class Permission extends Model
         // Module Évaluations communes : tous les rôles sauf les parents.
         'evaluations_communes_apercu' => ['Admin', 'Gestionnaire', 'enseignant', 'DAE', 'DCAP'],
         'paiements_annuler' => ['Admin', 'Gestionnaire'],
+        'rapport_succinct_gerer' => ['Admin', 'Gestionnaire'],
         // La suppression définitive des élèves ne peut être déléguée qu'à un Admin.
         'classes_reinitialiser_eleves' => ['Admin'],
     ];

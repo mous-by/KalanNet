@@ -228,6 +228,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/annonces', [AnnouncementController::class, 'index'])->name('annonces.index');
     Route::post('/annonces', [AnnouncementController::class, 'store'])->name('annonces.store');
     Route::post('/annonces/read-visible', [AnnouncementController::class, 'markVisibleAsRead'])->name('annonces.read-visible');
+    Route::get('/rapport-succinct', [\App\Http\Controllers\RapportSuccinctController::class, 'index'])->name('rapport-succinct.index');
+    Route::post('/rapport-succinct', [\App\Http\Controllers\RapportSuccinctController::class, 'store'])->name('rapport-succinct.store');
+    Route::get('/rapport-succinct/pdf', [\App\Http\Controllers\RapportSuccinctController::class, 'pdf'])->name('rapport-succinct.pdf');
+    Route::get('/territoire/rapports-succincts', [\App\Http\Controllers\RapportSuccinctController::class, 'territoire'])->name('territoire.rapports-succincts');
+    Route::get('/territoire/rapports-succincts/{id}/pdf', [\App\Http\Controllers\RapportSuccinctController::class, 'pdfTerritoire'])->whereNumber('id')->name('territoire.rapports-succincts.pdf');
     Route::get('/territoire/effectifs', [\App\Http\Controllers\TerritoireController::class, 'effectifs'])->name('territoire.effectifs');
     Route::get('/territoire/annonces', [\App\Http\Controllers\TerritoireController::class, 'annonces'])->name('territoire.annonces.index');
     Route::post('/territoire/annonces', [\App\Http\Controllers\TerritoireController::class, 'storeAnnonce'])->name('territoire.annonces.store');
