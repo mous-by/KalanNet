@@ -21,6 +21,19 @@ class ProfileController extends Controller
         return view('profile.edit', ['user' => $user, 'modifierProfil' => $user->peutModifierProfil()]);
     }
 
+    /** L'Admin de l'école choisit si son école apparaît sur le site de CSB (bande « Ils nous font confiance »). */
+    public function updateEcoleSurCsb(Request $request)
+    {
+        abort_unless(in_array(Auth::user()->droit, ['Admin', 'SupAdmin'], true), 403);
+        $ecole = \App\Models\Ecole::withoutGlobalScopes()->findOrFail(session('idEcole') ?: Auth::user()->idEcole);
+
+        $ecole->update(['afficher_sur_csb' => $request->boolean('afficher_sur_csb')]);
+
+        return back()->with('success', $ecole->afficher_sur_csb
+            ? 'Votre école apparaîtra sur le site de Computer Service Barry.'
+            : 'Votre école a été retirée du site de Computer Service Barry.');
+    }
+
     public function updateInfo(Request $request)
     {
         $user = Auth::user();

@@ -52,6 +52,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/profil', [\App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profil', [\App\Http\Controllers\ProfileController::class, 'updateInfo'])->name('profile.update');
+    Route::put('/profil/ecole-sur-csb', [\App\Http\Controllers\ProfileController::class, 'updateEcoleSurCsb'])->name('profile.ecole-csb');
     Route::put('/profil/mot-de-passe', [\App\Http\Controllers\ProfileController::class, 'updatePassword'])->name('profile.password.update');
     Route::get('/mot-de-passe/changer', [\App\Http\Controllers\ProfileController::class, 'forcePassword'])->name('password.force');
     Route::put('/mot-de-passe/changer', [\App\Http\Controllers\ProfileController::class, 'forcePasswordUpdate'])->name('password.force.update');

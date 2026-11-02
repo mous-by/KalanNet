@@ -75,6 +75,19 @@
                         @endif
                         </fieldset>
                     </form>
+                    @if(in_array($user->droit, ['Admin', 'SupAdmin'], true) && ($ecoleCsb = \App\Models\Ecole::withoutGlobalScopes()->find(session('idEcole') ?: $user->idEcole)))
+                        <form action="{{ route('profile.ecole-csb') }}" method="POST" class="col-12 col-lg-6 border-top mt-4 pt-4">
+                            @csrf
+                            @method('PUT')
+                            <h6 class="fw-bold"><i class="bi bi-globe me-1"></i>Mon école sur le site de Computer Service Barry</h6>
+                            <p class="small text-secondary">Le nom, l'adresse et le logo de « {{ $ecoleCsb->nomEcole }} » apparaissent parmi les écoles qui utilisent KalanNet, sur computerservicebarry.com. Aucune autre information n'est partagée. Décochez pour la retirer.</p>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" role="switch" id="afficher_sur_csb" name="afficher_sur_csb" value="1" @checked($ecoleCsb->afficher_sur_csb ?? true)>
+                                <label class="form-check-label" for="afficher_sur_csb">Afficher mon école sur le site de CSB</label>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Enregistrer ce choix</button>
+                        </form>
+                    @endif
                 </div>
 
                 @if($modifierProfil)

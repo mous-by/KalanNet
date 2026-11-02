@@ -22,6 +22,16 @@ class Abonnement extends Model
         'fin_at' => 'datetime',
     ];
 
+    protected static function booted(): void
+    {
+        // Abonnement activé ou terminé : l'école entre dans la bande du site de CSB ou en sort.
+        static::saved(function (self $abonnement) {
+            if ($abonnement->wasRecentlyCreated || $abonnement->wasChanged(['statut', 'fin_at'])) {
+                \App\Services\Support\CsbEcoles::planifier((int) $abonnement->ecole_id);
+            }
+        });
+    }
+
     public function offre()
     {
         return $this->belongsTo(AbonnementOffre::class, 'offre_id');

@@ -13,6 +13,7 @@ class Ecole extends Model
 
     protected $fillable = [
         'nomEcole',
+        'afficher_sur_csb',
         'typeEcole',
         'logoEcole',
         'cachet',
@@ -37,7 +38,19 @@ class Ecole extends Model
 
     protected $casts = [
         'franco_arabe' => 'boolean',
+        'afficher_sur_csb' => 'boolean',
     ];
+
+    protected static function booted(): void
+    {
+        // Bande des écoles du site de CSB : à jour dès qu'une école est créée, modifiée ou supprimée.
+        static::saved(function (self $ecole) {
+            if ($ecole->wasRecentlyCreated || $ecole->wasChanged(['nomEcole', 'adresse', 'logoEcole', 'afficher_sur_csb'])) {
+                \App\Services\Support\CsbEcoles::planifier((int) $ecole->idEcole);
+            }
+        });
+        static::deleted(fn (self $ecole) => \App\Services\Support\CsbEcoles::planifier((int) $ecole->idEcole));
+    }
 
     public function utilisateurs()
     {
