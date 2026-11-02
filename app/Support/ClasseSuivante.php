@@ -74,6 +74,18 @@ class ClasseSuivante
         return preg_replace('/^\s*\d{1,2}\s*(ère|ere|er|re|ème|eme|e|è)?/iu', ($niveau + 1).'ème', (string) $nom, 1);
     }
 
+    /**
+     * Ce qui distingue une classe des autres du même niveau, sans le numéro : « 7ème année B » et « 8e B » donnent « b »,
+     * « 10e LL » donne « ll », « 7ème année » donne une chaîne vide.
+     */
+    public static function groupe(?string $nom): string
+    {
+        $nom = mb_strtolower(\Illuminate\Support\Str::ascii((string) $nom));
+        $nom = (string) preg_replace('/^\D*\d+\s*(ere|er|re|eme|e|nde|nd)?\b\s*(annee)?/', '', $nom);
+
+        return (string) preg_replace('/[^a-z0-9]+/', '', $nom);
+    }
+
     public static function ordre(?string $ordre, ?string $nom): ?string
     {
         if ($ordre === Ordres::JARDIN) {

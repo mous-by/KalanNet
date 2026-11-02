@@ -120,4 +120,6 @@ return [
     'import_dont_subventionnes' => 'Dont :count élève(s) subventionné(s) par l\'État.',
     'excel_subvention_help' => 'Élèves subventionnés par l\'État : choisissez « Oui » dans la colonne correspondante du modèle Excel. Aucune formule ni dette scolaire ne leur est appliquée ; les versements de l\'État seront répartis entre les bénéficiaires.',
     'formule_obligatoire' => 'Choisissez la formule de paiement de l\'élève (ou cochez « Subventionné par l\'État » si c\'est le cas).',
+    'decision_a_choisir' => '— À choisir —',
+    'reinscription_decision_requise' => 'Choisissez une décision pour chaque élève coché (les élèves sans moyenne n\'ont pas de décision proposée).',
 ];
