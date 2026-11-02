@@ -141,12 +141,14 @@
                     <div class="menu-title">Effectifs</div>
                 </a>
             </li>
+            @if($user->droit === 'DCAP')
             <li>
                 <a href="{{ route('territoire.rapports-succincts') }}">
                     <div class="parent-icon"><i class="bi bi-file-earmark-text"></i></div>
                     <div class="menu-title">Rapports succincts</div>
                 </a>
             </li>
+            @endif
             @if(\App\Http\Controllers\EvaluationCommuneController::autorise($user))
             <li>
                 <a href="{{ route('territoire.evaluations.index') }}">

@@ -116,6 +116,42 @@ class RapportSuccinctTest extends IntegrationTestCase
         }
     }
 
+    public function test_l_academie_n_a_pas_acces(): void
+    {
+        $rapport = RapportSuccinct::withoutGlobalScopes()->create(['id_ecole' => 1, 'id_annee' => AnneeScolaire::enCours(1)->id_anneeScolaire, 'statut' => 'envoye', 'donnees' => [], 'donnees_envoyees' => []]);
+        $dae = $this->compte('DAE');
+
+        $this->actingAs($dae)->get('/dashboard')->assertDontSee('Rapports succincts');
+        $this->get('/territoire/rapports-succincts')->assertForbidden();
+        $this->get("/territoire/rapports-succincts/{$rapport->id}/pdf")->assertForbidden();
+    }
+
+    public function test_rappel_de_fin_octobre_seulement_aux_ecoles_qui_n_ont_pas_remis(): void
+    {
+        $annee = AnneeScolaire::enCours(1);
+        DB::table('abonnements')->where('ecole_id', 1)->update(['statut' => 'actif', 'fin_at' => null]);
+        $admin = $this->compte('Admin', 1);
+        $recus = fn () => AppNotification::where('user_id', $admin->idUtilisateur)->where('type', 'rapport_succinct_rappel');
+
+        $this->artisan('rapports-succincts:rappel')->assertSuccessful();
+        $this->assertSame(1, $recus()->count());
+        $this->assertSame('/rapport-succinct?annee='.$annee->id_anneeScolaire, $recus()->first()->link);
+
+        // Relancé (cron de plusieurs jours) : pas de second rappel la même année.
+        $this->artisan('rapports-succincts:rappel')->assertSuccessful();
+        $this->assertSame(1, $recus()->count());
+
+        // Rapport remis : plus de rappel. Brouillon : rappel maintenu.
+        $recus()->delete();
+        RapportSuccinct::withoutGlobalScopes()->create(['id_ecole' => 1, 'id_annee' => $annee->id_anneeScolaire, 'statut' => 'remis', 'donnees' => [], 'donnees_envoyees' => []]);
+        $this->artisan('rapports-succincts:rappel')->assertSuccessful();
+        $this->assertSame(0, $recus()->count());
+
+        RapportSuccinct::withoutGlobalScopes()->where('id_ecole', 1)->update(['statut' => 'brouillon']);
+        $this->artisan('rapports-succincts:rappel')->assertSuccessful();
+        $this->assertSame(1, $recus()->count());
+    }
+
     public function test_droits_et_ecoles_non_concernees(): void
     {
         $this->actingAs($this->compte('parent', 1))->withSession(['idEcole' => 1]);

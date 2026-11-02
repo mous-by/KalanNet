@@ -17,7 +17,7 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * Rapport succinct de rentrée : l'école vérifie la fiche pré-remplie, la télécharge à tout moment et la remet au CAP
- * (par KalanNet si son CAP a un compte, sinon sur papier). Le DCAP suit les fiches de son CAP, le DAE celles de son académie.
+ * (par KalanNet si son CAP a un compte, sinon sur papier). Le DCAP suit les fiches de son CAP.
  */
 class RapportSuccinctController extends Controller
 {
@@ -184,31 +184,26 @@ class RapportSuccinctController extends Controller
         return $telecharger ? $pdf->download($nom) : $pdf->stream($nom);
     }
 
-    /* ——— Espace du CAP et de l'académie ——— */
+    /* ——— Espace du CAP ——— */
 
-    private function superviseur()
+    private function dcap()
     {
         $user = Auth::user();
-        abort_unless(($user->droit === 'DAE' && $user->id_academie) || ($user->droit === 'DCAP' && $user->id_cap), 403);
+        abort_unless($user->droit === 'DCAP' && $user->id_cap, 403);
 
         return $user;
     }
 
-    /** Écoles concernées du territoire, reçues ou non, pour l'année choisie. */
+    /** Écoles concernées du CAP, reçues ou non, pour l'année choisie. */
     public function territoire(Request $request)
     {
-        $user = $this->superviseur();
+        $user = $this->dcap();
         $annees = DB::table('anneescolaire')->whereNull('id_ecole')->whereDate('date_debut', '<=', now()->toDateString())->orderByDesc('date_debut')->get();
         $annee = $annees->firstWhere('id_anneeScolaire', $request->integer('annee')) ?? $annees->first();
 
-        $caps = $user->droit === 'DAE' ? DB::table('cap')->where('id_academie', $user->id_academie)->orderBy('nom_cap')->get(['id_cap', 'nom_cap']) : collect();
-        $capChoisi = $user->droit === 'DAE' ? ($request->integer('cap') ?: null) : (int) $user->id_cap;
-
-        $ecoles = DB::table('ecole as e')->leftJoin('cap as c', 'c.id_cap', '=', 'e.id_cap')
-            ->when($user->droit === 'DAE', fn ($q) => $q->where('e.id_academie', $user->id_academie))
-            ->when($capChoisi, fn ($q) => $q->where('e.id_cap', $capChoisi))
+        $ecoles = DB::table('ecole as e')->where('e.id_cap', $user->id_cap)
             ->whereExists(fn ($q) => $q->select(DB::raw(1))->from('classe')->whereColumn('classe.idEcole', 'e.idEcole')->whereIn('classe.ordreEnseignement', \App\Support\Ordres::SOUS_CAP))
-            ->orderBy('c.nom_cap')->orderBy('e.nomEcole')->get(['e.idEcole', 'e.nomEcole', 'e.adresse', 'c.nom_cap']);
+            ->orderBy('e.nomEcole')->get(['e.idEcole', 'e.nomEcole', 'e.adresse']);
 
         // Même année, commune ou créée par l'école elle-même.
         $idsAnnee = DB::table('anneescolaire')->where('annee', $annee?->annee)->pluck('id_anneeScolaire');
@@ -217,16 +212,16 @@ class RapportSuccinctController extends Controller
 
         $lignes = $ecoles->map(fn ($e) => (object) ['ecole' => $e, 'rapport' => $rapports->get($e->idEcole), 'totaux' => isset($rapports[$e->idEcole]) ? Donnees::totaux($rapports[$e->idEcole]->donnees_envoyees ?? []) : null]);
 
-        return view('territoire.rapports-succincts', compact('lignes', 'annees', 'annee', 'caps', 'capChoisi'));
+        return view('territoire.rapports-succincts', compact('lignes', 'annees', 'annee'));
     }
 
     /** La fiche remise, seulement pour une école du territoire. */
     public function pdfTerritoire(Request $request, int $id)
     {
-        $user = $this->superviseur();
+        $user = $this->dcap();
         $rapport = RapportSuccinct::withoutGlobalScopes()->where('statut', '!=', 'brouillon')->findOrFail($id);
-        $ecole = DB::table('ecole')->where('idEcole', $rapport->id_ecole)->first(['nomEcole', 'id_cap', 'id_academie']);
-        abort_unless($ecole && ($user->droit === 'DAE' ? (int) $ecole->id_academie === (int) $user->id_academie : (int) $ecole->id_cap === (int) $user->id_cap), 404);
+        $ecole = DB::table('ecole')->where('idEcole', $rapport->id_ecole)->first(['nomEcole', 'id_cap']);
+        abort_unless($ecole && (int) $ecole->id_cap === (int) $user->id_cap, 404);
 
         $annee = DB::table('anneescolaire')->where('id_anneeScolaire', $rapport->id_annee)->value('annee');
 

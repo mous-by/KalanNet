@@ -6,7 +6,7 @@
         $somme = fn ($cle) => $recus->sum(fn ($l) => $l->totaux[$cle] ?? 0);
     @endphp
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-        <div class="breadcrumb-title pe-3">{{ Auth::user()->droit === 'DAE' ? 'Espace DAE' : 'Espace DCAP' }}</div>
+        <div class="breadcrumb-title pe-3">Espace DCAP</div>
         <div class="ps-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0 p-0">
@@ -26,17 +26,6 @@
                 @endforeach
             </select>
         </div>
-        @if($caps->isNotEmpty())
-            <div class="col-sm-5 col-md-4">
-                <label class="form-label small fw-bold" for="cap">CAP</label>
-                <select name="cap" id="cap" class="form-select" onchange="this.form.submit()">
-                    <option value="">Tous les CAP</option>
-                    @foreach($caps as $c)
-                        <option value="{{ $c->id_cap }}" @selected($capChoisi === $c->id_cap)>{{ $c->nom_cap }}</option>
-                    @endforeach
-                </select>
-            </div>
-        @endif
     </form>
 
     <div class="row g-3 mb-3">
@@ -49,7 +38,7 @@
             </div>
         @endforeach
     </div>
-    <p class="small text-muted">Les chiffres ne comptent que les rapports reçus. La liste montre les écoles de votre territoire qui utilisent KalanNet : les autres remettent leur rapport sur papier.</p>
+    <p class="small text-muted">Les chiffres ne comptent que les rapports reçus. La liste montre les écoles de votre CAP qui utilisent KalanNet : les autres remettent leur rapport sur papier.</p>
 
     <div class="card theme-card shadow-sm">
         <div class="card-body">
@@ -57,7 +46,7 @@
                 <table class="table align-middle mb-0">
                     <thead>
                         <tr>
-                            <th>École</th>@if($caps->isNotEmpty())<th>CAP</th>@endif<th>Rapport</th>
+                            <th>École</th><th>Rapport</th>
                             <th class="text-end">Groupes</th><th class="text-end">Élèves</th><th class="text-end">Redoublants</th><th class="text-end">Maîtres</th><th></th>
                         </tr>
                     </thead>
@@ -65,7 +54,6 @@
                         @forelse($lignes as $l)
                             <tr>
                                 <td><div class="fw-semibold">{{ $l->ecole->nomEcole }}</div><div class="small text-muted">{{ $l->ecole->adresse }}</div></td>
-                                @if($caps->isNotEmpty())<td>{{ $l->ecole->nom_cap }}</td>@endif
                                 <td>
                                     @if($l->rapport)
                                         <span class="badge bg-success">Reçu</span>
@@ -85,7 +73,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="8" class="text-muted text-center py-4">Aucune école du préscolaire ou du fondamental sur KalanNet pour ce territoire.</td></tr>
+                            <tr><td colspan="8" class="text-muted text-center py-4">Aucune école du préscolaire ou du fondamental sur KalanNet dans votre CAP.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
