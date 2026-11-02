@@ -523,7 +523,7 @@ class EleveController extends Controller
         if ($eleves->isEmpty()) {
             $ecole = Ecole::withoutGlobalScopes()->find(session('idEcole'));
             $classe = isset($classe) ? $classe : (new Classe())->forceFill(['nom_classe' => '7ème année A', 'ordreEnseignement' => 'fondamentale2']);
-            $annee = isset($annee) ? $annee : (AnneeScolaire::orderByDesc('date_debut')->first() ?? (new AnneeScolaire())->forceFill(['annee' => date('Y') . '-' . (date('Y') + 1)]));
+            $annee = isset($annee) ? $annee : (AnneeScolaire::enCours() ?? (new AnneeScolaire())->forceFill(['annee' => date('Y') . '-' . (date('Y') + 1)]));
             $eleves = collect([
                 ['Aminata', 'Diallo', 'Féminin', '2013-03-14'],
                 ['Ibrahim', 'Koné', 'Masculin', '2012-11-02'],

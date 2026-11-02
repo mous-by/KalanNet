@@ -1,7 +1,7 @@
 @php
     $user = Auth::user();
     $idEcole = session('idEcole');
-    $anneeEnCours = \App\Models\AnneeScolaire::orderBy('id_anneeScolaire', 'desc')->first();
+    $anneeEnCours = \App\Models\AnneeScolaire::enCours();
     $notifications = collect();
     $unreadNotificationsCount = 0;
     $subscriptionReminderState = null;

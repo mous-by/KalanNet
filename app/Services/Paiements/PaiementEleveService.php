@@ -34,9 +34,7 @@ class PaiementEleveService
         $eleve = Eleve::with(['ecole', 'classe', 'parents'])->findOrFail($eleveId);
         $annee = $anneeId
             ? AnneeScolaire::findOrFail($anneeId)
-            : AnneeScolaire::where(function ($query) use ($eleve) {
-                $query->where('id_ecole', $eleve->id_ecole)->orWhereNull('id_ecole');
-            })->orderByDesc('id_anneeScolaire')->firstOrFail();
+            : (AnneeScolaire::enCours((int) $eleve->id_ecole) ?? throw (new \Illuminate\Database\Eloquent\ModelNotFoundException)->setModel(AnneeScolaire::class));
 
         $frais = $this->availableFees($eleve, $annee->id_anneeScolaire);
         $plan = PlanPaiement::with('echeances')

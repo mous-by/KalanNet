@@ -417,6 +417,7 @@ class ConfigurationController extends Controller
         ]);
 
         $data['id_ecole'] = session('idEcole') ?: $user->idEcole;
+        $this->refuserAnneeEnDouble($data['annee'], (int) $data['id_ecole']);
 
         AnneeScolaire::create($data);
 
@@ -1248,20 +1249,20 @@ class ConfigurationController extends Controller
         abort(403);
     }
 
+    /** Une année commune du même nom existe déjà, ou l'école l'a déjà créée : pas de doublon (élèves répartis sur deux années). */
+    protected function refuserAnneeEnDouble(string $annee, int $idEcole): void
+    {
+        $existe = AnneeScolaire::withoutGlobalScopes()->where('annee', trim($annee))
+            ->where(fn ($q) => $q->whereNull('id_ecole')->orWhere('id_ecole', $idEcole))->exists();
+
+        if ($existe) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['annee' => __('configuration.annee_deja_existante', ['annee' => trim($annee)])]);
+        }
+    }
+
     protected function ensureCurrentAcademicYearExists(): void
     {
-        $today = now();
-        $startYear = (int) $today->format('m') >= 9 ? (int) $today->format('Y') : (int) $today->format('Y') - 1;
-        $endYear = $startYear + 1;
-        $label = $startYear . '-' . $endYear;
-
-        AnneeScolaire::withoutGlobalScopes()->firstOrCreate(
-            ['annee' => $label, 'id_ecole' => null],
-            [
-                'date_debut' => $startYear . '-09-01',
-                'date_fin' => $endYear . '-08-31',
-            ]
-        );
+        AnneeScolaire::assurerAnneesCommunes();
     }
 
     protected function currentAcademicYear(): ?AnneeScolaire

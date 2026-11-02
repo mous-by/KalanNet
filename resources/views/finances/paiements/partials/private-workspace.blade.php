@@ -54,7 +54,7 @@
                     <label class="form-label">Année scolaire</label>
                     <select name="annee_scolaire_id" class="form-select" required>
                         @foreach($annees as $annee)
-                            <option value="{{ $annee->id_anneeScolaire }}">{{ $annee->annee }}</option>
+                            <option value="{{ $annee->id_anneeScolaire }}" @selected($annee->id_anneeScolaire === \App\Models\AnneeScolaire::enCours()?->id_anneeScolaire)>{{ $annee->annee }}</option>
                         @endforeach
                     </select>
                 </div>

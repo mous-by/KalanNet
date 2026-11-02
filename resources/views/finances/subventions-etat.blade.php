@@ -159,7 +159,7 @@
                                 <label class="form-label">{{ __('finances.label_annee_payee_etat') }}</label>
                                 <select name="annee_scolaire_id" class="form-select" required>
                                     @foreach($annees as $annee)
-                                        <option value="{{ $annee->id_anneeScolaire }}" @selected(($filters['annee_scolaire_id'] ?? '') == $annee->id_anneeScolaire)>{{ $annee->annee }}</option>
+                                        <option value="{{ $annee->id_anneeScolaire }}" @selected(($filters['annee_scolaire_id'] ?? \App\Models\AnneeScolaire::enCours()?->id_anneeScolaire) == $annee->id_anneeScolaire)>{{ $annee->annee }}</option>
                                     @endforeach
                                 </select>
                             </div>

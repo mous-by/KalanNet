@@ -59,7 +59,7 @@ class DashboardController extends Controller
     {
         $anneeEnCours = AnneeScolaire::when($schoolId, function ($query, $schoolId) {
             $query->where('id_ecole', $schoolId);
-        })->orderBy('id_anneeScolaire', 'desc')->first();
+        })->whereDate('date_debut', '<=', now()->toDateString())->orderBy('id_anneeScolaire', 'desc')->first();
         $idAnnee = $anneeEnCours ? $anneeEnCours->id_anneeScolaire : null;
 
         // General stats : actifs (0), abandons (2) et diplômés (3), filles et garçons, en une requête.
@@ -398,6 +398,7 @@ class DashboardController extends Controller
         }
 
         $anneeEnCours = AnneeScolaire::when($schoolId, fn ($query, $id) => $query->where('id_ecole', $id))
+            ->whereDate('date_debut', '<=', now()->toDateString())
             ->orderByDesc('id_anneeScolaire')
             ->first();
 

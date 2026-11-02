@@ -31,6 +31,8 @@ class InscriptionController extends Controller
         abort_unless($user && ($user->droit === 'SupAdmin' || $user->userHasAnyPermission(['inscriptions_apercu', 'inscriptions_inscrire'])), 403, 'Permission insuffisante.');
         $classes = Classe::where('idEcole', session('idEcole'))->orderBy('nom_classe')->get();
         $classeIds = $classes->pluck('id_classe');
+        // L'année suivante doit exister quand les résultats sortent (fin juin à fin juillet), sans démarche de l'école.
+        AnneeScolaire::assurerAnneesCommunes();
         $annees = AnneeScolaire::orderByDesc('id_anneeScolaire')->get();
         $parents = ParentModel::where('idEcole', session('idEcole'))->orderBy('nom_prenom_parent')->get();
         $planifications = Planification::whereIn('id_classe', $classeIds)->orderBy('motif')->get();
@@ -546,6 +548,8 @@ class InscriptionController extends Controller
     {
         $classes = Classe::where('idEcole', session('idEcole'))->orderBy('nom_classe')->get();
         $classeIds = $classes->pluck('id_classe');
+        // L'année suivante doit exister quand les résultats sortent (fin juin à fin juillet), sans démarche de l'école.
+        AnneeScolaire::assurerAnneesCommunes();
         $annees = AnneeScolaire::orderByDesc('id_anneeScolaire')->get();
         $parents = ParentModel::where('idEcole', session('idEcole'))->orderBy('nom_prenom_parent')->get();
         $planifications = Planification::whereIn('id_classe', $classeIds)->orderBy('motif')->get();

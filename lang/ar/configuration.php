@@ -386,4 +386,5 @@ return [
     'eco_suppression_faite' => 'تم حذف المدرسة «:nom» وجميع بياناتها.',
     'eco_suppression_web_seulement' => 'يتم حذف المدرسة من الموقع الإلكتروني، حيث يُطلب التأكيد.',
     'eco_suppression_chargement' => 'تعذر تحميل معلومات المدرسة. حاول مرة أخرى.',
+    'annee_deja_existante' => 'السنة :annee موجودة بالفعل: استخدمها بدلًا من إنشاء سنة ثانية.',
 ];
