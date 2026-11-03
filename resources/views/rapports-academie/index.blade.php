@@ -3,7 +3,7 @@
 @section('content')
     @php $C = \App\Services\Rapports\CanevasEsg::class; @endphp
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-        <div class="breadcrumb-title pe-3">Rapport succinct : lycée</div>
+        <div class="breadcrumb-title pe-3">Rapport succinct : secondaire</div>
         <div class="ps-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0 p-0">
@@ -33,6 +33,15 @@
         @endif
     </div>
 
+    @if($technique)
+        <div class="alert alert-warning border-0 border-start border-warning border-4">
+            <i class="bi bi-info-circle me-1"></i>Ces canevas sont ceux du secondaire général : leurs tableaux sont organisés par séries (TSE, TAL…). Pour le technique et professionnel, KalanNet n'y écrit que ce qui ne dépend pas d'une série ; adaptez les autres tableaux à vos filières.
+        </div>
+    @endif
+    @foreach($aVerifier as $message)
+        <div class="alert alert-warning border-0 border-start border-warning border-4"><i class="bi bi-exclamation-triangle me-1"></i>{{ $message }}</div>
+    @endforeach
+
     <form method="GET" action="{{ route('rapport-academie.index') }}" class="row g-2 align-items-end mb-3">
         <div class="col-sm-4 col-md-3">
             <label class="form-label small fw-bold text-uppercase" for="annee">Année scolaire</label>
@@ -58,7 +67,7 @@
                     <div class="card-body d-flex flex-column">
                         <p class="small fw-bold mb-1">KalanNet remplit pour vous :</p>
                         <ul class="small text-muted mb-3 ps-3">
-                            @foreach($C::REMPLIS[$type] as $tableau)
+                            @foreach(($technique ? $C::REMPLIS_TECHNIQUE : $C::REMPLIS)[$type] as $tableau)
                                 <li>{{ $tableau }}</li>
                             @endforeach
                         </ul>

@@ -8,7 +8,7 @@
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0 p-0">
                     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bi bi-house-door"></i></a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Rapports des lycées</li>
+                    <li class="breadcrumb-item active" aria-current="page">Rapports du secondaire</li>
                 </ol>
             </nav>
         </div>
@@ -33,13 +33,13 @@
         </div>
     </form>
 
-    <p class="text-muted">Rapports reçus : <strong>{{ $recus->count() }} / {{ $lignes->count() }}</strong>. La liste montre les lycées de votre académie qui utilisent KalanNet.</p>
+    <p class="text-muted">Rapports reçus : <strong>{{ $recus->count() }} / {{ $lignes->count() }}</strong>. La liste montre les établissements du secondaire, général et technique, de votre académie qui utilisent KalanNet.</p>
 
     <div class="card theme-card shadow-sm">
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table align-middle mb-0">
-                    <thead><tr><th>Lycée</th><th>État</th><th>Date</th><th></th></tr></thead>
+                    <thead><tr><th>Établissement</th><th>État</th><th>Date</th><th></th></tr></thead>
                     <tbody>
                         @forelse($lignes as $l)
                             <tr>
@@ -61,7 +61,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="4" class="text-center text-muted py-4">Aucun lycée d'enseignement secondaire général sur KalanNet dans votre académie.</td></tr>
+                            <tr><td colspan="4" class="text-center text-muted py-4">Aucun établissement du secondaire sur KalanNet dans votre académie.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

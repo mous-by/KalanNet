@@ -165,8 +165,8 @@
     lui transmet la fiche, dans le format choisi : il décide élève par élève, et la réinscription reprend sa décision. Sinon, imprimez la fiche et
     remettez-la, puis marquez-la comme remise.</p>
 
-    <h5 class="fw-bold mt-4">Rapport succinct des lycées</h5>
-    <p>Secondaire général : le menu <strong>Rapport succinct</strong> propose le canevas officiel du rapport de rentrée et
+    <h5 class="fw-bold mt-4">Rapport succinct du secondaire</h5>
+    <p>Secondaire général, technique et professionnel : le menu <strong>Rapport succinct</strong> propose le canevas officiel du rapport de rentrée et
     de fin d'année. KalanNet y écrit ce qu'il connaît ; complétez le reste dans Excel et contrôlez les cases
     « VERIFICATION ». Si votre académie utilise KalanNet, envoyez-lui le fichier ; sinon, remettez-le et marquez-le comme remis.</p>
 

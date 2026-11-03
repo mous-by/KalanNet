@@ -26,7 +26,7 @@
     </div>
 
     @if($aussiLycee)
-        <p class="mb-3"><a href="{{ route('rapport-academie.index', ['annee' => $annee->id_anneeScolaire]) }}"><i class="bi bi-file-earmark-excel me-1"></i>Votre lycée remet ses rapports à l'académie : voir les canevas de rentrée et de fin d'année</a></p>
+        <p class="mb-3"><a href="{{ route('rapport-academie.index', ['annee' => $annee->id_anneeScolaire]) }}"><i class="bi bi-file-earmark-excel me-1"></i>Votre secondaire remet ses rapports à l'académie : voir les canevas de rentrée et de fin d'année</a></p>
     @endif
 
     @if(session('success'))

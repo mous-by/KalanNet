@@ -15,7 +15,7 @@ use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 /**
- * Rapport succinct côté lycée, rapports de rentrée et de fin d'année : canevas Excel officiel pré-rempli, complété par le lycée, puis envoyé
+ * Rapport succinct du secondaire (général, technique et professionnel), rapports de rentrée et de fin d'année : canevas Excel officiel pré-rempli, complété par le lycée, puis envoyé
  * à l'académie si elle a un compte KalanNet, sinon remis directement.
  */
 class RapportAcademieController extends Controller
@@ -29,7 +29,7 @@ class RapportAcademieController extends Controller
     {
         abort_unless(self::autorise(Auth::user()), 403);
         $ecole = Ecole::withoutGlobalScopes()->findOrFail(session('idEcole') ?: Auth::user()->idEcole);
-        abort_unless(CanevasEsg::ecoleConcernee((int) $ecole->idEcole), 403, 'Ces rapports concernent les lycées d\'enseignement secondaire général.');
+        abort_unless(CanevasEsg::ecoleConcernee((int) $ecole->idEcole), 403, 'Ces rapports concernent les établissements du secondaire.');
 
         return $ecole;
     }
@@ -63,6 +63,8 @@ class RapportAcademieController extends Controller
             'ecole' => $ecole, 'annee' => $annee, 'annees' => $this->annees(),
             'rapports' => RapportEsg::where('id_ecole', $ecole->idEcole)->where('id_annee', $annee->id_anneeScolaire)->get()->keyBy('type'),
             'academieSurKalanNet' => CanevasEsg::academieSurKalanNet($ecole->id_academie),
+            'technique' => CanevasEsg::seulementTechnique((int) $ecole->idEcole),
+            'aVerifier' => CanevasEsg::classesAVerifier((int) $ecole->idEcole),
         ]);
     }
 
@@ -72,7 +74,11 @@ class RapportAcademieController extends Controller
         $type = $this->type($type);
         $ecole = $this->ecole();
         $annee = $this->annee($request, $ecole);
-        @ini_set('memory_limit', '512M');
+        // Un classeur chargé occupe de 150 à 200 Mo : relever la limite si besoin, jamais la baisser.
+        $limite = ini_get('memory_limit');
+        if ($limite !== '-1' && ini_parse_quantity($limite) < 512 * 1024 * 1024) {
+            @ini_set('memory_limit', '512M');
+        }
 
         [$classeur] = (new CanevasEsg)->remplir($ecole, $annee, $type);
         $ecrivain = IOFactory::createWriter($classeur, 'Xlsx');
@@ -80,6 +86,7 @@ class RapportAcademieController extends Controller
         $ecrivain->setPreCalculateFormulas(false);
         $chemin = tempnam(sys_get_temp_dir(), 'canevas');
         $ecrivain->save($chemin);
+        $classeur->disconnectWorksheets();
 
         return response()->download($chemin, 'rapport-'.$type.'-'.Str::slug($ecole->nomEcole).'-'.$annee->annee.'.xlsx')->deleteFileAfterSend();
     }
@@ -157,7 +164,7 @@ class RapportAcademieController extends Controller
         $annee = $annees->firstWhere('id_anneeScolaire', $request->integer('annee')) ?? $annees->first();
 
         $ecoles = DB::table('ecole as e')->where('e.id_academie', $user->id_academie)
-            ->whereExists(fn ($q) => $q->select(DB::raw(1))->from('classe')->whereColumn('classe.idEcole', 'e.idEcole')->where('classe.ordreEnseignement', 'secondairegenerale'))
+            ->whereExists(fn ($q) => $q->select(DB::raw(1))->from('classe')->whereColumn('classe.idEcole', 'e.idEcole')->whereIn('classe.ordreEnseignement', CanevasEsg::ORDRES))
             ->orderBy('e.nomEcole')->get(['e.idEcole', 'e.nomEcole', 'e.adresse']);
 
         // Même année, commune ou créée par l'école elle-même.

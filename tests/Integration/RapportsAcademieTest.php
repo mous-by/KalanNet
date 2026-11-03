@@ -22,6 +22,7 @@ class RapportsAcademieTest extends IntegrationTestCase
     private array $classes = [];
     /** @var list<int> */
     private array $eleves;
+    private ?\PhpOffice\PhpSpreadsheet\Spreadsheet $ouvert = null;
 
     protected function setUp(): void
     {
@@ -68,13 +69,22 @@ class RapportsAcademieTest extends IntegrationTestCase
         return $compte;
     }
 
+    protected function tearDown(): void
+    {
+        $this->ouvert?->disconnectWorksheets();
+        parent::tearDown();
+    }
+
+    /** Un seul classeur ouvert à la fois : ils occupent beaucoup de mémoire. */
     private function classeur(string $type): \PhpOffice\PhpSpreadsheet\Spreadsheet
     {
+        $this->ouvert?->disconnectWorksheets();
         $reponse = $this->get(route('rapport-academie.canevas', ['type' => $type, 'annee' => $this->annee->id_anneeScolaire], false))->assertOk();
         $fichier = tempnam(sys_get_temp_dir(), 'kn').'.xlsx';
         copy($reponse->baseResponse->getFile()->getPathname(), $fichier);
         $classeur = IOFactory::load($fichier);
         unlink($fichier);
+        $this->ouvert = $classeur;
 
         return $classeur;
     }
@@ -87,12 +97,55 @@ class RapportsAcademieTest extends IntegrationTestCase
         DB::table('classe')->where('idEcole', 1)->where('ordreEnseignement', 'secondairegenerale')->whereNotIn('id_classe', collect($this->classes)->pluck('id_classe'))->update(['ordreEnseignement' => 'fondamentale1']);
         DB::table('classe')->where('idEcole', 1)->whereNotIn('id_classe', collect($this->classes)->pluck('id_classe'))->limit(1)->update(['ordreEnseignement' => 'fondamentale1']);
         $this->get('/rapport-succinct')->assertOk()->assertSee(route('rapport-academie.index'), false);
-        $this->get('/rapports-academie')->assertOk()->assertSee(route('rapport-succinct.index'), false)->assertSee('Rapport succinct : lycée');
+        $this->get('/rapports-academie')->assertOk()->assertSee(route('rapport-succinct.index'), false)->assertSee('Rapport succinct : secondaire');
 
         // Lycée seul : le même menu mène aux canevas.
         DB::table('classe')->where('idEcole', 1)->whereIn('ordreEnseignement', \App\Support\Ordres::SOUS_CAP)->update(['ordreEnseignement' => 'secondairegenerale']);
         $this->get('/rapport-succinct')->assertRedirect(route('rapport-academie.index'));
         $this->get('/rapports-academie')->assertOk()->assertDontSee('Voir le rapport succinct du fondamental');
+    }
+
+    public function test_secondaire_technique_concerne(): void
+    {
+        $this->actingAs($this->adminComplet(1))->withSession(['idEcole' => 1]);
+        DB::table('classe')->where('idEcole', 1)->update(['ordreEnseignement' => 'secondairetechniqueetprofessionnel']);
+        DB::table('eleve')->whereIn('id_eleve', $this->eleves)->update(['genre_eleve' => 'Féminin']);
+
+        $this->assertTrue(CanevasEsg::ecoleConcernee(1));
+        $this->get('/rapport-succinct')->assertRedirect(route('rapport-academie.index'));
+        $this->get('/rapports-academie')->assertOk()->assertSee('secondaire général : leurs tableaux')->assertDontSee('Effectifs par âge');
+
+        // Renseignements généraux seulement : pas de zéros dans les tableaux par série, formules intactes.
+        foreach (['rentree', 'fin'] as $type) {
+            $c = $this->classeur($type);
+            $t0 = $c->getSheetByName('T0');
+            $this->assertStringContainsString('TECHNIQUE ET PROFESSIONNEL', $t0->getCell('A5')->getValue());
+            $this->assertStringStartsWith('Établissement ', $t0->getCell('A9')->getValue());
+            $this->assertMatchesRegularExpression('/Filles : 4 /', preg_replace('/\s+/', ' ', collect(range(12, 50))->map(fn ($l) => $t0->getCell('B'.$l)->getValue())->implode('|')));
+        }
+        $rentree = $this->classeur('rentree');
+        $this->assertNull($rentree->getSheetByName('T5')->getCell('B5')->getValue());
+        $this->assertNull($rentree->getSheetByName('T2')->getCell('B4')->getValue());
+        $this->assertNull($this->classeur('fin')->getSheetByName('T 7 9')->getCell('A28')->getValue());
+
+        // L'académie le voit dans sa liste.
+        $dae = $this->dae((int) DB::table('academie')->value('id_academie'));
+        $this->actingAs($dae)->withSession(['idEcole' => null]);
+        $this->get('/territoire/rapports-academie')->assertOk()->assertSee(DB::table('ecole')->where('idEcole', 1)->value('nomEcole'));
+    }
+
+    public function test_classes_a_verifier_signalees_sur_la_page(): void
+    {
+        $modele = $this->classes['10']->replicate();
+        $modele->nom_classe = '12ème année';
+        $modele->save();
+        $technique = $this->classes['10']->replicate();
+        $technique->nom_classe = '1ère année Génie civil';
+        $technique->ordreEnseignement = 'secondairetechniqueetprofessionnel';
+        $technique->save();
+
+        $this->actingAs($this->adminComplet(1))->withSession(['idEcole' => 1]);
+        $this->get('/rapports-academie')->assertOk()->assertSee('12ème année')->assertSee('Série non reconnue')->assertSee('1ère année Génie civil')->assertSee('Classes techniques absentes');
     }
 
     public function test_series_reconnues(): void

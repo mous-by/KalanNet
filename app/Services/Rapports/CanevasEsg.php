@@ -18,7 +18,9 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 /**
  * Canevas officiels des rapports de l'enseignement secondaire général (Mali) : le vrai fichier Excel, avec ses formules et
- * ses cases de vérification, dans lequel KalanNet écrit ce qu'il connaît. Le lycée complète le reste dans Excel.
+ * ses cases de vérification, dans lequel KalanNet écrit ce qu'il connaît. L'établissement complète le reste dans Excel.
+ * Le secondaire technique et professionnel remet aussi ses rapports à l'académie, mais ses filières n'ont pas de place dans
+ * les tableaux par série : seuls les renseignements qui ne dépendent pas d'une série y sont écrits.
  */
 class CanevasEsg
 {
@@ -31,6 +33,14 @@ class CanevasEsg
         'rentree' => ['Informations générales (T0)', 'Nombre de classes par série (T2)', 'Effectifs par série et par sexe (T5)', 'Passants et redoublants (T6)', 'Effectifs par âge (T7)', 'Effectifs par scolarité (T9)', 'Admis au Bac de la session précédente (T10)', 'Liste des enseignants (T21)', 'Courriel de l\'établissement (T24)'],
         'fin' => ['Informations générales (T0)', 'Effectifs et abandons de 10e et 11e (T6 à T9)', 'Effectifs et admis au Bac des terminales (T11)', 'Admis au Bac par scolarité (T13)', 'Moyennes annuelles par tranche (T15)'],
     ];
+
+    /** Pour un établissement seulement technique et professionnel. */
+    public const REMPLIS_TECHNIQUE = [
+        'rentree' => ['Informations générales (T0)', 'Liste des enseignants (T21)', 'Courriel de l\'établissement (T24)'],
+        'fin' => ['Informations générales (T0)'],
+    ];
+
+    public const ORDRES = ['secondairegenerale', 'secondairetechniqueetprofessionnel'];
 
     private const SERIES = ['10CG', '11L', '11SES', '11S', 'TLL', 'TAL', 'TSS', 'TSECO', 'TSE', 'TSEXP'];
 
@@ -64,7 +74,33 @@ class CanevasEsg
 
     public static function ecoleConcernee(?int $idEcole): bool
     {
-        return $idEcole && ExamenNational::estMali($idEcole) && DB::table('classe')->where('idEcole', $idEcole)->where('ordreEnseignement', 'secondairegenerale')->exists();
+        return $idEcole && ExamenNational::estMali($idEcole) && DB::table('classe')->where('idEcole', $idEcole)->whereIn('ordreEnseignement', self::ORDRES)->exists();
+    }
+
+    /** Sans classe de secondaire général : les tableaux par série du canevas ne le concernent pas. */
+    public static function seulementTechnique(int $idEcole): bool
+    {
+        return !DB::table('classe')->where('idEcole', $idEcole)->where('ordreEnseignement', 'secondairegenerale')->exists();
+    }
+
+    /** Classes absentes des tableaux par série, à signaler à l'école avant qu'elle télécharge. @return list<string> */
+    public static function classesAVerifier(int $idEcole): array
+    {
+        if (self::seulementTechnique($idEcole)) {
+            return [];
+        }
+        $classes = DB::table('classe')->where('idEcole', $idEcole)->whereIn('ordreEnseignement', self::ORDRES)->get(['nom_classe', 'serie', 'ordreEnseignement']);
+        $messages = [];
+        $inconnues = $classes->where('ordreEnseignement', 'secondairegenerale')->filter(fn ($c) => self::serie($c->nom_classe, $c->serie) === null)->pluck('nom_classe');
+        if ($inconnues->isNotEmpty()) {
+            $messages[] = 'Série non reconnue, classes non comptées : '.$inconnues->implode(', ').'. Indiquez la série dans le nom de la classe (TSE, 11ème SES…).';
+        }
+        $techniques = $classes->where('ordreEnseignement', 'secondairetechniqueetprofessionnel')->pluck('nom_classe');
+        if ($techniques->isNotEmpty()) {
+            $messages[] = 'Classes techniques absentes des tableaux par série, à ajouter à la main : '.$techniques->implode(', ').'.';
+        }
+
+        return $messages;
     }
 
     /** L'académie de l'école a-t-elle un compte DAE actif ? Sinon, le rapport se remet hors de KalanNet. */
@@ -77,12 +113,18 @@ class CanevasEsg
     public function remplir(object $ecole, object $annee, string $type): array
     {
         $classeur = IOFactory::load(resource_path('canevas/'.self::FICHIERS[$type]));
-        $this->avertissements = [];
+        $this->avertissements = self::classesAVerifier((int) $ecole->idEcole);
         $eleves = $this->eleves((int) $ecole->idEcole, (int) $annee->id_anneeScolaire);
         $enseignants = $this->enseignants((int) $ecole->idEcole);
+        $technique = self::seulementTechnique((int) $ecole->idEcole);
 
-        $this->informations($classeur->getSheetByName('T0'), $ecole, $annee, $eleves, $enseignants);
-        if ($type === 'rentree') {
+        $this->informations($classeur->getSheetByName('T0'), $ecole, $annee, $eleves, $enseignants, $technique);
+        if ($technique) {
+            if ($type === 'rentree') {
+                $this->listeEnseignants($classeur->getSheetByName('T21'), $enseignants);
+                $this->courriel($classeur, $ecole);
+            }
+        } elseif ($type === 'rentree') {
             $this->rentree($classeur, $ecole, $annee, $eleves, $enseignants);
         } else {
             $this->fin($classeur, $ecole, $annee, $eleves);
@@ -94,21 +136,18 @@ class CanevasEsg
     /** Élèves des classes de secondaire général de l'année, avec leur série et leurs redoublements au lycée. */
     private function eleves(int $idEcole, int $idAnnee): Collection
     {
-        $classes = DB::table('classe')->where('idEcole', $idEcole)->where('ordreEnseignement', 'secondairegenerale')->get(['id_classe', 'nom_classe', 'serie']);
-        $series = $classes->mapWithKeys(fn ($c) => [$c->id_classe => self::serie($c->nom_classe, $c->serie)]);
-
-        $inconnues = $classes->filter(fn ($c) => $series[$c->id_classe] === null)->pluck('nom_classe');
-        if ($inconnues->isNotEmpty()) {
-            $this->avertissements[] = 'Classes dont la série n\'est pas reconnue, non comptées : '.$inconnues->implode(', ').'.';
-        }
+        // Établissement seulement technique : toutes ses classes ; sinon, celles que les tableaux par série comptent.
+        $technique = self::seulementTechnique($idEcole);
+        $classes = DB::table('classe')->where('idEcole', $idEcole)->whereIn('ordreEnseignement', $technique ? self::ORDRES : ['secondairegenerale'])->get(['id_classe', 'nom_classe', 'serie']);
+        $series = $classes->mapWithKeys(fn ($c) => [$c->id_classe => $technique ? null : self::serie($c->nom_classe, $c->serie)]);
 
         $eleves = DB::table('eleve')->where('id_ecole', $idEcole)->where('id_annee', $idAnnee)->whereIn('etat_dossier', [0, 2])
-            ->whereIn('id_classe', $series->filter()->keys())->get(['id_eleve', 'id_classe', 'genre_eleve', 'date_naissance', 'etat_dossier']);
+            ->whereIn('id_classe', $technique ? $series->keys() : $series->filter()->keys())->get(['id_eleve', 'id_classe', 'genre_eleve', 'date_naissance', 'etat_dossier']);
 
         $debut = DB::table('anneescolaire')->where('id_anneeScolaire', $idAnnee)->value('date_debut');
         $redoublements = DB::table('ligne_reinscription as lr')->join('reinscription as r', 'r.id_reinscription', '=', 'lr.id_reinscription')
             ->join('classe as c', 'c.id_classe', '=', 'lr.id_classe')->join('anneescolaire as a', 'a.id_anneeScolaire', '=', 'lr.id_annee')
-            ->where('r.statut', 'redoublant')->where('c.ordreEnseignement', 'secondairegenerale')->whereIn('lr.id_eleve', $eleves->pluck('id_eleve'))
+            ->where('r.statut', 'redoublant')->whereIn('c.ordreEnseignement', self::ORDRES)->whereIn('lr.id_eleve', $eleves->pluck('id_eleve'))
             ->where('a.date_debut', '<=', $debut)->get(['lr.id_eleve', 'lr.id_annee']);
 
         return $eleves->map(function ($e) use ($series, $redoublements, $idAnnee) {
@@ -125,7 +164,7 @@ class CanevasEsg
     /** Enseignants du lycée : tous s'il n'a pas d'autre ordre, sinon ceux qui enseignent dans ses classes. */
     private function enseignants(int $idEcole): Collection
     {
-        $lycee = DB::table('classe')->where('idEcole', $idEcole)->where('ordreEnseignement', 'secondairegenerale')->pluck('id_classe');
+        $lycee = DB::table('classe')->where('idEcole', $idEcole)->whereIn('ordreEnseignement', self::ORDRES)->pluck('id_classe');
         $requete = DB::table('enseignants')->where('id_ecole', $idEcole)->where(fn ($q) => $q->where('is_deleted', 0)->orWhereNull('is_deleted'))->orderBy('nom_prenom_enseignant');
 
         if (DB::table('classe')->where('idEcole', $idEcole)->count() !== $lycee->count()) {
@@ -148,12 +187,15 @@ class CanevasEsg
         }
     }
 
-    private function informations(Worksheet $f, object $ecole, object $annee, Collection $eleves, Collection $enseignants): void
+    private function informations(Worksheet $f, object $ecole, object $annee, Collection $eleves, Collection $enseignants, bool $technique): void
     {
+        if ($technique) {
+            $f->setCellValue('A5', ' TECHNIQUE ET PROFESSIONNEL');
+        }
         $academie = DB::table('academie')->where('id_academie', $ecole->id_academie)->value('nom_academie') ?: $ecole->academie;
 
         $f->setCellValue('A7', "ACADEMIE D'ENSEIGNEMENT DE {$academie}          ANNEE SCOLAIRE {$annee->annee}");
-        $f->setCellValue('A9', 'Lycée '.$ecole->nomEcole);
+        $f->setCellValue('A9', ($technique ? 'Établissement ' : 'Lycée ').$ecole->nomEcole);
         $f->setCellValue('A10', ' BP……;N° Tél '.$ecole->telephone.'   Adresse email: '.$ecole->email);
 
         $filles = $eleves->where('actif', true)->where('fille', true)->count();
@@ -208,6 +250,11 @@ class CanevasEsg
         $this->scolarite($c, $eleves);
         $this->bacPrecedent($c, $ecole, $annee);
         $this->listeEnseignants($c->getSheetByName('T21'), $enseignants);
+        $this->courriel($c, $ecole);
+    }
+
+    private function courriel(Spreadsheet $c, object $ecole): void
+    {
         if ($ecole->email) {
             $c->getSheetByName('T24')->setCellValue('A20', 'ADRESSE MAIL ETABLISSEMENT : '.$ecole->email);
         }
