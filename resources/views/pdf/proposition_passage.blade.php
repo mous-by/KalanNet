@@ -4,18 +4,18 @@
     <meta charset="UTF-8">
     <title>Proposition de passage</title>
     <style>
-        @page { margin: 18px 24px 22px; }
-        body { font-family: DejaVu Sans, sans-serif; color: #111; font-size: 7.6px; line-height: 1.2; }
+        @page { margin: 16px 18px 18px; }
+        body { font-family: DejaVu Sans, sans-serif; color: #000; font-size: 10.5px; line-height: 1.2; }
         table { border-collapse: collapse; }
         .liste { width: 100%; table-layout: fixed; }
         .liste thead { display: table-header-group; }
-        .entete td { border: 0; padding: 0 0 1px; font-size: 8.5px; vertical-align: top; }
-        .liste .h { border: 1.1px solid #000; background: #d9d9d9; font-weight: bold; text-align: center; padding: 2px 1px; font-size: 7.2px; }
+        .entete td { border: 0; padding: 0 0 1px; font-size: 11px; vertical-align: top; }
+        .liste .h { border: 1.1px solid #000; background: #d9d9d9; font-weight: bold; text-align: center; padding: 2px 1px; font-size: 9.5px; }
         .liste td.c { border-left: 1px solid #000; border-right: 1px solid #000; border-bottom: 1px dashed #777; padding: 2px; word-wrap: break-word; }
         .ctr { text-align: center; }
         .sep td.c { border-top: 1.4px dashed #000; }
-        .titre { text-align: center; font-size: 11px; font-weight: bold; padding: 3px 0 4px !important; }
-        .bas { width: 100%; margin-top: 8px; page-break-inside: avoid; font-size: 8.5px; }
+        .titre { text-align: center; font-size: 14px; font-weight: bold; padding: 3px 0 4px !important; }
+        .bas { width: 100%; margin-top: 8px; page-break-inside: avoid; font-size: 11px; }
         .bas > tbody > tr > td { vertical-align: top; }
         .recap { width: 100%; border: 1.2px solid #000; }
         .recap td, .recap th { padding: 2px 5px; border-bottom: 1px dashed #777; text-align: center; }
@@ -40,7 +40,7 @@
     @endphp
     <table class="liste">
         <thead>
-            <tr><td style="width: 2.5%; height: 0; padding: 0;"></td><td style="width: 10%; height: 0; padding: 0;"></td><td style="width: 8%; height: 0; padding: 0;"></td><td style="width: 3%; height: 0; padding: 0;"></td><td style="width: 6.5%; height: 0; padding: 0;"></td><td style="width: 7%; height: 0; padding: 0;"></td><td style="width: 8.5%; height: 0; padding: 0;"></td><td style="width: 11%; height: 0; padding: 0;"></td><td style="width: 4%; height: 0; padding: 0;"></td><td style="width: 4%; height: 0; padding: 0;"></td><td style="width: 6%; height: 0; padding: 0;"></td><td style="width: 5%; height: 0; padding: 0;"></td><td style="width: 7%; height: 0; padding: 0;"></td><td style="width: 6%; height: 0; padding: 0;"></td><td style="width: 10.5%; height: 0; padding: 0;"></td></tr>
+            <tr><td style="width: 2.5%; height: 0; padding: 0;"></td><td style="width: 10%; height: 0; padding: 0;"></td><td style="width: 8%; height: 0; padding: 0;"></td><td style="width: 3%; height: 0; padding: 0;"></td><td style="width: 7%; height: 0; padding: 0;"></td><td style="width: 6%; height: 0; padding: 0;"></td><td style="width: 9%; height: 0; padding: 0;"></td><td style="width: 10%; height: 0; padding: 0;"></td><td style="width: 9%; height: 0; padding: 0;"></td><td style="width: 3.5%; height: 0; padding: 0;"></td><td style="width: 5.5%; height: 0; padding: 0;"></td><td style="width: 5%; height: 0; padding: 0;"></td><td style="width: 6.5%; height: 0; padding: 0;"></td><td style="width: 6%; height: 0; padding: 0;"></td><td style="width: 9%; height: 0; padding: 0;"></td></tr>
             <tr><td colspan="15" style="border: 0; padding: 0;">
                 <table style="width: 100%;" class="entete">
                     <tr>
@@ -64,7 +64,7 @@
                 <tr class="{{ $sep ? 'sep' : '' }}">
                     <td class="c ctr">{{ $n }}</td><td class="c">{{ $l['prenom'] }}</td><td class="c">{{ $l['nom'] }}</td><td class="c ctr">{{ $l['sexe'] }}</td>
                     <td class="c ctr">{{ $l['date_naissance'] }}</td><td class="c">{{ $l['lieu_naissance'] }}</td><td class="c">{{ $l['pere'] }}</td><td class="c">{{ $l['mere'] }}</td>
-                    <td class="c ctr">{{ $l['matricule'] }}</td><td class="c ctr">{{ $l['scolarite'] }}</td><td class="c ctr">{{ $l['doublees'] }}</td>
+                    <td class="c ctr" style="font-size: 9.5px; white-space: nowrap;">{{ $l['matricule'] }}</td><td class="c ctr">{{ $l['scolarite'] }}</td><td class="c ctr">{{ $l['doublees'] }}</td>
                     <td class="c ctr">{{ isset($l['moyenne']) ? number_format((float) $l['moyenne'], 2, '.', '') : '' }}</td>
                     <td class="c ctr">{{ $C::DECISIONS[$l['proposition'] ?? ''] ?? '' }}</td>
                     <td class="c ctr">{{ $C::DECISIONS[$l['decision_cap'] ?? ''] ?? '' }}</td>

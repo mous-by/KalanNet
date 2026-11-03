@@ -4,30 +4,30 @@
     <meta charset="UTF-8">
     <title>Propositions de passage</title>
     <style>
-        @page { margin: 16px 20px 18px; }
-        body { font-family: DejaVu Sans, sans-serif; color: #111; font-size: 7px; line-height: 1.2; }
+        @page { margin: 14px 14px 16px; }
+        body { font-family: DejaVu Sans, sans-serif; color: #000; font-size: 10px; line-height: 1.2; }
         table { border-collapse: collapse; }
-        .tutelle { font-style: italic; font-size: 8px; line-height: 1.1; }
-        .tutelle .e { padding-left: 45px; font-size: 6px; }
-        .titre { text-align: center; font-weight: bold; text-decoration: underline; font-size: 10px; margin-top: 4px; }
-        .bande { background: #bfbfbf; text-align: center; font-weight: bold; font-style: italic; width: 34%; margin: 1px auto; padding: 1px; font-size: 9px; }
-        .infos { width: 100%; font-size: 7.5px; margin: 2px 0 5px; }
+        .tutelle { font-style: italic; font-size: 10.5px; line-height: 1.1; }
+        .tutelle .e { padding-left: 60px; font-size: 8px; }
+        .titre { text-align: center; font-weight: bold; text-decoration: underline; font-size: 13px; margin-top: 4px; }
+        .bande { background: #bfbfbf; text-align: center; font-weight: bold; font-style: italic; width: 34%; margin: 1px auto; padding: 1px; font-size: 12px; }
+        .infos { width: 100%; font-size: 10px; margin: 2px 0 5px; }
         .infos td { vertical-align: top; }
         .gras { font-weight: bold; text-decoration: underline; }
-        .case { display: inline-block; width: 22px; height: 9px; border: 1px solid #000; text-align: center; line-height: 9px; font-weight: bold; }
+        .case { display: inline-block; width: 24px; height: 11px; border: 1px solid #000; text-align: center; line-height: 11px; font-weight: bold; }
         .liste { width: 100%; table-layout: fixed; }
         .liste thead { display: table-header-group; }
-        .liste .h { border: 1px solid #000; font-weight: bold; text-align: center; padding: 1px; font-size: 6px; }
+        .liste .h { border: 1px solid #000; font-weight: bold; text-align: center; padding: 1px; font-size: 8.5px; }
         .liste td.c { border: 1px solid #000; padding: 1.5px; word-wrap: break-word; }
         .fille td.c { font-weight: bold; }
         .ctr { text-align: center; }
-        .nb { font-size: 6.5px; font-weight: bold; margin-top: 6px; page-break-inside: avoid; }
+        .nb { font-size: 9.5px; font-weight: bold; margin-top: 6px; page-break-inside: avoid; }
         .nb .cadre { border: 1px solid #000; width: 62%; padding: 2px; margin-top: 1px; }
-        .bas { page-break-inside: avoid; margin-top: 8px; font-size: 8px; }
-        .bas .titre2 { font-weight: bold; text-decoration: underline; font-size: 8.5px; margin-bottom: 2px; }
+        .bas { page-break-inside: avoid; margin-top: 8px; font-size: 10.5px; }
+        .bas .titre2 { font-weight: bold; text-decoration: underline; font-size: 11px; margin-bottom: 2px; }
         .recap { width: 34%; border: 1px solid #000; }
         .recap td { border: 1px solid #000; padding: 1.5px 4px; text-align: center; }
-        .recap td:first-child { text-align: left; font-weight: bold; font-size: 7px; }
+        .recap td:first-child { text-align: left; font-weight: bold; font-size: 10px; }
         .recap .t td { background: #00e000; font-weight: bold; font-style: italic; text-align: center; }
         .pointilles { text-align: center; font-weight: bold; margin: 6px 0; letter-spacing: 1px; }
         .signature { width: 100%; margin-top: 3px; }
@@ -92,7 +92,7 @@
     <table class="liste">
         <thead>
             <tr>
-                @foreach([2, 8, 7, 2, 2, 2, 3, 5.5, 6.5, 6, 6.5, 6, 3, 4, 3, 3, 2, 2, 2, 3.5, 6, 5] as $w)
+                @foreach([2.5, 9, 9, 2.5, 2.5, 2.5, 3, 6, 7, 6.5, 7, 6.5, 3.5, 4.5, 3, 3.5, 2.2, 2.2, 2.1, 3.5, 6, 6] as $w)
                     <td style="width: {{ $w }}%; height: 0; padding: 0;"></td>
                 @endforeach
             </tr>
@@ -100,8 +100,8 @@
                 <td class="h" rowspan="2">N°</td><td class="h" rowspan="2">Prénoms</td><td class="h" rowspan="2">Nom</td><td class="h" rowspan="2">Se-xe</td>
                 <td class="h" rowspan="2">Jour Nais.</td><td class="h" rowspan="2">Mois Nais.</td><td class="h" rowspan="2">Année Nais.</td><td class="h" rowspan="2">Lieu Naiss.</td>
                 <td class="h" colspan="2">Père</td><td class="h" colspan="2">Mère</td>
-                <td class="h" rowspan="2">Année de recru-tement</td><td class="h" rowspan="2">Classes doublées au 1er cycle</td><td class="h" rowspan="2">Scola-rité 1er cycle</td><td class="h" rowspan="2">Année d'entrée en 7ème</td>
-                <td class="h" colspan="3">Nbre d'années passées/classe</td>
+                <td class="h" rowspan="2">Année de recru-tement</td><td class="h" rowspan="2">Classes doublées au 1er cycle</td><td class="h" rowspan="2">Scola-rité 1er cycle</td><td class="h" rowspan="2">Entrée en 7ème</td>
+                <td class="h" colspan="3">Nbre d'années passées par classe</td>
                 <td class="h" rowspan="2">Moy. Ann.</td><td class="h" rowspan="2">Avis du Conseil des maîtres</td><td class="h" rowspan="2">Avis du CAP</td>
             </tr>
             <tr>
