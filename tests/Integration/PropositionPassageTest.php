@@ -89,6 +89,65 @@ class PropositionPassageTest extends IntegrationTestCase
         $this->assertSame(['g' => 3, 'f' => 2, 't' => 5], $recap['total']);
     }
 
+    /** Années passées en 7e, 8e, 9e et avis lus sur la fiche officielle (CAP de Torokorobougou, 2024/2025). */
+    public function test_regles_d_exclusion_de_la_fiche_officielle(): void
+    {
+        $cas = [
+            // niveau, années passées par niveau, moyenne, avis du conseil
+            [7, [7 => 1], 9.15, 'redouble'], [7, [7 => 2], 8.94, 'exclu'], [7, [7 => 3], 5.90, 'exclu'], [7, [7 => 4], 4.28, 'exclu'],
+            [8, [7 => 1, 8 => 1], 6.78, 'redouble'], [8, [7 => 2, 8 => 1], 8.04, 'redouble'], [8, [7 => 1, 8 => 2], 9.95, 'exclu'],
+            [8, [7 => 2, 8 => 2], 9.85, 'exclu'], [8, [7 => 1, 8 => 3], 6.70, 'exclu'], [8, [7 => 3, 8 => 1], 2.85, 'exclu'], [8, [7 => 2, 8 => 1], 0.0, 'exclu'],
+            [9, [7 => 1, 8 => 1, 9 => 1], 8.93, 'redouble'], [9, [7 => 1, 8 => 1, 9 => 2], 8.81, 'redouble'], [9, [7 => 2, 8 => 1, 9 => 1], 8.18, 'redouble'],
+            [9, [7 => 1, 8 => 2, 9 => 1], 5.04, 'redouble'], [9, [7 => 1, 8 => 1, 9 => 3], 13.73, 'exclu'], [9, [7 => 1, 8 => 1, 9 => 4], 5.68, 'exclu'],
+            [9, [7 => 2, 8 => 1, 9 => 2], 8.01, 'exclu'], [9, [7 => 1, 8 => 2, 9 => 2], 7.23, 'exclu'], [9, [7 => 2, 8 => 2, 9 => 1], 6.84, 'exclu'], [9, [7 => 1, 8 => 1, 9 => 2], 0.0, 'exclu'],
+        ];
+        foreach ($cas as [$niveau, $annees, $moyenne, $avis]) {
+            $doublements = [];
+            foreach ($annees as $n => $nombre) {
+                $doublements = [...$doublements, ...($nombre > 1 ? array_fill(0, $nombre - 1, $n) : [])];
+            }
+            $this->assertSame($avis, Donnees::apresEchec($niveau, $doublements, $moyenne), json_encode([$niveau, $annees, $moyenne]));
+        }
+
+        // Redoublements du 1er cycle : ne comptent pas au second.
+        $this->assertSame('redouble', Donnees::apresEchec(7, [5, 6], 8.0));
+        // 1er cycle : même année doublée deux fois, ou deux redoublements déjà faits.
+        $this->assertSame('redouble', Donnees::apresEchec(4, [2], 3.0));
+        $this->assertSame('exclu', Donnees::apresEchec(4, [4], 3.0));
+        $this->assertSame('exclu', Donnees::apresEchec(4, [2, 3], 3.0));
+        // Niveau inconnu : le conseil décide, pas d'exclusion automatique.
+        $this->assertSame('redouble', Donnees::apresEchec(null, [7, 8], 3.0));
+    }
+
+    public function test_un_redoublement_enregistre_mene_a_l_exclusion_apres_un_nouvel_echec(): void
+    {
+        $modele = \App\Models\Classe::where('idEcole', 1)->whereIn('ordreEnseignement', Donnees::ORDRES)->first()->replicate();
+        $modele->nom_classe = '9ème ZZ';
+        $modele->ordreEnseignement = 'fondamentale2';
+        $modele->save();
+        $examen = \App\Support\ExamenNational::pourClasse($modele, 1);
+        if (!$examen) {
+            $this->markTestSkipped('Pas d\'examen national en 9e pour l\'école 1.');
+        }
+        [$a, $b, $c] = $this->eleves;
+        DB::table('eleve')->whereIn('id_eleve', $this->eleves)->update(['id_classe' => $modele->id_classe]);
+        foreach ($this->eleves as $id) {
+            DB::table('resultats_def_terminal')->insert(['id_eleve' => $id, 'id_annee' => $this->annee->id_anneeScolaire, 'id_classe' => $modele->id_classe, 'niveau_examen' => $examen, 'decision' => 'échec', 'date_resultat' => now()->toDateString()]);
+        }
+        $redouble = fn (int $id) => DB::table('ligne_reinscription')->insert(['id_eleve' => $id, 'id_classe' => $modele->id_classe, 'id_annee' => $this->annee->id_anneeScolaire,
+            'id_reinscription' => DB::table('reinscription')->insertGetId(['statut' => 'redoublant', 'date_reinscription' => now()->toDateString(), 'enrolement' => 1])]);
+        $redouble($b);
+        $redouble($c);
+        $redouble($c);
+
+        $lignes = Donnees::calculer($modele, (int) $this->annee->id_anneeScolaire);
+        $this->assertSame('redouble', $lignes[$a]['proposition']);
+        $this->assertSame('redouble', $lignes[$b]['proposition'], '9e doublée une fois : peut redoubler encore');
+        $this->assertSame('exclu', $lignes[$c]['proposition'], '9e déjà doublée deux fois');
+        $this->assertSame('9èZZ-9èZZ', $lignes[$c]['doublees']);
+        $this->assertSame(11, $lignes[$c]['scolarite']);
+    }
+
     public function test_cap_sans_compte_telechargement_et_remise_sur_papier(): void
     {
         $this->dcap(null);

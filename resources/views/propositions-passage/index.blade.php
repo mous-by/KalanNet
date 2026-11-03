@@ -82,7 +82,7 @@
                             <input type="text" name="directeur" id="directeur" class="form-control" maxlength="150" value="{{ $directeur }}">
                         </div>
                     </div>
-                    <p class="small text-muted mb-2">Moyennes et résultats d'examen repris de KalanNet. Moyenne manquante : la proposition reste à choisir. Complétez le père, la mère et les classes doublées quand ils manquent.</p>
+                    <p class="small text-muted mb-2">Moyennes et résultats d'examen repris de KalanNet. Moyenne manquante : la proposition reste à choisir. @if(\App\Support\ExamenNational::estMali((int) $ecole->idEcole))En cas d'échec, KalanNet propose « Exclu(e) » si l'élève a déjà doublé cette classe ou deux fois dans le cycle (la 9e peut être doublée deux fois sans redoublement antérieur), ou si sa moyenne est de 0 ; il ne connaît que les redoublements enregistrés ici : vérifiez et corrigez si besoin.@endif Complétez le père, la mère et les classes doublées quand ils manquent.</p>
                     <div class="table-responsive">
                         <table class="table table-sm table-bordered align-middle mb-0" style="font-size: .85rem;">
                             <thead>

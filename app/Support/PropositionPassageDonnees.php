@@ -12,6 +12,7 @@ use Illuminate\Support\Str;
  * « Proposition de passage, redoublement, exclusion » d'une classe du fondamental : pré-remplie depuis KalanNet, ajustée
  * par le conseil des maîtres, puis décidée par le CAP. Classes à examen national : le résultat de l'examen s'il existe
  * (en 9e, un élève peut passer avec une moyenne plus basse qu'un autre qui redouble), sinon la moyenne annuelle.
+ * Un élève qui échoue redouble, sauf si les règles rappelées sur la fiche officielle l'excluent (voir apresEchec).
  */
 class PropositionPassageDonnees
 {
@@ -60,10 +61,15 @@ class PropositionPassageDonnees
         $parents = DB::table('ligneparents_eleves as l')->join('parents as p', 'p.id_parent', '=', 'l.id_parent')->whereIn('l.id_eleve', $ids)
             ->get(['l.id_eleve', 'l.lien_parent', 'p.nom_prenom_parent', 'p.genre'])->groupBy('id_eleve');
 
-        // Redoublements déjà enregistrés dans KalanNet.
+        // Redoublements déjà enregistrés dans KalanNet, jusqu'à l'année de la fiche.
+        $debut = DB::table('anneescolaire')->where('id_anneeScolaire', $idAnnee)->value('date_debut');
         $doublees = DB::table('ligne_reinscription as lr')->join('reinscription as r', 'r.id_reinscription', '=', 'lr.id_reinscription')
-            ->join('classe as c', 'c.id_classe', '=', 'lr.id_classe')->where('r.statut', 'redoublant')->whereIn('lr.id_eleve', $ids)
-            ->orderBy('lr.id_annee')->get(['lr.id_eleve', 'c.nom_classe'])->groupBy('id_eleve');
+            ->join('classe as c', 'c.id_classe', '=', 'lr.id_classe')->join('anneescolaire as a', 'a.id_anneeScolaire', '=', 'lr.id_annee')
+            ->where('r.statut', 'redoublant')->whereIn('lr.id_eleve', $ids)->where('a.date_debut', '<=', $debut)
+            ->orderBy('a.date_debut')->get(['lr.id_eleve', 'c.nom_classe'])->groupBy('id_eleve');
+
+        // Règles lues sur les fiches du Mali : ailleurs, le conseil des maîtres décide des exclusions.
+        $reglesMali = ExamenNational::estMali($idEcole);
 
         $lignes = [];
         foreach ($eleves as $eleve) {
@@ -71,16 +77,18 @@ class PropositionPassageDonnees
             $moyenne = $moyenne !== null ? round((float) $moyenne, 2) : null;
             $resultat = $resultats->get($eleve->id_eleve);
 
+            $doublements = $doublees->get($eleve->id_eleve, collect())->map(fn ($d) => ExamenNational::extractClasseLevel($d->nom_classe))->filter()->values()->all();
+            $echec = $reglesMali ? self::apresEchec($niveau, $doublements, $moyenne) : 'redouble';
             $proposition = match (true) {
                 (int) $eleve->etat_dossier === 2 => 'abandon',
-                $resultat?->decision !== null && $resultat?->decision !== '' => Str::lower(Str::ascii((string) $resultat->decision)) === 'admis' ? 'passe' : 'redouble',
+                $resultat?->decision !== null && $resultat?->decision !== '' => Str::lower(Str::ascii((string) $resultat->decision)) === 'admis' ? 'passe' : $echec,
                 $moyenne === null => null, // à décider par le conseil : jamais de redoublement par manque de notes
-                default => $moyenne >= $seuil ? 'passe' : 'redouble',
+                default => $moyenne >= $seuil ? 'passe' : $echec,
             };
 
             $liens = $parents->get($eleve->id_eleve, collect());
             $parent = fn (array $mots) => $liens->first(fn ($p) => in_array(mb_strtolower(trim((string) $p->lien_parent)), $mots, true))?->nom_prenom_parent;
-            $classesDoublees = $doublees->get($eleve->id_eleve, collect())->map(fn ($d) => self::abrege($d->nom_classe))->unique()->values();
+            $classesDoublees = $doublees->get($eleve->id_eleve, collect())->map(fn ($d) => self::abrege($d->nom_classe))->values();
 
             $lignes[$eleve->id_eleve] = [
                 'id_eleve' => (int) $eleve->id_eleve,
@@ -102,6 +110,34 @@ class PropositionPassageDonnees
         }
 
         return self::trier($lignes);
+    }
+
+    /**
+     * Élève qui n'a pas réussi : redouble ou exclu, d'après les règles de la fiche officielle.
+     * Deux redoublements au plus dans le cycle, sur des années différentes ; exception : la 9e peut être doublée deux fois
+     * par un élève qui n'avait jamais doublé avant. Moyenne de 0 : exclu. Le conseil des maîtres peut toujours changer.
+     *
+     * @param  list<int>  $doublements  niveau de chaque redoublement déjà fait
+     */
+    public static function apresEchec(?int $niveau, array $doublements, ?float $moyenne = null): string
+    {
+        if ($moyenne !== null && $moyenne <= 0.0) {
+            return 'exclu';
+        }
+        if ($niveau === null) {
+            return 'redouble';
+        }
+
+        // 1er cycle : 1re à 6e ; 2d cycle : 7e à 9e. Les redoublements du 1er cycle ne comptent pas au second.
+        $cycle = array_filter($doublements, fn (int $n) => ($n >= 7) === ($niveau >= 7));
+        $ici = count(array_filter($cycle, fn (int $n) => $n === $niveau));
+        $avant = count($cycle) - $ici;
+
+        if ($niveau === 9 && $avant === 0) {
+            return $ici < 2 ? 'redouble' : 'exclu';
+        }
+
+        return $ici === 0 && $avant < 2 ? 'redouble' : 'exclu';
     }
 
     /** « 7ème année A » → « 7èA ». */
