@@ -36,7 +36,8 @@
         $choix = fn (array $options, $valeur) => collect($options)->map(fn ($libelle, $n) => '<span class="opt '.((int) $valeur === $n ? 'on' : '').'"><b>'.$n.'</b> '.e($libelle).'</span>')->implode(' ');
         $fmt = fn ($n) => (int) $n === 0 ? '' : (int) $n;
         $C = \App\Support\RapportSuccinctDonnees::class;
-        $cycles = ['prescolaire' => 'Préscolaire', 'premier' => 'Premier cycle', 'second' => 'Second cycle'];
+        $secondaire = ($d['portee'] ?? 'fondamental') === 'secondaire';
+        $cycles = $secondaire ? ['general' => 'Secondaire général', 'technique' => 'Technique et professionnel'] : ['prescolaire' => 'Préscolaire', 'premier' => 'Premier cycle', 'second' => 'Second cycle'];
     @endphp
 
     <div class="annee">{{ $annee }}</div>
@@ -48,10 +49,12 @@
         <tr>
             <td style="width: 38%; padding-right: 7px;">
                 <table class="info">
-                    <tr><td class="l">École de :</td><td class="v">{{ $d['ecole'] ?? '' }}</td></tr>
+                    <tr><td class="l">{{ $secondaire ? 'Établissement :' : 'École de :' }}</td><td class="v">{{ $d['ecole'] ?? '' }}</td></tr>
                     <tr><td class="l">Village/Quartier :</td><td class="v">{{ $d['quartier'] ?? '' }}</td></tr>
                     <tr><td class="l">Commune de :</td><td class="v">{{ $d['commune'] ?? '' }}</td></tr>
-                    <tr><td class="l">CAP de :</td><td class="v">{{ $d['cap'] ?? '' }}</td></tr>
+                    @unless($secondaire)
+                        <tr><td class="l">CAP de :</td><td class="v">{{ $d['cap'] ?? '' }}</td></tr>
+                    @endunless
                     <tr><td class="l">Cercle de :</td><td class="v">{{ $d['cercle'] ?? '' }}</td></tr>
                     <tr><td class="l">AE de :</td><td class="v">{{ $d['academie'] ?? '' }}</td></tr>
                 </table>
@@ -59,11 +62,16 @@
             <td style="width: 62%;">
                 <table class="choix">
                     <colgroup><col style="width: 25%;"><col style="width: 75%;"></colgroup>
-                    <tr><td class="n">Cycles d'enseignement</td><td>{!! $choix($C::CYCLES, $d['cycle'] ?? null) !!}</td></tr>
-                    <tr><td class="n">Statut administratif de l'école</td><td>{!! $choix($C::STATUTS, $d['statut'] ?? null) !!}</td></tr>
-                    <tr><td class="n">Enseignement</td><td>{!! $choix($C::ENSEIGNEMENTS, $d['enseignement'] ?? null) !!}</td></tr>
-                    <tr><td class="n">Mode de recrutement</td><td>{!! $choix($C::RECRUTEMENTS, $d['recrutement'] ?? null) !!}</td></tr>
-                    <tr><td class="n">École à pédagogie convergente : langue</td><td><b>{{ $d['langue'] ?? '' }}</b></td></tr>
+                    @if($secondaire)
+                        <tr><td class="n">Enseignement</td><td>{!! $choix($C::CYCLES_SECONDAIRE, $d['cycle'] ?? null) !!}</td></tr>
+                        <tr><td class="n">Statut administratif</td><td>{!! $choix($C::STATUTS, $d['statut'] ?? null) !!}</td></tr>
+                    @else
+                        <tr><td class="n">Cycles d'enseignement</td><td>{!! $choix($C::CYCLES, $d['cycle'] ?? null) !!}</td></tr>
+                        <tr><td class="n">Statut administratif de l'école</td><td>{!! $choix($C::STATUTS, $d['statut'] ?? null) !!}</td></tr>
+                        <tr><td class="n">Enseignement</td><td>{!! $choix($C::ENSEIGNEMENTS, $d['enseignement'] ?? null) !!}</td></tr>
+                        <tr><td class="n">Mode de recrutement</td><td>{!! $choix($C::RECRUTEMENTS, $d['recrutement'] ?? null) !!}</td></tr>
+                        <tr><td class="n">École à pédagogie convergente : langue</td><td><b>{{ $d['langue'] ?? '' }}</b></td></tr>
+                    @endif
                 </table>
             </td>
         </tr>
@@ -72,7 +80,7 @@
     <div class="t">Tableau 2 : GROUPES PÉDAGOGIQUES ET EFFECTIFS SCOLAIRES</div>
     <table class="grille">
         <tr>
-            <th rowspan="2" style="width: 17%;">Année d'études</th>
+            <th rowspan="2" style="width: 17%;">{{ $secondaire ? 'Classe / série' : "Année d'études" }}</th>
             <th rowspan="2" style="width: 15%;">Nombre de groupes pédagogiques</th>
             <th rowspan="2" style="width: 18%;">Nombre d'élèves par sexe</th>
             <th rowspan="2" style="width: 14%;">Total élèves</th>
@@ -94,7 +102,7 @@
             </tr>
         @endforeach
         <tr class="total">
-            <td rowspan="2">Total école</td>
+            <td rowspan="2">{{ $secondaire ? 'Total établissement' : 'Total école' }}</td>
             <td rowspan="2">{{ $totaux['groupes'] }}</td>
             <td class="sexe">G : {{ $totaux['g'] }}</td>
             <td rowspan="2">{{ $totaux['eleves'] }}</td>
@@ -107,12 +115,12 @@
         </tr>
     </table>
 
-    <div class="t">Tableau 3 : MAÎTRES EN CLASSE ET SALLES DE CLASSE UTILISÉES</div>
+    <div class="t">Tableau 3 : {{ $secondaire ? 'ENSEIGNANTS' : 'MAÎTRES EN CLASSE' }} ET SALLES DE CLASSE UTILISÉES</div>
     <table class="grille">
         <tr><th style="width: 30%;">Cycle d'enseignement</th><th>Permanents</th><th>Contractuels</th><th>Total</th><th>Nbre de salles de classe</th></tr>
         @foreach($cycles as $cle => $libelle)
             @php $m = $d['maitres'][$cle] ?? null; @endphp
-            @if($m || $cle !== 'prescolaire')
+            @if($m || ($cle !== 'prescolaire' && !$secondaire))
                 <tr>
                     <td>{{ $libelle }}</td>
                     <td>{{ $fmt($m['permanents'] ?? 0) }}</td>
@@ -124,6 +132,6 @@
         @endforeach
     </table>
 
-    <div class="pied">Cette fiche doit être remplie et envoyée au CAP dans les 15 jours qui suivent la rentrée scolaire.</div>
+    <div class="pied">Cette fiche doit être remplie et envoyée {{ $secondaire ? "à l'académie" : 'au CAP' }} dans les 15 jours qui suivent la rentrée scolaire.</div>
 </body>
 </html>

@@ -12,7 +12,7 @@ class RapportSuccinct extends Model
 
     protected $table = 'rapports_succincts';
 
-    protected $fillable = ['id_ecole', 'id_annee', 'id_cap', 'statut', 'donnees', 'donnees_envoyees', 'envoye_at', 'envoye_par'];
+    protected $fillable = ['id_ecole', 'id_annee', 'portee', 'id_cap', 'id_academie', 'statut', 'donnees', 'donnees_envoyees', 'envoye_at', 'envoye_par'];
 
     protected $casts = ['donnees' => 'array', 'donnees_envoyees' => 'array', 'envoye_at' => 'datetime'];
 

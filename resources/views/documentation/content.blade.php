@@ -166,9 +166,8 @@
     remettez-la, puis marquez-la comme remise.</p>
 
     <h5 class="fw-bold mt-4">Rapport succinct du secondaire</h5>
-    <p>Secondaire général, technique et professionnel : le menu <strong>Rapport succinct</strong> propose le canevas officiel du rapport de rentrée et
-    de fin d'année. KalanNet y écrit ce qu'il connaît ; complétez le reste dans Excel et contrôlez les cases
-    « VERIFICATION ». Si votre académie utilise KalanNet, envoyez-lui le fichier ; sinon, remettez-le et marquez-le comme remis.</p>
+    <p>Secondaire général, technique et professionnel : le menu <strong>Rapport succinct</strong> ouvre la même fiche que pour
+    le fondamental, remise à l'académie plutôt qu'au CAP. Un complexe scolaire y trouve deux onglets, une fiche pour chacun.</p>
 
     <h5 class="fw-bold mt-4">Retrouver et suivre un élève</h5>
     <ul>

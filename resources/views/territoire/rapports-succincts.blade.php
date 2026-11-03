@@ -6,7 +6,7 @@
         $somme = fn ($cle) => $recus->sum(fn ($l) => $l->totaux[$cle] ?? 0);
     @endphp
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-        <div class="breadcrumb-title pe-3">Espace DCAP</div>
+        <div class="breadcrumb-title pe-3">{{ $portee === 'secondaire' ? 'Académie' : 'Espace DCAP' }}</div>
         <div class="ps-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0 p-0">
@@ -29,7 +29,7 @@
     </form>
 
     <div class="row g-3 mb-3">
-        @foreach([['Rapports reçus', $recus->count().' / '.$lignes->count()], ['Élèves', number_format($somme('eleves'), 0, ',', ' ')], ['Redoublants', number_format($somme('redoublants'), 0, ',', ' ')], ['Maîtres', number_format($somme('maitres'), 0, ',', ' ')]] as [$libelle, $valeur])
+        @foreach([['Rapports reçus', $recus->count().' / '.$lignes->count()], ['Élèves', number_format($somme('eleves'), 0, ',', ' ')], ['Redoublants', number_format($somme('redoublants'), 0, ',', ' ')], [$portee === 'secondaire' ? 'Enseignants' : 'Maîtres', number_format($somme('maitres'), 0, ',', ' ')]] as [$libelle, $valeur])
             <div class="col-6 col-lg-3">
                 <div class="card theme-card shadow-sm h-100"><div class="card-body py-3">
                     <div class="small text-muted text-uppercase fw-bold">{{ $libelle }}</div>
@@ -38,7 +38,7 @@
             </div>
         @endforeach
     </div>
-    <p class="small text-muted">Les chiffres ne comptent que les rapports reçus. La liste montre les écoles de votre CAP qui utilisent KalanNet : les autres remettent leur rapport sur papier.</p>
+    <p class="small text-muted">Les chiffres ne comptent que les rapports reçus. La liste montre les {{ $portee === 'secondaire' ? 'établissements du secondaire de votre académie' : 'écoles de votre CAP' }} qui utilisent KalanNet : les autres remettent leur rapport sur papier.</p>
 
     <div class="card theme-card shadow-sm">
         <div class="card-body">
@@ -46,8 +46,8 @@
                 <table class="table align-middle mb-0">
                     <thead>
                         <tr>
-                            <th>École</th><th>Rapport</th>
-                            <th class="text-end">Groupes</th><th class="text-end">Élèves</th><th class="text-end">Redoublants</th><th class="text-end">Maîtres</th><th></th>
+                            <th>{{ $portee === 'secondaire' ? 'Établissement' : 'École' }}</th><th>Rapport</th>
+                            <th class="text-end">Groupes</th><th class="text-end">Élèves</th><th class="text-end">Redoublants</th><th class="text-end">{{ $portee === 'secondaire' ? 'Enseignants' : 'Maîtres' }}</th><th></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -73,7 +73,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="8" class="text-muted text-center py-4">Aucune école du préscolaire ou du fondamental sur KalanNet dans votre CAP.</td></tr>
+                            <tr><td colspan="8" class="text-muted text-center py-4">{{ $portee === 'secondaire' ? 'Aucun établissement du secondaire sur KalanNet dans votre académie.' : 'Aucune école du préscolaire ou du fondamental sur KalanNet dans votre CAP.' }}</td></tr>
                         @endforelse
                     </tbody>
                 </table>

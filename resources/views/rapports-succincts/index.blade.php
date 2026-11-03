@@ -4,13 +4,20 @@
     @php
         $C = \App\Support\RapportSuccinctDonnees::class;
         $val = fn ($champ) => old($champ, $donnees[$champ] ?? null);
-        $libellesCycles = ['prescolaire' => 'Préscolaire', 'premier' => 'Premier cycle', 'second' => 'Second cycle'];
-        $selects = [
-            'cycle' => ["Cycles d'enseignement", $C::CYCLES, true],
-            'statut' => ["Statut administratif de l'école", $C::STATUTS, false],
-            'enseignement' => ['Enseignement', $C::ENSEIGNEMENTS, true],
-            'recrutement' => ['Mode de recrutement', $C::RECRUTEMENTS, false],
-        ];
+        $secondaire = $portee === 'secondaire';
+        $vers = $secondaire ? ["votre académie", "à l'académie", "Votre académie", "Envoyé à l'académie", "Remis à l'académie"] : ['votre CAP', 'au CAP', 'Votre CAP', 'Envoyé au CAP', 'Remis au CAP'];
+        $libellesCycles = ['prescolaire' => 'Préscolaire', 'premier' => 'Premier cycle', 'second' => 'Second cycle', 'general' => 'Secondaire général', 'technique' => 'Technique et professionnel'];
+        $selects = $secondaire
+            ? ["cycle" => ["Enseignement", $C::CYCLES_SECONDAIRE, true], 'statut' => ["Statut administratif", $C::STATUTS, false]]
+            : [
+                'cycle' => ["Cycles d'enseignement", $C::CYCLES, true],
+                'statut' => ["Statut administratif de l'école", $C::STATUTS, false],
+                'enseignement' => ['Enseignement', $C::ENSEIGNEMENTS, true],
+                'recrutement' => ['Mode de recrutement', $C::RECRUTEMENTS, false],
+            ];
+        $champsTexte = $secondaire
+            ? ['quartier' => 'Village / quartier', 'commune' => 'Commune de', 'cercle' => 'Cercle de', 'academie' => 'AE de']
+            : ['quartier' => 'Village / quartier', 'commune' => 'Commune de', 'cap' => 'CAP de', 'cercle' => 'Cercle de', 'academie' => 'AE de'];
     @endphp
 
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
@@ -25,8 +32,8 @@
         </div>
     </div>
 
-    @if($aussiLycee)
-        <p class="mb-3"><a href="{{ route('rapport-academie.index', ['annee' => $annee->id_anneeScolaire]) }}"><i class="bi bi-file-earmark-excel me-1"></i>Votre secondaire remet ses rapports à l'académie : voir les canevas de rentrée et de fin d'année</a></p>
+    @if(count($portees) > 1)
+        @include('rapports-succincts._onglets')
     @endif
 
     @if(session('success'))
@@ -36,25 +43,30 @@
         <div class="alert alert-danger border-0 border-start border-danger border-4">{{ $errors->first() }}</div>
     @endif
 
-    <div class="alert {{ $capSurKalanNet ? 'alert-info' : 'alert-warning' }} border-0 border-start border-4">
-        @if($capSurKalanNet)
-            <i class="bi bi-send me-1"></i>Votre CAP utilise KalanNet : vous pouvez lui envoyer ce rapport directement. Vous pouvez aussi le télécharger à tout moment.
+    <div class="alert {{ $surKalanNet ? 'alert-info' : 'alert-warning' }} border-0 border-start border-4">
+        @if($surKalanNet)
+            <i class="bi bi-send me-1"></i>{{ $vers[2] }} utilise KalanNet : vous pouvez lui envoyer ce rapport directement. Vous pouvez aussi le télécharger à tout moment.
         @else
-            <i class="bi bi-printer me-1"></i>Votre CAP n'utilise pas encore KalanNet : <strong>téléchargez le rapport rempli, imprimez-le et remettez-le à votre CAP</strong>, puis marquez-le comme remis.
+            <i class="bi bi-printer me-1"></i>{{ $vers[2] }} n'utilise pas encore KalanNet : <strong>téléchargez le rapport rempli, imprimez-le et remettez-le à {{ $vers[0] }}</strong>, puis marquez-le comme remis.
         @endif
         <div class="small mt-1">À remettre dans les 15 jours qui suivent la rentrée scolaire.</div>
     </div>
 
     @if($rapport?->remis())
         <div class="alert alert-success border-0 border-start border-success border-4">
-            <i class="bi bi-check-circle me-1"></i>{{ $rapport->statut === 'envoye' ? 'Envoyé au CAP' : 'Remis au CAP' }} le {{ $rapport->envoye_at?->format('d/m/Y à H:i') }}.
+            <i class="bi bi-check-circle me-1"></i>{{ $rapport->statut === 'envoye' ? $vers[3] : $vers[4] }} le {{ $rapport->envoye_at?->format('d/m/Y à H:i') }}.
             @if($rapport->aModificationsNonEnvoyees())
                 <strong>Vous avez modifié la fiche depuis : remettez-la de nouveau pour transmettre ces changements.</strong>
             @endif
         </div>
     @endif
 
+    @if($secondaire && $donnees['groupes'] === [])
+        <div class="alert alert-warning border-0 border-start border-warning border-4"><i class="bi bi-info-circle me-1"></i>Aucune classe du secondaire n'est encore créée : créez vos classes pour que les effectifs se remplissent.</div>
+    @endif
+
     <form method="GET" action="{{ route('rapport-succinct.index') }}" class="row g-2 align-items-end mb-3">
+        <input type="hidden" name="portee" value="{{ $portee }}">
         <div class="col-sm-5 col-md-3">
             <label class="form-label small fw-bold text-uppercase" for="annee">Année scolaire</label>
             <select name="annee" id="annee" class="form-select" onchange="this.form.submit()">
@@ -65,7 +77,7 @@
         </div>
     </form>
 
-    <form method="POST" action="{{ route('rapport-succinct.store', ['annee' => $annee->id_anneeScolaire]) }}" id="rapport-form">
+    <form method="POST" action="{{ route('rapport-succinct.store', ['annee' => $annee->id_anneeScolaire, 'portee' => $portee]) }}" id="rapport-form">
         @csrf
 
         <div class="d-flex flex-wrap justify-content-end gap-2 mb-3">
@@ -78,10 +90,10 @@
             <div class="card-body">
                 <div class="row g-3">
                     <div class="col-md-4">
-                        <label class="form-label small fw-bold">École de</label>
+                        <label class="form-label small fw-bold">{{ $secondaire ? 'Établissement' : 'École de' }}</label>
                         <input type="text" class="form-control" value="{{ $ecole->nomEcole }}" disabled>
                     </div>
-                    @foreach(['quartier' => 'Village / quartier', 'commune' => 'Commune de', 'cap' => 'CAP de', 'cercle' => 'Cercle de', 'academie' => 'AE de'] as $champ => $libelle)
+                    @foreach($champsTexte as $champ => $libelle)
                         <div class="col-md-4">
                             <label class="form-label small fw-bold" for="{{ $champ }}">{{ $libelle }}</label>
                             <input type="text" name="{{ $champ }}" id="{{ $champ }}" class="form-control" maxlength="150" value="{{ $val($champ) }}">
@@ -98,10 +110,12 @@
                             </select>
                         </div>
                     @endforeach
-                    <div class="col-md-6">
-                        <label class="form-label small fw-bold" for="langue">École à pédagogie convergente : langue</label>
-                        <input type="text" name="langue" id="langue" class="form-control" maxlength="100" value="{{ $val('langue') }}">
-                    </div>
+                    @unless($secondaire)
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold" for="langue">École à pédagogie convergente : langue</label>
+                            <input type="text" name="langue" id="langue" class="form-control" maxlength="100" value="{{ $val('langue') }}">
+                        </div>
+                    @endunless
                 </div>
             </div>
         </div>
@@ -109,7 +123,7 @@
         <div class="card theme-card shadow-sm mb-3">
             <div class="card-header theme-header d-flex flex-wrap justify-content-between align-items-center gap-2">
                 <h6 class="mb-0 fw-bold">Tableau 2 : Groupes pédagogiques et effectifs scolaires</h6>
-                <a href="{{ route('rapport-succinct.index', ['annee' => $annee->id_anneeScolaire, 'recalculer' => 1]) }}" class="btn btn-sm btn-light"><i class="bi bi-arrow-repeat me-1"></i>Reprendre les chiffres de KalanNet</a>
+                <a href="{{ route('rapport-succinct.index', ['annee' => $annee->id_anneeScolaire, 'portee' => $portee, 'recalculer' => 1]) }}" class="btn btn-sm btn-light"><i class="bi bi-arrow-repeat me-1"></i>Reprendre les chiffres de KalanNet</a>
             </div>
             <div class="card-body">
                 <p class="small text-muted">Chiffres repris des élèves actifs de {{ $annee->annee }}. Les redoublants sont ceux enregistrés à la réinscription : vérifiez-les, surtout si votre école a commencé KalanNet cette année.</p>
@@ -117,7 +131,7 @@
                     <table class="table table-bordered align-middle text-center mb-0" data-rapport-effectifs>
                         <thead>
                             <tr>
-                                <th rowspan="2">Année d'études</th><th rowspan="2">Groupes pédagogiques</th>
+                                <th rowspan="2">{{ $secondaire ? 'Classe / série' : "Année d'études" }}</th><th rowspan="2">Groupes pédagogiques</th>
                                 <th colspan="2">Élèves</th><th rowspan="2">Total élèves</th>
                                 <th colspan="2">Redoublants</th><th rowspan="2">Total redoublants</th>
                             </tr>
@@ -141,7 +155,7 @@
                         </tbody>
                         <tfoot class="fw-bold">
                             <tr>
-                                <td>Total école</td>
+                                <td>{{ $secondaire ? 'Total établissement' : 'Total école' }}</td>
                                 @foreach(['groupes', 'g', 'f', 'total', 'rg', 'rf', 'rtotal'] as $c)<td data-somme="{{ $c }}"></td>@endforeach
                             </tr>
                         </tfoot>
@@ -151,9 +165,9 @@
         </div>
 
         <div class="card theme-card shadow-sm mb-3">
-            <div class="card-header theme-header"><h6 class="mb-0 fw-bold">Tableau 3 : Maîtres en classe et salles de classe utilisées</h6></div>
+            <div class="card-header theme-header"><h6 class="mb-0 fw-bold">Tableau 3 : {{ $secondaire ? 'Enseignants' : 'Maîtres en classe' }} et salles de classe utilisées</h6></div>
             <div class="card-body">
-                <p class="small text-muted">Pré-rempli d'après le contrat des enseignants et les classes où ils interviennent : fonctionnaires et CDI en « permanents », CDD et vacataires en « contractuels ». Corrigez si la règle de votre CAP diffère. KalanNet ne connaît pas le nombre de salles : indiquez-le.</p>
+                <p class="small text-muted">Pré-rempli d'après le contrat des enseignants et les classes où ils interviennent : fonctionnaires et CDI en « permanents », CDD et vacataires en « contractuels ». Corrigez si la règle de {{ $vers[0] }} diffère. KalanNet ne connaît pas le nombre de salles : indiquez-le.</p>
                 <div class="table-responsive">
                     <table class="table table-bordered align-middle text-center mb-0">
                         <thead><tr><th>Cycle d'enseignement</th><th>Permanents</th><th>Contractuels</th><th>Total</th><th>Nombre de salles de classe</th></tr></thead>
@@ -184,10 +198,10 @@
                 <button type="submit" name="action" value="enregistrer" class="btn btn-outline-primary">Enregistrer</button>
                 <button type="submit" name="action" value="telecharger" class="btn btn-primary"><i class="bi bi-file-earmark-pdf me-1"></i>Télécharger le PDF</button>
                 <button type="submit" name="action" value="remettre" class="btn btn-success fw-semibold" data-rapport-remettre>
-                    @if($capSurKalanNet)
-                        <i class="bi bi-send me-1"></i>{{ $rapport?->remis() ? 'Renvoyer au CAP' : 'Envoyer au CAP' }}
+                    @if($surKalanNet)
+                        <i class="bi bi-send me-1"></i>{{ ($rapport?->remis() ? 'Renvoyer ' : 'Envoyer ').$vers[1] }}
                     @else
-                        <i class="bi bi-check2-circle me-1"></i>{{ $rapport?->remis() ? 'Marquer de nouveau comme remis' : 'Marquer comme remis au CAP' }}
+                        <i class="bi bi-check2-circle me-1"></i>{{ $rapport?->remis() ? 'Marquer de nouveau comme remis' : 'Marquer comme remis '.$vers[1] }}
                     @endif
                 </button>
             </div>

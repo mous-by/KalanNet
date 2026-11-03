@@ -143,7 +143,7 @@
             </li>
             @if($user->droit === 'DAE')
             <li>
-                <a href="{{ route('territoire.rapports-academie') }}">
+                <a href="{{ route('territoire.rapports-succincts') }}">
                     <div class="parent-icon"><i class="bi bi-file-earmark-text"></i></div>
                     <div class="menu-title">Rapports succincts</div>
                 </a>
@@ -291,7 +291,7 @@
         <li class="menu-label">{{ __('messages.menu.management') }}</li>
 
         {{-- Rapport succinct de rentrée : écoles du préscolaire et du fondamental. --}}
-        @if(session('idEcole') && \App\Http\Controllers\RapportSuccinctController::autorise($user) && (\App\Support\RapportSuccinctDonnees::ecoleConcernee((int) session('idEcole')) || \App\Services\Rapports\CanevasEsg::ecoleConcernee((int) session('idEcole'))))
+        @if(session('idEcole') && \App\Http\Controllers\RapportSuccinctController::autorise($user) && \App\Support\RapportSuccinctDonnees::portees((int) session('idEcole')) !== [])
             <li>
                 <a href="{{ route('rapport-succinct.index') }}">
                     <div class="parent-icon"><i class="bi bi-file-earmark-text"></i></div>

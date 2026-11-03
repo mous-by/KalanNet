@@ -121,10 +121,9 @@ class RapportSuccinctTest extends IntegrationTestCase
         $rapport = RapportSuccinct::withoutGlobalScopes()->create(['id_ecole' => 1, 'id_annee' => AnneeScolaire::enCours(1)->id_anneeScolaire, 'statut' => 'envoye', 'donnees' => [], 'donnees_envoyees' => []]);
         $dae = $this->compte('DAE');
 
-        // Son menu mène aux rapports des lycées, jamais aux fiches remises au CAP.
-        $this->actingAs($dae)->get('/dashboard')->assertSee(route('territoire.rapports-academie'), false)->assertDontSee(route('territoire.rapports-succincts'), false);
-        $this->get('/territoire/rapports-succincts')->assertForbidden();
-        $this->get("/territoire/rapports-succincts/{$rapport->id}/pdf")->assertForbidden();
+        // Elle suit le secondaire, jamais les fiches remises au CAP.
+        $this->actingAs($dae)->get('/territoire/rapports-succincts')->assertOk();
+        $this->get("/territoire/rapports-succincts/{$rapport->id}/pdf")->assertNotFound();
     }
 
     public function test_rappel_de_fin_octobre_seulement_aux_ecoles_qui_n_ont_pas_remis(): void
@@ -160,13 +159,10 @@ class RapportSuccinctTest extends IntegrationTestCase
         $this->post('/rapport-succinct', $this->formulaire())->assertForbidden();
         $this->get('/territoire/rapports-succincts')->assertForbidden();
 
+        // Sans classe concernée ni type de complexe ou de secondaire : pas de rapport succinct.
         $admin = $this->adminComplet(1);
-        DB::table('classe')->where('idEcole', 1)->update(['ordreEnseignement' => 'secondairegenerale']);
-        // Lycée seul : le menu mène à ses canevas, mais la fiche du CAP lui reste fermée.
-        $this->actingAs($admin->fresh())->withSession(['idEcole' => 1]);
-        if (\App\Support\ExamenNational::estMali(1)) {
-            $this->get('/rapport-succinct')->assertRedirect(route('rapport-academie.index'));
-        }
-        $this->post('/rapport-succinct', $this->formulaire())->assertForbidden();
+        DB::table('ecole')->where('idEcole', 1)->update(['typeEcole' => 'Fondamentale I']);
+        DB::table('classe')->where('idEcole', 1)->update(['ordreEnseignement' => null]);
+        $this->actingAs($admin->fresh())->withSession(['idEcole' => 1])->get('/rapport-succinct')->assertForbidden();
     }
 }

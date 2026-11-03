@@ -5,14 +5,22 @@ namespace App\Support;
 use App\Models\Ecole;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
- * Contenu du « Rapport succinct de rentrée » que le préscolaire et le fondamental remettent au CAP : pré-rempli depuis
- * KalanNet (élèves de l'année, classes, redoublants, enseignants), puis vérifié et complété par l'école.
+ * Contenu du « Rapport succinct de rentrée » : pré-rempli depuis KalanNet (élèves de l'année, classes, redoublants,
+ * enseignants), puis vérifié et complété par l'école. Deux portées : le préscolaire et le fondamental remettent leur fiche
+ * au CAP, le secondaire (général, technique et professionnel) à l'académie.
  */
 class RapportSuccinctDonnees
 {
+    public const SECONDAIRE = ['secondairegenerale', 'secondairetechniqueetprofessionnel'];
+
     public const CYCLES = [1 => '1er cycle', 2 => '2ème cycle', 3 => 'Cycle complet'];
+
+    public const CYCLES_SECONDAIRE = [1 => 'Secondaire général', 2 => 'Technique et professionnel', 3 => 'Général et technique'];
+
+    private const SERIES = ['10CG' => '10ème CG', '11L' => '11ème L', '11SES' => '11ème SES', '11S' => '11ème S', 'TLL' => 'TLL', 'TAL' => 'TAL', 'TSS' => 'TSS', 'TSECO' => 'TSECO', 'TSE' => 'TSE', 'TSEXP' => 'TSEXP'];
 
     public const STATUTS = [1 => 'Public', 2 => 'Privé confessionnel', 3 => 'Privé laïc', 4 => 'Médersa', 5 => 'École communautaire'];
 
@@ -25,17 +33,71 @@ class RapportSuccinctDonnees
     /** Contrats comptés comme « permanents » ; les autres (CDD, VCT) comme « contractuels ». L'école peut corriger. */
     private const PERMANENTS = ['FONCTIONNAIRE', 'CDI'];
 
-    /** @return Collection<int, object> classes de l'école rattachées au CAP */
-    private static function classes(int $idEcole): Collection
+    /** @return list<string> */
+    private static function ordres(string $portee): array
     {
-        return DB::table('classe')->where('idEcole', $idEcole)->whereIn('ordreEnseignement', Ordres::SOUS_CAP)
-            ->get(['id_classe', 'nom_classe', 'ordreEnseignement']);
+        return $portee === 'secondaire' ? self::SECONDAIRE : Ordres::SOUS_CAP;
     }
 
-    /** Écoles concernées : préscolaire, Fondamental I ou II (un lycée seul ne remet pas ce rapport). */
-    public static function ecoleConcernee(?int $idEcole): bool
+    /** @return Collection<int, object> classes de l'école pour cette portée */
+    private static function classes(int $idEcole, string $portee = 'fondamental'): Collection
     {
-        return $idEcole && DB::table('classe')->where('idEcole', $idEcole)->whereIn('ordreEnseignement', Ordres::SOUS_CAP)->exists();
+        return DB::table('classe')->where('idEcole', $idEcole)->whereIn('ordreEnseignement', self::ordres($portee))
+            ->orderBy('nom_classe')->get(['id_classe', 'nom_classe', 'ordreEnseignement', 'serie']);
+    }
+
+    /** Fiche(s) que remet l'établissement. Un complexe a les deux, même si ses classes ne sont pas encore toutes créées. @return list<string> */
+    public static function portees(?int $idEcole): array
+    {
+        if (!$idEcole) {
+            return [];
+        }
+        $type = Str::lower(Str::ascii((string) DB::table('ecole')->where('idEcole', $idEcole)->value('typeEcole')));
+        $portees = [];
+        if (str_contains($type, 'complexe') || self::classes($idEcole)->isNotEmpty()) {
+            $portees[] = 'fondamental';
+        }
+        if (str_contains($type, 'complexe') || str_contains($type, 'secondaire') || self::classes($idEcole, 'secondaire')->isNotEmpty()) {
+            $portees[] = 'secondaire';
+        }
+
+        return $portees;
+    }
+
+    public static function ecoleConcernee(?int $idEcole, string $portee = 'fondamental'): bool
+    {
+        return in_array($portee, self::portees($idEcole), true);
+    }
+
+    /** L'académie de l'école a-t-elle un compte DAE actif ? Sinon, le rapport se remet sur papier. */
+    public static function academieSurKalanNet(?int $idAcademie): bool
+    {
+        return $idAcademie && DB::table('utilisateurs')->where('droit', 'DAE')->where('id_academie', $idAcademie)->where('statut', 1)->exists();
+    }
+
+    /** Série d'une classe de secondaire général, d'après son nom et sa série ; null si elle n'est pas reconnue. */
+    public static function serie(?string $nom, ?string $serie = null): ?string
+    {
+        $texte = Str::lower(Str::ascii(trim($nom.' '.$serie)));
+        foreach (['TSEXP' => 't\s*s?\s*\.?exp', 'TSECO' => 't\s*s?\s*\.?eco', 'TSS' => 'tss', 'TSE' => 'tse', 'TAL' => 'tal', 'TLL' => 'tll'] as $code => $motif) {
+            if (preg_match('/\b'.$motif.'/', $texte)) {
+                return $code;
+            }
+        }
+        $niveau = ExamenNational::extractClasseLevel($nom);
+        if ($niveau === 10) {
+            return '10CG';
+        }
+        if ($niveau === 11) {
+            return match (true) {
+                (bool) preg_match('/\bses\b|economi/', $texte) => '11SES',
+                (bool) preg_match('/lettre|litter|\bl\b/', $texte) => '11L',
+                (bool) preg_match('/science|\bs\b/', $texte) => '11S',
+                default => null,
+            };
+        }
+
+        return null;
     }
 
     /** Le CAP de l'école a-t-il un compte DCAP actif ? Sinon, le rapport se remet sur papier. */
@@ -45,10 +107,27 @@ class RapportSuccinctDonnees
     }
 
     /** @return array<string, mixed> */
-    public static function calculer(Ecole $ecole, int $idAnnee): array
+    public static function calculer(Ecole $ecole, int $idAnnee, string $portee = 'fondamental'): array
     {
         $idEcole = (int) $ecole->idEcole;
-        $classes = self::classes($idEcole);
+        $classes = self::classes($idEcole, $portee);
+        if ($portee === 'secondaire') {
+            $general = $classes->contains('ordreEnseignement', 'secondairegenerale');
+            $technique = $classes->contains('ordreEnseignement', 'secondairetechniqueetprofessionnel');
+
+            return [
+                'portee' => 'secondaire',
+                'ecole' => (string) $ecole->nomEcole,
+                'quartier' => $ecole->adresse,
+                'commune' => null,
+                'cercle' => null,
+                'academie' => DB::table('academie')->where('id_academie', $ecole->id_academie)->value('nom_academie') ?: $ecole->academie,
+                'cycle' => $technique ? ($general ? 3 : 2) : 1,
+                'statut' => strtolower(trim((string) $ecole->statut)) === 'public' ? 1 : null,
+                'groupes' => self::groupesSecondaire($idEcole, $idAnnee, $classes),
+                'maitres' => self::maitresSecondaire($idEcole, $classes),
+            ];
+        }
         $ordres = $classes->pluck('ordreEnseignement')->unique();
         $aJardin = $ordres->contains(Ordres::JARDIN);
         $aPremier = $ordres->contains('fondamentale1');
@@ -75,7 +154,7 @@ class RapportSuccinctDonnees
     private static function groupes(int $idEcole, int $idAnnee, Collection $classes, bool $aJardin): array
     {
         $niveauDe = fn ($classe) => $classe->ordreEnseignement === Ordres::JARDIN ? 'ps' : ExamenNational::extractClasseLevel($classe->nom_classe);
-        $niveaux = $classes->mapWithKeys(fn ($c) => [$c->id_classe => $niveauDe($c)]);
+        $cles = $classes->mapWithKeys(fn ($c) => [$c->id_classe => $niveauDe($c)]);
 
         $lignes = [];
         if ($aJardin) {
@@ -84,6 +163,37 @@ class RapportSuccinctDonnees
         foreach (range(1, 9) as $niveau) {
             $lignes[$niveau] = ['cle' => (string) $niveau, 'libelle' => $niveau.($niveau === 1 ? 'ère' : 'ème').' A'];
         }
+
+        return self::compter($idEcole, $idAnnee, $classes, $lignes, $cles);
+    }
+
+    /** Une ligne par série du général ; une par classe pour une série non reconnue et pour les filières techniques. */
+    private static function groupesSecondaire(int $idEcole, int $idAnnee, Collection $classes): array
+    {
+        $cles = [];
+        $lignes = [];
+        $autres = [];
+        foreach ($classes as $classe) {
+            $serie = $classe->ordreEnseignement === 'secondairegenerale' ? self::serie($classe->nom_classe, $classe->serie) : null;
+            if ($serie) {
+                $cles[$classe->id_classe] = $serie;
+            } else {
+                $cles[$classe->id_classe] = 'c'.$classe->id_classe;
+                $autres['c'.$classe->id_classe] = ['cle' => 'c'.$classe->id_classe, 'libelle' => (string) $classe->nom_classe];
+            }
+        }
+        foreach (self::SERIES as $serie => $libelle) {
+            if (in_array($serie, $cles, true)) {
+                $lignes[$serie] = ['cle' => $serie, 'libelle' => $libelle];
+            }
+        }
+
+        return self::compter($idEcole, $idAnnee, $classes, $lignes + $autres, collect($cles));
+    }
+
+    /** @param array<int|string, array{cle: string, libelle: string}> $lignes */
+    private static function compter(int $idEcole, int $idAnnee, Collection $classes, array $lignes, Collection $niveaux): array
+    {
         foreach ($lignes as &$ligne) {
             $ligne += ['groupes' => 0, 'g' => 0, 'f' => 0, 'rg' => 0, 'rf' => 0];
         }
@@ -115,6 +225,17 @@ class RapportSuccinctDonnees
         return array_values($lignes);
     }
 
+    /** Enseignants du général et du technique, comptés comme pour le fondamental. */
+    private static function maitresSecondaire(int $idEcole, Collection $classes): array
+    {
+        $ids = [
+            'general' => $classes->where('ordreEnseignement', 'secondairegenerale')->pluck('id_classe'),
+            'technique' => $classes->where('ordreEnseignement', 'secondairetechniqueetprofessionnel')->pluck('id_classe'),
+        ];
+
+        return self::compterMaitres($idEcole, $classes, array_filter($ids, fn ($liste) => $liste->isNotEmpty()));
+    }
+
     /** Maîtres par cycle, d'après leur contrat et les classes où ils enseignent. Les salles sont saisies par l'école. */
     private static function maitres(int $idEcole, Collection $classes, bool $aJardin): array
     {
@@ -123,6 +244,16 @@ class RapportSuccinctDonnees
             'premier' => $classes->where('ordreEnseignement', 'fondamentale1')->pluck('id_classe'),
             'second' => $classes->where('ordreEnseignement', 'fondamentale2')->pluck('id_classe'),
         ];
+        if (!$aJardin) {
+            unset($idsParCycle['prescolaire']);
+        }
+
+        return self::compterMaitres($idEcole, $classes, $idsParCycle);
+    }
+
+    /** @param array<string, Collection> $idsParCycle */
+    private static function compterMaitres(int $idEcole, Collection $classes, array $idsParCycle): array
+    {
         $actifs = DB::table('enseignants')->where('id_ecole', $idEcole)->where(fn ($q) => $q->where('is_deleted', 0)->orWhereNull('is_deleted'))
             ->pluck('type_contrat_enseignant', 'id_enseignant');
 
@@ -131,11 +262,7 @@ class RapportSuccinctDonnees
         $seulCycle = $cyclesRemplis->count() === 1 && DB::table('classe')->where('idEcole', $idEcole)->count() === $classes->count();
 
         $resultat = [];
-        foreach (['prescolaire', 'premier', 'second'] as $cycle) {
-            if ($cycle === 'prescolaire' && !$aJardin) {
-                continue;
-            }
-            $ids = $idsParCycle[$cycle];
+        foreach ($idsParCycle as $cycle => $ids) {
             $maitres = $seulCycle && $ids->isNotEmpty()
                 ? $actifs->keys()
                 : DB::table('ligneclasse')->whereIn('id_classe', $ids)->whereNotNull('id_enseignants')->pluck('id_enseignants')
@@ -169,8 +296,11 @@ class RapportSuccinctDonnees
     /** Ce qui manque avant de remettre la fiche au CAP. @return list<string> */
     public static function champsManquants(array $donnees): array
     {
-        $libelles = ['quartier' => 'Village / quartier', 'commune' => 'Commune', 'cap' => 'CAP', 'cercle' => 'Cercle', 'academie' => 'AE',
-            'statut' => 'Statut administratif', 'recrutement' => 'Mode de recrutement'];
+        $secondaire = ($donnees['portee'] ?? 'fondamental') === 'secondaire';
+        $libelles = $secondaire
+            ? ['quartier' => 'Village / quartier', 'commune' => 'Commune', 'cercle' => 'Cercle', 'academie' => 'AE', 'statut' => 'Statut administratif']
+            : ['quartier' => 'Village / quartier', 'commune' => 'Commune', 'cap' => 'CAP', 'cercle' => 'Cercle', 'academie' => 'AE',
+                'statut' => 'Statut administratif', 'recrutement' => 'Mode de recrutement'];
         $manquants = collect($libelles)->filter(fn ($libelle, $champ) => blank($donnees[$champ] ?? null))->values()->all();
 
         foreach ($donnees['maitres'] ?? [] as $maitres) {
@@ -178,6 +308,10 @@ class RapportSuccinctDonnees
                 $manquants[] = 'Nombre de salles de classe';
                 break;
             }
+        }
+
+        if (($donnees['groupes'] ?? []) === []) {
+            $manquants[] = 'Classes du secondaire (à créer dans KalanNet)';
         }
 
         return $manquants;

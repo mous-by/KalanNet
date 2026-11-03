@@ -64,7 +64,6 @@ class SuppressionEcole
                     // Pédagogie
                     ['rapports_succincts', ['id_ecole' => $e]],
                     ['propositions_passage', ['id_ecole' => $e]],
-                    ['rapports_esg', ['id_ecole' => $e]],
                     ['lecons_presence', ['id_presence' => $ids['presences']]],
                     ['presences', ['id_presence' => $ids['presences']]],
                     ['emargement', ['id_ecole' => $e, 'id_classe' => $ids['classes'], 'id_enseignant' => $ids['enseignants']]],
@@ -163,7 +162,6 @@ class SuppressionEcole
         foreach ($fichiers as $chemin) {
             File::delete($chemin);
         }
-        \Illuminate\Support\Facades\Storage::disk('local')->deleteDirectory('rapports-esg/'.$ecole->idEcole);
 
         return $total;
     }

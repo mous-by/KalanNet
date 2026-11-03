@@ -6,7 +6,7 @@ use App\Models\AnneeScolaire;
 use App\Models\AppNotification;
 use App\Models\Ecole;
 use App\Models\RapportSuccinct;
-use App\Services\Rapports\CanevasEsg;
+use App\Support\Ordres;
 use App\Support\RapportSuccinctDonnees as Donnees;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -17,8 +17,9 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Rapport succinct de rentrée : l'école vérifie la fiche pré-remplie, la télécharge à tout moment et la remet au CAP
- * (par KalanNet si son CAP a un compte, sinon sur papier). Le DCAP suit les fiches de son CAP.
+ * Rapport succinct de rentrée : l'établissement vérifie la fiche pré-remplie, la télécharge à tout moment et la remet
+ * par KalanNet si le destinataire a un compte, sinon sur papier. Préscolaire et fondamental : au CAP, suivi par le DCAP.
+ * Secondaire, général ou technique : à l'académie, suivi par le DAE.
  */
 class RapportSuccinctController extends Controller
 {
@@ -31,7 +32,7 @@ class RapportSuccinctController extends Controller
     {
         abort_unless(self::autorise(Auth::user()), 403);
         $ecole = Ecole::withoutGlobalScopes()->findOrFail(session('idEcole') ?: Auth::user()->idEcole);
-        abort_unless(Donnees::ecoleConcernee((int) $ecole->idEcole), 403, "Le rapport succinct concerne le préscolaire et le fondamental.");
+        abort_unless(Donnees::portees((int) $ecole->idEcole) !== [], 403, "Cet établissement n'a pas de classe concernée par le rapport succinct.");
 
         return $ecole;
     }
@@ -51,22 +52,36 @@ class RapportSuccinctController extends Controller
         return $annee;
     }
 
+    /** Fondamental (CAP) ou secondaire (académie) : ce que l'établissement remet, sinon 403. */
+    private function portee(Request $request, Ecole $ecole): string
+    {
+        $portees = Donnees::portees((int) $ecole->idEcole);
+        $demandee = $request->input('portee');
+
+        return in_array($demandee, $portees, true) ? $demandee : $portees[0];
+    }
+
+    private function surKalanNet(Ecole $ecole, string $portee): bool
+    {
+        return $portee === 'secondaire' ? Donnees::academieSurKalanNet($ecole->id_academie) : Donnees::capSurKalanNet($ecole->id_cap);
+    }
+
+    private function rapport(Ecole $ecole, AnneeScolaire $annee, string $portee): ?RapportSuccinct
+    {
+        return RapportSuccinct::where('id_ecole', $ecole->idEcole)->where('id_annee', $annee->id_anneeScolaire)->where('portee', $portee)->first();
+    }
+
     public function index(Request $request)
     {
-        // Lycée seul : son rapport succinct, ce sont les canevas remis à l'académie.
-        $idEcole = (int) (session('idEcole') ?: Auth::user()->idEcole);
-        if (self::autorise(Auth::user()) && !Donnees::ecoleConcernee($idEcole) && CanevasEsg::ecoleConcernee($idEcole)) {
-            return redirect()->route('rapport-academie.index', $request->only('annee'));
-        }
-
         $ecole = $this->ecole();
         $annee = $this->annee($request, $ecole);
-        $rapport = RapportSuccinct::where('id_ecole', $ecole->idEcole)->where('id_annee', $annee->id_anneeScolaire)->first();
-        $donnees = $rapport?->donnees ?? Donnees::calculer($ecole, (int) $annee->id_anneeScolaire);
+        $portee = $this->portee($request, $ecole);
+        $rapport = $this->rapport($ecole, $annee, $portee);
+        $donnees = $rapport?->donnees ?? Donnees::calculer($ecole, (int) $annee->id_anneeScolaire, $portee);
 
         // « Reprendre les chiffres de KalanNet » : tableaux recalculés, le reste de la fiche est gardé.
         if ($request->boolean('recalculer')) {
-            $calcul = Donnees::calculer($ecole, (int) $annee->id_anneeScolaire);
+            $calcul = Donnees::calculer($ecole, (int) $annee->id_anneeScolaire, $portee);
             $salles = collect($donnees['maitres'] ?? [])->map(fn ($m) => $m['salles'] ?? null);
             $donnees['groupes'] = $calcul['groupes'];
             $donnees['maitres'] = collect($calcul['maitres'])->map(fn ($m, $cycle) => ['salles' => $salles[$cycle] ?? null] + $m)->all();
@@ -74,82 +89,89 @@ class RapportSuccinctController extends Controller
 
         return view('rapports-succincts.index', [
             'ecole' => $ecole, 'annee' => $annee, 'annees' => $this->annees(), 'rapport' => $rapport, 'donnees' => $donnees,
-            'capSurKalanNet' => Donnees::capSurKalanNet($ecole->id_cap),
-            'aussiLycee' => CanevasEsg::ecoleConcernee((int) $ecole->idEcole),
+            'portee' => $portee, 'portees' => Donnees::portees((int) $ecole->idEcole),
+            'surKalanNet' => $this->surKalanNet($ecole, $portee),
             'manquants' => Donnees::champsManquants($donnees),
         ]);
     }
 
-    /** Boutons du formulaire : enregistrer, enregistrer et télécharger, enregistrer et remettre au CAP. */
+    /** Boutons du formulaire : enregistrer, enregistrer et télécharger, enregistrer et remettre. */
     public function store(Request $request)
     {
         $ecole = $this->ecole();
         $annee = $this->annee($request, $ecole);
-        $donnees = $this->valider($request, $ecole, (int) $annee->id_anneeScolaire);
+        $portee = $this->portee($request, $ecole);
+        $donnees = $this->valider($request, $ecole, (int) $annee->id_anneeScolaire, $portee);
 
-        $rapport = RapportSuccinct::firstOrNew(['id_ecole' => $ecole->idEcole, 'id_annee' => $annee->id_anneeScolaire]);
+        $rapport = RapportSuccinct::firstOrNew(['id_ecole' => $ecole->idEcole, 'id_annee' => $annee->id_anneeScolaire, 'portee' => $portee]);
         $rapport->donnees = $donnees;
         $rapport->statut ??= 'brouillon';
         $rapport->save();
 
-        $retour = ['annee' => $annee->id_anneeScolaire];
+        $retour = ['annee' => $annee->id_anneeScolaire, 'portee' => $portee];
         if ($request->input('action') === 'telecharger') {
             return redirect()->route('rapport-succinct.pdf', $retour);
         }
         if ($request->input('action') === 'remettre') {
-            return $this->remettre($rapport, $ecole, $annee, $donnees);
+            return $this->remettre($rapport, $ecole, $annee, $donnees, $portee);
         }
 
         return redirect()->route('rapport-succinct.index', $retour)->with('success', 'Rapport enregistré.');
     }
 
-    private function remettre(RapportSuccinct $rapport, Ecole $ecole, AnneeScolaire $annee, array $donnees)
+    private function remettre(RapportSuccinct $rapport, Ecole $ecole, AnneeScolaire $annee, array $donnees, string $portee)
     {
-        $retour = ['annee' => $annee->id_anneeScolaire];
+        $retour = ['annee' => $annee->id_anneeScolaire, 'portee' => $portee];
         $manquants = Donnees::champsManquants($donnees);
         if ($manquants !== []) {
             throw ValidationException::withMessages(['rapport' => 'À compléter avant de remettre le rapport : '.implode(', ', $manquants).'.']);
         }
 
-        $surKalanNet = Donnees::capSurKalanNet($ecole->id_cap);
+        $secondaire = $portee === 'secondaire';
+        $destinataire = $secondaire ? 'votre académie' : 'votre CAP';
+        $surKalanNet = $this->surKalanNet($ecole, $portee);
         $rapport->update([
-            'statut' => $surKalanNet ? 'envoye' : 'remis', 'id_cap' => $ecole->id_cap, 'donnees_envoyees' => $donnees,
-            'envoye_at' => now(), 'envoye_par' => Auth::id(),
+            'statut' => $surKalanNet ? 'envoye' : 'remis', 'id_cap' => $secondaire ? null : $ecole->id_cap, 'id_academie' => $secondaire ? $ecole->id_academie : null,
+            'donnees_envoyees' => $donnees, 'envoye_at' => now(), 'envoye_par' => Auth::id(),
         ]);
 
         if (!$surKalanNet) {
-            return redirect()->route('rapport-succinct.index', $retour)->with('success', 'Rapport marqué comme remis à votre CAP.');
+            return redirect()->route('rapport-succinct.index', $retour)->with('success', 'Rapport marqué comme remis à '.$destinataire.'.');
         }
 
-        DB::table('utilisateurs')->where('droit', 'DCAP')->where('id_cap', $ecole->id_cap)->where('statut', 1)->pluck('idUtilisateur')
-            ->each(fn ($dcap) => AppNotification::create([
-                'user_id' => $dcap, 'type' => 'rapport_succinct', 'title' => 'Rapport succinct reçu',
+        DB::table('utilisateurs')->when($secondaire,
+            fn ($q) => $q->where('droit', 'DAE')->where('id_academie', $ecole->id_academie),
+            fn ($q) => $q->where('droit', 'DCAP')->where('id_cap', $ecole->id_cap),
+        )->where('statut', 1)->pluck('idUtilisateur')
+            ->each(fn ($superviseur) => AppNotification::create([
+                'user_id' => $superviseur, 'type' => 'rapport_succinct', 'title' => 'Rapport succinct reçu',
                 'message' => $ecole->nomEcole.' a envoyé son rapport succinct de rentrée '.$annee->annee.'.',
                 'link' => route('territoire.rapports-succincts', ['annee' => $annee->id_anneeScolaire], false),
             ]));
 
-        return redirect()->route('rapport-succinct.index', $retour)->with('success', 'Rapport envoyé à votre CAP.');
+        return redirect()->route('rapport-succinct.index', $retour)->with('success', 'Rapport envoyé à '.$destinataire.'.');
     }
 
     /** @return array<string, mixed> */
-    private function valider(Request $request, Ecole $ecole, int $idAnnee): array
+    private function valider(Request $request, Ecole $ecole, int $idAnnee, string $portee): array
     {
+        $secondaire = $portee === 'secondaire';
         $entier = ['required', 'integer', 'min:0', 'max:99999'];
         $data = $request->validate([
             'quartier' => 'nullable|string|max:150', 'commune' => 'nullable|string|max:150', 'cap' => 'nullable|string|max:150',
             'cercle' => 'nullable|string|max:150', 'academie' => 'nullable|string|max:150', 'langue' => 'nullable|string|max:100',
-            'cycle' => ['required', Rule::in(array_keys(Donnees::CYCLES))],
+            'cycle' => ['required', Rule::in(array_keys($secondaire ? Donnees::CYCLES_SECONDAIRE : Donnees::CYCLES))],
             'statut' => ['nullable', Rule::in(array_keys(Donnees::STATUTS))],
-            'enseignement' => ['required', Rule::in(array_keys(Donnees::ENSEIGNEMENTS))],
+            'enseignement' => [$secondaire ? 'nullable' : 'required', Rule::in(array_keys(Donnees::ENSEIGNEMENTS))],
             'recrutement' => ['nullable', Rule::in(array_keys(Donnees::RECRUTEMENTS))],
-            'groupes' => 'required|array', 'groupes.*.groupes' => $entier, 'groupes.*.g' => $entier, 'groupes.*.f' => $entier,
+            'groupes' => 'nullable|array', 'groupes.*.groupes' => $entier, 'groupes.*.g' => $entier, 'groupes.*.f' => $entier,
             'groupes.*.rg' => $entier, 'groupes.*.rf' => $entier,
-            'maitres' => 'required|array', 'maitres.*.permanents' => $entier, 'maitres.*.contractuels' => $entier,
+            'maitres' => 'nullable|array', 'maitres.*.permanents' => $entier, 'maitres.*.contractuels' => $entier,
             'maitres.*.salles' => ['nullable', 'integer', 'min:0', 'max:9999'],
         ], [], ['quartier' => 'village / quartier', 'statut' => 'statut administratif', 'recrutement' => 'mode de recrutement']);
 
         // Lignes et cycles de référence : les libellés ne viennent jamais du formulaire.
-        $reference = Donnees::calculer($ecole, $idAnnee);
+        $reference = Donnees::calculer($ecole, $idAnnee, $portee);
         $groupes = collect($reference['groupes'])->map(function ($ligne) use ($data) {
             $saisie = $data['groupes'][$ligne['cle']] ?? [];
             foreach (['groupes', 'g', 'f', 'rg', 'rf'] as $champ) {
@@ -167,21 +189,22 @@ class RapportSuccinctController extends Controller
             'salles' => isset($data['maitres'][$cycle]['salles']) ? (int) $data['maitres'][$cycle]['salles'] : null,
         ])->all();
 
-        return ['ecole' => (string) $ecole->nomEcole, 'groupes' => $groupes, 'maitres' => $maitres]
+        return ['portee' => $portee, 'ecole' => (string) $ecole->nomEcole, 'groupes' => $groupes, 'maitres' => $maitres]
             + collect($data)->only(['quartier', 'commune', 'cap', 'cercle', 'academie', 'langue', 'cycle', 'statut', 'enseignement', 'recrutement'])
                 ->map(fn ($v, $k) => in_array($k, ['cycle', 'statut', 'enseignement', 'recrutement'], true) && $v !== null ? (int) $v : $v)
                 ->all()
             + ['langue' => null, 'statut' => null, 'recrutement' => null];
     }
 
-    /** Toujours disponible, même sans CAP sur KalanNet : la fiche remplie, à imprimer et remettre. */
+    /** Toujours disponible, même si le destinataire n'est pas sur KalanNet : la fiche remplie, à imprimer et remettre. */
     public function pdf(Request $request)
     {
         $ecole = $this->ecole();
         $annee = $this->annee($request, $ecole);
-        $rapport = RapportSuccinct::where('id_ecole', $ecole->idEcole)->where('id_annee', $annee->id_anneeScolaire)->first();
+        $portee = $this->portee($request, $ecole);
+        $rapport = $this->rapport($ecole, $annee, $portee);
 
-        return $this->fichier($rapport?->donnees ?? Donnees::calculer($ecole, (int) $annee->id_anneeScolaire), $annee->annee, (string) $ecole->nomEcole, !$request->boolean('voir'));
+        return $this->fichier($rapport?->donnees ?? Donnees::calculer($ecole, (int) $annee->id_anneeScolaire, $portee), $annee->annee, (string) $ecole->nomEcole, !$request->boolean('voir'));
     }
 
     private function fichier(array $donnees, string $annee, string $nomEcole, bool $telecharger)
@@ -192,44 +215,49 @@ class RapportSuccinctController extends Controller
         return $telecharger ? $pdf->download($nom) : $pdf->stream($nom);
     }
 
-    /* ——— Espace du CAP ——— */
+    /* ——— Espace du CAP et de l'académie ——— */
 
-    private function dcap()
+    /** Le DCAP suit le fondamental de son CAP, le DAE le secondaire de son académie. @return array{0: string, 1: int, 2: string} */
+    private function superviseur(): array
     {
         $user = Auth::user();
-        abort_unless($user->droit === 'DCAP' && $user->id_cap, 403);
+        if ($user->droit === 'DCAP' && $user->id_cap) {
+            return ['id_cap', (int) $user->id_cap, 'fondamental'];
+        }
+        abort_unless($user->droit === 'DAE' && $user->id_academie, 403);
 
-        return $user;
+        return ['id_academie', (int) $user->id_academie, 'secondaire'];
     }
 
-    /** Écoles concernées du CAP, reçues ou non, pour l'année choisie. */
+    /** Établissements concernés du territoire, reçus ou non, pour l'année choisie. */
     public function territoire(Request $request)
     {
-        $user = $this->dcap();
+        [$colonne, $id, $portee] = $this->superviseur();
+        $ordres = $portee === 'secondaire' ? Donnees::SECONDAIRE : Ordres::SOUS_CAP;
         $annees = DB::table('anneescolaire')->whereNull('id_ecole')->whereDate('date_debut', '<=', now()->toDateString())->orderByDesc('date_debut')->get();
         $annee = $annees->firstWhere('id_anneeScolaire', $request->integer('annee')) ?? $annees->first();
 
-        $ecoles = DB::table('ecole as e')->where('e.id_cap', $user->id_cap)
-            ->whereExists(fn ($q) => $q->select(DB::raw(1))->from('classe')->whereColumn('classe.idEcole', 'e.idEcole')->whereIn('classe.ordreEnseignement', \App\Support\Ordres::SOUS_CAP))
+        $ecoles = DB::table('ecole as e')->where('e.'.$colonne, $id)
+            ->whereExists(fn ($q) => $q->select(DB::raw(1))->from('classe')->whereColumn('classe.idEcole', 'e.idEcole')->whereIn('classe.ordreEnseignement', $ordres))
             ->orderBy('e.nomEcole')->get(['e.idEcole', 'e.nomEcole', 'e.adresse']);
 
         // Même année, commune ou créée par l'école elle-même.
         $idsAnnee = DB::table('anneescolaire')->where('annee', $annee?->annee)->pluck('id_anneeScolaire');
-        $rapports = RapportSuccinct::withoutGlobalScopes()->whereIn('id_annee', $idsAnnee)->where('statut', '!=', 'brouillon')
+        $rapports = RapportSuccinct::withoutGlobalScopes()->whereIn('id_annee', $idsAnnee)->where('portee', $portee)->where('statut', '!=', 'brouillon')
             ->whereIn('id_ecole', $ecoles->pluck('idEcole'))->get()->keyBy('id_ecole');
 
         $lignes = $ecoles->map(fn ($e) => (object) ['ecole' => $e, 'rapport' => $rapports->get($e->idEcole), 'totaux' => isset($rapports[$e->idEcole]) ? Donnees::totaux($rapports[$e->idEcole]->donnees_envoyees ?? []) : null]);
 
-        return view('territoire.rapports-succincts', compact('lignes', 'annees', 'annee'));
+        return view('territoire.rapports-succincts', compact('lignes', 'annees', 'annee', 'portee'));
     }
 
-    /** La fiche remise, seulement pour une école du territoire. */
+    /** La fiche remise, seulement pour un établissement du territoire et de la bonne portée. */
     public function pdfTerritoire(Request $request, int $id)
     {
-        $user = $this->dcap();
-        $rapport = RapportSuccinct::withoutGlobalScopes()->where('statut', '!=', 'brouillon')->findOrFail($id);
-        $ecole = DB::table('ecole')->where('idEcole', $rapport->id_ecole)->first(['nomEcole', 'id_cap']);
-        abort_unless($ecole && (int) $ecole->id_cap === (int) $user->id_cap, 404);
+        [$colonne, $idTerritoire, $portee] = $this->superviseur();
+        $rapport = RapportSuccinct::withoutGlobalScopes()->where('statut', '!=', 'brouillon')->where('portee', $portee)->findOrFail($id);
+        $ecole = DB::table('ecole')->where('idEcole', $rapport->id_ecole)->first(['nomEcole', 'id_cap', 'id_academie']);
+        abort_unless($ecole && (int) $ecole->{$colonne} === $idTerritoire, 404);
 
         $annee = DB::table('anneescolaire')->where('id_anneeScolaire', $rapport->id_annee)->value('annee');
 
