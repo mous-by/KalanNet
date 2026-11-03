@@ -81,13 +81,58 @@
                             <label class="form-label small fw-bold" for="directeur">Le Directeur d'École</label>
                             <input type="text" name="directeur" id="directeur" class="form-control" maxlength="150" value="{{ $directeur }}">
                         </div>
+                        <div class="col-md-7">
+                            <label class="form-label small fw-bold" for="modele">Format de la fiche demandé par votre CAP</label>
+                            <select name="modele" id="modele" class="form-select" @disabled(!$detailleeDisponible)>
+                                @foreach($C::MODELES as $v => $libelle)
+                                    <option value="{{ $v }}" @selected($modele === $v)>{{ $libelle }}</option>
+                                @endforeach
+                            </select>
+                            @if(!$detailleeDisponible)
+                                <div class="form-text">La fiche détaillée concerne le second cycle (7e à 9e).</div>
+                            @endif
+                        </div>
+                    </div>
+                    <div class="row g-3 mb-3 {{ $modele === 'detaillee' ? '' : 'd-none' }}" data-seulement-detaillee>
+                        <div class="col-sm-6 col-md-3">
+                            <label class="form-label small fw-bold" for="commune">Commune</label>
+                            <input type="text" name="renseignements[commune]" id="commune" class="form-control" maxlength="100" value="{{ $renseignements['commune'] ?? '' }}">
+                        </div>
+                        <div class="col-sm-6 col-md-3">
+                            <label class="form-label small fw-bold" for="telephone">N° de téléphone</label>
+                            <input type="text" name="renseignements[telephone]" id="telephone" class="form-control" maxlength="40" value="{{ $renseignements['telephone'] ?? '' }}">
+                        </div>
+                        <div class="col-sm-6 col-md-3">
+                            <label class="form-label small fw-bold" for="statut-ecole">Statut de l'école</label>
+                            <select name="renseignements[statut]" id="statut-ecole" class="form-select">
+                                <option value="">—</option>
+                                @foreach($C::STATUTS_ECOLE as $v => $libelle)
+                                    <option value="{{ $v }}" @selected(($renseignements['statut'] ?? null) === $v)>{{ $libelle }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-sm-6 col-md-3">
+                            <label class="form-label small fw-bold" for="recrutement">Mode de recrutement</label>
+                            <select name="renseignements[recrutement]" id="recrutement" class="form-select">
+                                <option value="">—</option>
+                                @foreach($C::RECRUTEMENTS as $v => $libelle)
+                                    <option value="{{ $v }}" @selected(($renseignements['recrutement'] ?? null) === $v)>{{ $libelle }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-12 small text-muted">Années et scolarité déduites des redoublements enregistrés dans KalanNet : vérifiez-les avec le dossier scolaire. Écrivez le père et la mère sous la forme « Prénom NOM » : la fiche les sépare en deux cases.</div>
                     </div>
                     <p class="small text-muted mb-2">Moyennes et résultats d'examen repris de KalanNet. Moyenne manquante : la proposition reste à choisir. @if(\App\Support\ExamenNational::estMali((int) $ecole->idEcole))En cas d'échec, KalanNet propose « Exclu(e) » si l'élève a déjà doublé cette classe ou deux fois dans le cycle (la 9e peut être doublée deux fois sans redoublement antérieur), ou si sa moyenne est de 0 ; il ne connaît que les redoublements enregistrés ici : vérifiez et corrigez si besoin.@endif Complétez le père, la mère et les classes doublées quand ils manquent.</p>
                     <div class="table-responsive">
                         <table class="table table-sm table-bordered align-middle mb-0" style="font-size: .85rem;">
                             <thead>
                                 <tr class="text-center">
-                                    <th>N°</th><th>Élève</th><th>Sexe</th><th>Mle</th><th>Père</th><th>Mère</th><th>Scolarité</th><th>Class. doublées</th><th>Moyenne</th><th>Proposition</th><th>Observation</th>
+                                    <th>N°</th><th>Élève</th><th>Sexe</th><th>Mle</th><th>Père</th><th>Mère</th>
+                                    <th data-m="standard" class="{{ $modele === 'standard' ? '' : 'd-none' }}">Scolarité</th><th data-m="standard" class="{{ $modele === 'standard' ? '' : 'd-none' }}">Class. doublées</th>
+                                    @foreach(['Recrutement', 'Doublées 1er cycle', 'Scol. 1er cycle', 'Entrée 7e', 'Ans 7e', 'Ans 8e', 'Ans 9e'] as $titre)
+                                        <th data-m="detaillee" class="{{ $modele === 'detaillee' ? '' : 'd-none' }}">{{ $titre }}</th>
+                                    @endforeach
+                                    <th>Moyenne</th><th>Proposition</th><th>Observation</th>
                                     @if($fiche?->validee())<th>Décision CAP</th>@endif
                                 </tr>
                             </thead>
@@ -100,8 +145,13 @@
                                         <td class="text-center">{{ $l['matricule'] }}</td>
                                         <td style="min-width: 130px;"><input type="text" class="form-control form-control-sm" data-c="pere" maxlength="150" value="{{ $l['pere'] }}" aria-label="Père de {{ $l['prenom'] }}"></td>
                                         <td style="min-width: 150px;"><input type="text" class="form-control form-control-sm" data-c="mere" maxlength="150" value="{{ $l['mere'] }}" aria-label="Mère de {{ $l['prenom'] }}"></td>
-                                        <td style="width: 74px;"><input type="number" min="0" max="30" class="form-control form-control-sm text-center" data-c="scolarite" value="{{ $l['scolarite'] }}" aria-label="Scolarité de {{ $l['prenom'] }}"></td>
-                                        <td style="min-width: 90px;"><input type="text" class="form-control form-control-sm" data-c="doublees" maxlength="60" value="{{ $l['doublees'] }}" aria-label="Classes doublées de {{ $l['prenom'] }}"></td>
+                                        <td data-m="standard" class="{{ $modele === 'standard' ? '' : 'd-none' }}" style="width: 74px;"><input type="number" min="0" max="30" class="form-control form-control-sm text-center" data-c="scolarite" value="{{ $l['scolarite'] }}" aria-label="Scolarité de {{ $l['prenom'] }}"></td>
+                                        <td data-m="standard" class="{{ $modele === 'standard' ? '' : 'd-none' }}" style="min-width: 90px;"><input type="text" class="form-control form-control-sm" data-c="doublees" maxlength="60" value="{{ $l['doublees'] }}" aria-label="Classes doublées de {{ $l['prenom'] }}"></td>
+                                        @foreach(['annee_recrutement' => 'Année de recrutement', 'doublees_1er' => 'Classes doublées au 1er cycle', 'scolarite_1er' => 'Scolarité 1er cycle', 'annee_7e' => 'Année d\'entrée en 7e', 'annees_7' => 'Années en 7e', 'annees_8' => 'Années en 8e', 'annees_9' => 'Années en 9e'] as $champ => $titre)
+                                            <td data-m="detaillee" class="{{ $modele === 'detaillee' ? '' : 'd-none' }}" style="min-width: {{ in_array($champ, ['annee_recrutement', 'annee_7e', 'doublees_1er'], true) ? 84 : 62 }}px;">
+                                                <input type="{{ $champ === 'doublees_1er' ? 'text' : 'number' }}" @if($champ !== 'doublees_1er') min="0" @endif class="form-control form-control-sm text-center" data-c="{{ $champ }}" value="{{ $l[$champ] ?? '' }}" aria-label="{{ $titre }} de {{ $l['prenom'] }}">
+                                            </td>
+                                        @endforeach
                                         <td class="text-center fw-bold text-nowrap">{{ isset($l['moyenne']) ? number_format((float) $l['moyenne'], 2, ',', '') : '—' }}@if(!empty($l['resultat_examen']))<div class="small fw-normal text-muted">{{ $l['resultat_examen'] }}</div>@endif</td>
                                         <td style="min-width: 118px;">
                                             <select class="form-select form-select-sm" data-c="proposition" aria-label="Proposition pour {{ $l['prenom'] }}">
@@ -147,6 +197,12 @@
 
 @push('scripts')
     <script>
+        // Changer de format ne recharge pas la page : ce qui est déjà saisi reste.
+        document.getElementById('modele')?.addEventListener('change', function () {
+            document.querySelectorAll('[data-m]').forEach((c) => c.classList.toggle('d-none', c.dataset.m !== this.value));
+            document.querySelector('[data-seulement-detaillee]')?.classList.toggle('d-none', this.value !== 'detaillee');
+        });
+
         // Toute la liste part dans un seul champ : une grande classe ne dépasse pas la limite de champs de PHP.
         document.getElementById('proposition-form')?.addEventListener('submit', function () {
             const lignes = {};

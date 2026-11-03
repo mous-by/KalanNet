@@ -162,7 +162,7 @@
     <p>Fondamental : ouvrez <strong>Proposition de passage</strong> et choisissez une classe. La liste se prépare avec la
     moyenne annuelle (ou le résultat de l'examen) et une proposition ; le conseil des maîtres l'ajuste, puis
     <strong>Télécharger le PDF</strong> reste toujours possible. Si votre CAP utilise KalanNet, <strong>Envoyer au CAP</strong>
-    lui transmet la fiche : il décide élève par élève, et la réinscription reprend sa décision. Sinon, imprimez la fiche et
+    lui transmet la fiche, dans le format choisi (la fiche détaillée concerne la 7e à la 9e) : il décide élève par élève, et la réinscription reprend sa décision. Sinon, imprimez la fiche et
     remettez-la, puis marquez-la comme remise.</p>
 
     <h5 class="fw-bold mt-4">Retrouver et suivre un élève</h5>

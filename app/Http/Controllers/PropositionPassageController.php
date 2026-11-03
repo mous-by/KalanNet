@@ -79,7 +79,18 @@ class PropositionPassageController extends Controller
             'fiche' => $fiche, 'lignes' => $lignes, 'recap' => Donnees::recap($lignes),
             'capSurKalanNet' => RapportSuccinctDonnees::capSurKalanNet($ecole->id_cap),
             'directeur' => old('directeur', $fiche?->directeur ?? Auth::user()->nomPrenom),
+            'detailleeDisponible' => $classe && Donnees::detailleeDisponible($classe),
+            'modele' => $classe ? $this->modeleDe($classe, $fiche) : 'standard',
+            'renseignements' => Donnees::renseignements((int) $ecole->idEcole, $fiche?->renseignements),
         ]);
+    }
+
+    /** La fiche garde son modèle ; une nouvelle fiche reprend le dernier choix de l'école. */
+    private function modeleDe(Classe $classe, ?PropositionPassage $fiche): string
+    {
+        $modele = $fiche?->modele ?? PropositionPassage::where('id_ecole', $classe->idEcole)->latest('updated_at')->value('modele') ?? 'standard';
+
+        return $modele === 'detaillee' && Donnees::detailleeDisponible($classe) ? 'detaillee' : 'standard';
     }
 
     public function store(Request $request)
@@ -94,6 +105,11 @@ class PropositionPassageController extends Controller
         }
         $data = $request->validate([
             'directeur' => 'nullable|string|max:150',
+            'modele' => ['nullable', Rule::in(array_keys(Donnees::MODELES))],
+            'renseignements.commune' => 'nullable|string|max:100',
+            'renseignements.telephone' => 'nullable|string|max:40',
+            'renseignements.statut' => ['nullable', Rule::in(array_keys(Donnees::STATUTS_ECOLE))],
+            'renseignements.recrutement' => ['nullable', Rule::in(array_keys(Donnees::RECRUTEMENTS))],
             'lignes' => 'required|array',
             'lignes.*.proposition' => ['nullable', Rule::in(array_keys(Donnees::DECISIONS))],
             'lignes.*.scolarite' => 'nullable|integer|min:0|max:30',
@@ -101,12 +117,19 @@ class PropositionPassageController extends Controller
             'lignes.*.pere' => 'nullable|string|max:150',
             'lignes.*.mere' => 'nullable|string|max:150',
             'lignes.*.observation' => 'nullable|string|max:255',
+            'lignes.*.annee_recrutement' => 'nullable|integer|min:1950|max:2100',
+            'lignes.*.doublees_1er' => 'nullable|string|max:60',
+            'lignes.*.scolarite_1er' => 'nullable|integer|min:0|max:30',
+            'lignes.*.annee_7e' => 'nullable|integer|min:1950|max:2100',
+            'lignes.*.annees_7' => 'nullable|integer|min:0|max:9',
+            'lignes.*.annees_8' => 'nullable|integer|min:0|max:9',
+            'lignes.*.annees_9' => 'nullable|integer|min:0|max:9',
         ]);
 
         // L'identité et la moyenne viennent toujours de KalanNet, jamais du formulaire.
         $lignes = Donnees::calculer($classe, (int) $annee->id_anneeScolaire);
         foreach ($lignes as $id => &$ligne) {
-            foreach (['proposition', 'scolarite', 'doublees', 'pere', 'mere', 'observation'] as $champ) {
+            foreach (['proposition', 'scolarite', 'doublees', 'pere', 'mere', 'observation', 'annee_recrutement', 'doublees_1er', 'scolarite_1er', 'annee_7e', 'annees_7', 'annees_8', 'annees_9'] as $champ) {
                 if (array_key_exists($champ, $data['lignes'][$id] ?? [])) {
                     $ligne[$champ] = $data['lignes'][$id][$champ];
                 }
@@ -119,6 +142,8 @@ class PropositionPassageController extends Controller
         $fiche = PropositionPassage::firstOrNew(['id_ecole' => $ecole->idEcole, 'id_annee' => $annee->id_anneeScolaire, 'id_classe' => $classe->id_classe]);
         $fiche->lignes = $lignes;
         $fiche->directeur = $data['directeur'] ?? null;
+        $fiche->modele = ($data['modele'] ?? null) === 'detaillee' && Donnees::detailleeDisponible($classe) ? 'detaillee' : 'standard';
+        $fiche->renseignements = $data['renseignements'] ?? $fiche->renseignements;
         $fiche->statut ??= 'brouillon';
         $fiche->save();
 
@@ -175,7 +200,9 @@ class PropositionPassageController extends Controller
 
     private function fichier(Classe $classe, $annee, array $lignes, ?PropositionPassage $fiche, bool $telecharger)
     {
-        $pdf = Pdf::loadView('pdf.proposition_passage', [
+        $detaillee = $fiche?->modele === 'detaillee' && Donnees::detailleeDisponible($classe);
+        $pdf = Pdf::loadView($detaillee ? 'pdf.proposition_passage_detaillee' : 'pdf.proposition_passage', [
+            'r' => $fiche?->renseignements ?? [],
             'e' => Donnees::entete($classe, $annee), 'lignes' => $lignes, 'recap' => Donnees::recap($lignes),
             'recapCap' => $fiche?->validee() ? Donnees::recap($lignes, 'decision_cap') : null, 'fiche' => $fiche,
             'directeur' => $fiche?->directeur ?? Auth::user()->nomPrenom, 'date' => $fiche?->envoye_at ?? now(),

@@ -148,6 +148,74 @@ class PropositionPassageTest extends IntegrationTestCase
         $this->assertSame(11, $lignes[$c]['scolarite']);
     }
 
+    public function test_colonnes_de_la_fiche_detaillee_comme_sur_le_modele(): void
+    {
+        // Années scolaire 2024/2025 : valeurs lues sur la fiche officielle.
+        $c = Donnees::colonnesDetaillees(7, [], 2024);
+        $this->assertSame([2018, 'Néant', 6, 2024, 1, null, null], array_values($c));
+        $c = Donnees::colonnesDetaillees(7, [5], 2024);
+        $this->assertSame([2017, '5ème', 7, 2024, 1, null, null], array_values($c));
+        $c = Donnees::colonnesDetaillees(8, [8], 2024);
+        $this->assertSame([2016, 'Néant', 6, 2022, 1, 2, null], array_values($c));
+        $c = Donnees::colonnesDetaillees(9, [9, 9], 2024);
+        $this->assertSame([2014, 'Néant', 6, 2020, 1, 1, 3], array_values($c));
+        $c = Donnees::colonnesDetaillees(9, [6, 6], 2024);
+        $this->assertSame('6ème;6ème', $c['doublees_1er']);
+        $this->assertSame(8, $c['scolarite_1er']);
+        $this->assertNull(Donnees::colonnesDetaillees(4, [], 2024)['annee_7e']);
+
+        $this->assertSame(['Moussa Abdoul', 'TRAORE'], Donnees::decouperNom('Moussa Abdoul TRAORE'));
+        $this->assertSame(['Moussa', 'TRAORE'], Donnees::decouperNom('TRAORE Moussa'));
+        $this->assertSame(['Awa', 'Coulibaly'], Donnees::decouperNom('Awa Coulibaly'));
+        $this->assertSame(['Moussa', ''], Donnees::decouperNom('Moussa'));
+        $this->assertSame(['', ''], Donnees::decouperNom(null));
+
+        $this->assertSame('Exclue', Donnees::avis('exclu', 'F', false));
+        $this->assertSame('Admis', Donnees::avis('passe', 'M', true));
+        $this->assertSame('Passe', Donnees::avis('passe', 'F', false));
+    }
+
+    public function test_l_ecole_choisit_le_format_et_le_cap_recoit_le_meme(): void
+    {
+        $modele = \App\Models\Classe::where('idEcole', 1)->whereIn('ordreEnseignement', Donnees::ORDRES)->first()->replicate();
+        $modele->nom_classe = '7ème ZZ';
+        $modele->ordreEnseignement = 'fondamentale2';
+        $modele->save();
+        $premier = $modele->replicate();
+        $premier->nom_classe = '4ème ZZ';
+        $premier->ordreEnseignement = 'fondamentale1';
+        $premier->save();
+        if (!\App\Support\ExamenNational::estMali(1)) {
+            $this->markTestSkipped('L\'école 1 n\'est pas au Mali.');
+        }
+        [$a, $b, $c] = $this->eleves;
+        DB::table('eleve')->whereIn('id_eleve', $this->eleves)->update(['id_classe' => $modele->id_classe]);
+        $dcap = $this->dcap((int) DB::table('cap')->value('id_cap'));
+        $this->actingAs($this->adminComplet(1))->withSession(['idEcole' => 1]);
+        $url = route('proposition-passage.store', ['classe' => $modele->id_classe, 'annee' => $this->annee->id_anneeScolaire], false);
+
+        $this->get(route('proposition-passage.index', ['classe' => $modele->id_classe, 'annee' => $this->annee->id_anneeScolaire], false))->assertOk()->assertSee('Fiche détaillée', false)->assertSee('data-seulement-detaillee', false);
+
+        $lignes = json_decode($this->formulaire('x', [$a => 'passe', $b => 'redouble', $c => 'exclu'])['lignes_json'], true);
+        $lignes[$a]['annee_7e'] = 2023;
+        $this->post($url, ['action' => 'remettre', 'modele' => 'detaillee', 'lignes_json' => json_encode($lignes), 'renseignements' => ['commune' => 'V Bamako', 'telephone' => '79000000', 'statut' => 'prive', 'recrutement' => 'annuel']])->assertSessionHasNoErrors();
+        $fiche = PropositionPassage::withoutGlobalScopes()->where('id_classe', $modele->id_classe)->firstOrFail();
+        $this->assertSame('detaillee', $fiche->modele);
+        $this->assertSame('V Bamako', $fiche->renseignements['commune']);
+        $this->assertSame(2023, (int) $fiche->lignes[$a]['annee_7e']);
+
+        $this->get(route('proposition-passage.pdf', ['classe' => $modele->id_classe, 'annee' => $this->annee->id_anneeScolaire], false))->assertOk()->assertHeader('content-type', 'application/pdf');
+        $this->actingAs(User::withoutGlobalScopes()->find($dcap))->withSession(['idEcole' => null]);
+        $this->get("/territoire/propositions-passage/{$fiche->id}/pdf")->assertOk()->assertHeader('content-type', 'application/pdf');
+        $this->get("/territoire/propositions-passage/{$fiche->id}")->assertOk();
+
+        // Premier cycle : pas de modèle officiel détaillé, la demande retombe sur la fiche standard.
+        $this->actingAs($this->adminComplet(1))->withSession(['idEcole' => 1]);
+        DB::table('eleve')->whereIn('id_eleve', $this->eleves)->update(['id_classe' => $premier->id_classe]);
+        $this->post(route('proposition-passage.store', ['classe' => $premier->id_classe, 'annee' => $this->annee->id_anneeScolaire], false), ['action' => 'enregistrer', 'modele' => 'detaillee', 'lignes_json' => json_encode($lignes)])->assertSessionHasNoErrors();
+        $this->assertSame('standard', PropositionPassage::withoutGlobalScopes()->where('id_classe', $premier->id_classe)->value('modele'));
+    }
+
     public function test_cap_sans_compte_telechargement_et_remise_sur_papier(): void
     {
         $this->dcap(null);

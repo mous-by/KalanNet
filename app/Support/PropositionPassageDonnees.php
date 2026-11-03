@@ -24,6 +24,107 @@ class PropositionPassageDonnees
 
     public const ORDRES = ['fondamentale1', 'fondamentale2'];
 
+    /** Présentations officielles de la fiche : chaque école prend celle que son CAP demande. */
+    public const MODELES = [
+        'standard' => 'Fiche avec Décision CAP et Observation',
+        'detaillee' => 'Fiche détaillée : années passées par classe, renseignements généraux',
+    ];
+
+    public const STATUTS_ECOLE = ['publique' => 'Publique', 'communautaire' => 'Communautaire', 'prive' => 'Privé', 'medersa' => 'Médersas'];
+
+    public const RECRUTEMENTS = ['annuel' => 'Annuel', 'biennal' => 'Biennal'];
+
+    /** Fiche détaillée : second cycle du Mali, seul cas pour lequel nous avons le modèle officiel. */
+    public static function detailleeDisponible(Classe $classe): bool
+    {
+        $niveau = ExamenNational::extractClasseLevel($classe->nom_classe);
+
+        return $niveau !== null && $niveau >= 7 && $niveau <= 9 && ExamenNational::estMali((int) $classe->idEcole);
+    }
+
+    /** Renseignements généraux : ceux de la fiche, sinon de la dernière fiche de l'école, sinon de sa fiche et de son rapport succinct. */
+    public static function renseignements(int $idEcole, ?array $saisis): array
+    {
+        if ($saisis) {
+            return $saisis;
+        }
+        $precedents = DB::table('propositions_passage')->where('id_ecole', $idEcole)->whereNotNull('renseignements')->latest('updated_at')->value('renseignements');
+        if ($precedents) {
+            return json_decode($precedents, true);
+        }
+        $ecole = DB::table('ecole')->where('idEcole', $idEcole)->first(['telephone', 'statut', 'franco_arabe']);
+        $rapport = json_decode((string) DB::table('rapports_succincts')->where('id_ecole', $idEcole)->latest('updated_at')->value('donnees'), true) ?: [];
+        $statut = strtolower(trim((string) $ecole?->statut));
+
+        return [
+            'commune' => $rapport['commune'] ?? null,
+            'telephone' => $ecole?->telephone,
+            'statut' => $ecole?->franco_arabe ? 'medersa' : ($statut === 'public' ? 'publique' : ($statut === 'prive' ? 'prive' : null)),
+            'recrutement' => null,
+        ];
+    }
+
+    /** « Moussa TRAORE » ou « TRAORE Moussa » → [prénoms, nom]. Sans indice : le dernier mot est le nom. @return array{0: string, 1: string} */
+    public static function decouperNom(?string $nomComplet): array
+    {
+        $mots = preg_split('/\s+/u', trim((string) $nomComplet), -1, PREG_SPLIT_NO_EMPTY);
+        if (count($mots) < 2) {
+            return [$mots[0] ?? '', ''];
+        }
+        $majuscules = fn (string $mot) => $mot === mb_strtoupper($mot);
+        if ($majuscules($mots[0]) && !$majuscules(end($mots))) {
+            return [implode(' ', array_slice($mots, 1)), $mots[0]];
+        }
+
+        return [implode(' ', array_slice($mots, 0, -1)), end($mots)];
+    }
+
+    /** Avis écrit comme sur la fiche détaillée : accordé au sexe, « Admis(e) » pour une classe à examen. */
+    public static function avis(?string $decision, string $sexe, bool $examen): string
+    {
+        $fille = $sexe === 'F';
+
+        return match ($decision) {
+            'passe' => $examen ? ($fille ? 'Admise' : 'Admis') : 'Passe',
+            'redouble' => 'Redouble',
+            'exclu' => $fille ? 'Exclue' : 'Exclu',
+            'abandon' => 'Abandon',
+            default => '',
+        };
+    }
+
+    /**
+     * Colonnes de la fiche détaillée, déduites des redoublements connus, comme sur le modèle : années passées par classe,
+     * entrée en 7e (année de la fiche moins les années déjà passées au second cycle), recrutement (entrée en 7e moins la
+     * scolarité du 1er cycle).
+     *
+     * @param  list<int>  $doublements
+     * @return array<string, mixed>
+     */
+    public static function colonnesDetaillees(?int $niveau, array $doublements, int $anneeDebut): array
+    {
+        if ($niveau === null || $niveau < 7 || $niveau > 9) {
+            return array_fill_keys(['annee_recrutement', 'doublees_1er', 'scolarite_1er', 'annee_7e', 'annees_7', 'annees_8', 'annees_9'], null);
+        }
+        $premierCycle = array_values(array_filter($doublements, fn (int $n) => $n < 7));
+        $annees = [];
+        foreach ([7, 8, 9] as $n) {
+            $annees[$n] = $n <= $niveau ? 1 + count(array_keys($doublements, $n)) : null;
+        }
+        $entree = $anneeDebut - (array_sum($annees) - 1);
+        $scolarite = 6 + count($premierCycle);
+
+        return [
+            'annee_recrutement' => $entree - $scolarite,
+            'doublees_1er' => $premierCycle ? implode(';', array_map(fn (int $n) => $n === 1 ? '1ère' : $n.'ème', $premierCycle)) : 'Néant',
+            'scolarite_1er' => $scolarite,
+            'annee_7e' => $entree,
+            'annees_7' => $annees[7],
+            'annees_8' => $annees[8],
+            'annees_9' => $annees[9],
+        ];
+    }
+
     public static function classes(int $idEcole)
     {
         return Classe::where('idEcole', $idEcole)->whereIn('ordreEnseignement', self::ORDRES)->orderBy('nom_classe')->get();
@@ -63,6 +164,7 @@ class PropositionPassageDonnees
 
         // Redoublements déjà enregistrés dans KalanNet, jusqu'à l'année de la fiche.
         $debut = DB::table('anneescolaire')->where('id_anneeScolaire', $idAnnee)->value('date_debut');
+        $anneeDebut = (int) substr((string) $debut, 0, 4);
         $doublees = DB::table('ligne_reinscription as lr')->join('reinscription as r', 'r.id_reinscription', '=', 'lr.id_reinscription')
             ->join('classe as c', 'c.id_classe', '=', 'lr.id_classe')->join('anneescolaire as a', 'a.id_anneeScolaire', '=', 'lr.id_annee')
             ->where('r.statut', 'redoublant')->whereIn('lr.id_eleve', $ids)->where('a.date_debut', '<=', $debut)
@@ -106,7 +208,7 @@ class PropositionPassageDonnees
                 'doublees' => $classesDoublees->isEmpty() ? 'Néant' : $classesDoublees->implode('-'),
                 'proposition' => $proposition,
                 'observation' => null,
-            ];
+            ] + self::colonnesDetaillees($niveau, $doublements, $anneeDebut);
         }
 
         return self::trier($lignes);
@@ -193,6 +295,7 @@ class PropositionPassageDonnees
             'annee' => $annee->annee,
             'classe' => $classe->nom_classe,
             'cycle' => Ordres::surDix($classe->ordreEnseignement) ? 'PREMIER CYCLE' : 'SECOND CYCLE',
+            'examen' => ExamenNational::pourClasse($classe, (int) $classe->idEcole) !== null,
         ];
     }
 }

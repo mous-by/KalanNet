@@ -12,9 +12,9 @@ class PropositionPassage extends Model
 
     protected $table = 'propositions_passage';
 
-    protected $fillable = ['id_ecole', 'id_annee', 'id_classe', 'id_cap', 'statut', 'directeur', 'lignes', 'lignes_envoyees', 'envoye_at', 'envoye_par', 'valide_at', 'valide_par'];
+    protected $fillable = ['id_ecole', 'id_annee', 'id_classe', 'id_cap', 'statut', 'modele', 'directeur', 'renseignements', 'lignes', 'lignes_envoyees', 'envoye_at', 'envoye_par', 'valide_at', 'valide_par'];
 
-    protected $casts = ['lignes' => 'array', 'lignes_envoyees' => 'array', 'envoye_at' => 'datetime', 'valide_at' => 'datetime'];
+    protected $casts = ['renseignements' => 'array', 'lignes' => 'array', 'lignes_envoyees' => 'array', 'envoye_at' => 'datetime', 'valide_at' => 'datetime'];
 
     public function remise(): bool
     {

@@ -48,8 +48,8 @@
                                     <td class="fw-semibold text-nowrap">{{ $l['prenom'] }} {{ $l['nom'] }}</td>
                                     <td class="text-center">{{ $l['sexe'] }}</td>
                                     <td class="text-center">{{ $l['matricule'] }}</td>
-                                    <td class="text-center">{{ $l['scolarite'] }}</td>
-                                    <td class="text-center">{{ $l['doublees'] }}</td>
+                                    <td class="text-center">{{ $fiche->modele === 'detaillee' ? ($l['scolarite_1er'] ?? '') : $l['scolarite'] }}</td>
+                                    <td class="text-center">{{ $fiche->modele === 'detaillee' ? ($l['doublees_1er'] ?? '') : $l['doublees'] }}</td>
                                     <td class="text-center fw-bold">{{ isset($l['moyenne']) ? number_format((float) $l['moyenne'], 2, ',', '') : '—' }}</td>
                                     <td class="text-center">{{ $C::DECISIONS[$l['proposition'] ?? ''] ?? '—' }}</td>
                                     <td>{{ $l['observation'] ?? '' }}</td>
