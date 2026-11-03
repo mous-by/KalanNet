@@ -162,7 +162,9 @@ class PropositionPassageTest extends IntegrationTestCase
         $c = Donnees::colonnesDetaillees(9, [6, 6], 2024);
         $this->assertSame('6ème;6ème', $c['doublees_1er']);
         $this->assertSame(8, $c['scolarite_1er']);
-        $this->assertNull(Donnees::colonnesDetaillees(4, [], 2024)['annee_7e']);
+        // Premier cycle : pas de colonnes du second, recrutement déduit de la scolarité.
+        $this->assertSame([2021, 'Néant', 4, null, null, null, null], array_values(Donnees::colonnesDetaillees(4, [], 2024)));
+        $this->assertSame([2020, '2ème', 5, null, null, null, null], array_values(Donnees::colonnesDetaillees(4, [2], 2024)));
 
         $this->assertSame(['Moussa Abdoul', 'TRAORE'], Donnees::decouperNom('Moussa Abdoul TRAORE'));
         $this->assertSame(['Moussa', 'TRAORE'], Donnees::decouperNom('TRAORE Moussa'));
@@ -209,11 +211,12 @@ class PropositionPassageTest extends IntegrationTestCase
         $this->get("/territoire/propositions-passage/{$fiche->id}/pdf")->assertOk()->assertHeader('content-type', 'application/pdf');
         $this->get("/territoire/propositions-passage/{$fiche->id}")->assertOk();
 
-        // Premier cycle : pas de modèle officiel détaillé, la demande retombe sur la fiche standard.
+        // Premier cycle : fiche détaillée aussi, sans les colonnes propres au second cycle.
         $this->actingAs($this->adminComplet(1))->withSession(['idEcole' => 1]);
         DB::table('eleve')->whereIn('id_eleve', $this->eleves)->update(['id_classe' => $premier->id_classe]);
         $this->post(route('proposition-passage.store', ['classe' => $premier->id_classe, 'annee' => $this->annee->id_anneeScolaire], false), ['action' => 'enregistrer', 'modele' => 'detaillee', 'lignes_json' => json_encode($lignes)])->assertSessionHasNoErrors();
-        $this->assertSame('standard', PropositionPassage::withoutGlobalScopes()->where('id_classe', $premier->id_classe)->value('modele'));
+        $this->assertSame('detaillee', PropositionPassage::withoutGlobalScopes()->where('id_classe', $premier->id_classe)->value('modele'));
+        $this->get(route('proposition-passage.pdf', ['classe' => $premier->id_classe, 'annee' => $this->annee->id_anneeScolaire], false))->assertOk()->assertHeader('content-type', 'application/pdf');
     }
 
     public function test_cap_sans_compte_telechargement_et_remise_sur_papier(): void

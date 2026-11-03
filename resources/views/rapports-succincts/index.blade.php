@@ -25,6 +25,10 @@
         </div>
     </div>
 
+    @if($aussiLycee)
+        <p class="mb-3"><a href="{{ route('rapport-academie.index', ['annee' => $annee->id_anneeScolaire]) }}"><i class="bi bi-file-earmark-excel me-1"></i>Votre lycée remet ses rapports à l'académie : voir les canevas de rentrée et de fin d'année</a></p>
+    @endif
+
     @if(session('success'))
         <div class="alert alert-success border-0 border-start border-success border-4">{{ session('success') }}</div>
     @endif

@@ -6,6 +6,7 @@ use App\Models\AnneeScolaire;
 use App\Models\AppNotification;
 use App\Models\Ecole;
 use App\Models\RapportSuccinct;
+use App\Services\Rapports\CanevasEsg;
 use App\Support\RapportSuccinctDonnees as Donnees;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -52,6 +53,12 @@ class RapportSuccinctController extends Controller
 
     public function index(Request $request)
     {
+        // Lycée seul : son rapport succinct, ce sont les canevas remis à l'académie.
+        $idEcole = (int) (session('idEcole') ?: Auth::user()->idEcole);
+        if (self::autorise(Auth::user()) && !Donnees::ecoleConcernee($idEcole) && CanevasEsg::ecoleConcernee($idEcole)) {
+            return redirect()->route('rapport-academie.index', $request->only('annee'));
+        }
+
         $ecole = $this->ecole();
         $annee = $this->annee($request, $ecole);
         $rapport = RapportSuccinct::where('id_ecole', $ecole->idEcole)->where('id_annee', $annee->id_anneeScolaire)->first();
@@ -68,6 +75,7 @@ class RapportSuccinctController extends Controller
         return view('rapports-succincts.index', [
             'ecole' => $ecole, 'annee' => $annee, 'annees' => $this->annees(), 'rapport' => $rapport, 'donnees' => $donnees,
             'capSurKalanNet' => Donnees::capSurKalanNet($ecole->id_cap),
+            'aussiLycee' => CanevasEsg::ecoleConcernee((int) $ecole->idEcole),
             'manquants' => Donnees::champsManquants($donnees),
         ]);
     }

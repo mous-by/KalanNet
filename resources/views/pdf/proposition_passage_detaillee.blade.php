@@ -38,6 +38,8 @@
     @php
         $C = \App\Support\PropositionPassageDonnees::class;
         $n = 0;
+        $premier = $e['cycle'] === 'PREMIER CYCLE';
+        $largeurs = $premier ? [3, 11, 10, 3, 3, 3, 3.5, 8, 8.5, 8, 8.5, 8, 4, 5.5, 3.5, 3.5, 6.5, 6.5] : [2.5, 9, 9, 2.5, 2.5, 2.5, 3, 6, 7, 6.5, 7, 6.5, 3.5, 4.5, 3, 3.5, 2.2, 2.2, 2.1, 3.5, 6, 6];
         $coche = fn (bool $oui) => '<span class="case">'.($oui ? 'X' : '').'</span>';
         $tableau = function (?array $r, ?string $classe = null) {
             $lignes = ['total' => 'EFFECTIF', 'passe' => 'PASSANTS', 'redouble' => 'REDOUBLANTS', 'exclu' => 'EXCLUS'];
@@ -92,7 +94,7 @@
     <table class="liste">
         <thead>
             <tr>
-                @foreach([2.5, 9, 9, 2.5, 2.5, 2.5, 3, 6, 7, 6.5, 7, 6.5, 3.5, 4.5, 3, 3.5, 2.2, 2.2, 2.1, 3.5, 6, 6] as $w)
+                @foreach($largeurs as $w)
                     <td style="width: {{ $w }}%; height: 0; padding: 0;"></td>
                 @endforeach
             </tr>
@@ -100,13 +102,18 @@
                 <td class="h" rowspan="2">N°</td><td class="h" rowspan="2">Prénoms</td><td class="h" rowspan="2">Nom</td><td class="h" rowspan="2">Se-xe</td>
                 <td class="h" rowspan="2">Jour Nais.</td><td class="h" rowspan="2">Mois Nais.</td><td class="h" rowspan="2">Année Nais.</td><td class="h" rowspan="2">Lieu Naiss.</td>
                 <td class="h" colspan="2">Père</td><td class="h" colspan="2">Mère</td>
-                <td class="h" rowspan="2">Année de recru-tement</td><td class="h" rowspan="2">Classes doublées au 1er cycle</td><td class="h" rowspan="2">Scola-rité 1er cycle</td><td class="h" rowspan="2">Entrée en 7ème</td>
-                <td class="h" colspan="3">Nbre d'années passées par classe</td>
+                <td class="h" rowspan="2">Année de recru-tement</td><td class="h" rowspan="2">Classes doublées{{ $premier ? '' : ' au 1er cycle' }}</td><td class="h" rowspan="2">Scola-rité{{ $premier ? '' : ' 1er cycle' }}</td>
+                @unless($premier)
+                    <td class="h" rowspan="2">Entrée en 7ème</td>
+                    <td class="h" colspan="3">Nbre d'années passées par classe</td>
+                @endunless
                 <td class="h" rowspan="2">Moy. Ann.</td><td class="h" rowspan="2">Avis du Conseil des maîtres</td><td class="h" rowspan="2">Avis du CAP</td>
             </tr>
             <tr>
                 <td class="h">Prénom(s)</td><td class="h">Nom</td><td class="h">Prénom(s)</td><td class="h">Nom</td>
-                <td class="h">7è</td><td class="h">8è</td><td class="h">9è</td>
+                @unless($premier)
+                    <td class="h">7è</td><td class="h">8è</td><td class="h">9è</td>
+                @endunless
             </tr>
         </thead>
         <tbody>
@@ -122,8 +129,11 @@
                     <td class="c ctr">{{ $n }}</td><td class="c">{{ $l['prenom'] }}</td><td class="c">{{ $l['nom'] }}</td><td class="c ctr">{{ $sexe }}</td>
                     <td class="c ctr">{{ $jour }}</td><td class="c ctr">{{ $mois }}</td><td class="c ctr">{{ $an }}</td><td class="c">{{ $l['lieu_naissance'] }}</td>
                     <td class="c">{{ $prenomPere }}</td><td class="c">{{ $nomPere }}</td><td class="c">{{ $prenomMere }}</td><td class="c">{{ $nomMere }}</td>
-                    <td class="c ctr">{{ $l['annee_recrutement'] ?? '' }}</td><td class="c ctr">{{ $l['doublees_1er'] ?? '' }}</td><td class="c ctr">{{ $l['scolarite_1er'] ?? '' }}</td><td class="c ctr">{{ $l['annee_7e'] ?? '' }}</td>
-                    <td class="c ctr">{{ $l['annees_7'] ?? '' }}</td><td class="c ctr">{{ $l['annees_8'] ?? '' }}</td><td class="c ctr">{{ $l['annees_9'] ?? '' }}</td>
+                    <td class="c ctr">{{ $l['annee_recrutement'] ?? '' }}</td><td class="c ctr">{{ $l['doublees_1er'] ?? '' }}</td><td class="c ctr">{{ $l['scolarite_1er'] ?? '' }}</td>
+                    @unless($premier)
+                        <td class="c ctr">{{ $l['annee_7e'] ?? '' }}</td>
+                        <td class="c ctr">{{ $l['annees_7'] ?? '' }}</td><td class="c ctr">{{ $l['annees_8'] ?? '' }}</td><td class="c ctr">{{ $l['annees_9'] ?? '' }}</td>
+                    @endunless
                     <td class="c ctr" style="font-weight: bold;">{{ isset($l['moyenne']) ? number_format((float) $l['moyenne'], 2, '.', '') : '' }}</td>
                     <td class="c" style="font-weight: bold;">{{ $C::avis($l['proposition'] ?? null, $sexe, $e['examen']) }}</td>
                     <td class="c" style="font-weight: bold;">{{ $C::avis($l['decision_cap'] ?? null, $sexe, $e['examen']) }}</td>
@@ -137,8 +147,10 @@
         <div class="cadre">
             NB : 1_Sont exclus les élèves qui n'ont pas d'enregistrements complets c'est-à-dire sans DOSSIER SCOLAIRE (sans renseignements complets) et ceux qui sont en limite de scolarité ou d'âge.<br>
             2_On rappelle qu'un élève n'a droit qu'à deux (2) redoublements sur des années d'études différentes dans son cycle d'études.<br>
-            3_L'élève ne peut doubler qu'une seule fois son année d'études au 2ème cycle exceptée la 9ème d'études s'il n'a jamais doublé avant la 9ème Année.<br>
-            4_Les Données du tableau doivent être conformes à celles des dossiers scolaires en état civil et en scolarité.
+            @unless($premier)
+                3_L'élève ne peut doubler qu'une seule fois son année d'études au 2ème cycle exceptée la 9ème d'études s'il n'a jamais doublé avant la 9ème Année.<br>
+            @endunless
+            {{ $premier ? '3' : '4' }}_Les Données du tableau doivent être conformes à celles des dossiers scolaires en état civil et en scolarité.
         </div>
     </div>
 

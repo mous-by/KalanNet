@@ -37,7 +37,7 @@ class Permission extends Model
                 'parents_creation' => 'Créer un parent',
                 'parents_modification' => 'Modifier les parents',
                 'parents_supprimer' => 'Supprimer les parents',
-                'rapport_succinct_gerer' => 'Remplir et remettre le rapport succinct de rentrée',
+                'rapport_succinct_gerer' => 'Remplir et remettre le rapport succinct et les rapports du lycée',
                 'proposition_passage_gerer' => 'Préparer et remettre la proposition de passage',
             ],
         ],

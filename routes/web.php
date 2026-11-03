@@ -235,6 +235,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/territoire/propositions-passage/{id}', [\App\Http\Controllers\PropositionPassageController::class, 'show'])->whereNumber('id')->name('territoire.propositions-passage.show');
     Route::post('/territoire/propositions-passage/{id}/decision', [\App\Http\Controllers\PropositionPassageController::class, 'decider'])->whereNumber('id')->name('territoire.propositions-passage.decider');
     Route::get('/territoire/propositions-passage/{id}/pdf', [\App\Http\Controllers\PropositionPassageController::class, 'pdfTerritoire'])->whereNumber('id')->name('territoire.propositions-passage.pdf');
+    Route::get('/rapports-academie', [\App\Http\Controllers\RapportAcademieController::class, 'index'])->name('rapport-academie.index');
+    Route::get('/rapports-academie/{type}/canevas', [\App\Http\Controllers\RapportAcademieController::class, 'canevas'])->whereIn('type', ['rentree', 'fin'])->name('rapport-academie.canevas');
+    Route::post('/rapports-academie/{type}', [\App\Http\Controllers\RapportAcademieController::class, 'remettre'])->whereIn('type', ['rentree', 'fin'])->name('rapport-academie.remettre');
+    Route::get('/rapports-academie/fichier/{id}', [\App\Http\Controllers\RapportAcademieController::class, 'fichier'])->whereNumber('id')->name('rapport-academie.fichier');
+    Route::get('/territoire/rapports-academie', [\App\Http\Controllers\RapportAcademieController::class, 'territoire'])->name('territoire.rapports-academie');
+    Route::get('/territoire/rapports-academie/{id}/fichier', [\App\Http\Controllers\RapportAcademieController::class, 'fichierTerritoire'])->whereNumber('id')->name('territoire.rapports-academie.fichier');
     Route::get('/rapport-succinct', [\App\Http\Controllers\RapportSuccinctController::class, 'index'])->name('rapport-succinct.index');
     Route::post('/rapport-succinct', [\App\Http\Controllers\RapportSuccinctController::class, 'store'])->name('rapport-succinct.store');
     Route::get('/rapport-succinct/pdf', [\App\Http\Controllers\RapportSuccinctController::class, 'pdf'])->name('rapport-succinct.pdf');

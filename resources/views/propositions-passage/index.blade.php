@@ -89,7 +89,7 @@
                                 @endforeach
                             </select>
                             @if(!$detailleeDisponible)
-                                <div class="form-text">La fiche détaillée concerne le second cycle (7e à 9e).</div>
+                                <div class="form-text">Pour cette classe, seule cette fiche est disponible.</div>
                             @endif
                         </div>
                     </div>
@@ -129,7 +129,8 @@
                                 <tr class="text-center">
                                     <th>N°</th><th>Élève</th><th>Sexe</th><th>Mle</th><th>Père</th><th>Mère</th>
                                     <th data-m="standard" class="{{ $modele === 'standard' ? '' : 'd-none' }}">Scolarité</th><th data-m="standard" class="{{ $modele === 'standard' ? '' : 'd-none' }}">Class. doublées</th>
-                                    @foreach(['Recrutement', 'Doublées 1er cycle', 'Scol. 1er cycle', 'Entrée 7e', 'Ans 7e', 'Ans 8e', 'Ans 9e'] as $titre)
+                                    @php $premierCycle = $classe->ordreEnseignement === 'fondamentale1' || \App\Support\ExamenNational::extractClasseLevel($classe->nom_classe) < 7; @endphp
+                                    @foreach($premierCycle ? ['Recrutement', 'Doublées', 'Scolarité'] : ['Recrutement', 'Doublées 1er cycle', 'Scol. 1er cycle', 'Entrée 7e', 'Ans 7e', 'Ans 8e', 'Ans 9e'] as $titre)
                                         <th data-m="detaillee" class="{{ $modele === 'detaillee' ? '' : 'd-none' }}">{{ $titre }}</th>
                                     @endforeach
                                     <th>Moyenne</th><th>Proposition</th><th>Observation</th>
@@ -147,7 +148,7 @@
                                         <td style="min-width: 150px;"><input type="text" class="form-control form-control-sm" data-c="mere" maxlength="150" value="{{ $l['mere'] }}" aria-label="Mère de {{ $l['prenom'] }}"></td>
                                         <td data-m="standard" class="{{ $modele === 'standard' ? '' : 'd-none' }}" style="width: 74px;"><input type="number" min="0" max="30" class="form-control form-control-sm text-center" data-c="scolarite" value="{{ $l['scolarite'] }}" aria-label="Scolarité de {{ $l['prenom'] }}"></td>
                                         <td data-m="standard" class="{{ $modele === 'standard' ? '' : 'd-none' }}" style="min-width: 90px;"><input type="text" class="form-control form-control-sm" data-c="doublees" maxlength="60" value="{{ $l['doublees'] }}" aria-label="Classes doublées de {{ $l['prenom'] }}"></td>
-                                        @foreach(['annee_recrutement' => 'Année de recrutement', 'doublees_1er' => 'Classes doublées au 1er cycle', 'scolarite_1er' => 'Scolarité 1er cycle', 'annee_7e' => 'Année d\'entrée en 7e', 'annees_7' => 'Années en 7e', 'annees_8' => 'Années en 8e', 'annees_9' => 'Années en 9e'] as $champ => $titre)
+                                        @foreach(array_slice(['annee_recrutement' => 'Année de recrutement', 'doublees_1er' => 'Classes doublées', 'scolarite_1er' => 'Scolarité', 'annee_7e' => 'Année d\'entrée en 7e', 'annees_7' => 'Années en 7e', 'annees_8' => 'Années en 8e', 'annees_9' => 'Années en 9e'], 0, $premierCycle ? 3 : 7) as $champ => $titre)
                                             <td data-m="detaillee" class="{{ $modele === 'detaillee' ? '' : 'd-none' }}" style="min-width: {{ in_array($champ, ['annee_recrutement', 'annee_7e', 'doublees_1er'], true) ? 84 : 62 }}px;">
                                                 <input type="{{ $champ === 'doublees_1er' ? 'text' : 'number' }}" @if($champ !== 'doublees_1er') min="0" @endif class="form-control form-control-sm text-center" data-c="{{ $champ }}" value="{{ $l[$champ] ?? '' }}" aria-label="{{ $titre }} de {{ $l['prenom'] }}">
                                             </td>

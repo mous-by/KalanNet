@@ -121,7 +121,8 @@ class RapportSuccinctTest extends IntegrationTestCase
         $rapport = RapportSuccinct::withoutGlobalScopes()->create(['id_ecole' => 1, 'id_annee' => AnneeScolaire::enCours(1)->id_anneeScolaire, 'statut' => 'envoye', 'donnees' => [], 'donnees_envoyees' => []]);
         $dae = $this->compte('DAE');
 
-        $this->actingAs($dae)->get('/dashboard')->assertDontSee('Rapports succincts');
+        // Son menu mène aux rapports des lycées, jamais aux fiches remises au CAP.
+        $this->actingAs($dae)->get('/dashboard')->assertSee(route('territoire.rapports-academie'), false)->assertDontSee(route('territoire.rapports-succincts'), false);
         $this->get('/territoire/rapports-succincts')->assertForbidden();
         $this->get("/territoire/rapports-succincts/{$rapport->id}/pdf")->assertForbidden();
     }
@@ -161,6 +162,11 @@ class RapportSuccinctTest extends IntegrationTestCase
 
         $admin = $this->adminComplet(1);
         DB::table('classe')->where('idEcole', 1)->update(['ordreEnseignement' => 'secondairegenerale']);
-        $this->actingAs($admin->fresh())->withSession(['idEcole' => 1])->get('/rapport-succinct')->assertForbidden();
+        // Lycée seul : le menu mène à ses canevas, mais la fiche du CAP lui reste fermée.
+        $this->actingAs($admin->fresh())->withSession(['idEcole' => 1]);
+        if (\App\Support\ExamenNational::estMali(1)) {
+            $this->get('/rapport-succinct')->assertRedirect(route('rapport-academie.index'));
+        }
+        $this->post('/rapport-succinct', $this->formulaire())->assertForbidden();
     }
 }

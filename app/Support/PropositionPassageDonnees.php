@@ -34,12 +34,12 @@ class PropositionPassageDonnees
 
     public const RECRUTEMENTS = ['annuel' => 'Annuel', 'biennal' => 'Biennal'];
 
-    /** Fiche détaillée : second cycle du Mali, seul cas pour lequel nous avons le modèle officiel. */
+    /** Fiche détaillée : tout le fondamental au Mali ; au premier cycle, sans les colonnes propres au second. */
     public static function detailleeDisponible(Classe $classe): bool
     {
         $niveau = ExamenNational::extractClasseLevel($classe->nom_classe);
 
-        return $niveau !== null && $niveau >= 7 && $niveau <= 9 && ExamenNational::estMali((int) $classe->idEcole);
+        return $niveau !== null && $niveau >= 1 && $niveau <= 9 && ExamenNational::estMali((int) $classe->idEcole);
     }
 
     /** Renseignements généraux : ceux de la fiche, sinon de la dernière fiche de l'école, sinon de sa fiche et de son rapport succinct. */
@@ -103,10 +103,20 @@ class PropositionPassageDonnees
      */
     public static function colonnesDetaillees(?int $niveau, array $doublements, int $anneeDebut): array
     {
-        if ($niveau === null || $niveau < 7 || $niveau > 9) {
+        if ($niveau === null || $niveau < 1 || $niveau > 9) {
             return array_fill_keys(['annee_recrutement', 'doublees_1er', 'scolarite_1er', 'annee_7e', 'annees_7', 'annees_8', 'annees_9'], null);
         }
         $premierCycle = array_values(array_filter($doublements, fn (int $n) => $n < 7));
+        if ($niveau < 7) {
+            // Premier cycle : scolarité jusqu'à la classe actuelle, recrutement déduit.
+            $scolarite = $niveau + count($premierCycle);
+
+            return [
+                'annee_recrutement' => $anneeDebut - ($scolarite - 1),
+                'doublees_1er' => $premierCycle ? implode(';', array_map(fn (int $n) => $n === 1 ? '1ère' : $n.'ème', $premierCycle)) : 'Néant',
+                'scolarite_1er' => $scolarite, 'annee_7e' => null, 'annees_7' => null, 'annees_8' => null, 'annees_9' => null,
+            ];
+        }
         $annees = [];
         foreach ([7, 8, 9] as $n) {
             $annees[$n] = $n <= $niveau ? 1 + count(array_keys($doublements, $n)) : null;
