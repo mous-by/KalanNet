@@ -228,6 +228,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/annonces', [AnnouncementController::class, 'index'])->name('annonces.index');
     Route::post('/annonces', [AnnouncementController::class, 'store'])->name('annonces.store');
     Route::post('/annonces/read-visible', [AnnouncementController::class, 'markVisibleAsRead'])->name('annonces.read-visible');
+    Route::get('/proposition-passage', [\App\Http\Controllers\PropositionPassageController::class, 'index'])->name('proposition-passage.index');
+    Route::post('/proposition-passage', [\App\Http\Controllers\PropositionPassageController::class, 'store'])->name('proposition-passage.store');
+    Route::get('/proposition-passage/pdf', [\App\Http\Controllers\PropositionPassageController::class, 'pdf'])->name('proposition-passage.pdf');
+    Route::get('/territoire/propositions-passage', [\App\Http\Controllers\PropositionPassageController::class, 'territoire'])->name('territoire.propositions-passage');
+    Route::get('/territoire/propositions-passage/{id}', [\App\Http\Controllers\PropositionPassageController::class, 'show'])->whereNumber('id')->name('territoire.propositions-passage.show');
+    Route::post('/territoire/propositions-passage/{id}/decision', [\App\Http\Controllers\PropositionPassageController::class, 'decider'])->whereNumber('id')->name('territoire.propositions-passage.decider');
+    Route::get('/territoire/propositions-passage/{id}/pdf', [\App\Http\Controllers\PropositionPassageController::class, 'pdfTerritoire'])->whereNumber('id')->name('territoire.propositions-passage.pdf');
     Route::get('/rapport-succinct', [\App\Http\Controllers\RapportSuccinctController::class, 'index'])->name('rapport-succinct.index');
     Route::post('/rapport-succinct', [\App\Http\Controllers\RapportSuccinctController::class, 'store'])->name('rapport-succinct.store');
     Route::get('/rapport-succinct/pdf', [\App\Http\Controllers\RapportSuccinctController::class, 'pdf'])->name('rapport-succinct.pdf');

@@ -38,6 +38,7 @@ class Permission extends Model
                 'parents_modification' => 'Modifier les parents',
                 'parents_supprimer' => 'Supprimer les parents',
                 'rapport_succinct_gerer' => 'Remplir et remettre le rapport succinct de rentrée',
+                'proposition_passage_gerer' => 'Préparer et remettre la proposition de passage',
             ],
         ],
         'communications' => [
@@ -268,6 +269,7 @@ class Permission extends Model
         'evaluations_communes_apercu' => ['Admin', 'Gestionnaire', 'enseignant', 'DAE', 'DCAP'],
         'paiements_annuler' => ['Admin', 'Gestionnaire'],
         'rapport_succinct_gerer' => ['Admin', 'Gestionnaire'],
+        'proposition_passage_gerer' => ['Admin', 'Gestionnaire'],
         // La suppression définitive des élèves ne peut être déléguée qu'à un Admin.
         'classes_reinitialiser_eleves' => ['Admin'],
     ];

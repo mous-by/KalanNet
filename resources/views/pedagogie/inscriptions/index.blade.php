@@ -372,6 +372,8 @@
                                     'admis_sortant' => __('inscriptions.decision_admis_sortant'),
                                     'diplome_sortant' => __('inscriptions.decision_diplome_sortant'),
                                     'en_attente_resultat' => __('inscriptions.proposal_en_attente_resultat'),
+                                    'exclu' => __('inscriptions.decision_exclu'),
+                                    'abandon' => __('inscriptions.decision_abandon'),
                                 ];
                             @endphp
 
@@ -580,7 +582,7 @@
                                                                 @endif
                                                             </td>
                                                         @endif
-                                                        <td>{{ $proposalLabels[$row['decision_proposee']] ?? $row['decision_proposee'] }}</td>
+                                                        <td>{{ $proposalLabels[$row['decision_proposee']] ?? $row['decision_proposee'] }}@if($row['decision_cap'])<div><span class="badge bg-success">Décision du CAP</span></div>@endif</td>
                                                         <td>
                                                             <select name="eleves[{{ $key }}][decision]" class="form-select form-select-sm" data-reinscription-decision data-pass-classe="{{ $row['classe_cible_id'] }}" data-source-classe="{{ $reinscriptionPreview['sourceClasse']->id_classe }}" @disabled($row['deja_reinscrit'] || $blockedDecision)>
                                                                 @if($aVerifier)
@@ -613,7 +615,7 @@
                                                             @endif
                                                         </td>
                                                         <td>
-                                                            <input type="text" name="eleves[{{ $key }}][motif_decision]" class="form-control form-control-sm" data-reinscription-observation placeholder="{{ __('inscriptions.motif_placeholder') }}" @disabled($row['deja_reinscrit'] || $blockedDecision)>
+                                                            <input type="text" name="eleves[{{ $key }}][motif_decision]" value="{{ $row['motif_cap'] }}" class="form-control form-control-sm" data-reinscription-observation placeholder="{{ __('inscriptions.motif_placeholder') }}" @disabled($row['deja_reinscrit'] || $blockedDecision)>
                                                         </td>
                                                     </tr>
                                                 @endforeach

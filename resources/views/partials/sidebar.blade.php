@@ -148,6 +148,12 @@
                     <div class="menu-title">Rapports succincts</div>
                 </a>
             </li>
+            <li>
+                <a href="{{ route('territoire.propositions-passage') }}">
+                    <div class="parent-icon"><i class="bi bi-list-check"></i></div>
+                    <div class="menu-title">Propositions de passage</div>
+                </a>
+            </li>
             @endif
             @if(\App\Http\Controllers\EvaluationCommuneController::autorise($user))
             <li>
@@ -282,6 +288,16 @@
                 <a href="{{ route('rapport-succinct.index') }}">
                     <div class="parent-icon"><i class="bi bi-file-earmark-text"></i></div>
                     <div class="menu-title">Rapport succinct</div>
+                </a>
+            </li>
+        @endif
+
+        {{-- Proposition de passage, redoublement, exclusion : écoles du fondamental. --}}
+        @if(session('idEcole') && \App\Http\Controllers\PropositionPassageController::autorise($user) && \App\Support\PropositionPassageDonnees::ecoleConcernee((int) session('idEcole')))
+            <li>
+                <a href="{{ route('proposition-passage.index') }}">
+                    <div class="parent-icon"><i class="bi bi-list-check"></i></div>
+                    <div class="menu-title">Proposition de passage</div>
                 </a>
             </li>
         @endif

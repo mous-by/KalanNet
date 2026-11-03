@@ -633,7 +633,8 @@ class InscriptionController extends Controller
             ->all();
 
         $threshold = $this->passageThreshold($sourceClasse);
-        $rows = $students->map(function ($student) use ($sourceClasse, $defaultTargetClasse, $suggestedTargetClasse, $data, $existingIds, $threshold, $examLevel) {
+        $decisionsCap = PropositionPassageController::decisionsCap((int) $idEcole, (int) $sourceClasse->id_classe, (int) $data['source_annee_id']);
+        $rows = $students->map(function ($student) use ($sourceClasse, $defaultTargetClasse, $suggestedTargetClasse, $data, $existingIds, $threshold, $examLevel, $decisionsCap) {
             $moyenne = $this->moyenneAnnuelle($student->id_eleve, $sourceClasse->id_classe, (int) $data['source_annee_id']);
             $resultatNational = $examLevel
                 ? $this->resultatNational($student->id_eleve, $sourceClasse->id_classe, (int) $data['source_annee_id'], $examLevel)
@@ -641,8 +642,17 @@ class InscriptionController extends Controller
             $proposal = $examLevel
                 ? $this->proposeNationalExamDecision($resultatNational, $examLevel, $suggestedTargetClasse)
                 : (Ordres::sansNotes($sourceClasse->ordreEnseignement) ? 'passant' : $this->proposeDecision($moyenne, $threshold));
+            // Fiche validée par le CAP : sa décision remplace le calcul (l'école peut encore l'ajuster).
+            $decisionCap = $decisionsCap[$student->id_eleve] ?? null;
+            if ($decisionCap) {
+                $proposal = match ($decisionCap['decision']) {
+                    'passe' => $suggestedTargetClasse ? 'passant' : 'admis_sortant',
+                    'redouble' => 'redoublant',
+                    default => $decisionCap['decision'],
+                };
+            }
             $classeCibleId = match ($proposal) {
-                'redoublant' => $sourceClasse->id_classe,
+                'redoublant', 'exclu', 'abandon' => $sourceClasse->id_classe,
                 'admis_sortant', 'diplome_sortant', 'en_attente_resultat' => null,
                 default => $defaultTargetClasse->id_classe,
             };
@@ -655,6 +665,8 @@ class InscriptionController extends Controller
                 'niveau_examen' => $examLevel,
                 'seuil' => $threshold,
                 'decision_proposee' => $proposal,
+                'decision_cap' => (bool) $decisionCap,
+                'motif_cap' => $decisionCap['observation'] ?? (in_array($proposal, ['exclu', 'abandon'], true) ? 'Décision du CAP' : null),
                 'classe_cible_id' => $classeCibleId,
                 'deja_reinscrit' => in_array((int) $student->id_eleve, $existingIds, true),
             ];
