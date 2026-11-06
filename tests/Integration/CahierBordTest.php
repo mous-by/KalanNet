@@ -167,21 +167,89 @@ class CahierBordTest extends IntegrationTestCase
             DB::table('utilisateurs')->where('idUtilisateur', $dcap->idUtilisateur)->update(['id_cap' => $autreCap]);
             $this->actingAs($dcap->fresh())->get("/territoire/cahiers-bord/{$fiche->id}/pdf")->assertNotFound();
         }
+        // L'académie suit le secondaire, jamais les fiches remises au CAP.
         $dae = $this->compte('Admin', 1)->replicate();
         $dae->forceFill(['droit' => 'DAE', 'idEcole' => null, 'id_academie' => DB::table('academie')->value('id_academie'), 'statut' => 1, 'email' => 'dae'.uniqid().'@test.ml'])->save();
-        $this->actingAs($dae)->withSession([])->get('/territoire/cahiers-bord')->assertForbidden();
+        $this->actingAs($dae)->withSession([])->get('/territoire/cahiers-bord')->assertOk()->assertDontSee("Jardin d'enfants");
+        $this->get("/territoire/cahiers-bord/{$fiche->id}/pdf")->assertNotFound();
         $this->actingAs($this->compte('parent', 1))->withSession(['idEcole' => 1])->get('/cahier-bord')->assertForbidden();
     }
 
-    public function test_lycee_seul_non_concerne_et_classes_non_reconnues(): void
+    public function test_classes_non_reconnues_signalees(): void
     {
         $garderie = $this->classes['ps']->replicate();
         $garderie->nom_classe = 'Garderie';
         $garderie->save();
         $this->actingAs($this->adminComplet(1))->withSession(['idEcole' => 1]);
         $this->get($this->url('jardin', 'cahier-bord.index'))->assertOk()->assertSee('Garderie');
+    }
 
-        DB::table('classe')->where('idEcole', 1)->update(['ordreEnseignement' => 'secondairegenerale']);
-        $this->get('/cahier-bord')->assertForbidden();
+    public function test_secondaire_remis_a_l_academie(): void
+    {
+        $lycee = $this->classes['1']->replicate();
+        $lycee->nom_classe = 'TSE';
+        $lycee->ordreEnseignement = 'secondairegenerale';
+        $lycee->save();
+        $technique = $this->classes['1']->replicate();
+        $technique->nom_classe = '1ère année Génie civil';
+        $technique->ordreEnseignement = 'secondairetechniqueetprofessionnel';
+        $technique->save();
+        DB::table('eleve')->where('id_eleve', $this->eleves[0])->update(['id_classe' => $lycee->id_classe]);
+        DB::table('classe_maitres')->insert(['id_classe' => $lycee->id_classe, 'id_enseignant' => $this->enseignant]);
+
+        $this->assertContains('secondaire', Donnees::cycles(1));
+        $d = Donnees::calculer(Ecole::withoutGlobalScopes()->find(1), (int) $this->annee->id_anneeScolaire, 'secondaire', 'M. Coulibaly');
+        $lignes = collect($d['effectifs'])->keyBy('libelle');
+        $this->assertSame(1, $lignes['TSE']['f']);
+        $this->assertArrayHasKey('1ère année Génie civil', $lignes->all());
+        $this->assertSame('Proviseur', $d['administratifs'][0]['fonction']);
+        $this->assertCount(8, $d['administratifs']);
+        $this->assertSame('Professeur', collect($d['enseignants'])->firstWhere('id', $this->enseignant)['fonction']);
+
+        $academie = (int) DB::table('academie')->value('id_academie');
+        DB::table('utilisateurs')->where('droit', 'DAE')->update(['statut' => 0]);
+        DB::table('ecole')->where('idEcole', 1)->update(['id_academie' => $academie]);
+        $dae = $this->compte('Admin', 1)->replicate();
+        $dae->forceFill(['droit' => 'DAE', 'idEcole' => null, 'id_academie' => $academie, 'id_cap' => null, 'statut' => 1, 'email' => 'dae'.uniqid().'@test.ml'])->save();
+
+        $this->actingAs($this->adminComplet(1))->withSession(['idEcole' => 1]);
+        $this->get($this->url('secondaire', 'cahier-bord.index'))->assertOk()->assertSee('Envoyer à l\'académie')->assertDontSee('CAP de')->assertSee('Classe / série');
+        $this->post($this->url('secondaire'), $this->formulaire('secondaire', ['action' => 'remettre']))->assertSessionHas('success');
+        $fiche = CahierBord::withoutGlobalScopes()->where('id_ecole', 1)->where('cycle', 'secondaire')->firstOrFail();
+        $this->assertSame('envoye', $fiche->statut);
+        $this->assertSame($academie, (int) $fiche->id_academie);
+        $this->assertTrue(AppNotification::where('user_id', $dae->idUtilisateur)->where('type', 'cahier_bord')->exists());
+        $this->get($this->url('secondaire', 'cahier-bord.pdf'))->assertOk()->assertHeader('content-type', 'application/pdf');
+
+        $this->actingAs($dae)->withSession([])->get('/territoire/cahiers-bord')->assertOk()->assertSee('Secondaire')->assertSee('Reçu');
+        $this->get("/territoire/cahiers-bord/{$fiche->id}/pdf")->assertOk();
+
+        // Le DCAP ne voit pas le cahier du secondaire.
+        $dcap = $this->dcap((int) DB::table('cap')->value('id_cap'));
+        $this->actingAs($dcap)->withSession([])->get("/territoire/cahiers-bord/{$fiche->id}/pdf")->assertNotFound();
+    }
+
+    public function test_tous_sauf_les_ecoles_de_sante_franco_arabes_et_privees_comprises(): void
+    {
+        // Franco-arabe (médersa), privée : concernée comme les autres.
+        DB::table('ecole')->where('idEcole', 1)->update(['franco_arabe' => 1, 'statut' => 'prive', 'typeEcole' => 'Fondamentale I']);
+        $this->assertSame(['jardin', 'premier', 'second'], Donnees::cycles(1));
+        $this->assertNotSame([], \App\Support\RapportSuccinctDonnees::portees(1));
+        $this->assertTrue(\App\Support\PropositionPassageDonnees::ecoleConcernee(1));
+        $this->actingAs($this->adminComplet(1))->withSession(['idEcole' => 1]);
+        $this->get('/cahier-bord')->assertOk();
+        $this->get('/rapport-succinct')->assertOk();
+        $this->get('/proposition-passage')->assertOk();
+
+        // École de santé, publique ou privée : aucun de ces modules.
+        foreach (['public', 'prive'] as $statut) {
+            DB::table('ecole')->where('idEcole', 1)->update(['typeEcole' => 'École de Santé', 'statut' => $statut, 'franco_arabe' => 0]);
+            $this->assertSame([], Donnees::cycles(1));
+            $this->assertSame([], \App\Support\RapportSuccinctDonnees::portees(1));
+            $this->assertFalse(\App\Support\PropositionPassageDonnees::ecoleConcernee(1));
+            $this->get('/cahier-bord')->assertForbidden();
+            $this->get('/rapport-succinct')->assertForbidden();
+            $this->get('/proposition-passage')->assertForbidden();
+        }
     }
 }

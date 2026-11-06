@@ -15,7 +15,7 @@
         .grille th, .grille td { border: 1px solid #000; padding: 2px 3px; text-align: center; }
         .grille th { font-size: 9px; }
         .personnes td { font-size: 9px; text-align: left; word-wrap: break-word; }
-        .femme { color: #c00000; font-weight: bold; }
+        .femme { font-weight: bold; }
         .nb { font-size: 9px; margin-top: 4px; }
         .page { page-break-after: always; }
         .page:last-child { page-break-after: auto; }
@@ -27,12 +27,13 @@
         $cycle = $d['cycle'] ?? 'premier';
         $jardin = $cycle === 'jardin';
         $n = fn ($v) => $v === null || $v === '' || (int) $v === 0 ? '' : (int) $v;
-        $niveaux = $C::niveaux($cycle);
+        $secondaire = $cycle === 'secondaire';
         $effectifs = collect($d['effectifs'] ?? [])->keyBy('cle');
+        $niveaux = $effectifs->map(fn ($l) => $l['libelle'])->all();
         $total = fn ($champ) => $effectifs->sum(fn ($l) => (int) ($l[$champ] ?? 0));
         $regime = \App\Support\RapportSuccinctDonnees::RECRUTEMENTS[$d['regime'] ?? 0] ?? '';
-        $entete = function () use ($d, $jardin, $regime, $annee, $cycle) {
-            return view()->make('pdf.partials.cahier_bord_entete', compact('d', 'jardin', 'regime', 'annee', 'cycle'))->render();
+        $entete = function () use ($d, $jardin, $secondaire, $regime, $annee, $cycle) {
+            return view()->make('pdf.partials.cahier_bord_entete', compact('d', 'jardin', 'secondaire', 'regime', 'annee', 'cycle'))->render();
         };
     @endphp
 
@@ -69,7 +70,7 @@
             @endforeach
         </table>
 
-        <div class="section">II. LISTE DU PERSONNEL ADMINISTRATIF (Directeur, Chargé de dossiers, Gardien)</div>
+        <div class="section">II. LISTE DU PERSONNEL ADMINISTRATIF {{ $secondaire ? '' : '(Directeur, Chargé de dossiers, Gardien)' }}</div>
         @include('pdf.partials.cahier_bord_personnes', ['personnes' => $d['administratifs'] ?? [], 'enseignants' => false, 'jardin' => $jardin])
 
         <table style="width: 100%; margin-top: 4px;">
@@ -82,12 +83,14 @@
                     </table>
                 </td>
                 <td style="width: 48%; vertical-align: bottom; padding-left: 20px; font-weight: bold;">
-                    Date de création {{ $jardin ? 'du CDPE' : "de l'école" }} : {{ $d['date_creation'] ?? '' }}<br>
-                    Date d'ouverture {{ $jardin ? 'du CDPE' : "de l'école" }} : {{ $d['date_ouverture'] ?? '' }}
+                    Date de création {{ $jardin ? 'du CDPE' : ($secondaire ? "de l'établissement" : "de l'école") }} : {{ $d['date_creation'] ?? '' }}<br>
+                    Date d'ouverture {{ $jardin ? 'du CDPE' : ($secondaire ? "de l'établissement" : "de l'école") }} : {{ $d['date_ouverture'] ?? '' }}
                 </td>
             </tr>
         </table>
 
+        {{-- Titre et tableau ensemble : jamais un titre seul en bas de page. --}}
+        <div style="page-break-inside: avoid;">
         <div class="section">IV. SITUATION DES TABLES-BANCS</div>
         <table style="width: 100%;">
             <tr>
@@ -113,20 +116,21 @@
             </tr>
         </table>
         <div class="nb">N.B : {{ $jardin ? 'Anciens = redoublants ; Nouveaux = recrutés ou passants.' : 'Recr = recruté ; Red = redoublant ; Nbre = nombre de cours.' }}</div>
+        </div>
     </div>
 
     <div class="page">
-        <div class="section" style="margin-top: 0;">V. LISTE DU PERSONNEL ENSEIGNANT {{ $jardin ? "DU JARDIN D'ENFANTS" : '('.Str::upper($C::CYCLES[$cycle]).')' }}</div>
+        <div class="section" style="margin-top: 0;">V. LISTE DU PERSONNEL ENSEIGNANT {{ $jardin ? "DU JARDIN D'ENFANTS" : ($secondaire ? 'DU SECONDAIRE' : '('.Str::upper($C::CYCLES[$cycle]).')') }}</div>
         @include('pdf.partials.cahier_bord_personnes', ['personnes' => $d['enseignants'] ?? [], 'enseignants' => true, 'jardin' => $jardin])
         <table style="width: 100%; margin-top: 8px;">
             <tr>
                 <td class="nb" style="vertical-align: top;">
                     N.B : Préciser MSC ou MPC. Grade actuel : MSC 2-4 ou MPC 2-6.<br>
                     S.F : Situation de famille (marié(e), célibataire, divorcé(e) ou veuf(ve)).<br>
-                    <span class="femme">Nom des femmes écrit en rouge.</span>
+                    <span class="femme">Nom des femmes écrit en gras.</span>
                 </td>
                 <td style="text-align: right; vertical-align: top; font-weight: bold;">
-                    Fiche établie le {{ now()->format('d/m/Y') }}<br><br>Signature et cachet du Directeur<br><br><br>{{ $d['directeur'] ?? '' }}
+                    Fiche établie le {{ now()->format('d/m/Y') }}<br><br>Signature et cachet du {{ $secondaire ? 'Proviseur' : 'Directeur' }}<br><br><br>{{ $d['directeur'] ?? '' }}
                 </td>
             </tr>
         </table>

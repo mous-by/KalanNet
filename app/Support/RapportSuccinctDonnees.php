@@ -49,10 +49,11 @@ class RapportSuccinctDonnees
     /** Fiche(s) que remet l'établissement. Un complexe a les deux, même si ses classes ne sont pas encore toutes créées. @return list<string> */
     public static function portees(?int $idEcole): array
     {
-        if (!$idEcole) {
-            return [];
+        $typeEcole = $idEcole ? DB::table('ecole')->where('idEcole', $idEcole)->value('typeEcole') : null;
+        if (!$idEcole || ModelesBulletin::estEcoleSante($typeEcole)) {
+            return []; // écoles de santé : non concernées
         }
-        $type = Str::lower(Str::ascii((string) DB::table('ecole')->where('idEcole', $idEcole)->value('typeEcole')));
+        $type = Str::lower(Str::ascii((string) $typeEcole));
         $portees = [];
         if (str_contains($type, 'complexe') || self::classes($idEcole)->isNotEmpty()) {
             $portees[] = 'fondamental';

@@ -148,6 +148,12 @@
                     <div class="menu-title">Rapports succincts</div>
                 </a>
             </li>
+            <li>
+                <a href="{{ route('territoire.cahiers-bord') }}">
+                    <div class="parent-icon"><i class="bi bi-journal-bookmark"></i></div>
+                    <div class="menu-title">Cahiers de bord</div>
+                </a>
+            </li>
             @endif
             @if($user->droit === 'DCAP')
             <li>
@@ -306,7 +312,7 @@
             </li>
         @endif
 
-        {{-- Cahier de bord : jardin d'enfants et fondamental, remis au CAP. --}}
+        {{-- Cahier de bord : tous sauf les écoles de santé ; au CAP, ou à l'académie pour le secondaire. --}}
         @if(session('idEcole') && \App\Http\Controllers\CahierBordController::autorise($user) && \App\Support\CahierBordDonnees::cycles((int) session('idEcole')) !== [])
             <li>
                 <a href="{{ route('cahier-bord.index') }}">

@@ -8,15 +8,16 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
- * « Cahier de bord » d'une école, remis au CAP : une fiche par cycle (jardin d'enfants, 1er cycle, 2e cycle). Effectifs,
+ * « Cahier de bord » d'un établissement : une fiche par cycle. Jardin d'enfants, 1er et 2e cycle sont remis au CAP, le
+ * secondaire (général, technique et professionnel) à l'académie ; les écoles de santé ne sont pas concernées. Effectifs,
  * enseignants et classes tenues viennent de KalanNet ; ce que KalanNet ne connaît pas (dates de carrière, salles,
  * tables-bancs, équipements) est saisi une fois puis repris de la fiche de l'année précédente.
  */
 class CahierBordDonnees
 {
-    public const CYCLES = ['jardin' => "Jardin d'enfants", 'premier' => '1er cycle', 'second' => '2e cycle'];
+    public const CYCLES = ['jardin' => "Jardin d'enfants", 'premier' => '1er cycle', 'second' => '2e cycle', 'secondaire' => 'Secondaire'];
 
-    private const ORDRES = ['jardin' => 'jardin', 'premier' => 'fondamentale1', 'second' => 'fondamentale2'];
+    private const ORDRES = ['jardin' => ['jardin'], 'premier' => ['fondamentale1'], 'second' => ['fondamentale2'], 'secondaire' => RapportSuccinctDonnees::SECONDAIRE];
 
     public const SALLES = ['dur' => 'Dur', 'semi_dur' => 'Semi-dur', 'banco' => 'Banco', 'autres' => 'Autres'];
 
@@ -35,25 +36,32 @@ class CahierBordDonnees
     /** Cycles présents dans l'école, dans l'ordre du modèle. @return list<string> */
     public static function cycles(?int $idEcole): array
     {
-        if (!$idEcole) {
+        if (!$idEcole || ModelesBulletin::estEcoleSante(DB::table('ecole')->where('idEcole', $idEcole)->value('typeEcole'))) {
             return [];
         }
-        $ordres = DB::table('classe')->where('idEcole', $idEcole)->whereIn('ordreEnseignement', self::ORDRES)->distinct()->pluck('ordreEnseignement')->all();
+        $ordres = DB::table('classe')->where('idEcole', $idEcole)->whereNotNull('ordreEnseignement')->distinct()->pluck('ordreEnseignement')->all();
 
-        return array_values(array_filter(array_keys(self::ORDRES), fn ($cycle) => in_array(self::ORDRES[$cycle], $ordres, true)));
+        return array_values(array_filter(array_keys(self::ORDRES), fn ($cycle) => array_intersect(self::ORDRES[$cycle], $ordres) !== []));
+    }
+
+    /** Le secondaire remet son cahier à l'académie, le reste au CAP. */
+    public static function versAcademie(string $cycle): bool
+    {
+        return $cycle === 'secondaire';
     }
 
     /** @return Collection<int, object> */
     private static function classes(int $idEcole, string $cycle): Collection
     {
-        return DB::table('classe')->where('idEcole', $idEcole)->where('ordreEnseignement', self::ORDRES[$cycle])->orderBy('nom_classe')->get(['id_classe', 'nom_classe']);
+        return DB::table('classe')->where('idEcole', $idEcole)->whereIn('ordreEnseignement', self::ORDRES[$cycle])->orderBy('nom_classe')->get(['id_classe', 'nom_classe']);
     }
 
-    /** Lignes du tableau des effectifs, comme sur le modèle. @return array<string, string> */
+    /** Lignes fixes du tableau des effectifs (le secondaire a les siennes, par série ou filière). @return array<string, string> */
     public static function niveaux(string $cycle): array
     {
         return match ($cycle) {
             'jardin' => ['ps' => 'Section des Petits', 'ms' => 'Section des Moyens', 'gs' => 'Section des Grands'],
+            'secondaire' => [],
             'premier' => ['1' => '1ère A', '2' => '2è A', '3' => '3è A', '4' => '4è A', '5' => '5è A', '6' => '6è A'],
             default => ['7' => '7è A', '8' => '8è A', '9' => '9è A'],
         };
@@ -80,6 +88,9 @@ class CahierBordDonnees
     /** Classes absentes du tableau des effectifs, à signaler. @return list<string> */
     public static function classesNonReconnues(int $idEcole, string $cycle): array
     {
+        if ($cycle === 'secondaire') {
+            return []; // une série inconnue a sa propre ligne
+        }
         return self::classes($idEcole, $cycle)->filter(fn ($c) => self::niveauDe($cycle, $c->nom_classe) === null)->pluck('nom_classe')->values()->all();
     }
 
@@ -99,19 +110,28 @@ class CahierBordDonnees
             'commune' => null,
             'academie' => DB::table('academie')->where('id_academie', $ecole->id_academie)->value('nom_academie') ?: $ecole->academie,
             'cap' => DB::table('cap')->where('id_cap', $ecole->id_cap)->value('nom_cap') ?: $ecole->cap,
-            'effectifs' => self::effectifs($idEcole, $idAnnee, $cycle, $classes),
-            'administratifs' => array_fill(0, 4, array_fill_keys(self::CHAMPS_ADMINISTRATIF, null)),
+            'effectifs' => $cycle === 'secondaire'
+                ? RapportSuccinctDonnees::calculer($ecole, $idAnnee, 'secondaire')['groupes']
+                : self::effectifs($idEcole, $idAnnee, $cycle, $classes),
+            'administratifs' => array_fill(0, self::lignesAdministratives($cycle), array_fill_keys(self::CHAMPS_ADMINISTRATIF, null)),
             'enseignants' => self::enseignants($idEcole, $cycle, $classes),
             'salles' => array_fill_keys(array_keys(self::SALLES), null),
             'date_creation' => null,
             'date_ouverture' => null,
-            'tables' => array_fill_keys(array_keys(self::niveaux($cycle)), array_fill_keys(array_keys(self::TABLES), null)),
+            'tables' => [],
             'equipements' => array_fill_keys(array_keys(self::EQUIPEMENTS), null),
         ];
+        $donnees['tables'] = collect($donnees['effectifs'])->mapWithKeys(fn ($l) => [$l['cle'] => array_fill_keys(array_keys(self::TABLES), null)])->all();
         $donnees['administratifs'][0]['nom'] = $directeur;
-        $donnees['administratifs'][0]['fonction'] = 'Directeur';
+        $donnees['administratifs'][0]['fonction'] = $cycle === 'secondaire' ? 'Proviseur' : 'Directeur';
 
         return self::reprendre($donnees, self::precedente($idEcole, $idAnnee, $cycle));
+    }
+
+    /** Un lycée a plus de personnel administratif qu'une école. */
+    public static function lignesAdministratives(string $cycle): int
+    {
+        return $cycle === 'secondaire' ? 8 : 4;
     }
 
     /** Dernière fiche d'une année antérieure, pour ce cycle. */
@@ -132,8 +152,13 @@ class CahierBordDonnees
         foreach (['depuis', 'regime', 'commune', 'contact', 'date_creation', 'date_ouverture'] as $champ) {
             $donnees[$champ] = $avant[$champ] ?? $donnees[$champ];
         }
-        foreach (['administratifs', 'salles', 'equipements'] as $bloc) {
+        foreach (['salles', 'equipements'] as $bloc) {
             $donnees[$bloc] = $avant[$bloc] ?? $donnees[$bloc];
+        }
+        foreach ($avant['administratifs'] ?? [] as $i => $personne) {
+            if (isset($donnees['administratifs'][$i])) {
+                $donnees['administratifs'][$i] = $personne;
+            }
         }
         foreach ($donnees['tables'] as $cle => $ligne) {
             $donnees['tables'][$cle] = $avant['tables'][$cle] ?? $ligne;
@@ -206,7 +231,7 @@ class CahierBordDonnees
             'matricule' => $e->matricule,
             'echelon' => null,
             'sf' => $e->statut_matrimonial,
-            'fonction' => $cycle === 'jardin' ? 'Éducateur' : 'Maître',
+            'fonction' => match ($cycle) { 'jardin' => 'Éducateur', 'secondaire' => 'Professeur', default => 'Maître' },
             'specialite' => $e->specialite,
             'classes' => $tenues[$e->id_enseignant] ?? null,
             'diplome' => $e->diplome_enseignant,

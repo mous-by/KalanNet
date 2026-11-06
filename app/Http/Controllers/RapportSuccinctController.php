@@ -239,7 +239,8 @@ class RapportSuccinctController extends Controller
 
         $ecoles = DB::table('ecole as e')->where('e.'.$colonne, $id)
             ->whereExists(fn ($q) => $q->select(DB::raw(1))->from('classe')->whereColumn('classe.idEcole', 'e.idEcole')->whereIn('classe.ordreEnseignement', $ordres))
-            ->orderBy('e.nomEcole')->get(['e.idEcole', 'e.nomEcole', 'e.adresse']);
+            ->orderBy('e.nomEcole')->get(['e.idEcole', 'e.nomEcole', 'e.adresse', 'e.typeEcole'])
+            ->reject(fn ($e) => \App\Support\ModelesBulletin::estEcoleSante($e->typeEcole))->values();
 
         // Même année, commune ou créée par l'école elle-même.
         $idsAnnee = DB::table('anneescolaire')->where('annee', $annee?->annee)->pluck('id_anneeScolaire');

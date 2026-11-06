@@ -142,7 +142,8 @@ class PropositionPassageDonnees
 
     public static function ecoleConcernee(?int $idEcole): bool
     {
-        return $idEcole && DB::table('classe')->where('idEcole', $idEcole)->whereIn('ordreEnseignement', self::ORDRES)->exists();
+        return $idEcole && !ModelesBulletin::estEcoleSante(DB::table('ecole')->where('idEcole', $idEcole)->value('typeEcole'))
+            && DB::table('classe')->where('idEcole', $idEcole)->whereIn('ordreEnseignement', self::ORDRES)->exists();
     }
 
     public static function fille(?string $genre): bool

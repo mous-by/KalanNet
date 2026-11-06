@@ -18,8 +18,9 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Cahier de bord : une fiche par cycle (jardin, 1er cycle, 2e cycle), pré-remplie, téléchargeable à tout moment et remise
- * au CAP (par KalanNet si le CAP a un compte, sinon sur papier). Le DCAP suit les fiches de son CAP.
+ * Cahier de bord : une fiche par cycle, pré-remplie, téléchargeable à tout moment. Jardin et fondamental la remettent au
+ * CAP (suivie par le DCAP), le secondaire à l'académie (suivie par le DAE) : par KalanNet si le destinataire a un compte,
+ * sinon sur papier.
  */
 class CahierBordController extends Controller
 {
@@ -32,7 +33,7 @@ class CahierBordController extends Controller
     {
         abort_unless(self::autorise(Auth::user()), 403);
         $ecole = Ecole::withoutGlobalScopes()->findOrFail(session('idEcole') ?: Auth::user()->idEcole);
-        abort_unless(Donnees::cycles((int) $ecole->idEcole) !== [], 403, 'Le cahier de bord concerne le jardin d\'enfants et le fondamental.');
+        abort_unless(Donnees::cycles((int) $ecole->idEcole) !== [], 403, 'Cet établissement n\'est pas concerné par le cahier de bord.');
 
         return $ecole;
     }
@@ -62,6 +63,11 @@ class CahierBordController extends Controller
         return CahierBord::where('id_ecole', $ecole->idEcole)->where('id_annee', $annee->id_anneeScolaire)->where('cycle', $cycle)->first();
     }
 
+    private function surKalanNet(Ecole $ecole, string $cycle): bool
+    {
+        return Donnees::versAcademie($cycle) ? RapportSuccinctDonnees::academieSurKalanNet($ecole->id_academie) : RapportSuccinctDonnees::capSurKalanNet($ecole->id_cap);
+    }
+
     private function calcul(Ecole $ecole, AnneeScolaire $annee, string $cycle): array
     {
         return Donnees::calculer($ecole, (int) $annee->id_anneeScolaire, $cycle, (string) Auth::user()->nomPrenom);
@@ -86,7 +92,7 @@ class CahierBordController extends Controller
         return view('cahiers-bord.index', [
             'ecole' => $ecole, 'annee' => $annee, 'annees' => $this->annees(), 'fiche' => $fiche, 'donnees' => $donnees,
             'cycle' => $cycle, 'cycles' => Donnees::cycles((int) $ecole->idEcole),
-            'capSurKalanNet' => RapportSuccinctDonnees::capSurKalanNet($ecole->id_cap),
+            'surKalanNet' => $this->surKalanNet($ecole, $cycle),
             'nonReconnues' => Donnees::classesNonReconnues((int) $ecole->idEcole, $cycle),
             'manquants' => Donnees::champsManquants($donnees),
         ]);
@@ -114,19 +120,25 @@ class CahierBordController extends Controller
             if ($manquants !== []) {
                 throw ValidationException::withMessages(['cahier' => 'À compléter avant de remettre le cahier de bord : '.implode(', ', $manquants).'.']);
             }
-            $surKalanNet = RapportSuccinctDonnees::capSurKalanNet($ecole->id_cap);
-            $fiche->update(['statut' => $surKalanNet ? 'envoye' : 'remis', 'id_cap' => $ecole->id_cap, 'donnees_envoyees' => $donnees, 'envoye_at' => now(), 'envoye_par' => Auth::id()]);
+            $academie = Donnees::versAcademie($cycle);
+            $destinataire = $academie ? 'votre académie' : 'votre CAP';
+            $surKalanNet = $this->surKalanNet($ecole, $cycle);
+            $fiche->update(['statut' => $surKalanNet ? 'envoye' : 'remis', 'id_cap' => $academie ? null : $ecole->id_cap, 'id_academie' => $academie ? $ecole->id_academie : null,
+                'donnees_envoyees' => $donnees, 'envoye_at' => now(), 'envoye_par' => Auth::id()]);
             if (!$surKalanNet) {
-                return redirect()->route('cahier-bord.index', $retour)->with('success', 'Cahier de bord marqué comme remis à votre CAP.');
+                return redirect()->route('cahier-bord.index', $retour)->with('success', 'Cahier de bord marqué comme remis à '.$destinataire.'.');
             }
-            DB::table('utilisateurs')->where('droit', 'DCAP')->where('id_cap', $ecole->id_cap)->where('statut', 1)->pluck('idUtilisateur')
-                ->each(fn ($dcap) => AppNotification::create([
-                    'user_id' => $dcap, 'type' => 'cahier_bord', 'title' => 'Cahier de bord reçu',
+            DB::table('utilisateurs')->when($academie,
+                fn ($q) => $q->where('droit', 'DAE')->where('id_academie', $ecole->id_academie),
+                fn ($q) => $q->where('droit', 'DCAP')->where('id_cap', $ecole->id_cap),
+            )->where('statut', 1)->pluck('idUtilisateur')
+                ->each(fn ($superviseur) => AppNotification::create([
+                    'user_id' => $superviseur, 'type' => 'cahier_bord', 'title' => 'Cahier de bord reçu',
                     'message' => $ecole->nomEcole.' a envoyé son cahier de bord ('.Donnees::CYCLES[$cycle].', '.$annee->annee.').',
                     'link' => route('territoire.cahiers-bord', ['annee' => $annee->id_anneeScolaire], false),
                 ]));
 
-            return redirect()->route('cahier-bord.index', $retour)->with('success', 'Cahier de bord envoyé à votre CAP.');
+            return redirect()->route('cahier-bord.index', $retour)->with('success', 'Cahier de bord envoyé à '.$destinataire.'.');
         }
 
         return redirect()->route('cahier-bord.index', $retour)->with('success', 'Cahier de bord enregistré.');
@@ -149,7 +161,7 @@ class CahierBordController extends Controller
             'date_creation' => 'nullable|string|max:30', 'date_ouverture' => 'nullable|string|max:30',
             'effectifs' => 'required|array', 'effectifs.*.groupes' => $entier, 'effectifs.*.g' => $entier, 'effectifs.*.f' => $entier,
             'effectifs.*.rg' => $entier, 'effectifs.*.rf' => $entier,
-            'administratifs' => 'nullable|array|max:4', 'administratifs.*.*' => $texte,
+            'administratifs' => 'nullable|array|max:'.Donnees::lignesAdministratives($cycle), 'administratifs.*.*' => $texte,
             'enseignants' => 'nullable|array', 'enseignants.*.*' => 'nullable|string|max:150',
             'salles.*' => $nombre, 'tables.*.*' => $nombre, 'equipements.*' => $nombre,
         ]);
@@ -176,7 +188,7 @@ class CahierBordController extends Controller
 
             return $e;
         })->all();
-        $administratifs = collect(range(0, 3))->map(fn ($i) => collect(Donnees::CHAMPS_ADMINISTRATIF)->mapWithKeys(fn ($c) => [$c => $data['administratifs'][$i][$c] ?? null])->all())->all();
+        $administratifs = collect(range(0, Donnees::lignesAdministratives($cycle) - 1))->map(fn ($i) => collect(Donnees::CHAMPS_ADMINISTRATIF)->mapWithKeys(fn ($c) => [$c => $data['administratifs'][$i][$c] ?? null])->all())->all();
         $entiers = fn (array $cles, array $valeurs) => collect($cles)->mapWithKeys(fn ($c) => [$c => isset($valeurs[$c]) && $valeurs[$c] !== '' ? (int) $valeurs[$c] : null])->all();
 
         return [
@@ -187,7 +199,7 @@ class CahierBordController extends Controller
             'effectifs' => $effectifs, 'administratifs' => $administratifs, 'enseignants' => $enseignants,
             'salles' => $entiers(array_keys(Donnees::SALLES), $data['salles'] ?? []),
             'date_creation' => $data['date_creation'] ?? null, 'date_ouverture' => $data['date_ouverture'] ?? null,
-            'tables' => collect(Donnees::niveaux($cycle))->map(fn ($l, $cle) => $entiers(array_keys(Donnees::TABLES), $data['tables'][$cle] ?? []))->all(),
+            'tables' => collect($effectifs)->mapWithKeys(fn ($l) => [$l['cle'] => $entiers(array_keys(Donnees::TABLES), $data['tables'][$l['cle']] ?? [])])->all(),
             'equipements' => $entiers(array_keys(Donnees::EQUIPEMENTS), $data['equipements'] ?? []),
         ];
     }
@@ -210,42 +222,47 @@ class CahierBordController extends Controller
         return $telecharger ? $pdf->download($nom) : $pdf->stream($nom);
     }
 
-    /* ——— Espace du CAP ——— */
+    /* ——— Espace du CAP et de l'académie ——— */
 
-    private function dcap()
+    /** Le DCAP suit le jardin et le fondamental de son CAP, le DAE le secondaire de son académie. @return array{0: string, 1: int, 2: bool} */
+    private function superviseur(): array
     {
         $user = Auth::user();
-        abort_unless($user->droit === 'DCAP' && $user->id_cap, 403);
+        if ($user->droit === 'DCAP' && $user->id_cap) {
+            return ['id_cap', (int) $user->id_cap, false];
+        }
+        abort_unless($user->droit === 'DAE' && $user->id_academie, 403);
 
-        return $user;
+        return ['id_academie', (int) $user->id_academie, true];
     }
 
     public function territoire(Request $request)
     {
-        $user = $this->dcap();
+        [$colonne, $id, $academie] = $this->superviseur();
         $annees = DB::table('anneescolaire')->whereNull('id_ecole')->whereDate('date_debut', '<=', now()->toDateString())->orderByDesc('date_debut')->get();
         $annee = $annees->firstWhere('id_anneeScolaire', $request->integer('annee')) ?? $annees->first();
 
-        $ecoles = DB::table('ecole as e')->where('e.id_cap', $user->id_cap)
-            ->whereExists(fn ($q) => $q->select(DB::raw(1))->from('classe')->whereColumn('classe.idEcole', 'e.idEcole')->whereIn('classe.ordreEnseignement', Ordres::SOUS_CAP))
+        $ecoles = DB::table('ecole as e')->where('e.'.$colonne, $id)
+            ->whereExists(fn ($q) => $q->select(DB::raw(1))->from('classe')->whereColumn('classe.idEcole', 'e.idEcole')->whereIn('classe.ordreEnseignement', $academie ? RapportSuccinctDonnees::SECONDAIRE : Ordres::SOUS_CAP))
             ->orderBy('e.nomEcole')->get(['e.idEcole', 'e.nomEcole', 'e.adresse']);
 
         $idsAnnee = DB::table('anneescolaire')->where('annee', $annee?->annee)->pluck('id_anneeScolaire');
         $fiches = CahierBord::withoutGlobalScopes()->whereIn('id_annee', $idsAnnee)->where('statut', '!=', 'brouillon')
             ->whereIn('id_ecole', $ecoles->pluck('idEcole'))->get()->groupBy('id_ecole');
 
-        $lignes = $ecoles->flatMap(fn ($e) => collect(Donnees::cycles((int) $e->idEcole))->map(fn ($cycle) => (object) [
+        // Une ligne par cycle qui revient à ce superviseur ; les écoles de santé n'en ont aucun.
+        $lignes = $ecoles->flatMap(fn ($e) => collect(Donnees::cycles((int) $e->idEcole))->filter(fn ($cycle) => Donnees::versAcademie($cycle) === $academie)->map(fn ($cycle) => (object) [
             'ecole' => $e, 'cycle' => $cycle, 'fiche' => $fiches->get($e->idEcole)?->firstWhere('cycle', $cycle),
-        ]));
+        ]))->values();
 
-        return view('territoire.cahiers-bord', compact('lignes', 'annees', 'annee'));
+        return view('territoire.cahiers-bord', compact('lignes', 'annees', 'annee', 'academie'));
     }
 
     public function pdfTerritoire(Request $request, int $id)
     {
-        $user = $this->dcap();
+        [$colonne, $idTerritoire, $academie] = $this->superviseur();
         $fiche = CahierBord::withoutGlobalScopes()->where('statut', '!=', 'brouillon')->findOrFail($id);
-        abort_unless((int) DB::table('ecole')->where('idEcole', $fiche->id_ecole)->value('id_cap') === (int) $user->id_cap, 404);
+        abort_unless(Donnees::versAcademie($fiche->cycle) === $academie && (int) DB::table('ecole')->where('idEcole', $fiche->id_ecole)->value($colonne) === $idTerritoire, 404);
 
         return $this->fichier($fiche->donnees_envoyees, (string) DB::table('anneescolaire')->where('id_anneeScolaire', $fiche->id_annee)->value('annee'), $request->boolean('telecharger'));
     }

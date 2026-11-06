@@ -170,10 +170,11 @@
     le fondamental, remise à l'académie plutôt qu'au CAP. Un complexe scolaire y trouve deux onglets, une fiche pour chacun.</p>
 
     <h5 class="fw-bold mt-4">Cahier de bord</h5>
-    <p>Jardin d'enfants et fondamental : ouvrez <strong>Cahier de bord</strong>, une fiche par cycle. Effectifs, enseignants et
+    <p>Tous les établissements sauf les écoles de santé : ouvrez <strong>Cahier de bord</strong>, une fiche par cycle
+    (jardin, 1er cycle, 2e cycle, secondaire). Effectifs, enseignants et
     classes tenues sont repris de KalanNet ; complétez les dates de carrière, les salles, les tables-bancs et les équipements,
-    qui seront repris l'année suivante. Téléchargez le PDF à tout moment, puis envoyez-le à votre CAP s'il utilise KalanNet,
-    sinon remettez-le et marquez-le comme remis.</p>
+    qui seront repris l'année suivante. Téléchargez le PDF à tout moment, puis envoyez-le à votre CAP (à votre académie pour le
+    secondaire) s'il utilise KalanNet, sinon remettez-le et marquez-le comme remis.</p>
 
     <h5 class="fw-bold mt-4">Retrouver et suivre un élève</h5>
     <ul>

@@ -6,7 +6,7 @@
         $recus = $lignes->filter(fn ($l) => $l->fiche);
     @endphp
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-        <div class="breadcrumb-title pe-3">Espace DCAP</div>
+        <div class="breadcrumb-title pe-3">{{ $academie ? 'Académie' : 'Espace DCAP' }}</div>
         <div class="ps-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0 p-0">
@@ -28,7 +28,7 @@
         </div>
     </form>
 
-    <p class="text-muted">Cahiers reçus : <strong>{{ $recus->count() }} / {{ $lignes->count() }}</strong>. La liste montre les écoles de votre CAP qui utilisent KalanNet, une ligne par cycle : les autres remettent leur cahier sur papier.</p>
+    <p class="text-muted">Cahiers reçus : <strong>{{ $recus->count() }} / {{ $lignes->count() }}</strong>. La liste montre les {{ $academie ? 'établissements du secondaire de votre académie' : 'écoles de votre CAP' }} qui utilisent KalanNet{{ $academie ? '' : ', une ligne par cycle' }} : les autres remettent leur cahier sur papier.</p>
 
     <div class="card theme-card shadow-sm">
         <div class="card-body">
@@ -59,7 +59,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="6" class="text-muted text-center py-4">Aucune école du jardin d'enfants ou du fondamental sur KalanNet dans votre CAP.</td></tr>
+                            <tr><td colspan="6" class="text-muted text-center py-4">{{ $academie ? 'Aucun établissement du secondaire sur KalanNet dans votre académie.' : "Aucune école du jardin d'enfants ou du fondamental sur KalanNet dans votre CAP." }}</td></tr>
                         @endforelse
                     </tbody>
                 </table>

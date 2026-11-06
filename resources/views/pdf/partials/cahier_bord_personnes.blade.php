@@ -9,7 +9,7 @@
     <tr style="font-size: 8px;">
         <th style="width: 5.5%;">Recru-tement</th><th style="width: 5.5%;">Intégration fonct. publ.</th><th style="width: 5.5%;">Titula-risation</th><th style="width: 5.5%;">Arrivée CAP</th><th style="width: 5.5%;">Dernier poste</th><th style="width: 5.5%;">Arrivée {{ $jardin ? 'au CDPE' : "à l'école" }}</th>
     </tr>
-    @php $lignes = $enseignants ? max(count($personnes), 1) : 4; @endphp
+    @php $lignes = max(count($personnes), $enseignants ? 1 : 4); @endphp
     @foreach(range(0, $lignes - 1) as $i)
         @php $p = $personnes[$i] ?? []; @endphp
         <tr>

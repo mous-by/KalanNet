@@ -5,7 +5,8 @@
         $C = \App\Support\CahierBordDonnees::class;
         $val = fn ($champ) => old($champ, $donnees[$champ] ?? null);
         $jardin = $cycle === 'jardin';
-        $nouveaux = $jardin ? 'Nouveaux' : 'Pass.';
+        $secondaire = $cycle === 'secondaire';
+        $vers = $secondaire ? ['Votre académie', 'votre académie', "à l'académie", "Envoyé à l'académie", "Remis à l'académie"] : ['Votre CAP', 'votre CAP', 'au CAP', 'Envoyé au CAP', 'Remis au CAP'];
     @endphp
 
     <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
@@ -37,17 +38,17 @@
         <div class="alert alert-danger border-0 border-start border-danger border-4">{{ $errors->first() }}</div>
     @endif
 
-    <div class="alert {{ $capSurKalanNet ? 'alert-info' : 'alert-warning' }} border-0 border-start border-4">
-        @if($capSurKalanNet)
-            <i class="bi bi-send me-1"></i>Votre CAP utilise KalanNet : vous pouvez lui envoyer ce cahier de bord directement. Vous pouvez aussi le télécharger à tout moment.
+    <div class="alert {{ $surKalanNet ? 'alert-info' : 'alert-warning' }} border-0 border-start border-4">
+        @if($surKalanNet)
+            <i class="bi bi-send me-1"></i>{{ $vers[0] }} utilise KalanNet : vous pouvez lui envoyer ce cahier de bord directement. Vous pouvez aussi le télécharger à tout moment.
         @else
-            <i class="bi bi-printer me-1"></i>Votre CAP n'utilise pas encore KalanNet : <strong>téléchargez le cahier de bord rempli, imprimez-le et remettez-le à votre CAP</strong>, puis marquez-le comme remis.
+            <i class="bi bi-printer me-1"></i>{{ $vers[0] }} n'utilise pas encore KalanNet : <strong>téléchargez le cahier de bord rempli, imprimez-le et remettez-le à {{ $vers[1] }}</strong>, puis marquez-le comme remis.
         @endif
     </div>
 
     @if($fiche?->remis())
         <div class="alert alert-success border-0 border-start border-success border-4">
-            <i class="bi bi-check-circle me-1"></i>{{ $fiche->statut === 'envoye' ? 'Envoyé au CAP' : 'Remis au CAP' }} le {{ $fiche->envoye_at?->format('d/m/Y à H:i') }}.
+            <i class="bi bi-check-circle me-1"></i>{{ $fiche->statut === 'envoye' ? $vers[3] : $vers[4] }} le {{ $fiche->envoye_at?->format('d/m/Y à H:i') }}.
             @if($fiche->aModificationsNonEnvoyees())
                 <strong>Vous avez modifié la fiche depuis : remettez-la de nouveau pour transmettre ces changements.</strong>
             @endif
@@ -75,10 +76,11 @@
         <input type="hidden" name="enseignants_json" id="enseignants_json">
 
         <div class="card theme-card shadow-sm mb-3">
-            <div class="card-header theme-header"><h6 class="mb-0 fw-bold">{{ $jardin ? "Jardin d'enfants" : 'École fondamentale' }} : {{ $ecole->nomEcole }} ({{ $C::CYCLES[$cycle] }})</h6></div>
+            <div class="card-header theme-header"><h6 class="mb-0 fw-bold">{{ $jardin ? "Jardin d'enfants" : ($secondaire ? 'Établissement' : 'École fondamentale') }} : {{ $ecole->nomEcole }} ({{ $C::CYCLES[$cycle] }})</h6></div>
             <div class="card-body">
                 <div class="row g-3">
                     @foreach(['directeur' => $jardin ? 'Dirigé par' : 'Dirigée par', 'depuis' => 'Depuis', 'contact' => 'Contact', 'commune' => 'Commune de', 'cap' => 'CAP de', 'academie' => "Académie d'enseignement de"] as $champ => $libelle)
+                        @continue($secondaire && $champ === 'cap')
                         <div class="col-md-4">
                             <label class="form-label small fw-bold" for="{{ $champ }}">{{ $libelle }}</label>
                             <input type="text" name="{{ $champ }}" id="{{ $champ }}" class="form-control" maxlength="{{ in_array($champ, ['contact']) ? 60 : ($champ === 'depuis' ? 30 : 150) }}" value="{{ $val($champ) }}">
@@ -107,7 +109,7 @@
                 <div class="table-responsive">
                     <table class="table table-bordered align-middle text-center mb-0" data-effectifs>
                         <thead>
-                            <tr><th rowspan="2">{{ $jardin ? 'Section' : 'Année' }}</th><th rowspan="2">Nbre de cours</th><th colspan="2">Élèves</th><th colspan="2">{{ $jardin ? 'Anciens' : 'Redoublants' }}</th><th colspan="3">{{ $jardin ? 'Nouveaux' : 'Recrutés / passants' }}</th><th rowspan="2">Total</th></tr>
+                            <tr><th rowspan="2">{{ $jardin ? 'Section' : ($secondaire ? 'Classe / série' : 'Année') }}</th><th rowspan="2">Nbre de cours</th><th colspan="2">Élèves</th><th colspan="2">{{ $jardin ? 'Anciens' : 'Redoublants' }}</th><th colspan="3">{{ $jardin ? 'Nouveaux' : 'Recrutés / passants' }}</th><th rowspan="2">Total</th></tr>
                             <tr><th>G</th><th>F</th><th>G</th><th>F</th><th>G</th><th>F</th><th>T</th></tr>
                         </thead>
                         <tbody>
@@ -127,7 +129,7 @@
         </div>
 
         <div class="card theme-card shadow-sm mb-3">
-            <div class="card-header theme-header"><h6 class="mb-0 fw-bold">II. Personnel administratif (directeur, chargé de dossiers, gardien)</h6></div>
+            <div class="card-header theme-header"><h6 class="mb-0 fw-bold">II. Personnel administratif {{ $secondaire ? '(proviseur, censeur, surveillant, secrétaire…)' : '(directeur, chargé de dossiers, gardien)' }}</h6></div>
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-sm table-bordered align-middle mb-0" style="font-size: .85rem;">
@@ -136,7 +138,7 @@
                                 @foreach($C::DATES as $libelle)<th>{{ $libelle }}</th>@endforeach<th>Contact</th></tr>
                         </thead>
                         <tbody>
-                            @foreach(range(0, 3) as $i)
+                            @foreach(range(0, $C::lignesAdministratives($cycle) - 1) as $i)
                                 <tr>
                                     <td class="text-center">{{ $i + 1 }}</td>
                                     @foreach($C::CHAMPS_ADMINISTRATIF as $champ)
@@ -172,13 +174,13 @@
                 <p class="fw-bold small mb-1">IV. Tables-bancs</p>
                 <div class="table-responsive mb-3">
                     <table class="table table-sm table-bordered align-middle text-center mb-0">
-                        <thead><tr><th></th>@foreach($C::niveaux($cycle) as $libelle)<th>{{ $libelle }}</th>@endforeach</tr></thead>
+                        <thead><tr><th></th>@foreach($donnees['effectifs'] as $l)<th>{{ $l['libelle'] }}</th>@endforeach</tr></thead>
                         <tbody>
                             @foreach($C::TABLES as $type => $libelle)
                                 <tr>
                                     <td class="text-start text-nowrap">{{ $libelle }}</td>
-                                    @foreach($C::niveaux($cycle) as $cle => $niveau)
-                                        <td style="min-width: 72px;"><input type="number" min="0" max="9999" class="form-control form-control-sm text-center" name="tables[{{ $cle }}][{{ $type }}]" value="{{ old("tables.$cle.$type", $donnees['tables'][$cle][$type] ?? null) }}" aria-label="{{ $libelle }} {{ $niveau }}"></td>
+                                    @foreach($donnees['effectifs'] as $l)
+                                        <td style="min-width: 72px;"><input type="number" min="0" max="9999" class="form-control form-control-sm text-center" name="tables[{{ $l['cle'] }}][{{ $type }}]" value="{{ old("tables.{$l['cle']}.$type", $donnees['tables'][$l['cle']][$type] ?? null) }}" aria-label="{{ $libelle }} {{ $l['libelle'] }}"></td>
                                     @endforeach
                                 </tr>
                             @endforeach
@@ -199,7 +201,7 @@
         <div class="card theme-card shadow-sm mb-3">
             <div class="card-header theme-header"><h6 class="mb-0 fw-bold">V. Personnel enseignant : {{ count($donnees['enseignants']) }}</h6></div>
             <div class="card-body">
-                <p class="small text-muted">Repris de KalanNet : nom, date de naissance, matricule, classes tenues. Les dates de carrière et l'échelon saisis cette année seront repris l'an prochain. Le PDF écrit en rouge le nom des femmes, comme le demande le modèle.</p>
+                <p class="small text-muted">Repris de KalanNet : nom, date de naissance, matricule, classes tenues. Les dates de carrière et l'échelon saisis cette année seront repris l'an prochain. Le PDF écrit en gras le nom des femmes.</p>
                 <div class="table-responsive">
                     <table class="table table-sm table-bordered align-middle mb-0" style="font-size: .85rem;">
                         <thead class="text-center">
@@ -210,7 +212,7 @@
                             @forelse($donnees['enseignants'] as $e)
                                 <tr data-enseignant="{{ $e['id'] }}">
                                     <td class="text-center">{{ $loop->iteration }}</td>
-                                    <td class="text-nowrap fw-semibold {{ $e['femme'] ? 'text-danger' : '' }}">{{ $e['nom'] }}</td>
+                                    <td class="text-nowrap {{ $e['femme'] ? 'fw-bold' : '' }}">{{ $e['nom'] }}</td>
                                     <td class="text-nowrap">{{ $e['naissance'] }}</td>
                                     <td class="text-nowrap">{{ $e['matricule'] }}</td>
                                     @foreach(['echelon', 'sf', 'fonction', 'specialite', 'classes', 'diplome', 'recrutement', 'integration', 'titularisation', 'arrivee_cap', 'dernier_poste', 'arrivee_ecole', 'contact'] as $champ)
@@ -236,10 +238,10 @@
                 <button type="submit" name="action" value="enregistrer" class="btn btn-outline-primary">Enregistrer</button>
                 <button type="submit" name="action" value="telecharger" class="btn btn-primary"><i class="bi bi-file-earmark-pdf me-1"></i>Télécharger le PDF</button>
                 <button type="submit" name="action" value="remettre" class="btn btn-success fw-semibold">
-                    @if($capSurKalanNet)
-                        <i class="bi bi-send me-1"></i>{{ $fiche?->remis() ? 'Renvoyer au CAP' : 'Envoyer au CAP' }}
+                    @if($surKalanNet)
+                        <i class="bi bi-send me-1"></i>{{ ($fiche?->remis() ? 'Renvoyer ' : 'Envoyer ').$vers[2] }}
                     @else
-                        <i class="bi bi-check2-circle me-1"></i>{{ $fiche?->remis() ? 'Marquer de nouveau comme remis' : 'Marquer comme remis au CAP' }}
+                        <i class="bi bi-check2-circle me-1"></i>{{ $fiche?->remis() ? 'Marquer de nouveau comme remis' : 'Marquer comme remis '.$vers[2] }}
                     @endif
                 </button>
             </div>

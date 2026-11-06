@@ -30,6 +30,9 @@ class RappelRapportSuccinct extends Command
                 ->pluck('idEcole');
 
             foreach ($ecoles as $idEcole) {
+                if (!RapportSuccinctDonnees::ecoleConcernee((int) $idEcole, $portee)) {
+                    continue; // écoles de santé
+                }
                 $annee = AnneeScolaire::enCours((int) $idEcole);
                 if (!$annee || DB::table('rapports_succincts')->where('id_ecole', $idEcole)->where('id_annee', $annee->id_anneeScolaire)->where('portee', $portee)->where('statut', '!=', 'brouillon')->exists()) {
                     continue;
