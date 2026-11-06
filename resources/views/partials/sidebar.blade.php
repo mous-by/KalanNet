@@ -157,6 +157,12 @@
                 </a>
             </li>
             <li>
+                <a href="{{ route('territoire.cahiers-bord') }}">
+                    <div class="parent-icon"><i class="bi bi-journal-bookmark"></i></div>
+                    <div class="menu-title">Cahiers de bord</div>
+                </a>
+            </li>
+            <li>
                 <a href="{{ route('territoire.propositions-passage') }}">
                     <div class="parent-icon"><i class="bi bi-list-check"></i></div>
                     <div class="menu-title">Propositions de passage</div>
@@ -296,6 +302,16 @@
                 <a href="{{ route('rapport-succinct.index') }}">
                     <div class="parent-icon"><i class="bi bi-file-earmark-text"></i></div>
                     <div class="menu-title">Rapport succinct</div>
+                </a>
+            </li>
+        @endif
+
+        {{-- Cahier de bord : jardin d'enfants et fondamental, remis au CAP. --}}
+        @if(session('idEcole') && \App\Http\Controllers\CahierBordController::autorise($user) && \App\Support\CahierBordDonnees::cycles((int) session('idEcole')) !== [])
+            <li>
+                <a href="{{ route('cahier-bord.index') }}">
+                    <div class="parent-icon"><i class="bi bi-journal-bookmark"></i></div>
+                    <div class="menu-title">Cahier de bord</div>
                 </a>
             </li>
         @endif

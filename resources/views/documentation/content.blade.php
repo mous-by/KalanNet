@@ -169,6 +169,12 @@
     <p>Secondaire général, technique et professionnel : le menu <strong>Rapport succinct</strong> ouvre la même fiche que pour
     le fondamental, remise à l'académie plutôt qu'au CAP. Un complexe scolaire y trouve deux onglets, une fiche pour chacun.</p>
 
+    <h5 class="fw-bold mt-4">Cahier de bord</h5>
+    <p>Jardin d'enfants et fondamental : ouvrez <strong>Cahier de bord</strong>, une fiche par cycle. Effectifs, enseignants et
+    classes tenues sont repris de KalanNet ; complétez les dates de carrière, les salles, les tables-bancs et les équipements,
+    qui seront repris l'année suivante. Téléchargez le PDF à tout moment, puis envoyez-le à votre CAP s'il utilise KalanNet,
+    sinon remettez-le et marquez-le comme remis.</p>
+
     <h5 class="fw-bold mt-4">Retrouver et suivre un élève</h5>
     <ul>
         <li><strong>Liste des Élèves</strong> : recherche par classe, impression de la liste, export Excel

@@ -235,6 +235,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/territoire/propositions-passage/{id}', [\App\Http\Controllers\PropositionPassageController::class, 'show'])->whereNumber('id')->name('territoire.propositions-passage.show');
     Route::post('/territoire/propositions-passage/{id}/decision', [\App\Http\Controllers\PropositionPassageController::class, 'decider'])->whereNumber('id')->name('territoire.propositions-passage.decider');
     Route::get('/territoire/propositions-passage/{id}/pdf', [\App\Http\Controllers\PropositionPassageController::class, 'pdfTerritoire'])->whereNumber('id')->name('territoire.propositions-passage.pdf');
+    Route::get('/cahier-bord', [\App\Http\Controllers\CahierBordController::class, 'index'])->name('cahier-bord.index');
+    Route::post('/cahier-bord', [\App\Http\Controllers\CahierBordController::class, 'store'])->name('cahier-bord.store');
+    Route::get('/cahier-bord/pdf', [\App\Http\Controllers\CahierBordController::class, 'pdf'])->name('cahier-bord.pdf');
+    Route::get('/territoire/cahiers-bord', [\App\Http\Controllers\CahierBordController::class, 'territoire'])->name('territoire.cahiers-bord');
+    Route::get('/territoire/cahiers-bord/{id}/pdf', [\App\Http\Controllers\CahierBordController::class, 'pdfTerritoire'])->whereNumber('id')->name('territoire.cahiers-bord.pdf');
     Route::get('/rapport-succinct', [\App\Http\Controllers\RapportSuccinctController::class, 'index'])->name('rapport-succinct.index');
     Route::post('/rapport-succinct', [\App\Http\Controllers\RapportSuccinctController::class, 'store'])->name('rapport-succinct.store');
     Route::get('/rapport-succinct/pdf', [\App\Http\Controllers\RapportSuccinctController::class, 'pdf'])->name('rapport-succinct.pdf');
