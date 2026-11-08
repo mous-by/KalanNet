@@ -112,8 +112,8 @@ class CahierBordController extends Controller
         $fiche->save();
 
         $retour = ['annee' => $annee->id_anneeScolaire, 'cycle' => $cycle];
-        if ($request->input('action') === 'telecharger') {
-            return redirect()->route('cahier-bord.pdf', $retour);
+        if (in_array($request->input('action'), ['telecharger', 'excel'], true)) {
+            return redirect()->route('cahier-bord.pdf', $retour + ($request->input('action') === 'excel' ? ['format' => 'excel'] : []));
         }
         if ($request->input('action') === 'remettre') {
             $manquants = Donnees::champsManquants($donnees);
@@ -211,11 +211,14 @@ class CahierBordController extends Controller
         $annee = $this->annee($request, $ecole);
         $cycle = $this->cycle($request, $ecole);
 
-        return $this->fichier($this->fiche($ecole, $annee, $cycle)?->donnees ?? $this->calcul($ecole, $annee, $cycle), (string) $annee->annee, !$request->boolean('voir'));
+        return $this->fichier($this->fiche($ecole, $annee, $cycle)?->donnees ?? $this->calcul($ecole, $annee, $cycle), (string) $annee->annee, !$request->boolean('voir'), $request->input('format') === 'excel');
     }
 
-    private function fichier(array $donnees, string $annee, bool $telecharger)
+    private function fichier(array $donnees, string $annee, bool $telecharger, bool $excel = false)
     {
+        if ($excel) {
+            return \App\Services\Rapports\ExportExcel::cahierBord($donnees, $annee)->telecharger('cahier-de-bord-'.Str::slug($donnees['ecole'] ?? 'ecole').'-'.($donnees['cycle'] ?? '').'-'.$annee);
+        }
         $pdf = Pdf::loadView('pdf.cahier_bord', ['d' => $donnees, 'annee' => $annee])->setPaper('a4', 'landscape');
         $nom = 'cahier-de-bord-'.Str::slug($donnees['ecole'] ?? 'ecole').'-'.($donnees['cycle'] ?? '').'-'.$annee.'.pdf';
 
@@ -264,6 +267,6 @@ class CahierBordController extends Controller
         $fiche = CahierBord::withoutGlobalScopes()->where('statut', '!=', 'brouillon')->findOrFail($id);
         abort_unless(Donnees::versAcademie($fiche->cycle) === $academie && (int) DB::table('ecole')->where('idEcole', $fiche->id_ecole)->value($colonne) === $idTerritoire, 404);
 
-        return $this->fichier($fiche->donnees_envoyees, (string) DB::table('anneescolaire')->where('id_anneeScolaire', $fiche->id_annee)->value('annee'), $request->boolean('telecharger'));
+        return $this->fichier($fiche->donnees_envoyees, (string) DB::table('anneescolaire')->where('id_anneeScolaire', $fiche->id_annee)->value('annee'), $request->boolean('telecharger'), $request->input('format') === 'excel');
     }
 }

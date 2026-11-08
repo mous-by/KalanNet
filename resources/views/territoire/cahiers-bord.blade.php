@@ -55,6 +55,7 @@
                                     @if($l->fiche)
                                         <a class="btn btn-sm btn-outline-primary" target="_blank" rel="noopener" href="{{ route('territoire.cahiers-bord.pdf', $l->fiche->id) }}"><i class="bi bi-eye"></i> Voir</a>
                                         <a class="btn btn-sm btn-primary" href="{{ route('territoire.cahiers-bord.pdf', [$l->fiche->id, 'telecharger' => 1]) }}" title="Télécharger"><i class="bi bi-download"></i></a>
+                                        <a class="btn btn-sm btn-outline-success" href="{{ route('territoire.cahiers-bord.pdf', [$l->fiche->id, 'format' => 'excel']) }}" title="Excel"><i class="bi bi-file-earmark-excel"></i></a>
                                     @endif
                                 </td>
                             </tr>

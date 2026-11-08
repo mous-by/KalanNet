@@ -109,8 +109,8 @@ class RapportSuccinctController extends Controller
         $rapport->save();
 
         $retour = ['annee' => $annee->id_anneeScolaire, 'portee' => $portee];
-        if ($request->input('action') === 'telecharger') {
-            return redirect()->route('rapport-succinct.pdf', $retour);
+        if (in_array($request->input('action'), ['telecharger', 'excel'], true)) {
+            return redirect()->route('rapport-succinct.pdf', $retour + ($request->input('action') === 'excel' ? ['format' => 'excel'] : []));
         }
         if ($request->input('action') === 'remettre') {
             return $this->remettre($rapport, $ecole, $annee, $donnees, $portee);
@@ -204,11 +204,14 @@ class RapportSuccinctController extends Controller
         $portee = $this->portee($request, $ecole);
         $rapport = $this->rapport($ecole, $annee, $portee);
 
-        return $this->fichier($rapport?->donnees ?? Donnees::calculer($ecole, (int) $annee->id_anneeScolaire, $portee), $annee->annee, (string) $ecole->nomEcole, !$request->boolean('voir'));
+        return $this->fichier($rapport?->donnees ?? Donnees::calculer($ecole, (int) $annee->id_anneeScolaire, $portee), $annee->annee, (string) $ecole->nomEcole, !$request->boolean('voir'), $request->input('format') === 'excel');
     }
 
-    private function fichier(array $donnees, string $annee, string $nomEcole, bool $telecharger)
+    private function fichier(array $donnees, string $annee, string $nomEcole, bool $telecharger, bool $excel = false)
     {
+        if ($excel) {
+            return \App\Services\Rapports\ExportExcel::rapportSuccinct($donnees, $annee)->telecharger('rapport-succinct-'.Str::slug($nomEcole).'-'.$annee);
+        }
         $pdf = Pdf::loadView('pdf.rapport_succinct', ['d' => $donnees, 'annee' => $annee, 'totaux' => Donnees::totaux($donnees)])->setPaper('a4', 'portrait');
         $nom = 'rapport-succinct-'.Str::slug($nomEcole).'-'.$annee.'.pdf';
 
@@ -262,6 +265,6 @@ class RapportSuccinctController extends Controller
 
         $annee = DB::table('anneescolaire')->where('id_anneeScolaire', $rapport->id_annee)->value('annee');
 
-        return $this->fichier($rapport->donnees_envoyees, (string) $annee, (string) $ecole->nomEcole, $request->boolean('telecharger'));
+        return $this->fichier($rapport->donnees_envoyees, (string) $annee, (string) $ecole->nomEcole, $request->boolean('telecharger'), $request->input('format') === 'excel');
     }
 }

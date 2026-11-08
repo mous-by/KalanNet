@@ -195,6 +195,7 @@
             <div class="d-flex flex-wrap gap-2">
                 <button type="submit" name="action" value="enregistrer" class="btn btn-outline-primary">Enregistrer</button>
                 <button type="submit" name="action" value="telecharger" class="btn btn-primary"><i class="bi bi-file-earmark-pdf me-1"></i>Télécharger le PDF</button>
+                <button type="submit" name="action" value="excel" class="btn btn-outline-success"><i class="bi bi-file-earmark-excel me-1"></i>Excel</button>
                 <button type="submit" name="action" value="remettre" class="btn btn-success fw-semibold" data-rapport-remettre>
                     @if($surKalanNet)
                         <i class="bi bi-send me-1"></i>{{ ($rapport?->remis() ? 'Renvoyer ' : 'Envoyer ').$vers[1] }}

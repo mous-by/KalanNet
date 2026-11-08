@@ -30,6 +30,7 @@
                 <div class="d-flex gap-2">
                     <a class="btn btn-sm btn-light" target="_blank" rel="noopener" href="{{ route('territoire.propositions-passage.pdf', $fiche->id) }}"><i class="bi bi-eye me-1"></i>Voir le PDF</a>
                     <a class="btn btn-sm btn-light" href="{{ route('territoire.propositions-passage.pdf', [$fiche->id, 'telecharger' => 1]) }}"><i class="bi bi-download me-1"></i>Télécharger</a>
+                    <a class="btn btn-sm btn-light" href="{{ route('territoire.propositions-passage.pdf', [$fiche->id, 'format' => 'excel']) }}"><i class="bi bi-file-earmark-excel me-1"></i>Excel</a>
                 </div>
             </div>
             <div class="card-body">

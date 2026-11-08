@@ -148,8 +148,8 @@ class PropositionPassageController extends Controller
         $fiche->save();
 
         $retour = ['classe' => $classe->id_classe, 'annee' => $annee->id_anneeScolaire];
-        if ($request->input('action') === 'telecharger') {
-            return redirect()->route('proposition-passage.pdf', $retour);
+        if (in_array($request->input('action'), ['telecharger', 'excel'], true)) {
+            return redirect()->route('proposition-passage.pdf', $retour + ($request->input('action') === 'excel' ? ['format' => 'excel'] : []));
         }
         if ($request->input('action') === 'remettre') {
             $this->remettre($fiche, $ecole, $classe, $annee, $lignes);
@@ -195,12 +195,16 @@ class PropositionPassageController extends Controller
         // Après la décision du CAP, la fiche porte sa décision.
         $lignes = $fiche?->validee() ? $fiche->lignes_envoyees : ($fiche?->lignes ?? Donnees::calculer($classe, (int) $annee->id_anneeScolaire));
 
-        return $this->fichier($classe, $annee, $lignes, $fiche, !$request->boolean('voir'));
+        return $this->fichier($classe, $annee, $lignes, $fiche, !$request->boolean('voir'), $request->input('format') === 'excel');
     }
 
-    private function fichier(Classe $classe, $annee, array $lignes, ?PropositionPassage $fiche, bool $telecharger)
+    private function fichier(Classe $classe, $annee, array $lignes, ?PropositionPassage $fiche, bool $telecharger, bool $excel = false)
     {
         $detaillee = $fiche?->modele === 'detaillee' && Donnees::detailleeDisponible($classe);
+        if ($excel) {
+            return \App\Services\Rapports\ExportExcel::propositionPassage(Donnees::entete($classe, $annee), $lignes, $detaillee, $fiche?->validee() ? Donnees::recap($lignes, 'decision_cap') : null)
+                ->telecharger('proposition-passage-'.Str::slug($classe->nom_classe).'-'.$annee->annee);
+        }
         $pdf = Pdf::loadView($detaillee ? 'pdf.proposition_passage_detaillee' : 'pdf.proposition_passage', [
             'r' => $fiche?->renseignements ?? [],
             'e' => Donnees::entete($classe, $annee), 'lignes' => $lignes, 'recap' => Donnees::recap($lignes),
@@ -298,7 +302,7 @@ class PropositionPassageController extends Controller
         $classe = Classe::withoutGlobalScopes()->findOrFail($fiche->id_classe);
         $annee = DB::table('anneescolaire')->where('id_anneeScolaire', $fiche->id_annee)->first();
 
-        return $this->fichier($classe, $annee, $fiche->lignes_envoyees ?? [], $fiche, $request->boolean('telecharger'));
+        return $this->fichier($classe, $annee, $fiche->lignes_envoyees ?? [], $fiche, $request->boolean('telecharger'), $request->input('format') === 'excel');
     }
 
     /**

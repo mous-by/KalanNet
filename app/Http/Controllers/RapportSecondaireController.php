@@ -101,8 +101,8 @@ class RapportSecondaireController extends Controller
         $rapport->save();
 
         $retour = ['type' => $type, 'annee' => $annee->id_anneeScolaire];
-        if ($request->input('action') === 'telecharger') {
-            return redirect()->route('rapport-secondaire.pdf', $retour);
+        if (in_array($request->input('action'), ['telecharger', 'excel'], true)) {
+            return redirect()->route('rapport-secondaire.pdf', $retour + ($request->input('action') === 'excel' ? ['format' => 'excel'] : []));
         }
         if ($request->input('action') !== 'remettre') {
             return redirect()->route('rapport-secondaire.index', $retour)->with('success', 'Rapport enregistré.');
@@ -134,11 +134,15 @@ class RapportSecondaireController extends Controller
         $annee = $this->annee($request, $ecole);
         $donnees = $this->rapport($ecole, $annee, $type)?->donnees ?? Donnees::calculer($ecole, $annee, $type);
 
-        return $this->fichier($donnees, $type, (int) $ecole->idEcole, (string) $annee->annee, !$request->boolean('voir'));
+        return $this->fichier($donnees, $type, (int) $ecole->idEcole, (string) $annee->annee, !$request->boolean('voir'), $request->input('format') === 'excel');
     }
 
-    private function fichier(array $donnees, string $type, int $idEcole, string $annee, bool $telecharger)
+    private function fichier(array $donnees, string $type, int $idEcole, string $annee, bool $telecharger, bool $excel = false)
     {
+        if ($excel) {
+            return \App\Services\Rapports\ExportExcel::rapportSecondaire($donnees, $type, $annee, Donnees::tableaux($type, $idEcole))
+                ->telecharger('rapport-'.$type.'-'.Str::slug($donnees['infos']['nom'] ?? 'etablissement').'-'.$annee);
+        }
         $academie = DB::table('ecole as e')->leftJoin('academie as a', 'a.id_academie', '=', 'e.id_academie')->where('e.idEcole', $idEcole)->value(DB::raw('COALESCE(a.nom_academie, e.academie)'));
         $pdf = Pdf::loadView('pdf.rapport_secondaire', [
             'd' => $donnees, 'type' => $type, 'annee' => $annee, 'academie' => $academie,
@@ -184,6 +188,6 @@ class RapportSecondaireController extends Controller
         $rapport = RapportSecondaire::withoutGlobalScopes()->where('statut', '!=', 'brouillon')->findOrFail($id);
         abort_unless((int) DB::table('ecole')->where('idEcole', $rapport->id_ecole)->value('id_academie') === (int) $user->id_academie, 404);
 
-        return $this->fichier($rapport->donnees_envoyees, $rapport->type, (int) $rapport->id_ecole, (string) DB::table('anneescolaire')->where('id_anneeScolaire', $rapport->id_annee)->value('annee'), $request->boolean('telecharger'));
+        return $this->fichier($rapport->donnees_envoyees, $rapport->type, (int) $rapport->id_ecole, (string) DB::table('anneescolaire')->where('id_anneeScolaire', $rapport->id_annee)->value('annee'), $request->boolean('telecharger'), $request->input('format') === 'excel');
     }
 }
