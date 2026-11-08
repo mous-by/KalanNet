@@ -44,15 +44,27 @@ class RapportSecondaireController extends Controller
         return AnneeScolaire::whereDate('date_debut', '<=', now()->toDateString())->orderByDesc('date_debut')->get();
     }
 
-    private function annee(Request $request, Ecole $ecole): AnneeScolaire
+    private function annee(Request $request, Ecole $ecole, string $type = 'rentree'): AnneeScolaire
     {
-        $annee = $this->annees()->firstWhere('id_anneeScolaire', $request->integer('annee')) ?? AnneeScolaire::enCours((int) $ecole->idEcole);
+        $annee = $this->annees()->firstWhere('id_anneeScolaire', $request->integer('annee'))
+            ?? ($type === 'fin' ? $this->anneeQuiSeTermine() : null)
+            ?? AnneeScolaire::enCours((int) $ecole->idEcole);
         abort_unless($annee, 404, "Aucune année scolaire n'est disponible.");
 
         return $annee;
     }
 
-    private function rapport(Ecole $ecole, AnneeScolaire $annee, string $type): ?RapportSecondaire
+    /**
+     * Le rapport de fin d'année porte sur l'année qui se termine (fin août, d'après sa date de fin) : celle-ci à partir de
+     * mi-mai, sinon celle qui vient de se terminer.
+     */
+    private function anneeQuiSeTermine(): ?AnneeScolaire
+    {
+        return $this->annees()->filter(fn ($a) => $a->date_fin && \Illuminate\Support\Carbon::parse($a->date_fin)->lte(now()->addDays(105)))
+            ->sortByDesc('date_fin')->first();
+    }
+
+        private function rapport(Ecole $ecole, AnneeScolaire $annee, string $type): ?RapportSecondaire
     {
         return RapportSecondaire::where('id_ecole', $ecole->idEcole)->where('id_annee', $annee->id_anneeScolaire)->where('type', $type)->first();
     }
@@ -61,7 +73,7 @@ class RapportSecondaireController extends Controller
     {
         $type = $this->type($type);
         $ecole = $this->ecole();
-        $annee = $this->annee($request, $ecole);
+        $annee = $this->annee($request, $ecole, $type);
         $rapport = $this->rapport($ecole, $annee, $type);
         $donnees = $rapport?->donnees ?? Donnees::calculer($ecole, $annee, $type);
 
@@ -87,7 +99,7 @@ class RapportSecondaireController extends Controller
     {
         $type = $this->type($type);
         $ecole = $this->ecole();
-        $annee = $this->annee($request, $ecole);
+        $annee = $this->annee($request, $ecole, $type);
 
         $request->validate(['infos' => 'nullable|array', 'infos.*' => 'nullable|string|max:255', 'tableaux_json' => 'nullable|string']);
         $infos = collect(Def::infos($type))->map(fn ($l, $champ) => filled($request->input("infos.$champ")) ? trim((string) $request->input("infos.$champ")) : null)->all();
@@ -131,7 +143,7 @@ class RapportSecondaireController extends Controller
     {
         $type = $this->type($type);
         $ecole = $this->ecole();
-        $annee = $this->annee($request, $ecole);
+        $annee = $this->annee($request, $ecole, $type);
         $donnees = $this->rapport($ecole, $annee, $type)?->donnees ?? Donnees::calculer($ecole, $annee, $type);
 
         return $this->fichier($donnees, $type, (int) $ecole->idEcole, (string) $annee->annee, !$request->boolean('voir'), $request->input('format') === 'excel');

@@ -363,7 +363,8 @@
                                     'en_attente_resultat' => __('inscriptions.decision_en_attente_resultat'),
                                     'ajourne' => __('inscriptions.decision_ajourne'),
                                     'abandon' => __('inscriptions.decision_abandon'),
-                                    'exclu' => __('inscriptions.decision_exclu'),
+                                    'exclu_insuffisance' => __('inscriptions.decision_exclu_insuffisance'),
+                                    'exclu_epuisement' => __('inscriptions.decision_exclu_epuisement'),
                                 ];
                                 $proposalLabels = [
                                     'passant' => __('inscriptions.decision_passant'),
@@ -373,6 +374,8 @@
                                     'diplome_sortant' => __('inscriptions.decision_diplome_sortant'),
                                     'en_attente_resultat' => __('inscriptions.proposal_en_attente_resultat'),
                                     'exclu' => __('inscriptions.decision_exclu'),
+                                    'exclu_insuffisance' => __('inscriptions.decision_exclu_insuffisance'),
+                                    'exclu_epuisement' => __('inscriptions.decision_exclu_epuisement'),
                                     'abandon' => __('inscriptions.decision_abandon'),
                                 ];
                             @endphp

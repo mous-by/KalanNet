@@ -96,6 +96,8 @@ return [
     'decision_ajourne' => 'Deferred / gap year',
     'decision_abandon' => 'Dropped out',
     'decision_exclu' => 'Expelled',
+    'decision_exclu_insuffisance' => 'Expelled: insufficient work',
+    'decision_exclu_epuisement' => 'Expelled: schooling limit reached',
     'proposal_non_defini' => 'Average not available',
     'proposal_en_attente_resultat' => 'National result missing',
 

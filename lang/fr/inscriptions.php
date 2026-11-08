@@ -96,6 +96,8 @@ return [
     'decision_ajourne' => 'Ajourné / année blanche',
     'decision_abandon' => 'Abandon',
     'decision_exclu' => 'Exclu',
+    'decision_exclu_insuffisance' => 'Exclu : insuffisance de travail',
+    'decision_exclu_epuisement' => 'Exclu : épuisement de scolarité',
     'proposal_non_defini' => 'Moyenne non disponible',
     'proposal_en_attente_resultat' => 'Résultat national absent',
 

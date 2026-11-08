@@ -648,11 +648,14 @@ class InscriptionController extends Controller
                 $proposal = match ($decisionCap['decision']) {
                     'passe' => $suggestedTargetClasse ? 'passant' : 'admis_sortant',
                     'redouble' => 'redoublant',
+                    // Au fondamental, KalanNet n'exclut d'office qu'en fin de scolarité (classe déjà doublée,
+                    // deux redoublements) : c'est le motif présélectionné, l'école peut le changer.
+                    'exclu' => 'exclu_epuisement',
                     default => $decisionCap['decision'],
                 };
             }
             $classeCibleId = match ($proposal) {
-                'redoublant', 'exclu', 'abandon' => $sourceClasse->id_classe,
+                'redoublant', 'exclu', 'exclu_insuffisance', 'exclu_epuisement', 'abandon' => $sourceClasse->id_classe,
                 'admis_sortant', 'diplome_sortant', 'en_attente_resultat' => null,
                 default => $defaultTargetClasse->id_classe,
             };
@@ -666,7 +669,7 @@ class InscriptionController extends Controller
                 'seuil' => $threshold,
                 'decision_proposee' => $proposal,
                 'decision_cap' => (bool) $decisionCap,
-                'motif_cap' => $decisionCap['observation'] ?? (in_array($proposal, ['exclu', 'abandon'], true) ? 'Décision du CAP' : null),
+                'motif_cap' => $decisionCap['observation'] ?? (in_array($proposal, ['exclu', 'exclu_insuffisance', 'exclu_epuisement', 'abandon'], true) ? 'Décision du CAP' : null),
                 'classe_cible_id' => $classeCibleId,
                 'deja_reinscrit' => in_array((int) $student->id_eleve, $existingIds, true),
             ];
@@ -705,7 +708,8 @@ class InscriptionController extends Controller
             'eleves' => 'required|array|min:1',
             'eleves.*.selected' => 'nullable',
             'eleves.*.id_eleve' => 'required|integer|exists:eleve,id_eleve',
-            'eleves.*.decision' => 'nullable|string|in:passant,redoublant,admis_sortant,diplome_sortant,en_attente_resultat,ajourne,abandon,exclu',
+            // « exclu » sans motif reste accepté pour les anciens formulaires ; l'écran propose les deux motifs officiels.
+            'eleves.*.decision' => 'nullable|string|in:passant,redoublant,admis_sortant,diplome_sortant,en_attente_resultat,ajourne,abandon,exclu,exclu_insuffisance,exclu_epuisement',
             'eleves.*.id_classe' => 'nullable|integer|exists:classe,id_classe',
             'eleves.*.motif_decision' => 'nullable|string|max:1000',
             'eleves.*.id_planification' => 'nullable|integer|exists:planification,id_planification',
@@ -805,7 +809,7 @@ class InscriptionController extends Controller
                 }
 
                 $targetClasseId = !empty($row['id_classe']) ? (int) $row['id_classe'] : null;
-                if (in_array($decision, ['redoublant', 'ajourne', 'abandon', 'exclu', 'admis_sortant', 'diplome_sortant'], true)) {
+                if (in_array($decision, ['redoublant', 'ajourne', 'abandon', 'exclu', 'exclu_insuffisance', 'exclu_epuisement', 'admis_sortant', 'diplome_sortant'], true)) {
                     // ligne_reinscription.id_classe est NOT NULL en base : pour
                     // les sortants (DEF/BAC), on y trace la classe de depart
                     // (ex: la Terminale), sans jamais reaffecter eleve.id_classe

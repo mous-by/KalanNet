@@ -96,6 +96,8 @@ return [
     'decision_ajourne' => 'مؤجل / سنة بيضاء',
     'decision_abandon' => 'انقطاع',
     'decision_exclu' => 'مطرود',
+    'decision_exclu_insuffisance' => 'مفصول: عدم كفاية العمل',
+    'decision_exclu_epuisement' => 'مفصول: استنفاد سنوات الدراسة',
     'proposal_non_defini' => 'المعدل غير متوفر',
     'proposal_en_attente_resultat' => 'النتيجة الوطنية غير متوفرة',
 

@@ -286,7 +286,7 @@ class PropositionPassageTest extends IntegrationTestCase
         $page = $this->post('/pedagogie/inscriptions/reinscription/apercu', ['source_classe_id' => $this->classe->id_classe, 'source_annee_id' => $this->annee->id_anneeScolaire, 'target_annee_id' => $cible])->assertOk();
         $lignes = collect($page->viewData('reinscriptionPreview')['rows'])->keyBy(fn ($r) => $r['eleve']->id_eleve);
         $this->assertSame('redoublant', $lignes[$b]['decision_proposee']);
-        $this->assertSame('exclu', $lignes[$c]['decision_proposee']);
+        $this->assertSame('exclu_epuisement', $lignes[$c]['decision_proposee'], 'exclusion du CAP : épuisement de scolarité présélectionné');
         $this->assertSame((int) $this->classe->id_classe, (int) $lignes[$c]['classe_cible_id']);
         $page->assertSee('Décision du CAP')->assertSee('value="Moyenne insuffisante"', false);
 

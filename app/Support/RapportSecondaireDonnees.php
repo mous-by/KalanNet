@@ -167,17 +167,32 @@ class RapportSecondaireDonnees
                 }
             }
         } else {
-            $redoublementsParEleve = $eleves->pluck('redoublements', 'id_eleve');
-            foreach ($eleves as $e) {
+            // Élèves de l'année écoulée, même déjà réinscrits, avec la décision prise à la réinscription.
+            $membres = self::membresDeLAnnee($idEcole, $annee, $classes);
+            $redoublementsParEleve = $membres->pluck('redoublements', 'id_eleve');
+            foreach ($membres as $e) {
                 $code = match ($e->cle) { '10CG' => 'T6', '11L' => 'T7', '11S' => 'T8', '11SES' => 'T9', default => isset($lignes['techniques'][$e->cle]) ? 'T9b' : null };
+                $colonne = self::sortie($e->decision);
                 if ($code) {
                     self::ajouter($t, $code, $e->cle, 'effectif_'.$e->sexe);
-                    if (!$e->actif) {
-                        self::ajouter($t, $code, $e->cle, 'abandon_'.$e->sexe);
+                    if (in_array($e->decision, ['passant', 'passage_force'], true)) {
+                        $cible = $classes[$e->id_classe_cible] ?? null;
+                        // Passage en telle série au général, simple passage au technique.
+                        $colonne = $code === 'T9b' ? 'passage' : ($cible ? 'p'.$cible : null);
+                    } elseif ($e->decision === null && !$e->actif) {
+                        $colonne = 'abandon'; // retiré en cours d'année, sans décision de réinscription
+                    }
+                    if ($colonne) {
+                        self::ajouter($t, $code, $e->cle, $colonne.'_'.$e->sexe);
                     }
                 }
-                if ($e->actif && isset($lignes['terminales'][$e->cle])) {
+                if (isset($lignes['terminales'][$e->cle]) && $e->actif) {
                     self::ajouter($t, 'T11', $e->cle, 'effectif_'.$e->sexe);
+                    if ($colonne === 'red') {
+                        self::ajouter($t, 'T11', $e->cle, 'red_'.$e->sexe);
+                    } elseif (in_array($colonne, ['insuffisance', 'epuisement'], true)) {
+                        self::ajouter($t, 'T11', $e->cle, 'exclu_'.$e->sexe);
+                    }
                 }
             }
             foreach (self::bac($idEcole, (string) $annee->annee, $classes)->where('decision', 'admis') as $r) {
@@ -186,12 +201,82 @@ class RapportSecondaireDonnees
                     self::ajouter($t, 'T13', $r->cle, 'a'.min(5, 3 + (int) ($redoublementsParEleve[$r->id_eleve] ?? 0)).'_'.$r->sexe);
                 }
             }
-            foreach (self::tranches($actifs, (int) $annee->id_anneeScolaire) as [$cle, $colonne]) {
+            foreach (self::tranches($membres->where('actif', true), (int) $annee->id_anneeScolaire) as [$cle, $colonne]) {
                 self::ajouter($t, 'T15', $cle, $colonne);
             }
         }
 
         return self::reprendre(['type' => $type, 'infos' => $infos, 't' => $t], $idEcole, $annee, $type);
+    }
+
+    /** Colonne du rapport de fin d'année pour une décision de réinscription (le passage dépend de la classe d'arrivée). */
+    private static function sortie(?string $decision): ?string
+    {
+        return match ($decision) {
+            'redoublant', 'ajourne' => 'red',
+            'exclu_insuffisance' => 'insuffisance',
+            'exclu_epuisement' => 'epuisement',
+            'abandon' => 'abandon',
+            default => null, // « exclu » sans motif : à ranger par l'établissement
+        };
+    }
+
+    /**
+     * Élèves d'une année dans les classes du secondaire, retrouvés par l'historique : inscription de l'année, réinscription
+     * pour l'année, ou fiche encore sur l'année. Chacun avec sa classe de l'année et sa décision pour l'année suivante.
+     */
+    private static function membresDeLAnnee(int $idEcole, object $annee, array $classes): Collection
+    {
+        $idsAnnee = DB::table('anneescolaire')->where('annee', $annee->annee)->pluck('id_anneeScolaire');
+        $suivante = DB::table('anneescolaire')->where('date_debut', '>', $annee->date_debut)->orderBy('date_debut')->value('annee');
+        $idsSuivante = $suivante ? DB::table('anneescolaire')->where('annee', $suivante)->pluck('id_anneeScolaire') : collect();
+        $idsClasses = array_keys($classes);
+
+        $classeDe = [];
+        foreach (DB::table('eleve')->where('id_ecole', $idEcole)->whereIn('id_annee', $idsAnnee)->whereIn('etat_dossier', [0, 2])->whereIn('id_classe', $idsClasses)->get(['id_eleve', 'id_classe']) as $e) {
+            $classeDe[$e->id_eleve] = $e->id_classe;
+        }
+        foreach (DB::table('ligne_inscription')->whereIn('id_annee', $idsAnnee)->whereIn('id_classe', $idsClasses)->get(['id_eleve', 'id_classe']) as $l) {
+            $classeDe[$l->id_eleve] = $l->id_classe;
+        }
+        foreach (DB::table('ligne_reinscription as lr')->join('reinscription as r', 'r.id_reinscription', '=', 'lr.id_reinscription')->whereIn('lr.id_annee', $idsAnnee)
+            ->whereIn('lr.id_classe', $idsClasses)->whereIn('r.statut', ['passant', 'passage_force', 'redoublant'])->get(['lr.id_eleve', 'lr.id_classe']) as $l) {
+            $classeDe[$l->id_eleve] = $l->id_classe;
+        }
+        // Redoublants, exclus, abandons : la décision garde la classe de départ, ce qui suffit à les retrouver.
+        foreach (DB::table('ligne_reinscription as lr')->join('reinscription as r', 'r.id_reinscription', '=', 'lr.id_reinscription')->whereIn('lr.id_annee', $idsSuivante)
+            ->whereIn('lr.id_classe', $idsClasses)->whereNotIn('r.statut', ['passant', 'passage_force'])->get(['lr.id_eleve', 'lr.id_classe']) as $l) {
+            $classeDe[$l->id_eleve] ??= $l->id_classe;
+        }
+        if ($classeDe === []) {
+            return collect();
+        }
+
+        $eleves = DB::table('eleve')->where('id_ecole', $idEcole)->whereIn('id_eleve', array_keys($classeDe))->get(['id_eleve', 'genre_eleve', 'etat_dossier', 'id_annee'])->keyBy('id_eleve');
+        $decisions = DB::table('ligne_reinscription as lr')->join('reinscription as r', 'r.id_reinscription', '=', 'lr.id_reinscription')
+            ->whereIn('lr.id_annee', $idsSuivante)->whereIn('lr.id_eleve', array_keys($classeDe))->get(['lr.id_eleve', 'lr.id_classe', 'r.statut'])->keyBy('id_eleve');
+        $redoublements = DB::table('ligne_reinscription as lr')->join('reinscription as r', 'r.id_reinscription', '=', 'lr.id_reinscription')
+            ->join('classe as c', 'c.id_classe', '=', 'lr.id_classe')->join('anneescolaire as a', 'a.id_anneeScolaire', '=', 'lr.id_annee')
+            ->where('r.statut', 'redoublant')->whereIn('c.ordreEnseignement', RapportSuccinctDonnees::SECONDAIRE)->whereIn('lr.id_eleve', array_keys($classeDe))
+            ->where('a.date_debut', '<=', $annee->date_debut)->get(['lr.id_eleve'])->countBy('id_eleve');
+
+        return collect($classeDe)->map(function ($idClasse, $idEleve) use ($eleves, $decisions, $redoublements, $classes, $idsAnnee) {
+            $eleve = $eleves[$idEleve] ?? null;
+            if (!$eleve) {
+                return null;
+            }
+            $decision = $decisions[$idEleve] ?? null;
+
+            return (object) [
+                'id_eleve' => (int) $idEleve, 'id_classe' => (int) $idClasse, 'cle' => $classes[$idClasse],
+                'sexe' => PropositionPassageDonnees::fille($eleve->genre_eleve) ? 'f' : 'g',
+                // Retiré pendant l'année : fiche restée sur l'année, marquée retirée, sans décision de réinscription.
+                'actif' => !($decision === null && (int) $eleve->etat_dossier === 2 && $idsAnnee->contains($eleve->id_annee)),
+                'redoublements' => (int) ($redoublements[$idEleve] ?? 0),
+                'decision' => $decision?->statut,
+                'id_classe_cible' => $decision ? (int) $decision->id_classe : null,
+            ];
+        })->filter()->values();
     }
 
     private static function age(?string $naissance, object $annee): ?int
