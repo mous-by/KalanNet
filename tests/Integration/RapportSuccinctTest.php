@@ -12,6 +12,16 @@ use Illuminate\Support\Facades\DB;
 /** Rapport succinct : pré-remplissage, téléchargement toujours possible, remise au CAP (compte DCAP ou papier), cloisonnement. */
 class RapportSuccinctTest extends IntegrationTestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // L'école 1 de la base locale peut déjà avoir de vraies fiches : le test part d'une école vierge (transaction annulée à la fin).
+        foreach (['rapports_succincts', 'cahiers_bord', 'propositions_passage', 'rapports_secondaire'] as $table) {
+            \Illuminate\Support\Facades\DB::table($table)->where('id_ecole', 1)->delete();
+        }
+        \Illuminate\Support\Facades\DB::table('app_notifications')->whereIn('type', ['rapport_succinct', 'rapport_succinct_rappel', 'cahier_bord', 'proposition_passage', 'proposition_passage_decision', 'rapport_secondaire'])->delete();
+    }
+
     private function formulaire(array $autres = []): array
     {
         $annee = AnneeScolaire::enCours(1);

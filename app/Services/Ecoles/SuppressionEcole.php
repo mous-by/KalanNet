@@ -64,6 +64,7 @@ class SuppressionEcole
                     // Pédagogie
                     ['rapports_succincts', ['id_ecole' => $e]],
                     ['cahiers_bord', ['id_ecole' => $e]],
+                    ['rapports_secondaire', ['id_ecole' => $e]],
                     ['propositions_passage', ['id_ecole' => $e]],
                     ['lecons_presence', ['id_presence' => $ids['presences']]],
                     ['presences', ['id_presence' => $ids['presences']]],

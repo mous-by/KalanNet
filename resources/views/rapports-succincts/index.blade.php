@@ -32,9 +32,7 @@
         </div>
     </div>
 
-    @if(count($portees) > 1)
-        @include('rapports-succincts._onglets')
-    @endif
+    @include('rapports-succincts._onglets', ['actif' => $portee])
 
     @if(session('success'))
         <div class="alert alert-success border-0 border-start border-success border-4">{{ session('success') }}</div>

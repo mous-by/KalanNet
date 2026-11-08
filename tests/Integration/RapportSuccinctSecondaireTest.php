@@ -23,6 +23,11 @@ class RapportSuccinctSecondaireTest extends IntegrationTestCase
     protected function setUp(): void
     {
         parent::setUp();
+        // L'école 1 de la base locale peut déjà avoir de vraies fiches : le test part d'une école vierge (transaction annulée à la fin).
+        foreach (['rapports_succincts', 'cahiers_bord', 'propositions_passage', 'rapports_secondaire'] as $table) {
+            \Illuminate\Support\Facades\DB::table($table)->where('id_ecole', 1)->delete();
+        }
+        \Illuminate\Support\Facades\DB::table('app_notifications')->whereIn('type', ['rapport_succinct', 'rapport_succinct_rappel', 'cahier_bord', 'proposition_passage', 'proposition_passage_decision', 'rapport_secondaire'])->delete();
         $this->annee = AnneeScolaire::enCours(1);
         $modele = Classe::where('idEcole', 1)->first();
         $eleves = DB::table('eleve')->where('id_ecole', 1)->limit(4)->pluck('id_eleve')->all();
@@ -158,7 +163,7 @@ class RapportSuccinctSecondaireTest extends IntegrationTestCase
         DB::table('classe')->where('idEcole', 1)->whereNotIn('id_classe', collect($this->classes)->pluck('id_classe'))->update(['ordreEnseignement' => 'fondamentale1']);
         $this->actingAs($this->adminComplet(1))->withSession(['idEcole' => 1]);
 
-        $this->get('/rapport-succinct')->assertOk()->assertSee('Fondamental (CAP)')->assertSee('Secondaire (Académie)')->assertSee('CAP de');
+        $this->get('/rapport-succinct')->assertOk()->assertSee('Rapport succinct (CAP)')->assertSee('Rapport succinct (Académie)')->assertSee('CAP de');
         $this->get($this->url('rapport-succinct.index'))->assertOk()->assertSee('10ème CG')->assertDontSee('CAP de');
 
         $this->post($this->url(), $this->formulaire(['action' => 'enregistrer']))->assertSessionHas('success');
@@ -177,7 +182,7 @@ class RapportSuccinctSecondaireTest extends IntegrationTestCase
         DB::table('classe')->where('idEcole', 1)->update(['ordreEnseignement' => 'secondairetechniqueetprofessionnel']);
         $this->actingAs($this->adminComplet(1))->withSession(['idEcole' => 1]);
 
-        $page = $this->get('/rapport-succinct')->assertOk()->assertDontSee('Fondamental (CAP)');
+        $page = $this->get('/rapport-succinct')->assertOk()->assertDontSee('Rapport succinct (CAP)');
         $this->assertSame('secondaire', $page->viewData('portee'));
         $this->assertSame(2, $page->viewData('donnees')['cycle'], 'technique et professionnel');
     }

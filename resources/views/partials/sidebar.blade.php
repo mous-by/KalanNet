@@ -149,6 +149,12 @@
                 </a>
             </li>
             <li>
+                <a href="{{ route('territoire.rapports-secondaire') }}">
+                    <div class="parent-icon"><i class="bi bi-clipboard-data"></i></div>
+                    <div class="menu-title">Rapports de rentrée et de fin d'année</div>
+                </a>
+            </li>
+            <li>
                 <a href="{{ route('territoire.cahiers-bord') }}">
                     <div class="parent-icon"><i class="bi bi-journal-bookmark"></i></div>
                     <div class="menu-title">Cahiers de bord</div>
@@ -307,7 +313,7 @@
             <li>
                 <a href="{{ route('rapport-succinct.index') }}">
                     <div class="parent-icon"><i class="bi bi-file-earmark-text"></i></div>
-                    <div class="menu-title">Rapport succinct</div>
+                    <div class="menu-title">{{ in_array('secondaire', \App\Support\RapportSuccinctDonnees::portees((int) session('idEcole')), true) ? 'Rapports' : 'Rapport succinct' }}</div>
                 </a>
             </li>
         @endif

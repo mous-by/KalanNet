@@ -165,16 +165,12 @@
     lui transmet la fiche, dans le format choisi : il décide élève par élève, et la réinscription reprend sa décision. Sinon, imprimez la fiche et
     remettez-la, puis marquez-la comme remise.</p>
 
-    <h5 class="fw-bold mt-4">Rapport succinct du secondaire</h5>
-    <p>Secondaire général, technique et professionnel : le menu <strong>Rapport succinct</strong> ouvre la même fiche que pour
-    le fondamental, remise à l'académie plutôt qu'au CAP. Un complexe scolaire y trouve deux onglets, une fiche pour chacun.</p>
-
-    <h5 class="fw-bold mt-4">Cahier de bord</h5>
-    <p>Tous les établissements sauf les écoles de santé : ouvrez <strong>Cahier de bord</strong>, une fiche par cycle
-    (jardin, 1er cycle, 2e cycle, secondaire). Effectifs, enseignants et
-    classes tenues sont repris de KalanNet ; complétez les dates de carrière, les salles, les tables-bancs et les équipements,
-    qui seront repris l'année suivante. Téléchargez le PDF à tout moment, puis envoyez-le à votre CAP (à votre académie pour le
-    secondaire) s'il utilise KalanNet, sinon remettez-le et marquez-le comme remis.</p>
+    <h5 class="fw-bold mt-4">Rapports du secondaire</h5>
+    <p>Secondaire général, technique et professionnel : le menu <strong>Rapports</strong> réunit trois onglets, remis à
+    l'académie : le <strong>rapport succinct</strong>, le <strong>rapport de rentrée</strong> et le <strong>rapport de fin
+    d'année</strong>. Effectifs, âges, scolarité, résultats du Bac et moyennes sont repris de KalanNet ; ce qui change peu
+    (enseignants par discipline, équipements, administration) est repris du rapport précédent. Le jardin et le fondamental
+    ne voient que leur rapport succinct, remis au CAP.</p>
 
     <h5 class="fw-bold mt-4">Retrouver et suivre un élève</h5>
     <ul>

@@ -20,7 +20,7 @@ class RapportSuccinctDonnees
 
     public const CYCLES_SECONDAIRE = [1 => 'Secondaire général', 2 => 'Technique et professionnel', 3 => 'Général et technique'];
 
-    private const SERIES = ['10CG' => '10ème CG', '11L' => '11ème L', '11SES' => '11ème SES', '11S' => '11ème S', 'TLL' => 'TLL', 'TAL' => 'TAL', 'TSS' => 'TSS', 'TSECO' => 'TSECO', 'TSE' => 'TSE', 'TSEXP' => 'TSEXP'];
+    public const SERIES = ['10CG' => '10ème CG', '11L' => '11ème L', '11SES' => '11ème SES', '11S' => '11ème S', 'TLL' => 'TLL', 'TAL' => 'TAL', 'TSS' => 'TSS', 'TSECO' => 'TSECO', 'TSE' => 'TSE', 'TSEXP' => 'TSEXP'];
 
     public const STATUTS = [1 => 'Public', 2 => 'Privé confessionnel', 3 => 'Privé laïc', 4 => 'Médersa', 5 => 'École communautaire'];
 
