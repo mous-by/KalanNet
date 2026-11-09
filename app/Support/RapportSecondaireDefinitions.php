@@ -44,6 +44,30 @@ class RapportSecondaireDefinitions
         return $infos + ['autres' => 'Autres informations'];
     }
 
+    /**
+     * Partie administrative, rédigée par l'établissement (canevas « Partie administrative » du ministère).
+     *
+     * @return array<string, array{0: string, 1: string}> rubrique => [titre, ce qu'elle doit contenir]
+     */
+    public static function redaction(string $type): array
+    {
+        $presentation = ["Présentation de l'établissement", 'Situation des infrastructures, effectif des élèves, personnel administratif, situation des enseignants.'];
+        $analyse = ['Analyse des données statistiques', 'Analyse des données relatives aux infrastructures, aux élèves, aux enseignants et aux résultats scolaires.'];
+        $conclusion = ['Conclusion', ''];
+
+        return $type === 'rentree'
+            ? ['presentation' => $presentation, 'deroulement' => ['Déroulement de la rentrée', 'Aspects pédagogiques, aspects environnementaux.'], 'analyse' => $analyse, 'conclusion' => $conclusion]
+            : [
+                'presentation' => $presentation,
+                'deroulement' => ["Déroulement de l'année scolaire", 'Aspects pédagogiques ; formations continues et gestion des enseignants ; point de la mise en œuvre de l\'APC ; suivi et évaluations ; activités socio-culturelles et sportives.'],
+                'difficultes' => ['Difficultés et propositions de solutions', ''],
+                'partenaires' => ['Relations avec les partenaires', 'Partenaires techniques et financiers (PTF) ; partenaires sociaux.'],
+                'analyse' => $analyse,
+                'finances' => ['Situation financière', 'Fournitures et matériels scolaires ; crédit de fonctionnement.'],
+                'conclusion' => $conclusion,
+            ];
+    }
+
     /** Renseignements qui ne changent pas d'une année à l'autre : repris du rapport précédent. */
     public const INFOS_STABLES = ['region', 'cercle', 'arrondissement', 'commune', 'bp', 'gps', 'date_creation', 'arrete_creation', 'arrete_ouverture', 'date_ouverture', 'capacite',
         'salles_ordinaires', 'salles_specialisees', 'laboratoires', 'superficie', 'titre_foncier', 'electricite', 'ordre', 'mission', 'diplome'];

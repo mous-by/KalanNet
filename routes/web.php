@@ -242,6 +242,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/territoire/cahiers-bord/{id}/pdf', [\App\Http\Controllers\CahierBordController::class, 'pdfTerritoire'])->whereNumber('id')->name('territoire.cahiers-bord.pdf');
     Route::get('/rapport-secondaire/{type}', [\App\Http\Controllers\RapportSecondaireController::class, 'index'])->whereIn('type', ['rentree', 'fin'])->name('rapport-secondaire.index');
     Route::post('/rapport-secondaire/{type}', [\App\Http\Controllers\RapportSecondaireController::class, 'store'])->whereIn('type', ['rentree', 'fin'])->name('rapport-secondaire.store');
+    Route::get('/rapport-secondaire/{type}/canevas', [\App\Http\Controllers\RapportSecondaireController::class, 'canevas'])->whereIn('type', ['rentree', 'fin'])->name('rapport-secondaire.canevas');
+    Route::post('/rapport-secondaire-maquette', [\App\Http\Controllers\RapportSecondaireController::class, 'maquette'])->name('rapport-secondaire.maquette');
+    Route::get('/territoire/rapports-secondaire/{id}/canevas', [\App\Http\Controllers\RapportSecondaireController::class, 'canevasTerritoire'])->whereNumber('id')->name('territoire.rapports-secondaire.canevas');
     Route::get('/rapport-secondaire/{type}/pdf', [\App\Http\Controllers\RapportSecondaireController::class, 'pdf'])->whereIn('type', ['rentree', 'fin'])->name('rapport-secondaire.pdf');
     Route::get('/territoire/rapports-secondaire', [\App\Http\Controllers\RapportSecondaireController::class, 'territoire'])->name('territoire.rapports-secondaire');
     Route::get('/territoire/rapports-secondaire/{id}/pdf', [\App\Http\Controllers\RapportSecondaireController::class, 'pdfTerritoire'])->whereNumber('id')->name('territoire.rapports-secondaire.pdf');

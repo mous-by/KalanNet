@@ -37,6 +37,15 @@
     <h1>{{ \App\Support\RapportSecondaireDefinitions::TYPES[$type] }}</h1>
     <div class="sous">{{ $i['nom'] ?? '' }} : année scolaire {{ $annee }}</div>
 
+    <div class="titre" style="font-size: 12px;">PARTIE ADMINISTRATIVE</div>
+    @foreach($redaction as $cle => [$titre])
+        <div style="margin-bottom: 8px;">
+            <div class="titre">{{ $titre }}</div>
+            <div style="white-space: pre-line; text-align: justify;">{{ $d['redaction'][$cle] ?? '' }}</div>
+        </div>
+    @endforeach
+
+    <div class="titre" style="font-size: 12px; margin-top: 10px;">DONNÉES STATISTIQUES</div>
     <div class="bloc">
         <div class="titre">T0 : INFORMATIONS GÉNÉRALES</div>
         <table class="infos">
@@ -96,5 +105,22 @@
     <table style="width: 100%; margin-top: 12px;">
         <tr><td></td><td style="text-align: right; font-weight: bold;">Fait le {{ now()->format('d/m/Y') }}<br><br>Signature et cachet du Proviseur</td></tr>
     </table>
+
+    @if($annexes)
+        <div class="titre" style="font-size: 12px; page-break-before: always;">ANNEXES</div>
+        @foreach($annexes as $annexe)
+            <div style="margin-bottom: 9px;">
+                <div class="titre">{{ $annexe['titre'] }}</div>
+                <table class="grille">
+                    <tr>@foreach($annexe['entetes'] as $entete)<th>{{ $entete }}</th>@endforeach</tr>
+                    @forelse($annexe['lignes'] as $ligne)
+                        <tr>@foreach($ligne as $valeur)<td class="l">{{ $valeur }}</td>@endforeach</tr>
+                    @empty
+                        <tr><td class="l" colspan="{{ count($annexe['entetes']) }}">Aucun élève.</td></tr>
+                    @endforelse
+                </table>
+            </div>
+        @endforeach
+    @endif
 </body>
 </html>

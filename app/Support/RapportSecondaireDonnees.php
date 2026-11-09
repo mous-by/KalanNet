@@ -381,6 +381,48 @@ class RapportSecondaireDonnees
         return $propre;
     }
 
+    /**
+     * Annexes nominatives, calculées depuis KalanNet. Rentrée : élèves par classe, avec leur commune (adresse) et leur
+     * sexe. Fin d'année : propositions de passage, de redoublement et d'exclusion par classe (décisions de réinscription).
+     *
+     * @return list<array{titre: string, entetes: list<string>, lignes: list<list<mixed>>}>
+     */
+    public static function annexes(string $type, int $idEcole, object $annee): array
+    {
+        $lignes = self::lignes($idEcole);
+        $noms = DB::table('classe')->whereIn('id_classe', array_keys($lignes['classes']))->pluck('nom_classe', 'id_classe');
+        $annexes = [];
+
+        if ($type === 'rentree') {
+            $eleves = DB::table('eleve')->where('id_ecole', $idEcole)->where('id_annee', $annee->id_anneeScolaire)->where('etat_dossier', 0)
+                ->whereIn('id_classe', array_keys($lignes['classes']))->orderBy('adresse_eleve')->orderBy('nom_eleve')->orderBy('prenom_eleve')
+                ->get(['id_classe', 'prenom_eleve', 'nom_eleve', 'genre_eleve', 'date_naissance', 'adresse_eleve', 'matricule'])->groupBy('id_classe');
+            foreach ($noms->sort() as $idClasse => $nom) {
+                $n = 0;
+                $annexes[] = ['titre' => 'Liste nominative des élèves : '.$nom, 'entetes' => ['N°', 'Commune / adresse', 'Prénom', 'Nom', 'Sexe', 'Date de naissance', 'N° Mle'],
+                    'lignes' => collect($eleves->get($idClasse, []))->map(fn ($e) => [++$n, $e->adresse_eleve, $e->prenom_eleve, $e->nom_eleve,
+                        PropositionPassageDonnees::fille($e->genre_eleve) ? 'F' : 'G', DateNaissance::pourSaisie($e->date_naissance), $e->matricule])->all()];
+            }
+
+            return $annexes;
+        }
+
+        $libelles = ['passant' => 'Passe', 'passage_force' => 'Passe', 'redoublant' => 'Redouble', 'ajourne' => 'Redouble', 'exclu_insuffisance' => 'Exclu : insuffisance de travail',
+            'exclu_epuisement' => 'Exclu : épuisement de scolarité', 'exclu' => 'Exclu', 'abandon' => 'Abandon', 'admis_sortant' => 'Admis au Bac', 'diplome_sortant' => 'Diplômé'];
+        $membres = self::membresDeLAnnee($idEcole, $annee, $lignes['classes']);
+        $identites = DB::table('eleve')->whereIn('id_eleve', $membres->pluck('id_eleve'))->get(['id_eleve', 'prenom_eleve', 'nom_eleve', 'matricule'])->keyBy('id_eleve');
+        foreach ($noms->sort() as $idClasse => $nom) {
+            $n = 0;
+            $annexes[] = ['titre' => 'Propositions de passage, de redoublement et d\'exclusion : '.$nom, 'entetes' => ['N°', 'Prénom', 'Nom', 'Sexe', 'N° Mle', 'Décision', 'Classe d\'arrivée'],
+                'lignes' => $membres->where('id_classe', $idClasse)->sortBy(fn ($m) => [$identites[$m->id_eleve]->nom_eleve ?? '', $identites[$m->id_eleve]->prenom_eleve ?? ''])
+                    ->map(fn ($m) => [++$n, $identites[$m->id_eleve]->prenom_eleve ?? '', $identites[$m->id_eleve]->nom_eleve ?? '', $m->sexe === 'f' ? 'F' : 'G', $identites[$m->id_eleve]->matricule ?? '',
+                        $m->decision ? ($libelles[$m->decision] ?? $m->decision) : ($m->actif ? 'Réinscription non encore faite' : 'Abandon'),
+                        in_array($m->decision, ['passant', 'passage_force'], true) ? ($noms[$m->id_classe_cible] ?? DB::table('classe')->where('id_classe', $m->id_classe_cible)->value('nom_classe')) : null])->values()->all()];
+        }
+
+        return $annexes;
+    }
+
     /** Ce qui manque avant de remettre le rapport à l'académie. @return list<string> */
     public static function champsManquants(array $donnees): array
     {

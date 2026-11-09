@@ -58,9 +58,58 @@
         </div>
     </form>
 
+    {{-- Canevas officiels du ministère : tous leurs tableaux, remplis avec ce rapport. --}}
+    @php $maquettes = \App\Services\Rapports\CanevasOfficiel::MAQUETTES_ETP; @endphp
+    <div class="card theme-card shadow-sm mb-3">
+        <div class="card-header theme-header"><h6 class="mb-0 fw-bold">Canevas officiels du ministère</h6></div>
+        <div class="card-body">
+            <p class="small text-muted mb-3">Le vrai fichier Excel du ministère, avec tous ses tableaux et ses cases de vérification, rempli avec ce que vous saisissez ici et ce que KalanNet connaît. Les tableaux qui ne figurent pas sur cette page se complètent directement dans le fichier.</p>
+            @if($avecTechnique)
+                <form method="POST" action="{{ route('rapport-secondaire.maquette') }}" class="row g-2 align-items-end mb-3">
+                    @csrf
+                    <div class="col-md-7">
+                        <label class="form-label small fw-bold" for="maquette">Maquette de votre technique et professionnel</label>
+                        <select name="maquette" id="maquette" class="form-select" required>
+                            <option value="">— Choisir la maquette demandée par votre académie —</option>
+                            @foreach($maquettes as $v => $libelle)
+                                <option value="{{ $v }}" @selected($maquette === $v)>{{ $libelle }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-auto"><button type="submit" class="btn btn-outline-primary">Enregistrer la maquette</button></div>
+                </form>
+            @endif
+            <div class="d-flex flex-wrap gap-2">
+                @if($avecGeneral)
+                    <button type="submit" form="rapport-secondaire-form" name="action" value="canevas_esg" class="btn btn-success"><i class="bi bi-file-earmark-excel me-1"></i>Canevas officiel du secondaire général</button>
+                @endif
+                @if($avecTechnique)
+                    <button type="submit" form="rapport-secondaire-form" name="action" value="canevas_etp" class="btn btn-success" @disabled(!isset($maquettes[$maquette]))><i class="bi bi-file-earmark-excel me-1"></i>Maquette officielle du technique{{ isset($maquettes[$maquette]) ? ' ('.$maquettes[$maquette].')' : '' }}</button>
+                @endif
+            </div>
+            @if($avecTechnique && !isset($maquettes[$maquette]))
+                <div class="small text-muted mt-2">Choisissez d'abord votre maquette : KalanNet s'en souviendra pour les années suivantes.</div>
+            @endif
+        </div>
+    </div>
+
     <form method="POST" action="{{ route('rapport-secondaire.store', [$type, 'annee' => $annee->id_anneeScolaire]) }}" id="rapport-secondaire-form">
         @csrf
         <input type="hidden" name="tableaux_json" id="tableaux_json">
+
+        <div class="card theme-card shadow-sm mb-3">
+            <div class="card-header theme-header"><h6 class="mb-0 fw-bold">Partie administrative</h6></div>
+            <div class="card-body d-grid gap-3">
+                <p class="small text-muted mb-0">À rédiger par l'établissement. Les annexes nominatives (élèves par classe{{ $type === 'fin' ? ', décisions de passage, de redoublement et d\'exclusion' : ' et par commune' }}) sont ajoutées automatiquement au PDF et à l'Excel.</p>
+                @foreach($redaction as $cle => [$titre, $aide])
+                    <div>
+                        <label class="form-label small fw-bold mb-1" for="redaction-{{ $cle }}">{{ $titre }}</label>
+                        @if($aide)<div class="form-text mt-0 mb-1">{{ $aide }}</div>@endif
+                        <textarea class="form-control" rows="4" maxlength="20000" name="redaction[{{ $cle }}]" id="redaction-{{ $cle }}">{{ old("redaction.$cle", $donnees['redaction'][$cle] ?? '') }}</textarea>
+                    </div>
+                @endforeach
+            </div>
+        </div>
 
         <div class="card theme-card shadow-sm mb-3">
             <div class="card-header theme-header"><h6 class="mb-0 fw-bold">T0 : Informations générales</h6></div>

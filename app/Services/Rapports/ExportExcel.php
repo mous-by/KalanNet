@@ -255,9 +255,13 @@ class ExportExcel
     }
 
     /** @param list<array<string, mixed>> $tableaux */
-    public static function rapportSecondaire(array $d, string $type, string $annee, array $tableaux): self
+    public static function rapportSecondaire(array $d, string $type, string $annee, array $tableaux, array $annexes = []): self
     {
         $x = new self(RapportSecondaireDefinitions::TYPES[$type].' '.$annee);
+        $x->titre('Partie administrative');
+        foreach (RapportSecondaireDefinitions::redaction($type) as $cle => [$titre]) {
+            $x->tableau($titre, [], [[(string) ($d['redaction'][$cle] ?? '')]]);
+        }
         $x->titre('T0 : Informations générales')->paires(collect(RapportSecondaireDefinitions::infos($type))->mapWithKeys(fn ($l, $c) => [$l => $d['infos'][$c] ?? null])->all());
 
         foreach ($tableaux as $tableau) {
@@ -281,6 +285,9 @@ class ExportExcel
                 $lignes[] = ['Total', ...$sommes, ...($totalLigne ? [array_sum($sommes)] : [])];
             }
             $x->tableau($tableau['code'].' : '.$tableau['titre'], $entetes, $lignes, $totalColonne);
+        }
+        foreach ($annexes as $annexe) {
+            $x->tableau('Annexe : '.$annexe['titre'], self::simple($annexe['entetes']), $annexe['lignes']);
         }
 
         return $x;

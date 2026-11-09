@@ -6,6 +6,7 @@ use App\Models\AnneeScolaire;
 use App\Models\AppNotification;
 use App\Models\Ecole;
 use App\Models\RapportSecondaire;
+use App\Services\Rapports\CanevasOfficiel;
 use App\Support\ModelesBulletin;
 use App\Support\RapportSecondaireDefinitions as Def;
 use App\Support\RapportSecondaireDonnees as Donnees;
@@ -88,7 +89,10 @@ class RapportSecondaireController extends Controller
 
         return view('rapports-secondaire.index', [
             'ecole' => $ecole, 'annee' => $annee, 'annees' => $this->annees(), 'rapport' => $rapport, 'donnees' => $donnees, 'type' => $type,
-            'tableaux' => Donnees::tableaux($type, (int) $ecole->idEcole), 'infos' => Def::infos($type),
+            'tableaux' => Donnees::tableaux($type, (int) $ecole->idEcole), 'infos' => Def::infos($type), 'redaction' => Def::redaction($type),
+            'avecGeneral' => DB::table('classe')->where('idEcole', $ecole->idEcole)->where('ordreEnseignement', 'secondairegenerale')->exists(),
+            'avecTechnique' => DB::table('classe')->where('idEcole', $ecole->idEcole)->where('ordreEnseignement', 'secondairetechniqueetprofessionnel')->exists(),
+            'maquette' => $ecole->maquette_etp,
             'surKalanNet' => RapportSuccinctDonnees::academieSurKalanNet($ecole->id_academie),
             'sansDate' => $type === 'rentree' ? Donnees::sansDateDeNaissance((int) $ecole->idEcole, (int) $annee->id_anneeScolaire) : 0,
             'manquants' => Donnees::champsManquants($donnees),
@@ -101,11 +105,13 @@ class RapportSecondaireController extends Controller
         $ecole = $this->ecole();
         $annee = $this->annee($request, $ecole, $type);
 
-        $request->validate(['infos' => 'nullable|array', 'infos.*' => 'nullable|string|max:255', 'tableaux_json' => 'nullable|string']);
+        $request->validate(['infos' => 'nullable|array', 'infos.*' => 'nullable|string|max:255', 'tableaux_json' => 'nullable|string',
+            'redaction' => 'nullable|array', 'redaction.*' => 'nullable|string|max:20000']);
+        $redaction = collect(Def::redaction($type))->map(fn ($r, $cle) => filled($request->input("redaction.$cle")) ? trim((string) $request->input("redaction.$cle")) : null)->all();
         $infos = collect(Def::infos($type))->map(fn ($l, $champ) => filled($request->input("infos.$champ")) ? trim((string) $request->input("infos.$champ")) : null)->all();
         // Tous les tableaux arrivent dans un seul champ : la limite de champs de PHP ne peut pas tronquer la saisie.
         $saisie = json_decode((string) $request->input('tableaux_json', '{}'), true);
-        $donnees = ['type' => $type, 'infos' => $infos, 't' => Donnees::assainir(is_array($saisie) ? $saisie : [], Donnees::tableaux($type, (int) $ecole->idEcole))];
+        $donnees = ['type' => $type, 'infos' => $infos, 'redaction' => $redaction, 't' => Donnees::assainir(is_array($saisie) ? $saisie : [], Donnees::tableaux($type, (int) $ecole->idEcole))];
 
         $rapport = RapportSecondaire::firstOrNew(['id_ecole' => $ecole->idEcole, 'id_annee' => $annee->id_anneeScolaire, 'type' => $type]);
         $rapport->donnees = $donnees;
@@ -115,6 +121,9 @@ class RapportSecondaireController extends Controller
         $retour = ['type' => $type, 'annee' => $annee->id_anneeScolaire];
         if (in_array($request->input('action'), ['telecharger', 'excel'], true)) {
             return redirect()->route('rapport-secondaire.pdf', $retour + ($request->input('action') === 'excel' ? ['format' => 'excel'] : []));
+        }
+        if (in_array($request->input('action'), ['canevas_esg', 'canevas_etp'], true)) {
+            return redirect()->route('rapport-secondaire.canevas', $retour + ['modele' => $request->input('action') === 'canevas_esg' ? 'esg' : 'etp']);
         }
         if ($request->input('action') !== 'remettre') {
             return redirect()->route('rapport-secondaire.index', $retour)->with('success', 'Rapport enregistré.');
@@ -146,23 +155,73 @@ class RapportSecondaireController extends Controller
         $annee = $this->annee($request, $ecole, $type);
         $donnees = $this->rapport($ecole, $annee, $type)?->donnees ?? Donnees::calculer($ecole, $annee, $type);
 
-        return $this->fichier($donnees, $type, (int) $ecole->idEcole, (string) $annee->annee, !$request->boolean('voir'), $request->input('format') === 'excel');
+        return $this->fichier($donnees, $type, (int) $ecole->idEcole, $annee, !$request->boolean('voir'), $request->input('format') === 'excel');
     }
 
-    private function fichier(array $donnees, string $type, int $idEcole, string $annee, bool $telecharger, bool $excel = false)
+    private function academie(int $idEcole): string
     {
+        return (string) DB::table('ecole as e')->leftJoin('academie as a', 'a.id_academie', '=', 'e.id_academie')->where('e.idEcole', $idEcole)->value(DB::raw('COALESCE(a.nom_academie, e.academie)'));
+    }
+
+    private function fichier(array $donnees, string $type, int $idEcole, object $annee, bool $telecharger, bool $excel = false)
+    {
+        $annexes = Donnees::annexes($type, $idEcole, $annee);
         if ($excel) {
-            return \App\Services\Rapports\ExportExcel::rapportSecondaire($donnees, $type, $annee, Donnees::tableaux($type, $idEcole))
-                ->telecharger('rapport-'.$type.'-'.Str::slug($donnees['infos']['nom'] ?? 'etablissement').'-'.$annee);
+            return \App\Services\Rapports\ExportExcel::rapportSecondaire($donnees, $type, (string) $annee->annee, Donnees::tableaux($type, $idEcole), $annexes)
+                ->telecharger('rapport-'.$type.'-'.Str::slug($donnees['infos']['nom'] ?? 'etablissement').'-'.$annee->annee);
         }
-        $academie = DB::table('ecole as e')->leftJoin('academie as a', 'a.id_academie', '=', 'e.id_academie')->where('e.idEcole', $idEcole)->value(DB::raw('COALESCE(a.nom_academie, e.academie)'));
         $pdf = Pdf::loadView('pdf.rapport_secondaire', [
-            'd' => $donnees, 'type' => $type, 'annee' => $annee, 'academie' => $academie,
-            'tableaux' => Donnees::tableaux($type, $idEcole), 'infos' => Def::infos($type),
+            'd' => $donnees, 'type' => $type, 'annee' => (string) $annee->annee, 'academie' => $this->academie($idEcole),
+            'tableaux' => Donnees::tableaux($type, $idEcole), 'infos' => Def::infos($type), 'redaction' => Def::redaction($type), 'annexes' => $annexes,
         ])->setPaper('a4', 'landscape');
-        $nom = 'rapport-'.$type.'-'.Str::slug($donnees['infos']['nom'] ?? 'etablissement').'-'.$annee.'.pdf';
+        $nom = 'rapport-'.$type.'-'.Str::slug($donnees['infos']['nom'] ?? 'etablissement').'-'.$annee->annee.'.pdf';
 
         return $telecharger ? $pdf->download($nom) : $pdf->stream($nom);
+    }
+
+    /**
+     * Le canevas officiel du ministère, rempli avec le rapport : « esg » pour le général, « etp » pour le technique
+     * (dans la maquette choisie par l'école).
+     */
+    private function canevasReponse(string $modele, string $type, array $donnees, Ecole $ecole, object $annee)
+    {
+        if ($modele === 'etp') {
+            abort_unless(isset(CanevasOfficiel::MAQUETTES_ETP[$ecole->maquette_etp]), 404, 'Choisissez d\'abord la maquette du technique et professionnel.');
+            $modele = $ecole->maquette_etp;
+        }
+        $limite = ini_get('memory_limit');
+        if ($limite !== '-1' && ini_parse_quantity($limite) < 512 * 1024 * 1024) {
+            @ini_set('memory_limit', '512M');
+        }
+        $classes = Donnees::lignes((int) $ecole->idEcole)['classes'];
+        $classeur = (new CanevasOfficiel)->remplir($modele, $type, $donnees, $ecole, (string) $annee->annee, $this->academie((int) $ecole->idEcole), CanevasOfficiel::enseignants((int) $ecole->idEcole, $classes));
+        $ecrivain = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($classeur, 'Xlsx');
+        $ecrivain->setPreCalculateFormulas(false); // Excel recalcule les formules du canevas à l'ouverture
+        $chemin = tempnam(sys_get_temp_dir(), 'canevas');
+        $ecrivain->save($chemin);
+        $classeur->disconnectWorksheets();
+
+        return response()->download($chemin, 'canevas-'.$modele.'-'.$type.'-'.Str::slug($ecole->nomEcole).'-'.$annee->annee.'.xlsx')->deleteFileAfterSend();
+    }
+
+    public function canevas(Request $request, string $type)
+    {
+        $type = $this->type($type);
+        $ecole = $this->ecole();
+        $annee = $this->annee($request, $ecole, $type);
+        $modele = $request->input('modele') === 'etp' ? 'etp' : 'esg';
+
+        return $this->canevasReponse($modele, $type, $this->rapport($ecole, $annee, $type)?->donnees ?? Donnees::calculer($ecole, $annee, $type), $ecole, $annee);
+    }
+
+    /** L'école choisit la maquette officielle de son technique et professionnel ; elle est gardée pour les années suivantes. */
+    public function maquette(Request $request)
+    {
+        $ecole = $this->ecole();
+        $data = $request->validate(['maquette' => ['required', \Illuminate\Validation\Rule::in(array_keys(CanevasOfficiel::MAQUETTES_ETP))]]);
+        DB::table('ecole')->where('idEcole', $ecole->idEcole)->update(['maquette_etp' => $data['maquette']]);
+
+        return back()->with('success', 'Maquette enregistrée : '.CanevasOfficiel::MAQUETTES_ETP[$data['maquette']].'.');
     }
 
     /* ——— Espace de l'académie ——— */
@@ -184,7 +243,7 @@ class RapportSecondaireController extends Controller
 
         $ecoles = DB::table('ecole as e')->where('e.id_academie', $user->id_academie)
             ->whereExists(fn ($q) => $q->select(DB::raw(1))->from('classe')->whereColumn('classe.idEcole', 'e.idEcole')->whereIn('classe.ordreEnseignement', RapportSuccinctDonnees::SECONDAIRE))
-            ->orderBy('e.nomEcole')->get(['e.idEcole', 'e.nomEcole', 'e.adresse', 'e.typeEcole'])
+            ->orderBy('e.nomEcole')->get(['e.idEcole', 'e.nomEcole', 'e.adresse', 'e.typeEcole', 'e.maquette_etp'])
             ->reject(fn ($e) => ModelesBulletin::estEcoleSante($e->typeEcole))->values();
         $idsAnnee = DB::table('anneescolaire')->where('annee', $annee?->annee)->pluck('id_anneeScolaire');
         $rapports = RapportSecondaire::withoutGlobalScopes()->whereIn('id_annee', $idsAnnee)->where('type', $type)->where('statut', '!=', 'brouillon')
@@ -200,6 +259,17 @@ class RapportSecondaireController extends Controller
         $rapport = RapportSecondaire::withoutGlobalScopes()->where('statut', '!=', 'brouillon')->findOrFail($id);
         abort_unless((int) DB::table('ecole')->where('idEcole', $rapport->id_ecole)->value('id_academie') === (int) $user->id_academie, 404);
 
-        return $this->fichier($rapport->donnees_envoyees, $rapport->type, (int) $rapport->id_ecole, (string) DB::table('anneescolaire')->where('id_anneeScolaire', $rapport->id_annee)->value('annee'), $request->boolean('telecharger'), $request->input('format') === 'excel');
+        return $this->fichier($rapport->donnees_envoyees, $rapport->type, (int) $rapport->id_ecole, DB::table('anneescolaire')->where('id_anneeScolaire', $rapport->id_annee)->first(), $request->boolean('telecharger'), $request->input('format') === 'excel');
+    }
+
+    /** L'académie télécharge aussi le canevas officiel rempli avec le rapport reçu. */
+    public function canevasTerritoire(Request $request, int $id)
+    {
+        $user = $this->dae();
+        $rapport = RapportSecondaire::withoutGlobalScopes()->where('statut', '!=', 'brouillon')->findOrFail($id);
+        $ecole = Ecole::withoutGlobalScopes()->findOrFail($rapport->id_ecole);
+        abort_unless((int) $ecole->id_academie === (int) $user->id_academie, 404);
+
+        return $this->canevasReponse($request->input('modele') === 'etp' ? 'etp' : 'esg', $rapport->type, $rapport->donnees_envoyees, $ecole, DB::table('anneescolaire')->where('id_anneeScolaire', $rapport->id_annee)->first());
     }
 }
