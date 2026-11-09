@@ -25,6 +25,7 @@ class AuthController extends Controller
             'identifier' => ['required', 'string', 'max:255'],
             'pwd' => ['required'],
             'device_name' => ['nullable', 'string', 'max:100'],
+            'device_id' => ['nullable', 'string', 'max:64'],
         ], [
             'identifier.required' => 'Veuillez saisir votre email ou votre numéro de téléphone.',
         ]);
@@ -99,6 +100,7 @@ class AuthController extends Controller
             'id_utilisateur' => 'required|exists:utilisateurs,idUtilisateur',
             'id_ecole' => 'required|exists:ecole,idEcole',
             'device_name' => ['nullable', 'string', 'max:100'],
+            'device_id' => ['nullable', 'string', 'max:64'],
             'selection_token' => ['nullable', 'string'],
         ]);
 

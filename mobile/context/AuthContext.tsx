@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { api, registerMaintenanceHandler, registerUnauthorizedHandler } from '../lib/api';
 import { clearToken, getToken, setToken } from '../lib/storage';
+import { deviceId, deviceName } from '../lib/device';
 import { AccountChoice, LoginResponse, User, isLoginSuccess } from '../types/api';
 
 interface AuthContextValue {
@@ -81,7 +82,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data } = await api.post<LoginResponse>('/auth/login', {
       identifier,
       pwd,
-      device_name: 'mobile-app',
+      device_name: deviceName(),
+      device_id: await deviceId(),
     });
     const accounts = await applyLoginResult(data, setUser, setSubscriptionBlocked);
     setPendingAccounts(accounts);
@@ -92,7 +94,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       id_utilisateur: idUtilisateur,
       id_ecole: idEcole,
       selection_token: selectionToken,
-      device_name: 'mobile-app',
+      device_name: deviceName(),
+      device_id: await deviceId(),
     });
     await applyLoginResult(data, setUser, setSubscriptionBlocked);
     setPendingAccounts(null);

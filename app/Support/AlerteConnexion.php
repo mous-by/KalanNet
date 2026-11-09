@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Mail;
 class AlerteConnexion
 {
     /** @return array{appareil: string, empreinte: string} */
-    public static function appareil(?string $userAgent, string $canal, ?string $nomApplication = null): array
+    public static function appareil(?string $userAgent, string $canal, ?string $nomApplication = null, ?string $idInstallation = null): array
     {
         $ua = (string) $userAgent;
         $systeme = match (true) {
@@ -43,10 +43,12 @@ class AlerteConnexion
         };
 
         if ($canal === 'mobile') {
-            $nom = trim((string) $nomApplication) !== '' && $nomApplication !== 'mobile' ? trim((string) $nomApplication) : $systeme[0];
+            // Les versions avant 1.0.2 envoient « mobile-app » pour tous les téléphones.
+            $nom = !in_array(trim((string) $nomApplication), ['', 'mobile', 'mobile-app'], true) ? trim((string) $nomApplication) : 'téléphone';
             $appareil = 'Application KalanNet sur '.$nom;
-            // Une même installation garde son nom ; le système seul suffit quand l'application n'en donne pas.
-            $empreinte = 'mobile|'.mb_strtolower($nom);
+            // Depuis la version 1.0.2, chaque installation envoie son identifiant : c'est lui qui reconnaît le téléphone.
+            $id = trim((string) $idInstallation);
+            $empreinte = $id !== '' ? 'mobile|id|'.$id : 'mobile|'.mb_strtolower($nom);
         } else {
             $appareil = $navigateur.' sur '.$systeme[0].' ('.$systeme[1].')';
             // Sans les numéros de version : une mise à jour du navigateur n'est pas un nouvel appareil.
@@ -59,7 +61,7 @@ class AlerteConnexion
     public static function signaler(User $user, Request $request, string $canal): void
     {
         try {
-            $info = self::appareil($request->userAgent(), $canal, $request->input('device_name'));
+            $info = self::appareil($request->userAgent(), $canal, $request->input('device_name'), $request->input('device_id'));
             $connus = DB::table('connexions_appareils')->where('user_id', $user->idUtilisateur);
             $deja = (clone $connus)->where('empreinte', $info['empreinte'])->exists();
             $premier = !(clone $connus)->exists();

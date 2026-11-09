@@ -53,6 +53,10 @@ class AlerteConnexionTest extends IntegrationTestCase
         // Mise à jour du navigateur : même appareil.
         $this->assertSame(AlerteConnexion::appareil(self::WINDOWS, 'web')['empreinte'], AlerteConnexion::appareil(self::WINDOWS_MAJ, 'web')['empreinte']);
         $this->assertSame('Application KalanNet sur Pixel 8', AlerteConnexion::appareil('okhttp/4.12', 'mobile', 'Pixel 8')['appareil']);
+        // Deux téléphones du même modèle : distingués par l'identifiant de leur installation (application 1.0.2).
+        $this->assertNotSame(AlerteConnexion::appareil('okhttp/4.12', 'mobile', 'Tecno Spark 20', 'a1')['empreinte'], AlerteConnexion::appareil('okhttp/4.12', 'mobile', 'Tecno Spark 20', 'b2')['empreinte']);
+        // Ancienne application : nom générique, libellé lisible.
+        $this->assertSame('Application KalanNet sur téléphone', AlerteConnexion::appareil('okhttp/4.12', 'mobile', 'mobile-app')['appareil']);
     }
 
     public function test_alerte_seulement_pour_un_nouvel_appareil(): void
@@ -84,8 +88,11 @@ class AlerteConnexionTest extends IntegrationTestCase
         DB::table('utilisateurs')->where('idUtilisateur', $this->compte->idUtilisateur)->update(['telephone' => '70112233']);
         $this->connexionWeb(self::WINDOWS);
 
-        $this->postJson('/api/v1/auth/login', ['identifier' => $this->compte->email, 'pwd' => 'Secret-2026', 'device_name' => 'Tecno Spark 20'])->assertOk();
+        $this->postJson('/api/v1/auth/login', ['identifier' => $this->compte->email, 'pwd' => 'Secret-2026', 'device_name' => 'Tecno Spark 20', 'device_id' => 'install-1'])->assertOk();
         Mail::assertSent(NouvelleConnexion::class, fn (NouvelleConnexion $m) => $m->appareil === 'Application KalanNet sur Tecno Spark 20');
+        // La même installation ensuite : pas de nouvel e-mail.
+        $this->postJson('/api/v1/auth/login', ['identifier' => $this->compte->email, 'pwd' => 'Secret-2026', 'device_name' => 'Tecno Spark 20', 'device_id' => 'install-1'])->assertOk();
+        Mail::assertSentCount(1);
 
         // Sans e-mail (parent connecté par son numéro) : la notification seule.
         DB::table('utilisateurs')->where('idUtilisateur', $this->compte->idUtilisateur)->update(['email' => null]);
