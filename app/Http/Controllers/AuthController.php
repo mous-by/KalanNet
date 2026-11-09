@@ -165,6 +165,7 @@ class AuthController extends Controller
         $user->save();
 
         Auth::login($user);
+        \App\Support\AlerteConnexion::signaler($user, $request, 'web');
 
         $request->session()->put('show_pwa_install_modal', true);
 

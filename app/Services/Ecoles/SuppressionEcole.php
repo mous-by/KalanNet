@@ -121,6 +121,7 @@ class SuppressionEcole
                     ['annonces_admin_gestionnaire', ['id_annonce' => $ids['annonces']]],
                     ['notifications', ['id_ecole' => $e]],
                     ['app_notifications', ['user_id' => $ids['utilisateurs']]],
+                    ['connexions_appareils', ['user_id' => $ids['utilisateurs']]],
                     ['kalanbot_actions_log', ['id_ecole' => $e, 'user_id' => $ids['utilisateurs']]],
                     // Comptes
                     ['user_permission', ['user_id' => $ids['utilisateurs']]],

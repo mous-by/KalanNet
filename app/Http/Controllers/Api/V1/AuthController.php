@@ -255,6 +255,7 @@ class AuthController extends Controller
 
         $deviceName = $request->input('device_name', 'mobile');
         $token = $user->createToken($deviceName)->plainTextToken;
+        \App\Support\AlerteConnexion::signaler($user, $request, 'mobile');
 
         return response()->json([
             'token' => $token,
