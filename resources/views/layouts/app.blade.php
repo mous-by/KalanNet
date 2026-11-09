@@ -21,6 +21,8 @@
     <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    {{-- Version en ligne : la page se met à jour seule quand elle change (assets/mon_js/mise-a-jour.js). --}}
+    <meta name="kalannet-version" content="{{ \App\Support\VersionApp::actuelle() }}" data-url="{{ route('version') }}">
     <!-- Favicon & App Icons -->
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('assets/images/favicon-32x32.png') }}">
@@ -51,8 +53,8 @@
 
     <!-- Bootstrap CSS -->
     <link href="{{ asset('assets/css/bootstrap.min.css') }}" rel="stylesheet" />
-    <link href="{{ asset('assets/css/bootstrap-extended.css') }}" rel="stylesheet" />
-    <link href="{{ asset('assets/css/style.css') }}" rel="stylesheet" />
+    <link href="{{ asset('assets/css/bootstrap-extended.css') }}?v={{ filemtime(public_path('assets/css/bootstrap-extended.css')) }}" rel="stylesheet" />
+    <link href="{{ asset('assets/css/style.css') }}?v={{ filemtime(public_path('assets/css/style.css')) }}" rel="stylesheet" />
     <link href="{{ asset('assets/css/icons.css') }}" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('assets/css/bootstrap-icons.css') }}">
@@ -176,6 +178,7 @@
         })();
     </script>
     <script src="{{ asset('assets/mon_js/save-button-spinner.js') }}?v={{ filemtime(public_path('assets/mon_js/save-button-spinner.js')) }}"></script>
+    <script src="{{ asset('assets/mon_js/mise-a-jour.js') }}?v={{ filemtime(public_path('assets/mon_js/mise-a-jour.js')) }}"></script>
     <script>
         // Langue et thème retenus pour la page hors connexion (public/offline.html), qui ne peut pas les demander au serveur.
         try {

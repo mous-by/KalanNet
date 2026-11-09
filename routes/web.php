@@ -1,6 +1,12 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+
+// Version en ligne, lue par les pages ouvertes pour se mettre à jour seules (sans session ni connexion requise).
+Route::get('/version', fn () => response()->json(['version' => \App\Support\VersionApp::actuelle()])
+    ->header('Cache-Control', 'no-store, no-cache, must-revalidate'))->name('version')
+    // Hors du groupe « web » : ni session, ni maintenance, ni abonnement, et ce n'est pas une activité de l'utilisateur.
+    ->withoutMiddleware('web');
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BulletinController;
 use App\Http\Controllers\TimetableController;
