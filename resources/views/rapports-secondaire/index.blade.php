@@ -59,37 +59,36 @@
     </form>
 
     {{-- Canevas officiels du ministère : tous leurs tableaux, remplis avec ce rapport. --}}
-    @php $maquettes = \App\Services\Rapports\CanevasOfficiel::MAQUETTES_ETP; @endphp
+    @php $modeles = \App\Services\Rapports\CanevasOfficiel::MODELES; @endphp
     <div class="card theme-card shadow-sm mb-3">
         <div class="card-header theme-header"><h6 class="mb-0 fw-bold">Canevas officiels du ministère</h6></div>
         <div class="card-body">
             <p class="small text-muted mb-3">Le vrai fichier Excel du ministère, avec tous ses tableaux et ses cases de vérification, rempli avec ce que vous saisissez ici et ce que KalanNet connaît. Les tableaux qui ne figurent pas sur cette page se complètent directement dans le fichier.</p>
-            @if($avecTechnique)
-                <form method="POST" action="{{ route('rapport-secondaire.maquette') }}" class="row g-2 align-items-end mb-3">
-                    @csrf
-                    <div class="col-md-7">
-                        <label class="form-label small fw-bold" for="maquette">Maquette de votre technique et professionnel</label>
-                        <select name="maquette" id="maquette" class="form-select" required>
-                            <option value="">— Choisir la maquette demandée par votre académie —</option>
-                            @foreach($maquettes as $v => $libelle)
-                                <option value="{{ $v }}" @selected($maquette === $v)>{{ $libelle }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-auto"><button type="submit" class="btn btn-outline-primary">Enregistrer la maquette</button></div>
-                </form>
-            @endif
+            <form method="POST" action="{{ route('rapport-secondaire.maquette') }}" class="row g-2 align-items-end mb-3">
+                @csrf
+                <div class="col-md-7">
+                    <label class="form-label small fw-bold" for="maquette">Modèle de rapport demandé par votre académie</label>
+                    <select name="maquette" id="maquette" class="form-select" required>
+                        <option value="">— Choisir le modèle —</option>
+                        @foreach($modeles as $v => $libelle)
+                            <option value="{{ $v }}" @selected($maquette === $v)>{{ $libelle }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-auto"><button type="submit" class="btn btn-outline-primary">Enregistrer le modèle</button></div>
+            </form>
             <div class="d-flex flex-wrap gap-2">
-                @if($avecGeneral)
-                    <button type="submit" form="rapport-secondaire-form" name="action" value="canevas_esg" class="btn btn-success"><i class="bi bi-file-earmark-excel me-1"></i>Canevas officiel du secondaire général</button>
+                @if(isset($modeles[$maquette]))
+                    <button type="submit" form="rapport-secondaire-form" name="action" value="canevas_choisi" class="btn btn-success"><i class="bi bi-file-earmark-excel me-1"></i>Canevas officiel : {{ $modeles[$maquette] }}</button>
                 @endif
-                @if($avecTechnique)
-                    <button type="submit" form="rapport-secondaire-form" name="action" value="canevas_etp" class="btn btn-success" @disabled(!isset($maquettes[$maquette]))><i class="bi bi-file-earmark-excel me-1"></i>Maquette officielle du technique{{ isset($maquettes[$maquette]) ? ' ('.$maquettes[$maquette].')' : '' }}</button>
+                @if($avecGeneral && $maquette !== 'esg')
+                    {{-- Établissement qui a aussi des classes du général : le canevas ESG reste disponible. --}}
+                    <button type="submit" form="rapport-secondaire-form" name="action" value="canevas_esg" class="btn btn-success"><i class="bi bi-file-earmark-excel me-1"></i>Canevas officiel : {{ $modeles['esg'] }}</button>
                 @endif
             </div>
-            @if($avecTechnique && !isset($maquettes[$maquette]))
-                <div class="small text-muted mt-2">Choisissez d'abord votre maquette : KalanNet s'en souviendra pour les années suivantes.</div>
-            @endif
+            @unless(isset($modeles[$maquette]))
+                <div class="small text-muted mt-2">Choisissez d'abord votre modèle : KalanNet s'en souviendra pour les années suivantes.</div>
+            @endunless
         </div>
     </div>
 

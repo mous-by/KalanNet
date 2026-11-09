@@ -19,6 +19,15 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
  */
 class CanevasOfficiel
 {
+    /** Les cinq modèles officiels du secondaire ; chaque établissement choisit celui que son académie demande. */
+    public const MODELES = [
+        'esg' => 'Enseignement secondaire général (ESG)',
+        'est' => 'Enseignement secondaire technique (EST)',
+        'esp' => 'Enseignement secondaire professionnel (ESP)',
+        'esp_pro' => 'Enseignement secondaire professionnel « Pro »',
+        'agro' => 'Enseignement agricole',
+    ];
+
     public const MAQUETTES_ETP = [
         'est' => 'Enseignement secondaire technique (EST)',
         'esp' => 'Enseignement secondaire professionnel (ESP)',

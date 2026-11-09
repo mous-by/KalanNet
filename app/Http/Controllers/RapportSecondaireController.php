@@ -92,7 +92,7 @@ class RapportSecondaireController extends Controller
             'tableaux' => Donnees::tableaux($type, (int) $ecole->idEcole), 'infos' => Def::infos($type), 'redaction' => Def::redaction($type),
             'avecGeneral' => DB::table('classe')->where('idEcole', $ecole->idEcole)->where('ordreEnseignement', 'secondairegenerale')->exists(),
             'avecTechnique' => DB::table('classe')->where('idEcole', $ecole->idEcole)->where('ordreEnseignement', 'secondairetechniqueetprofessionnel')->exists(),
-            'maquette' => $ecole->maquette_etp,
+            'maquette' => $this->modeleChoisi($ecole),
             'surKalanNet' => RapportSuccinctDonnees::academieSurKalanNet($ecole->id_academie),
             'sansDate' => $type === 'rentree' ? Donnees::sansDateDeNaissance((int) $ecole->idEcole, (int) $annee->id_anneeScolaire) : 0,
             'manquants' => Donnees::champsManquants($donnees),
@@ -122,8 +122,8 @@ class RapportSecondaireController extends Controller
         if (in_array($request->input('action'), ['telecharger', 'excel'], true)) {
             return redirect()->route('rapport-secondaire.pdf', $retour + ($request->input('action') === 'excel' ? ['format' => 'excel'] : []));
         }
-        if (in_array($request->input('action'), ['canevas_esg', 'canevas_etp'], true)) {
-            return redirect()->route('rapport-secondaire.canevas', $retour + ['modele' => $request->input('action') === 'canevas_esg' ? 'esg' : 'etp']);
+        if (in_array($request->input('action'), ['canevas_esg', 'canevas_choisi'], true)) {
+            return redirect()->route('rapport-secondaire.canevas', $retour + ['modele' => $request->input('action') === 'canevas_esg' ? 'esg' : 'choisi']);
         }
         if ($request->input('action') !== 'remettre') {
             return redirect()->route('rapport-secondaire.index', $retour)->with('success', 'Rapport enregistré.');
@@ -183,12 +183,21 @@ class RapportSecondaireController extends Controller
      * Le canevas officiel du ministère, rempli avec le rapport : « esg » pour le général, « etp » pour le technique
      * (dans la maquette choisie par l'école).
      */
-    private function canevasReponse(string $modele, string $type, array $donnees, Ecole $ecole, object $annee)
+    /** Modèle de l'établissement : celui qu'il a choisi, sinon l'ESG s'il a des classes du général. */
+    private function modeleChoisi(Ecole $ecole): ?string
     {
-        if ($modele === 'etp') {
-            abort_unless(isset(CanevasOfficiel::MAQUETTES_ETP[$ecole->maquette_etp]), 404, 'Choisissez d\'abord la maquette du technique et professionnel.');
-            $modele = $ecole->maquette_etp;
+        if (isset(CanevasOfficiel::MODELES[$ecole->maquette_etp])) {
+            return $ecole->maquette_etp;
         }
+
+        return DB::table('classe')->where('idEcole', $ecole->idEcole)->where('ordreEnseignement', 'secondairegenerale')->exists() ? 'esg' : null;
+    }
+
+    private function canevasReponse(string $demande, string $type, array $donnees, Ecole $ecole, object $annee)
+    {
+        // « choisi » : le modèle de l'établissement ; sinon un modèle nommé (esg, est, esp, esp_pro, agro).
+        $modele = $demande === 'choisi' ? $this->modeleChoisi($ecole) : $demande;
+        abort_unless(isset(CanevasOfficiel::MODELES[$modele]), 404, 'Choisissez d\'abord le modèle de rapport demandé par votre académie.');
         $limite = ini_get('memory_limit');
         if ($limite !== '-1' && ini_parse_quantity($limite) < 512 * 1024 * 1024) {
             @ini_set('memory_limit', '512M');
@@ -209,19 +218,17 @@ class RapportSecondaireController extends Controller
         $type = $this->type($type);
         $ecole = $this->ecole();
         $annee = $this->annee($request, $ecole, $type);
-        $modele = $request->input('modele') === 'etp' ? 'etp' : 'esg';
-
-        return $this->canevasReponse($modele, $type, $this->rapport($ecole, $annee, $type)?->donnees ?? Donnees::calculer($ecole, $annee, $type), $ecole, $annee);
+        return $this->canevasReponse((string) $request->input('modele', 'choisi'), $type, $this->rapport($ecole, $annee, $type)?->donnees ?? Donnees::calculer($ecole, $annee, $type), $ecole, $annee);
     }
 
     /** L'école choisit la maquette officielle de son technique et professionnel ; elle est gardée pour les années suivantes. */
     public function maquette(Request $request)
     {
         $ecole = $this->ecole();
-        $data = $request->validate(['maquette' => ['required', \Illuminate\Validation\Rule::in(array_keys(CanevasOfficiel::MAQUETTES_ETP))]]);
+        $data = $request->validate(['maquette' => ['required', \Illuminate\Validation\Rule::in(array_keys(CanevasOfficiel::MODELES))]]);
         DB::table('ecole')->where('idEcole', $ecole->idEcole)->update(['maquette_etp' => $data['maquette']]);
 
-        return back()->with('success', 'Maquette enregistrée : '.CanevasOfficiel::MAQUETTES_ETP[$data['maquette']].'.');
+        return back()->with('success', 'Modèle enregistré : '.CanevasOfficiel::MODELES[$data['maquette']].'.');
     }
 
     /* ——— Espace de l'académie ——— */
@@ -270,6 +277,6 @@ class RapportSecondaireController extends Controller
         $ecole = Ecole::withoutGlobalScopes()->findOrFail($rapport->id_ecole);
         abort_unless((int) $ecole->id_academie === (int) $user->id_academie, 404);
 
-        return $this->canevasReponse($request->input('modele') === 'etp' ? 'etp' : 'esg', $rapport->type, $rapport->donnees_envoyees, $ecole, DB::table('anneescolaire')->where('id_anneeScolaire', $rapport->id_annee)->first());
+        return $this->canevasReponse((string) $request->input('modele', 'choisi'), $rapport->type, $rapport->donnees_envoyees, $ecole, DB::table('anneescolaire')->where('id_anneeScolaire', $rapport->id_annee)->first());
     }
 }

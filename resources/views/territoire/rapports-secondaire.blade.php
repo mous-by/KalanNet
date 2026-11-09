@@ -62,10 +62,7 @@
                                         <a class="btn btn-sm btn-outline-primary" target="_blank" rel="noopener" href="{{ route('territoire.rapports-secondaire.pdf', $l->rapport->id) }}"><i class="bi bi-eye"></i> Voir</a>
                                         <a class="btn btn-sm btn-primary" href="{{ route('territoire.rapports-secondaire.pdf', [$l->rapport->id, 'telecharger' => 1]) }}" title="Télécharger"><i class="bi bi-download"></i></a>
                                         <a class="btn btn-sm btn-outline-success" href="{{ route('territoire.rapports-secondaire.pdf', [$l->rapport->id, 'format' => 'excel']) }}" title="Excel"><i class="bi bi-file-earmark-excel"></i></a>
-                                        <a class="btn btn-sm btn-success" href="{{ route('territoire.rapports-secondaire.canevas', [$l->rapport->id, 'modele' => 'esg']) }}" title="Canevas officiel du général">Canevas</a>
-                                        @if(isset(\App\Services\Rapports\CanevasOfficiel::MAQUETTES_ETP[$l->ecole->maquette_etp]))
-                                            <a class="btn btn-sm btn-success" href="{{ route('territoire.rapports-secondaire.canevas', [$l->rapport->id, 'modele' => 'etp']) }}" title="{{ \App\Services\Rapports\CanevasOfficiel::MAQUETTES_ETP[$l->ecole->maquette_etp] }}">Technique</a>
-                                        @endif
+                                        <a class="btn btn-sm btn-success" href="{{ route('territoire.rapports-secondaire.canevas', [$l->rapport->id, 'modele' => 'choisi']) }}" title="Canevas officiel de l'établissement">Canevas{{ isset(\App\Services\Rapports\CanevasOfficiel::MODELES[$l->ecole->maquette_etp]) ? ' '.Str::upper(str_replace('_', ' ', $l->ecole->maquette_etp)) : '' }}</a>
                                     @endif
                                 </td>
                             </tr>

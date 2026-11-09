@@ -139,18 +139,31 @@ class CanevasOfficielTest extends IntegrationTestCase
         $this->assertSame('Manque de tables-bancs.', RapportSecondaire::withoutGlobalScopes()->where('id_ecole', 1)->where('type', 'fin')->first()->donnees['redaction']['difficultes']);
     }
 
-    public function test_maquette_du_technique_choisie_par_l_ecole(): void
+    public function test_les_cinq_modeles_au_choix_de_l_etablissement(): void
     {
         $this->enregistrer('rentree', []);
-        $this->get(route('rapport-secondaire.canevas', ['type' => 'rentree', 'modele' => 'etp'], false))->assertNotFound();
-        $this->get('/rapport-secondaire/rentree')->assertOk()->assertSee('Maquette de votre technique et professionnel')->assertSee('Canevas officiel du secondaire général');
+        // Pas encore de choix, mais des classes du général : l'ESG est proposé d'office.
+        $page = $this->get('/rapport-secondaire/rentree')->assertOk()->assertSee('Modèle de rapport demandé par votre académie');
+        foreach (['Enseignement secondaire général (ESG)', 'Enseignement secondaire technique (EST)', 'Enseignement secondaire professionnel (ESP)', 'Enseignement agricole'] as $libelle) {
+            $page->assertSee($libelle);
+        }
+        $this->assertSame('esg', $page->viewData('maquette'));
+        $this->assertNotNull($this->canevas('rentree', 'choisi')->getSheetByName('T5'), 'canevas ESG');
 
         $this->post(route('rapport-secondaire.maquette', [], false), ['maquette' => 'inconnue'])->assertSessionHasErrors('maquette');
+        $this->post(route('rapport-secondaire.maquette', [], false), ['maquette' => 'esg'])->assertSessionHasNoErrors();
+        $this->assertSame('esg', DB::table('ecole')->where('idEcole', 1)->value('maquette_etp'));
+
+        // Établissement seulement technique, sans choix : rien n'est proposé d'office.
+        DB::table('classe')->where('idEcole', 1)->where('ordreEnseignement', 'secondairegenerale')->update(['ordreEnseignement' => 'secondairetechniqueetprofessionnel']);
+        DB::table('ecole')->where('idEcole', 1)->update(['maquette_etp' => null]);
+        $this->get(route('rapport-secondaire.canevas', ['type' => 'rentree', 'modele' => 'choisi'], false))->assertNotFound();
+
         foreach (['est', 'esp', 'esp_pro', 'agro'] as $maquette) {
             $this->post(route('rapport-secondaire.maquette', [], false), ['maquette' => $maquette])->assertSessionHasNoErrors();
             $this->assertSame($maquette, DB::table('ecole')->where('idEcole', 1)->value('maquette_etp'));
             foreach (['rentree', 'fin'] as $type) {
-                $feuille = $this->canevas($type, 'etp')->getSheetByName('NOM ETABLIS');
+                $feuille = $this->canevas($type, 'choisi')->getSheetByName('NOM ETABLIS');
                 $texte = collect(range(10, 40))->map(fn ($l) => (string) $feuille->getCell('A'.$l)->getValue())->implode(' | ');
                 // Fin d'année pas encore enregistrée : les renseignements stables viennent du rapport de rentrée.
                 $this->assertStringContainsString($type === 'rentree' ? 'Lycée Ahalya' : 'Markala', $texte, "$maquette $type");
