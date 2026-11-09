@@ -57,7 +57,35 @@ class EvaluationController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        return view('evaluations.index', $context + compact('evaluations', 'filters'));
+        $compositionsEnDouble = $this->compositionsEnDouble($user->droit === 'SupAdmin' ? null : (int) $idEcole, $user->id_enseignant ?: null);
+
+        return view('evaluations.index', $context + compact('evaluations', 'filters', 'compositionsEnDouble'));
+    }
+
+    /**
+     * Matières qui ont plusieurs compositions dans un même trimestre : le bulletin n'en retient qu'une. Au Fondamental II,
+     * c'est souvent une composition mensuelle saisie dans le trimestre avant que le mois soit possible ; il suffit de
+     * modifier sa programmation et de choisir son mois.
+     *
+     * @return \Illuminate\Support\Collection<int, object>
+     */
+    private function compositionsEnDouble(?int $idEcole, ?int $idEnseignant)
+    {
+        return DB::table('ligne_evaluation as le')
+            ->join('note as n', 'n.id_note', '=', 'le.id_note')
+            ->join('classe as c', 'c.id_classe', '=', 'le.id_classe')
+            ->join('matiere as m', 'm.id_matiere', '=', 'le.id_matiere')
+            ->leftJoin('trimestre as t', 't.id_trimestre', '=', 'le.id_trimestre')
+            ->join('evaluation as e', 'e.id_evaluation', '=', 'le.id_evaluation')
+            ->when($idEcole, fn ($q) => $q->where('c.idEcole', $idEcole))
+            ->when($idEnseignant, fn ($q) => $q->where('le.id_enseignant', $idEnseignant))
+            ->whereNull('le.mois')->whereNotNull('le.id_trimestre')
+            ->where(fn ($q) => $q->whereRaw('LOWER(n.typeNote) = ?', ['composition'])->orWhereIn(DB::raw('LOWER(n.codeNote)'), ['cp', 'composition']))
+            ->groupBy('le.id_classe', 'le.id_matiere', 'le.id_trimestre', 'le.id_annee_scolaire', 'c.nom_classe', 'c.ordreEnseignement', 'm.nom_matiere', 't.nom_trimestre')
+            ->havingRaw('COUNT(DISTINCT le.id_evaluation) > 1')
+            ->selectRaw("c.nom_classe, c.ordreEnseignement, m.nom_matiere, t.nom_trimestre, GROUP_CONCAT(DISTINCT CONCAT(e.libeller, ' (', DATE_FORMAT(e.date_evaluation, '%d/%m/%Y'), ')') ORDER BY e.date_evaluation SEPARATOR ' ; ') as evaluations")
+            ->limit(20)
+            ->get();
     }
 
     public function create()
@@ -218,6 +246,11 @@ class EvaluationController extends Controller
 
             $existingNotes = LigneEvaluation::where('id_evaluation', $evaluation->id_evaluation)
                 ->pluck('note', 'id_eleve');
+            // Changer la période ou l'horaire ne change pas les notes : leur validation est gardée aussi.
+            $validations = SchemaExiste::colonne('ligne_evaluation', 'validation_status')
+                ? DB::table('ligne_evaluation')->where('id_evaluation', $evaluation->id_evaluation)
+                    ->get(['id_eleve', 'validation_status', 'validated_by', 'validated_at'])->keyBy('id_eleve')
+                : collect();
 
             LigneEvaluation::where('id_evaluation', $evaluation->id_evaluation)->delete();
 
@@ -234,6 +267,13 @@ class EvaluationController extends Controller
                     'id_enseignant' => $idEnseignant,
                     'mois' => $data['mois'] ?? null,
                 ]);
+                if (isset($validations[$idEleve]) && $validations[$idEleve]->validation_status !== null) {
+                    DB::table('ligne_evaluation')->where('id_evaluation', $evaluation->id_evaluation)->where('id_eleve', $idEleve)->update([
+                        'validation_status' => $validations[$idEleve]->validation_status,
+                        'validated_by' => $validations[$idEleve]->validated_by,
+                        'validated_at' => $validations[$idEleve]->validated_at,
+                    ]);
+                }
             }
         });
 
@@ -421,6 +461,13 @@ class EvaluationController extends Controller
             if (empty($data['mois'])) {
                 throw ValidationException::withMessages(['mois' => 'Le mois est obligatoire pour cette classe.']);
             }
+            $data['id_trimestre'] = null;
+            return $data;
+        }
+
+        // Fondamental II : compositions mensuelles en plus des trimestres. Un mois choisi en fait une composition du mois,
+        // suivie à part : elle a son bulletin mensuel et n'entre pas dans la moyenne du trimestre.
+        if ($classe?->ordreEnseignement === 'fondamentale2' && !empty($data['mois'])) {
             $data['id_trimestre'] = null;
             return $data;
         }

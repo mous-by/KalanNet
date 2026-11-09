@@ -93,6 +93,7 @@
                                 <option value="{{ $value }}" @selected(old('mois') == $value)>{{ $label }}</option>
                             @endforeach
                         </select>
+                        <div class="form-text" data-aide-mensuelle hidden>Fondamental II : choisissez un mois seulement pour une composition mensuelle (bulletin du mois, hors moyenne du trimestre).</div>
                     </div>
                 </div>
             </div>
@@ -115,13 +116,22 @@
             const trimestreField = document.querySelector('.trimestre-field');
             const moisField = document.querySelector('.mois-field');
 
+            const choixTrimestre = trimestreField.querySelector('select');
+            const choixMois = moisField.querySelector('select');
+            choixMois.addEventListener('change', () => { if (choixMois.value && !trimestreField.querySelector('select').disabled && moisField.style.display !== 'none' && trimestreField.style.display !== 'none') choixTrimestre.value = ''; });
+            choixTrimestre.addEventListener('change', () => { if (choixTrimestre.value && moisField.style.display !== 'none' && trimestreField.style.display !== 'none') choixMois.value = ''; });
+
             function syncPeriodMode() {
                 const ordre = classeSelect.options[classeSelect.selectedIndex]?.dataset.ordre || '';
                 const isFondamentale1 = ordre === 'fondamentale1';
+                // Fondamental II : trimestre, ou mois pour une composition mensuelle (bulletin du mois, hors trimestre).
+                const avecMois = isFondamentale1 || ordre === 'fondamentale2';
                 trimestreField.style.display = isFondamentale1 ? 'none' : '';
-                moisField.style.display = isFondamentale1 ? '' : 'none';
+                moisField.style.display = avecMois ? '' : 'none';
                 trimestreField.querySelectorAll('select').forEach(select => select.disabled = isFondamentale1);
-                moisField.querySelectorAll('select').forEach(select => select.disabled = !isFondamentale1);
+                moisField.querySelectorAll('select').forEach(select => select.disabled = !avecMois);
+                const aide = moisField.querySelector('[data-aide-mensuelle]');
+                if (aide) aide.hidden = ordre !== 'fondamentale2';
             }
 
             function loadMatieres() {

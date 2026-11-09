@@ -22,23 +22,23 @@
     $cycleLabel = trim(preg_replace('/\s*\(.*\)\s*$/', '', \App\Support\ExamenNational::ordresLabels($ecole)[$ordre] ?? ''));
 
     if ($schoolType === 'complexe scolaire') {
-        $schoolLabel = __('bulletins.complexe_scolaire_prefix', ['name' => $ecole->nomComplexe ?: $ecole->nomEcole]);
+        $schoolLabel = \App\Support\NomEtablissement::avecPrefixe('bulletins.complexe_scolaire_prefix', $ecole->nomComplexe ?: $ecole->nomEcole);
         if ($estFondamental && !empty($ecole->nomFondamental)) {
             // Un seul nom pour la fondamentale : on précise le cycle (I ou II).
-            $subSchoolLabel = __('bulletins.ecole_fondamentale_prefix', ['name' => $ecole->nomFondamental])
+            $subSchoolLabel = \App\Support\NomEtablissement::avecPrefixe('bulletins.ecole_fondamentale_prefix', $ecole->nomFondamental)
                 . ($cycleLabel !== '' ? ' — ' . $cycleLabel : '');
         } elseif ($estLycee && !empty($ecole->nomLycee)) {
-            $subSchoolLabel = __('bulletins.lycee_prefix', ['name' => $ecole->nomLycee]);
+            $subSchoolLabel = \App\Support\NomEtablissement::avecPrefixe('bulletins.lycee_prefix', $ecole->nomLycee);
         } elseif ($estTechnique && !empty($ecole->nomProfessionnel)) {
-            $subSchoolLabel = __('bulletins.ecole_professionnelle_prefix', ['name' => $ecole->nomProfessionnel]);
+            $subSchoolLabel = \App\Support\NomEtablissement::avecPrefixe('bulletins.ecole_professionnelle_prefix', $ecole->nomProfessionnel);
         } else {
             $subSchoolLabel = $cycleLabel !== '' ? $cycleLabel : null;
         }
     } else {
         $schoolLabel = match (true) {
-            $estFondamental && !empty($ecole->nomFondamental) => __('bulletins.ecole_fondamentale_prefix', ['name' => $ecole->nomFondamental]),
-            $estLycee && !empty($ecole->nomLycee) => __('bulletins.lycee_prefix', ['name' => $ecole->nomLycee]),
-            $estTechnique && !empty($ecole->nomProfessionnel) => __('bulletins.ecole_professionnelle_prefix', ['name' => $ecole->nomProfessionnel]),
+            $estFondamental && !empty($ecole->nomFondamental) => \App\Support\NomEtablissement::avecPrefixe('bulletins.ecole_fondamentale_prefix', $ecole->nomFondamental),
+            $estLycee && !empty($ecole->nomLycee) => \App\Support\NomEtablissement::avecPrefixe('bulletins.lycee_prefix', $ecole->nomLycee),
+            $estTechnique && !empty($ecole->nomProfessionnel) => \App\Support\NomEtablissement::avecPrefixe('bulletins.ecole_professionnelle_prefix', $ecole->nomProfessionnel),
             default => $ecole->nomEcole,
         };
         $subSchoolLabel = null;

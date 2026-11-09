@@ -13,6 +13,18 @@
         </div>
     </div>
 
+    @if($compositionsEnDouble->isNotEmpty())
+        <div class="alert alert-warning border-0 border-start border-warning border-4">
+            <div class="fw-bold mb-1"><i class="bi bi-exclamation-triangle me-1"></i>Plusieurs compositions dans un même trimestre : le bulletin n'en retient qu'une.</div>
+            <ul class="mb-2 small">
+                @foreach($compositionsEnDouble as $d)
+                    <li><strong>{{ $d->nom_classe }}</strong>, {{ $d->nom_matiere }}, {{ $d->nom_trimestre }} : {{ $d->evaluations }}</li>
+                @endforeach
+            </ul>
+            <div class="small">Si l'une d'elles est une <strong>composition mensuelle</strong> (Fondamental II), ouvrez « Modifier la programmation » de cette évaluation et choisissez son <strong>mois</strong> : elle aura son bulletin du mois et ne comptera plus dans le trimestre. Les notes déjà saisies et leur validation sont gardées.</div>
+        </div>
+    @endif
+
     @if(session('success'))
         <div class="alert alert-success border-0 border-start border-success border-4">{{ session('success') }}</div>
     @endif
@@ -174,10 +186,14 @@
             function syncPeriodMode() {
                 const ordre = classeSelect.options[classeSelect.selectedIndex]?.dataset.ordre || '';
                 const isFondamentale1 = ordre === 'fondamentale1';
+                // Fondamental II : trimestre, ou mois pour une composition mensuelle (bulletin du mois, hors trimestre).
+                const avecMois = isFondamentale1 || ordre === 'fondamentale2';
                 trimestreField.style.display = isFondamentale1 ? 'none' : '';
-                moisField.style.display = isFondamentale1 ? '' : 'none';
+                moisField.style.display = avecMois ? '' : 'none';
                 trimestreField.querySelectorAll('select').forEach(select => select.disabled = isFondamentale1);
-                moisField.querySelectorAll('select').forEach(select => select.disabled = !isFondamentale1);
+                moisField.querySelectorAll('select').forEach(select => select.disabled = !avecMois);
+                const aide = moisField.querySelector('[data-aide-mensuelle]');
+                if (aide) aide.hidden = ordre !== 'fondamentale2';
             }
 
             function loadMatieres() {

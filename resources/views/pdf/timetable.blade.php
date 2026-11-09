@@ -18,9 +18,9 @@
     $estTechnique = str_starts_with($ordre, 'secondairetechnique');
     $estLycee = !$estTechnique && str_starts_with($ordre, 'secondaire');
     $nomEcole = match (true) {
-        $estFondamental && !empty($ecole?->nomFondamental) => 'École fondamentale '.$ecole->nomFondamental,
-        $estLycee && !empty($ecole?->nomLycee) => 'Lycée '.$ecole->nomLycee,
-        $estTechnique && !empty($ecole?->nomProfessionnel) => 'École professionnelle '.$ecole->nomProfessionnel,
+        $estFondamental && !empty($ecole?->nomFondamental) => \App\Support\NomEtablissement::prefixer('École fondamentale ', $ecole->nomFondamental),
+        $estLycee && !empty($ecole?->nomLycee) => \App\Support\NomEtablissement::prefixer('Lycée ', $ecole->nomLycee),
+        $estTechnique && !empty($ecole?->nomProfessionnel) => \App\Support\NomEtablissement::prefixer('École professionnelle ', $ecole->nomProfessionnel),
         default => $ecole?->nomComplexe ?: ($ecole?->nomEcole ?? ''),
     };
     $complexe = strtolower((string) ($ecole?->typeEcole ?? '')) === 'complexe scolaire' && !empty($ecole?->nomComplexe) && $nomEcole !== $ecole->nomComplexe

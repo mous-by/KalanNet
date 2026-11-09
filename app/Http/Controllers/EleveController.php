@@ -815,13 +815,13 @@ class EleveController extends Controller
         $ordre = strtolower((string) $classe->ordreEnseignement);
         if (!empty($ecole->nomComplexe)) {
             if (str_contains($ordre, 'fondamentale') && !empty($ecole->nomFondamental)) {
-                return $ecole->nomComplexe . ' - École fondamentale : ' . $ecole->nomFondamental;
+                return $ecole->nomComplexe . ' - ' . \App\Support\NomEtablissement::prefixer('École fondamentale : ', $ecole->nomFondamental);
             }
             if (str_contains($ordre, 'secondaire') && !empty($ecole->nomLycee)) {
-                return $ecole->nomComplexe . ' - Lycée : ' . $ecole->nomLycee;
+                return $ecole->nomComplexe . ' - ' . \App\Support\NomEtablissement::prefixer('Lycée : ', $ecole->nomLycee);
             }
             if (str_contains($ordre, 'technique') && !empty($ecole->nomProfessionnel)) {
-                return $ecole->nomComplexe . ' - École professionnelle : ' . $ecole->nomProfessionnel;
+                return $ecole->nomComplexe . ' - ' . \App\Support\NomEtablissement::prefixer('École professionnelle : ', $ecole->nomProfessionnel);
             }
             return $ecole->nomComplexe;
         }

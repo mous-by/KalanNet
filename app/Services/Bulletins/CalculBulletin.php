@@ -221,7 +221,12 @@ class CalculBulletin
         $matiere->M_Compo = ($noteCompo ?? 0) * 2;
         $matiere->NT10 = $nt10->avg() ?? 0;
 
-        if ($this->calcul === 'domaines') {
+        if ($this->mois !== null && !Ordres::surDix($this->ordre) && ($noteCompo !== null || $noteClasse !== null)) {
+            // Composition mensuelle du Fondamental II : la note du mois telle quelle, sans la pondération du trimestre.
+            $matiere->M_Compo = $noteCompo ?? 0;
+            $matiere->M_Gle = $noteCompo ?? $noteClasse;
+            $matiere->M_Coef = $matiere->M_Gle * $matiere->coef;
+        } elseif ($this->calcul === 'domaines') {
             $matiere->M_Gle = ($noteClasse === null && $noteCompo === null && $nt10->isNotEmpty())
                 ? (float) $nt10->avg()
                 : (($noteClasse ?? 0) + ($noteCompo ?? 0)) / 2;

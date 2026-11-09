@@ -113,22 +113,22 @@
         $nomAffiche = $ecole->nomEcole ?? 'Programme officiel';
         if ($ecole) {
             if ($typeEcole === 'complexe scolaire') {
-                $nomAffiche = 'Complexe scolaire ' . ($ecole->nomComplexe ?? '');
+                $nomAffiche = \App\Support\NomEtablissement::prefixer('Complexe scolaire ', ($ecole->nomComplexe ?? ''));
                 if (\App\Support\Ordres::sousCap($ordre) && !empty($ecole->nomFondamental)) {
-                    $nomAffiche = 'École Fondamentale : ' . $ecole->nomFondamental;
+                    $nomAffiche = \App\Support\NomEtablissement::prefixer('École Fondamentale : ', $ecole->nomFondamental);
                 } elseif ($ordre === 'secondaire') {
                     if (!empty($ecole->nomLycee)) {
-                        $nomAffiche = 'Lycée : ' . $ecole->nomLycee;
+                        $nomAffiche = \App\Support\NomEtablissement::prefixer('Lycée : ', $ecole->nomLycee);
                     } elseif (!empty($ecole->nomProfessionnel)) {
-                        $nomAffiche = 'École Professionnelle : ' . $ecole->nomProfessionnel;
+                        $nomAffiche = \App\Support\NomEtablissement::prefixer('École Professionnelle : ', $ecole->nomProfessionnel);
                     }
                 }
             } elseif (\App\Support\Ordres::sousCap($ordre) && !empty($ecole->nomFondamental)) {
-                $nomAffiche = 'École Fondamentale : ' . $ecole->nomFondamental;
+                $nomAffiche = \App\Support\NomEtablissement::prefixer('École Fondamentale : ', $ecole->nomFondamental);
             } elseif ($ordre === 'secondaire' && !empty($ecole->nomLycee)) {
-                $nomAffiche = 'Lycée : ' . $ecole->nomLycee;
+                $nomAffiche = \App\Support\NomEtablissement::prefixer('Lycée : ', $ecole->nomLycee);
             } elseif ($ordre === 'secondaire' && !empty($ecole->nomProfessionnel)) {
-                $nomAffiche = 'École Professionnelle : ' . $ecole->nomProfessionnel;
+                $nomAffiche = \App\Support\NomEtablissement::prefixer('École Professionnelle : ', $ecole->nomProfessionnel);
             }
         }
 

@@ -15,6 +15,14 @@ abstract class IntegrationTestCase extends TestCase
 {
     use DatabaseTransactions;
 
+    protected function tearDown(): void
+    {
+        // Les écrans de bulletins font set_time_limit(300) : utile pour une requête, mais en tests c'est tout le
+        // processus PHPUnit qui serait coupé quelques tests plus loin (« Premature end of PHP process »).
+        set_time_limit(0);
+        parent::tearDown();
+    }
+
     protected function setUp(): void
     {
         if (getenv('KALANNET_TESTS_INTEGRATION') !== '1') {

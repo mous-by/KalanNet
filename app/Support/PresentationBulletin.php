@@ -23,18 +23,18 @@ class PresentationBulletin
         $cycle = trim(preg_replace('/\s*\(.*\)\s*$/', '', ExamenNational::ordresLabels($ecole)[(string) $ordre] ?? ''));
 
         if (strtolower((string) $ecole->typeEcole) === 'complexe scolaire') {
-            $nomEcole = __('bulletins.complexe_scolaire_prefix', ['name' => $ecole->nomComplexe ?: $ecole->nomEcole]);
+            $nomEcole = \App\Support\NomEtablissement::avecPrefixe('bulletins.complexe_scolaire_prefix', $ecole->nomComplexe ?: $ecole->nomEcole);
             $sousTitre = match (true) {
-                $estFondamental && !empty($ecole->nomFondamental) => __('bulletins.ecole_fondamentale_prefix', ['name' => $ecole->nomFondamental]).($cycle !== '' ? ' — '.$cycle : ''),
-                $estLycee && !empty($ecole->nomLycee) => __('bulletins.lycee_prefix', ['name' => $ecole->nomLycee]),
-                $estTechnique && !empty($ecole->nomProfessionnel) => __('bulletins.ecole_professionnelle_prefix', ['name' => $ecole->nomProfessionnel]),
+                $estFondamental && !empty($ecole->nomFondamental) => \App\Support\NomEtablissement::avecPrefixe('bulletins.ecole_fondamentale_prefix', $ecole->nomFondamental).($cycle !== '' ? ' — '.$cycle : ''),
+                $estLycee && !empty($ecole->nomLycee) => \App\Support\NomEtablissement::avecPrefixe('bulletins.lycee_prefix', $ecole->nomLycee),
+                $estTechnique && !empty($ecole->nomProfessionnel) => \App\Support\NomEtablissement::avecPrefixe('bulletins.ecole_professionnelle_prefix', $ecole->nomProfessionnel),
                 default => $cycle !== '' ? $cycle : null,
             };
         } else {
             $nomEcole = match (true) {
-                $estFondamental && !empty($ecole->nomFondamental) => __('bulletins.ecole_fondamentale_prefix', ['name' => $ecole->nomFondamental]),
-                $estLycee && !empty($ecole->nomLycee) => __('bulletins.lycee_prefix', ['name' => $ecole->nomLycee]),
-                $estTechnique && !empty($ecole->nomProfessionnel) => __('bulletins.ecole_professionnelle_prefix', ['name' => $ecole->nomProfessionnel]),
+                $estFondamental && !empty($ecole->nomFondamental) => \App\Support\NomEtablissement::avecPrefixe('bulletins.ecole_fondamentale_prefix', $ecole->nomFondamental),
+                $estLycee && !empty($ecole->nomLycee) => \App\Support\NomEtablissement::avecPrefixe('bulletins.lycee_prefix', $ecole->nomLycee),
+                $estTechnique && !empty($ecole->nomProfessionnel) => \App\Support\NomEtablissement::avecPrefixe('bulletins.ecole_professionnelle_prefix', $ecole->nomProfessionnel),
                 default => $ecole->nomEcole,
             };
             $sousTitre = null;
