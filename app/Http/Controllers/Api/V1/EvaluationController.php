@@ -199,7 +199,7 @@ class EvaluationController extends WebEvaluationController
         }
 
         DB::transaction(function () use ($evaluation, $data, $details) {
-            $validationStatus = $this->requiresPrivateNoteValidation($details->first()->classe) ? 'en_attente' : 'valide';
+            $validationStatus = $this->saisieAValider($details->first()->classe) ? 'en_attente' : 'valide';
             $validationColumns = $this->validationColumns($validationStatus);
 
             foreach ($data['id_ligneEvaluation'] as $index => $lineId) {

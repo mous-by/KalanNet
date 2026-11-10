@@ -346,7 +346,7 @@ class EvaluationController extends Controller
         }
 
         DB::transaction(function () use ($evaluation, $data, $details) {
-            $validationStatus = $this->requiresPrivateNoteValidation($details->first()->classe) ? 'en_attente' : 'valide';
+            $validationStatus = $this->saisieAValider($details->first()->classe) ? 'en_attente' : 'valide';
             $validationColumns = $this->validationColumns($validationStatus);
 
             foreach ($data['id_ligneEvaluation'] as $index => $lineId) {
@@ -360,7 +360,7 @@ class EvaluationController extends Controller
 
         $this->notifyNoteValidators($evaluation);
 
-        $message = $this->requiresPrivateNoteValidation($details->first()->classe)
+        $message = $this->saisieAValider($details->first()->classe)
             ? 'Notes enregistrées. Elles sont en attente de validation avant bulletin.'
             : 'Notes enregistrées avec succès.';
 
@@ -752,6 +752,21 @@ class EvaluationController extends Controller
         return $statut === 'prive';
     }
 
+    /** Droit de valider les notes saisies (Admin ou gestionnaire autorisé). */
+    protected function peutValiderNotes(): bool
+    {
+        return (bool) Auth::user()?->userHasAnyPermission(['evaluation_validation_notes', 'valider_note_saisi', 'valider_notes_saisies']);
+    }
+
+    /**
+     * École privée : les notes saisies attendent une validation, sauf si celui qui les saisit a lui-même le droit de
+     * les valider (Admin, gestionnaire autorisé à la place de l'enseignant) : elles sont alors validées aussitôt.
+     */
+    protected function saisieAValider(?Classe $classe): bool
+    {
+        return $this->requiresPrivateNoteValidation($classe) && !$this->peutValiderNotes();
+    }
+
     protected function notifyNoteValidators(Evaluation $evaluation): void
     {
         if (!SchemaExiste::table('app_notifications') || !SchemaExiste::colonne('ligne_evaluation', 'validation_status')) {
@@ -762,7 +777,7 @@ class EvaluationController extends Controller
             ->where('id_evaluation', $evaluation->id_evaluation)
             ->first();
 
-        if (!$firstLine || !$this->requiresPrivateNoteValidation($firstLine->classe)) {
+        if (!$firstLine || !$this->saisieAValider($firstLine->classe)) {
             return;
         }
 

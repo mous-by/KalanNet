@@ -154,6 +154,38 @@ class CompositionMensuelleTest extends IntegrationTestCase
         return $texte;
     }
 
+    public function test_ecole_privee_la_saisie_d_un_valideur_est_validee_celle_d_un_enseignant_attend(): void
+    {
+        DB::table('ecole')->where('idEcole', 1)->update(['statut' => 'prive']);
+        DB::table('app_notifications')->where('type', 'notes_validation')->delete();
+        $admin = $this->adminComplet(1);
+        $enseignant = \App\Models\User::withoutGlobalScopes()->where('idEcole', 1)->where('droit', 'enseignant')->where('statut', 1)->where('id_enseignant', '>', 0)->first();
+        if (!$enseignant) {
+            $this->markTestSkipped('Aucun compte enseignant dans l\'école 1.');
+        }
+        DB::table('user_permission')->where('user_id', $enseignant->idUtilisateur)->delete();
+        DB::table('user_permission')->insert(DB::table('permissions')->whereIn('name', ['evaluation_apercu', 'evaluation_modification'])->pluck('id')
+            ->map(fn ($id) => ['user_id' => $enseignant->idUtilisateur, 'permission_id' => $id])->all());
+        DB::table('ligneclasse')->where('id_classe', $this->classe->id_classe)->where('id_matiere', $this->matiere)->update(['id_enseignants' => $enseignant->id_enseignant]);
+
+        $idEvaluation = $this->programmer(['id_trimestre' => $this->trimestre], 'Compo T1 test');
+        DB::table('ligne_evaluation')->where('id_evaluation', $idEvaluation)->update(['id_enseignant' => $enseignant->id_enseignant]);
+        $lignes = DB::table('ligne_evaluation')->where('id_evaluation', $idEvaluation)->pluck('id_ligneEvaluation')->all();
+        $saisie = ['id_ligneEvaluation' => $lignes, 'note' => array_fill(0, count($lignes), 12)];
+        $statuts = fn () => DB::table('ligne_evaluation')->where('id_evaluation', $idEvaluation)->distinct()->pluck('validation_status')->all();
+        $notifs = fn () => \App\Models\AppNotification::where('type', 'notes_validation')->where('user_id', $admin->idUtilisateur)->count();
+
+        // L'Admin saisit à la place de l'enseignant : validé aussitôt, personne à prévenir.
+        $this->actingAs($admin)->withSession(['idEcole' => 1])->put("/evaluations/{$idEvaluation}", $saisie)->assertSessionHas('success', 'Notes enregistrées avec succès.');
+        $this->assertSame(['valide'], $statuts());
+        $this->assertSame(0, $notifs());
+
+        // L'enseignant saisit : en attente, l'Admin est prévenu.
+        $this->actingAs($enseignant->fresh())->withSession(['idEcole' => 1])->put("/evaluations/{$idEvaluation}", $saisie)->assertSessionHas('success');
+        $this->assertSame(['en_attente'], $statuts());
+        $this->assertSame(1, $notifs());
+    }
+
     public function test_fondamental_i_et_lycee_inchanges(): void
     {
         $f1 = DB::table('classe')->where('idEcole', 1)->where('ordreEnseignement', 'fondamentale1')->first();
