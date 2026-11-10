@@ -288,10 +288,10 @@ class ExportExcel
                 $lignes[] = [$libelle, ...$cases, ...($totalLigne ? [array_sum(array_map('intval', array_filter($cases, 'is_numeric')))] : [])];
             }
             if ($totalColonne) {
-                $sommes = array_map(fn ($c) => collect($valeurs)->sum(fn ($v) => (int) ($v[$c] ?? 0)), array_keys($colonnes));
+                $sommes = array_map(fn ($c) => collect($valeurs)->only(array_keys($tableau['lignes']))->sum(fn ($v) => (int) ($v[$c] ?? 0)), array_keys($colonnes));
                 $lignes[] = ['Total', ...$sommes, ...($totalLigne ? [array_sum($sommes)] : [])];
             }
-            $x->tableau($tableau['code'].' : '.$tableau['titre'], $entetes, $lignes, $totalColonne);
+            $x->tableau(($tableau['numero'] ?? $tableau['code']).' : '.$tableau['titre'], $entetes, $lignes, $totalColonne);
         }
         foreach ($annexes as $annexe) {
             $x->tableau('Annexe : '.$annexe['titre'], self::simple($annexe['entetes']), $annexe['lignes']);

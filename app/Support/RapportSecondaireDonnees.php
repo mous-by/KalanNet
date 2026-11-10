@@ -60,6 +60,46 @@ class RapportSecondaireDonnees
         return Def::tableaux($type, $l['series'], $l['terminales'], $l['techniques'], $tailles);
     }
 
+    /**
+     * Année du DEF tirée des résultats nationaux enregistrés dans KalanNet (admis au DEF d'une année scolaire 2025-2026 = CG26),
+     * pour les élèves dont la fiche ne la porte pas.
+     *
+     * @return array<int, int> id_eleve => année
+     */
+    private static function anneesDuDef(array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+
+        return DB::table('resultats_def_terminal as r')->join('anneescolaire as a', 'a.id_anneeScolaire', '=', 'r.id_annee')
+            ->whereIn('r.id_eleve', $ids)->where('r.niveau_examen', 'DEF')->where('r.decision', 'admis')
+            ->get(['r.id_eleve', 'a.annee'])
+            ->mapWithKeys(fn ($r) => [(int) $r->id_eleve => (int) substr(trim((string) $r->annee), -4)])
+            ->filter(fn ($annee) => $annee > 1980)->all();
+    }
+
+    /**
+     * Scolarité au lycée (T9) : depuis l'année du DEF (en 2026-2027, CG26 = 1 an, CG25 = 2 ans) ; sans elle, estimée par le
+     * niveau et les redoublements. Bornée aux lignes du canevas : 1 à 3 ans en 10e, 2 à 5 en 11e, 3 à 6 en terminale.
+     */
+    private static function scolarite(object $e, int $debut, array $series): int
+    {
+        $niveau = self::niveau($e->cle, $series);
+        $ans = $e->annee_def ? $debut - (int) $e->annee_def + 1 : $niveau + $e->redoublements;
+
+        return max($niveau, min($niveau === 1 ? 3 : $niveau + 3, $ans));
+    }
+
+    /** Élèves du général sans année du DEF (ni sur la fiche, ni dans les résultats nationaux). */
+    public static function sansAnneeDuDef(int $idEcole, object $annee): int
+    {
+        $lignes = self::lignes($idEcole);
+        $generales = array_filter($lignes['classes'], fn ($cle) => !str_starts_with($cle, 'c'));
+
+        return self::eleves($idEcole, (int) $annee->id_anneeScolaire, $generales)->where('actif', true)->whereNull('annee_def')->count();
+    }
+
     /** Années de lycée attendues sans redoublement : 1 en 10e (ou 1re année), 2 en 11e, 3 en terminale. */
     private static function niveau(string $cle, array $nomsClasses): int
     {
@@ -75,14 +115,16 @@ class RapportSecondaireDonnees
     private static function eleves(int $idEcole, int $idAnnee, array $classes): Collection
     {
         $eleves = DB::table('eleve')->where('id_ecole', $idEcole)->where('id_annee', $idAnnee)->whereIn('etat_dossier', [0, 2])
-            ->whereIn('id_classe', array_keys($classes))->get(['id_eleve', 'id_classe', 'genre_eleve', 'date_naissance', 'etat_dossier']);
+            ->whereIn('id_classe', array_keys($classes))->get(['id_eleve', 'id_classe', 'genre_eleve', 'date_naissance', 'etat_dossier', 'annee_def']);
+        $defs = self::anneesDuDef($eleves->whereNull('annee_def')->pluck('id_eleve')->all());
         $debut = DB::table('anneescolaire')->where('id_anneeScolaire', $idAnnee)->value('date_debut');
         $redoublements = DB::table('ligne_reinscription as lr')->join('reinscription as r', 'r.id_reinscription', '=', 'lr.id_reinscription')
             ->join('classe as c', 'c.id_classe', '=', 'lr.id_classe')->join('anneescolaire as a', 'a.id_anneeScolaire', '=', 'lr.id_annee')
             ->where('r.statut', 'redoublant')->whereIn('c.ordreEnseignement', RapportSuccinctDonnees::SECONDAIRE)->whereIn('lr.id_eleve', $eleves->pluck('id_eleve'))
             ->where('a.date_debut', '<=', $debut)->get(['lr.id_eleve', 'lr.id_annee']);
 
-        return $eleves->map(function ($e) use ($classes, $redoublements, $idAnnee) {
+        return $eleves->map(function ($e) use ($classes, $redoublements, $idAnnee, $defs) {
+            $e->annee_def = $e->annee_def ?: ($defs[$e->id_eleve] ?? null);
             $e->cle = $classes[$e->id_classe];
             $e->sexe = PropositionPassageDonnees::fille($e->genre_eleve) ? 'f' : 'g';
             $e->actif = (int) $e->etat_dossier === 0;
@@ -111,7 +153,7 @@ class RapportSecondaireDonnees
     {
         return DB::table('resultats_def_terminal as r')->join('eleve as e', 'e.id_eleve', '=', 'r.id_eleve')
             ->where('e.id_ecole', $idEcole)->whereIn('r.id_annee', DB::table('anneescolaire')->where('annee', $annee)->pluck('id_anneeScolaire'))
-            ->where('r.niveau_examen', 'BAC')->whereIn('r.id_classe', array_keys($classes))->orderBy('e.nom_eleve')->orderBy('e.prenom_eleve')->get(['r.id_eleve', 'r.id_classe', 'r.decision', 'e.genre_eleve', 'e.prenom_eleve', 'e.nom_eleve', 'e.matricule'])
+            ->where('r.niveau_examen', 'BAC')->whereIn('r.id_classe', array_keys($classes))->orderBy('e.nom_eleve')->orderBy('e.prenom_eleve')->get(['r.id_eleve', 'r.id_classe', 'r.decision', 'e.genre_eleve', 'e.prenom_eleve', 'e.nom_eleve', 'e.matricule', 'e.annee_def'])
             ->map(function ($r) use ($classes) {
                 $r->cle = $classes[$r->id_classe];
                 $r->sexe = PropositionPassageDonnees::fille($r->genre_eleve) ? 'f' : 'g';
@@ -150,11 +192,7 @@ class RapportSecondaireDonnees
             foreach ($actifs as $e) {
                 self::ajouter($t, 'T5', $e->cle, $e->sexe);
                 self::ajouter($t, 'T6', $e->cle, ($e->redouble ? 'r_' : 'p_').$e->sexe);
-                $annees = min(6, self::niveau($e->cle, $lignes['series']) + $e->redoublements);
-                self::ajouter($t, 'T9', 'a'.$annees, $e->cle.'_'.$e->sexe);
-                if (isset($lignes['terminales'][$e->cle])) {
-                    self::ajouter($t, 'T11', $e->cle, 'a'.min(6, 3 + $e->redoublements).'_'.$e->sexe);
-                }
+                self::ajouter($t, 'T9', 'a'.self::scolarite($e, (int) substr((string) $annee->date_debut, 0, 4), $lignes['series']), $e->cle.'_'.$e->sexe);
                 $age = self::age($e->date_naissance, $annee);
                 if ($age !== null) {
                     self::ajouter($t, 'T7', $age < 13 ? 'moins13' : 'a'.min(25, $age), $e->cle.'_'.$e->sexe);
@@ -169,12 +207,24 @@ class RapportSecondaireDonnees
                     'naissance' => $e->date_naissance_enseignant ? substr((string) $e->date_naissance_enseignant, 0, 4) : null, 'matricule' => $e->matricule,
                     'specialite' => $e->specialite, 'situation' => $e->statut_matrimonial, 'enfants' => $e->nombre_enfants !== null ? (string) $e->nombre_enfants : null], fn ($v) => filled($v));
             }
-            $precedente = DB::table('anneescolaire')->where('date_debut', '<', $annee->date_debut)->orderByDesc('date_debut')->value('annee');
+            // Bac de la session écoulée : inscrits et admis (T10), admis par scolarité depuis le DEF (T11).
+            $precedente = DB::table('anneescolaire')->where('date_debut', '<', $annee->date_debut)->orderByDesc('date_debut')->first(['annee', 'date_debut']);
             if ($precedente) {
-                foreach (self::bac($idEcole, $precedente, $classes)->where('decision', 'admis') as $r) {
-                    if (isset($lignes['terminales'][$r->cle])) {
-                        self::ajouter($t, 'T10', $r->cle, 'admis_'.$r->sexe);
+                $bac = self::bac($idEcole, (string) $precedente->annee, $classes)->filter(fn ($r) => in_array($r->cle, self::TERMINALES, true));
+                $defs = self::anneesDuDef($bac->whereNull('annee_def')->pluck('id_eleve')->all());
+                $redoublements = DB::table('ligne_reinscription as lr')->join('reinscription as r', 'r.id_reinscription', '=', 'lr.id_reinscription')
+                    ->join('classe as c', 'c.id_classe', '=', 'lr.id_classe')->where('r.statut', 'redoublant')->whereIn('c.ordreEnseignement', RapportSuccinctDonnees::SECONDAIRE)
+                    ->whereIn('lr.id_eleve', $bac->pluck('id_eleve'))->selectRaw('lr.id_eleve, COUNT(*) as n')->groupBy('lr.id_eleve')->pluck('n', 'lr.id_eleve');
+                $debutSession = (int) substr((string) $precedente->date_debut, 0, 4);
+                foreach ($bac as $r) {
+                    self::ajouter($t, 'T10', $r->cle, 'inscrits_'.$r->sexe);
+                    if ($r->decision !== 'admis') {
+                        continue;
                     }
+                    self::ajouter($t, 'T10', $r->cle, 'admis_'.$r->sexe);
+                    $def = $r->annee_def ?: ($defs[$r->id_eleve] ?? null);
+                    $ans = $def ? $debutSession - (int) $def + 1 : 3 + (int) ($redoublements[$r->id_eleve] ?? 0);
+                    self::ajouter($t, 'T11', $r->cle, 'a'.max(3, min(6, $ans)).'_'.$r->sexe);
                 }
             }
         } else {

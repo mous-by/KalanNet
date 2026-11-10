@@ -54,6 +54,13 @@
                         <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_lieu_naissance') }}</label>
                         <input type="text" name="lieu_naiss" class="form-control" value="{{ old('lieu_naiss', $eleve->lieu_naiss) }}">
                     </div>
+                    @if(str_starts_with((string) optional(\App\Models\Classe::find($eleve->id_classe))->ordreEnseignement, 'secondaire') || $eleve->annee_def)
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold text-uppercase" for="annee_def">Année du DEF (CG)</label>
+                            <input type="number" name="annee_def" id="annee_def" class="form-control" min="1980" max="{{ date('Y') + 1 }}" value="{{ old('annee_def', $eleve->annee_def) }}" placeholder="ex. 2026 pour CG26">
+                            <div class="form-text">Compte la scolarité au lycée dans les rapports du secondaire.</div>
+                        </div>
+                    @endif
                     <div class="col-md-4">
                         <label class="form-label small fw-bold text-uppercase">{{ __('eleves.label_adresse') }}</label>
                         <input type="text" name="adresse_eleve" class="form-control" value="{{ old('adresse_eleve', $eleve->adresse_eleve) }}">

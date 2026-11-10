@@ -83,6 +83,18 @@ class RapportSecondaireTest extends IntegrationTestCase
 
     public function test_rentree_pre_remplie(): void
     {
+        // Scolarité depuis le DEF : CG de l'année = 1 an, CG de l'année d'avant = 2 ans.
+        $debut = (int) substr((string) $this->annee->date_debut, 0, 4);
+        DB::table('eleve')->where('id_eleve', $this->eleves[0])->update(['annee_def' => $debut]);
+        DB::table('eleve')->where('id_eleve', $this->eleves[1])->update(['annee_def' => $debut - 1]);
+        // Bac de la session écoulée : une admise de TSE (CG trois ans plus tôt) et un ajourné.
+        $precedente = DB::table('anneescolaire')->where('date_debut', '<', $this->annee->date_debut)->orderByDesc('date_debut')->first();
+        if ($precedente) {
+            DB::table('eleve')->where('id_eleve', $this->eleves[2])->update(['annee_def' => (int) substr((string) $precedente->date_debut, 0, 4) - 2]);
+            foreach ([[$this->eleves[2], 'admis'], [$this->eleves[4], 'échec']] as [$eleve, $decision]) {
+                DB::table('resultats_def_terminal')->insert(['id_eleve' => $eleve, 'id_annee' => $precedente->id_anneeScolaire, 'id_classe' => $this->classes['tse']->id_classe, 'niveau_examen' => 'BAC', 'decision' => $decision]);
+            }
+        }
         $d = Donnees::calculer(Ecole::withoutGlobalScopes()->find(1), $this->annee, 'rentree');
         $t = $d['t'];
 
@@ -91,12 +103,22 @@ class RapportSecondaireTest extends IntegrationTestCase
         $this->assertSame(1, $t['T6']['TSE']['r_f'], 'redoublante');
         $this->assertSame(1, $t['T7']['a15']['10CG_f']);
         $this->assertSame(1, $t['T9']['a4']['TSE_f'], '3 ans attendus + 1 redoublement');
-        $this->assertSame(1, $t['T11']['TSE']['a4_f']);
+        $this->assertSame(1, $t['T9']['a1']['10CG_f'], 'CG de l\'année : 1 an');
+        $this->assertSame(1, $t['T9']['a2']['10CG_g'], 'CG de l\'année d\'avant : 2 ans');
+        if ($precedente) {
+            $this->assertSame(['inscrits_g' => 2, 'admis_g' => 1], $t['T10']['TSE'], 'inscrits et admis de la session écoulée');
+            $this->assertSame(['a3_g' => 1], $t['T11']['TSE'], 'admis par scolarité depuis le DEF');
+        }
         $this->assertSame(1, $t['T2']['classes']['TSE']);
         $this->assertSame([2, 3], [$d['infos']['effectif_f'], $d['infos']['effectif_g']]);
 
-        $codes = array_column(Donnees::tableaux('rentree', 1), 'code');
-        $this->assertSame(['T1.1', 'T1.2', ...array_map(fn ($n) => 'T'.$n, range(2, 31))], $codes, 'les 32 tableaux du canevas officiel de rentrée');
+        $tableaux = Donnees::tableaux('rentree', 1);
+        $this->assertSame(['T1.1', 'T1.2', ...array_map(fn ($n) => 'T'.$n, range(2, 31))], array_values(array_unique(array_column($tableaux, 'code'))), 'les 32 tableaux du canevas officiel de rentrée');
+        $numeros = array_map(fn ($t) => $t['numero'] ?? $t['code'], $tableaux);
+        foreach (['T7 suite', 'T8 suite', 'T9 suite'] as $suite) {
+            $this->assertContains($suite, $numeros, 'terminales séparées des classes de passage, comme le canevas');
+        }
+
         $lignes = Donnees::lignes(1);
         $this->assertSame(['TSE' => 'TSE'], $lignes['terminales']);
     }
@@ -153,6 +175,19 @@ class RapportSecondaireTest extends IntegrationTestCase
         // PDF : seules les lignes remplies d'une liste sont imprimées.
         $this->post($this->url('rentree'), $this->envoi('rentree', ['T31' => ['n4' => ['partenaire' => 'UNICEF']]], ['action' => 'enregistrer']))->assertSessionHasNoErrors();
         $this->get(route('rapport-secondaire.pdf', ['type' => 'rentree', 'annee' => $this->annee->id_anneeScolaire], false))->assertOk()->assertHeader('content-type', 'application/pdf');
+    }
+
+    public function test_annee_du_def_saisie_par_classe(): void
+    {
+        $this->actingAs($this->adminComplet(1))->withSession(['idEcole' => 1]);
+        $debut = (int) substr((string) $this->annee->date_debut, 0, 4);
+        $this->get(route('rapport-secondaire.def', ['annee' => $this->annee->id_anneeScolaire], false))->assertOk()
+            ->assertSee('Année du DEF des élèves')->assertSee('10ème année commune')->assertDontSee('1ère année Génie civil');
+        $this->post(route('rapport-secondaire.def.store', [], false), ['annee' => $this->annee->id_anneeScolaire, 'def' => [$this->eleves[0] => $debut, $this->eleves[1] => '']])
+            ->assertRedirect()->assertSessionHas('success');
+        $this->assertSame($debut, (int) DB::table('eleve')->where('id_eleve', $this->eleves[0])->value('annee_def'));
+        $this->post(route('rapport-secondaire.def.store', [], false), ['annee' => $this->annee->id_anneeScolaire, 'def' => [$this->eleves[0] => 1800]])->assertSessionHasErrors();
+        $this->get($this->url('rentree', 'rapport-secondaire.index'))->assertOk()->assertSee('élève(s) sans année du DEF')->assertSee('T7 suite');
     }
 
     public function test_saisie_controlee_et_remise_sur_papier(): void

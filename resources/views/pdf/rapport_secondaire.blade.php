@@ -66,10 +66,11 @@
             $totaux = $tableau['totaux'] ?? null;
             $avecTotalLigne = in_array($totaux, ['colonne', 'les deux'], true);
             $valeurs = $d['t'][$tableau['code']] ?? [];
-            $somme = fn (array $ligne) => collect($ligne)->sum(fn ($v) => is_numeric($v) ? (int) $v : 0);
+            // Seulement les colonnes de ce tableau : T7, T8 et T9 sont coupés en plusieurs tableaux qui partagent leurs données.
+            $somme = fn (array $ligne) => collect($ligne)->only(array_keys($colonnes))->sum(fn ($v) => is_numeric($v) ? (int) $v : 0);
         @endphp
         <div class="bloc">
-            <div class="titre">{{ $tableau['code'] }} : {{ Str::upper($tableau['titre']) }}</div>
+            <div class="titre">{{ $tableau['numero'] ?? $tableau['code'] }} : {{ Str::upper($tableau['titre']) }}</div>
             <table class="grille">
                 @if($groupee)
                     <tr>
@@ -102,8 +103,8 @@
                 @if(in_array($totaux, ['ligne', 'les deux'], true))
                     <tr class="total">
                         <td class="l">Total</td>
-                        @foreach($colonnes as $colonne => $l)<td>{{ collect($valeurs)->sum(fn ($v) => (int) ($v[$colonne] ?? 0)) }}</td>@endforeach
-                        @if($avecTotalLigne)<td>{{ collect($valeurs)->sum(fn ($v) => $somme($v)) }}</td>@endif
+                        @foreach($colonnes as $colonne => $l)<td>{{ collect($valeurs)->only(array_keys($tableau["lignes"]))->sum(fn ($v) => (int) ($v[$colonne] ?? 0)) }}</td>@endforeach
+                        @if($avecTotalLigne)<td>{{ collect($valeurs)->only(array_keys($tableau["lignes"]))->sum(fn ($v) => $somme($v)) }}</td>@endif
                     </tr>
                 @endif
             </table>

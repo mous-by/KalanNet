@@ -15,6 +15,7 @@ class Eleve extends Model
     protected $fillable = [
         'date_naissance',
         'lieu_naiss',
+        'annee_def',
         'adresse_eleve',
         'genre_eleve',
         'id_annee',

@@ -40,6 +40,13 @@
             @endif
         </div>
     @endif
+    @if($type === 'rentree')
+        <div class="alert {{ $sansDef > 0 ? 'alert-warning' : 'alert-light border' }} border-0 border-start border-4 d-flex flex-wrap align-items-center gap-2">
+            <i class="bi bi-mortarboard me-1"></i>
+            <span>{{ $sansDef > 0 ? $sansDef.' élève(s) sans année du DEF (CG) : leur scolarité (T9) est estimée par leur niveau et leurs redoublements.' : 'Scolarité (T9) comptée depuis l\'année du DEF de chaque élève.' }}</span>
+            <a class="btn btn-sm btn-outline-primary ms-auto" href="{{ route('rapport-secondaire.def', ['annee' => $annee->id_anneeScolaire]) }}"><i class="bi bi-pencil-square me-1"></i>Année du DEF des élèves</a>
+        </div>
+    @endif
     @if($sansDate > 0)
         <div class="alert alert-warning border-0 border-start border-warning border-4"><i class="bi bi-exclamation-triangle me-1"></i>{{ $sansDate }} élève(s) sans date de naissance : absents du tableau des âges (T7). Complétez leur fiche, puis reprenez les chiffres de KalanNet.</div>
     @endif

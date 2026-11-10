@@ -81,6 +81,42 @@ class RapportSecondaireDefinitions
         return array_values($tableaux);
     }
 
+    /**
+     * Un tableau du canevas coupé en deux comme sur le papier : classes de passage (10e, 11e, filières techniques) puis
+     * « suite » pour les terminales. Même code (mêmes données), numéro affiché « T7 » puis « T7 suite ».
+     */
+    private static function parCycle(string $code, string $titre, array $lignes, array $series, array $terminales, array $options): array
+    {
+        $passage = array_diff_key($series, $terminales);
+
+        return array_values(array_filter([
+            $passage ? ['code' => $code, 'titre' => $titre.' : classes de 10e et de 11e', 'lignes' => $lignes, 'colonnes' => self::paires($passage)] + $options : null,
+            $terminales ? ['code' => $code, 'numero' => $code.' suite', 'titre' => $titre.' : classes de terminale', 'lignes' => $lignes, 'colonnes' => self::paires($terminales)] + $options : null,
+        ]));
+    }
+
+    /** T9 par niveau, comme le canevas : 10e CG (1 à 3 ans), 11e (2 à 5 ans), terminales (3 à 6 ans), filières techniques. */
+    private static function scolarites(array $series, array $terminales): array
+    {
+        $ans = fn (int $de, int $a) => collect(range($de, $a))->mapWithKeys(fn ($n) => ['a'.$n => $n.($n === 1 ? ' an' : ' ans')])->all();
+        $titre = 'Effectif des élèves par scolarité (années depuis le DEF) et par série';
+        $blocs = [
+            ['classes de 10e CG', array_intersect_key($series, ['10CG' => 1]), $ans(1, 3)],
+            ['classes de 11e', array_intersect_key($series, array_flip(['11L', '11S', '11SES'])), $ans(2, 5)],
+            ['classes de terminale', $terminales, $ans(3, 6)],
+            ['filières techniques', array_filter($series, fn ($l, $cle) => str_starts_with((string) $cle, 'c'), ARRAY_FILTER_USE_BOTH), $ans(1, 6)],
+        ];
+        $tableaux = [];
+        foreach ($blocs as [$libelle, $colonnes, $lignes]) {
+            if ($colonnes) {
+                $tableaux[] = ['code' => 'T9', 'numero' => $tableaux ? 'T9 suite' : 'T9', 'titre' => $titre.' : '.$libelle, 'lignes' => $lignes, 'colonnes' => self::paires($colonnes), 'totaux' => 'les deux',
+                    'note' => 'En 2026-2027 : CG26 = 1 an, CG25 = 2 ans… L\'année du DEF se saisit sur la fiche de l\'élève ou dans « Année du DEF des élèves ».'];
+            }
+        }
+
+        return $tableaux;
+    }
+
     private static function simple(array $colonnes): array
     {
         return [['libelle' => null, 'cols' => $colonnes]];
@@ -127,6 +163,9 @@ class RapportSecondaireDefinitions
         $maliens = fn (string $code) => ['code' => $code, 'titre' => 'Répartition des professeurs maliens et étrangers par discipline', 'lignes' => self::liste(self::DISCIPLINES), 'colonnes' => self::paires(['maliens' => 'Maliens', 'etrangers' => 'Étrangers'], 'H'), 'totaux' => 'les deux'];
         $administration = fn (string $code) => ['code' => $code, 'titre' => 'Administration', 'type' => 'texte', 'lignes' => self::liste(self::POSTES), 'colonnes' => self::simple(['prenom' => 'Prénom', 'nom' => 'Nom', 'telephone' => 'Téléphone', 'email' => 'Email'])];
 
+        $generales = array_filter($series, fn ($l, $cle) => !str_starts_with((string) $cle, 'c'), ARRAY_FILTER_USE_BOTH);
+        $toutesTerminales = array_intersect_key(RapportSuccinctDonnees::SERIES, array_flip(['TAL', 'TLL', 'TSECO', 'TSS', 'TSE', 'TSEXP']));
+
         if ($type === 'rentree') {
             return self::trier(array_filter([
                 ['code' => 'T1.1', 'titre' => 'Situation des classes et du matériel par niveau', 'lignes' => self::liste(['Salles de classe utilisées', 'Bureaux professeurs', 'Chaises professeurs', 'Tableaux muraux', 'Tableaux à chevalet', 'Ventilateurs', 'Tables-bancs', 'Tabourets', 'Fontaines à eau', 'Dispositifs de lavage de mains']), 'colonnes' => self::simple($niveaux), 'totaux' => 'colonne'],
@@ -134,11 +173,15 @@ class RapportSecondaireDefinitions
                 ['code' => 'T2', 'titre' => 'Volume horaire hebdomadaire par discipline et par série', 'lignes' => ['classes' => 'Nombre de classes (cours)'] + self::liste(self::DISCIPLINES), 'colonnes' => self::simple($series), 'totaux' => 'colonne'],
                 ['code' => 'T5', 'titre' => 'Effectif des élèves par sexe, par année d\'étude et par série', 'lignes' => $series, 'colonnes' => self::simple(['f' => 'Filles', 'g' => 'Garçons']), 'totaux' => 'les deux'],
                 ['code' => 'T6', 'titre' => 'Effectif des élèves passants et redoublants par sexe et par série', 'lignes' => $series, 'colonnes' => self::paires(['p' => 'Passants', 'r' => 'Redoublants']), 'totaux' => 'les deux'],
-                ['code' => 'T7', 'titre' => 'Effectif des élèves par âge, par sexe et par série', 'lignes' => ['moins13' => 'Moins de 13 ans'] + collect(range(13, 25))->mapWithKeys(fn ($a) => ['a'.$a => $a === 25 ? '25 ans et plus' : $a.' ans'])->all(), 'colonnes' => self::paires($series), 'totaux' => 'les deux', 'note' => 'Âge atteint au 31 décembre de l\'année de la rentrée.'],
-                ['code' => 'T8', 'titre' => "Effectif des élèves par région d'origine, par sexe et par série", 'lignes' => self::liste(self::REGIONS), 'colonnes' => self::paires($series), 'totaux' => 'les deux'],
-                ['code' => 'T9', 'titre' => 'Effectif des élèves par scolarité (années passées au lycée) et par série', 'lignes' => collect(range(1, 6))->mapWithKeys(fn ($a) => ['a'.$a => $a.($a === 1 ? ' an' : ' ans')])->all(), 'colonnes' => self::paires($series), 'totaux' => 'les deux'],
-                $terminales ? ['code' => 'T10', 'titre' => 'Résultats du baccalauréat de la session précédente', 'lignes' => $terminales, 'colonnes' => self::paires(['inscrits' => 'Inscrits', 'presents' => 'Présents', 'admis' => 'Admis']), 'totaux' => 'ligne'] : null,
-                $terminales ? ['code' => 'T11', 'titre' => 'Répartition des élèves de terminale par scolarité et par sexe', 'lignes' => $terminales, 'colonnes' => self::paires(['a3' => '3 ans', 'a4' => '4 ans', 'a5' => '5 ans', 'a6' => '6 ans (ajournement)']), 'totaux' => 'les deux'] : null,
+                ...self::parCycle('T7', 'Effectif des élèves par âge, par sexe et par série', ['moins13' => 'Moins de 13 ans'] + collect(range(13, 25))->mapWithKeys(fn ($a) => ['a'.$a => $a === 25 ? '25 ans et plus' : $a.' ans'])->all(),
+                    $series, $terminales, ['totaux' => 'les deux', 'note' => 'Âge atteint au 31 décembre de l\'année de la rentrée.']),
+                ...self::parCycle('T8', "Effectif des élèves par région d'origine, par sexe et par série", self::liste(self::REGIONS), $series, $terminales, ['totaux' => 'les deux']),
+                ...self::scolarites($series, $terminales),
+                $generales ? ['code' => 'T10', 'titre' => 'Résultats du baccalauréat de la session écoulée', 'lignes' => $toutesTerminales, 'totaux' => 'ligne',
+                    'note' => 'Session de l\'année scolaire écoulée. Présents : à compléter (KalanNet ne connaît que les admis et les échecs).',
+                    'colonnes' => self::paires(['inscrits' => 'Inscrits', 'presents' => 'Présents', 'admis' => 'Admis'])] : null,
+                $generales ? ['code' => 'T11', 'titre' => 'Répartition par scolarité et par sexe des admis au baccalauréat de la session écoulée', 'lignes' => $toutesTerminales, 'totaux' => 'les deux',
+                    'note' => 'Scolarité comptée depuis l\'année du DEF (CG) de chaque admis.', 'colonnes' => self::paires(['a3' => '3 ans', 'a4' => '4 ans', 'a5' => '5 ans', 'a6' => '6 ans (ajournement)'])] : null,
                 $professeurs('T12', 'Répartition du corps professoral par sexe et statut selon la discipline'),
                 $nationalites('T13'),
                 $categories('T14'),

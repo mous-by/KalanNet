@@ -109,6 +109,7 @@ class RapportSecondaireController extends Controller
             'maquette' => $this->modeleChoisi($ecole),
             'surKalanNet' => RapportSuccinctDonnees::academieSurKalanNet($ecole->id_academie),
             'sansDate' => $type === 'rentree' ? Donnees::sansDateDeNaissance((int) $ecole->idEcole, (int) $annee->id_anneeScolaire) : 0,
+            'sansDef' => $type === 'rentree' ? Donnees::sansAnneeDuDef((int) $ecole->idEcole, $annee) : 0,
             'manquants' => Donnees::champsManquants($donnees),
         ]);
     }
@@ -160,6 +161,37 @@ class RapportSecondaireController extends Controller
             ]));
 
         return redirect()->route('rapport-secondaire.index', $retour)->with('success', 'Rapport envoyé à votre académie.');
+    }
+
+    /** Année du DEF (CG) des élèves du général, classe par classe : la scolarité des tableaux T9 et T11 en dépend. */
+    public function anneesDef(Request $request)
+    {
+        $ecole = $this->ecole();
+        $annee = $this->annee($request, $ecole);
+        $classes = array_filter(Donnees::lignes((int) $ecole->idEcole)['classes'], fn ($cle) => !str_starts_with($cle, 'c'));
+        $eleves = DB::table('eleve as e')->join('classe as c', 'c.id_classe', '=', 'e.id_classe')
+            ->where('e.id_ecole', $ecole->idEcole)->where('e.id_annee', $annee->id_anneeScolaire)->where('e.etat_dossier', 0)
+            ->whereIn('e.id_classe', array_keys($classes))->orderBy('c.nom_classe')->orderBy('e.nom_eleve')->orderBy('e.prenom_eleve')
+            ->get(['e.id_eleve', 'e.prenom_eleve', 'e.nom_eleve', 'e.matricule', 'e.annee_def', 'c.nom_classe', 'c.id_classe']);
+
+        return view('rapports-secondaire.def', ['ecole' => $ecole, 'annee' => $annee, 'parClasse' => $eleves->groupBy('nom_classe'),
+            'debut' => (int) substr((string) $annee->date_debut, 0, 4)]);
+    }
+
+    public function enregistrerAnneesDef(Request $request)
+    {
+        $ecole = $this->ecole();
+        $annee = $this->annee($request, $ecole);
+        $data = $request->validate(['def' => 'nullable|array', 'def.*' => 'nullable|integer|between:1980,'.(date('Y') + 1)],
+            ['def.*.between' => "Une année du DEF doit être comprise entre 1980 et l'an prochain.", 'def.*.integer' => 'Une année du DEF doit être une année (ex. 2026).']);
+        $n = 0;
+        foreach ($data['def'] ?? [] as $idEleve => $valeur) {
+            $n += DB::table('eleve')->where('id_eleve', (int) $idEleve)->where('id_ecole', $ecole->idEcole)
+                ->update(['annee_def' => $valeur !== null && $valeur !== '' ? (int) $valeur : null]);
+        }
+
+        return redirect()->route('rapport-secondaire.def', ['annee' => $annee->id_anneeScolaire])
+            ->with('success', "Années du DEF enregistrées ({$n} élève(s) modifié(s)). Reprenez les chiffres de KalanNet dans le rapport de rentrée pour mettre à jour T9.");
     }
 
     public function pdf(Request $request, string $type)
