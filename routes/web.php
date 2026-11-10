@@ -178,6 +178,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/finances/planifications/filter', [FinanceController::class, 'listeLegacyPlanifications'])->name('finances.planifications.filter');
     Route::get('/finances/planifications/ajouter', [FinanceController::class, 'createLegacyPlanification'])->name('finances.planifications.create');
     Route::post('/finances/planifications', [FinanceController::class, 'storeLegacyPlanification'])->name('finances.planifications.store');
+    Route::get('/finances/planifications/eleves', [FinanceController::class, 'formuleEleves'])->name('finances.planifications.eleves');
+    Route::put('/finances/planifications/eleves', [FinanceController::class, 'changerFormuleEleves'])->name('finances.planifications.eleves.update');
     Route::get('/finances/planifications/modifier', [FinanceController::class, 'editGroupePlanifications'])->name('finances.planifications.groupe.edit');
     Route::put('/finances/planifications/modifier', [FinanceController::class, 'updateGroupePlanifications'])->name('finances.planifications.groupe.update');
     Route::put('/finances/planifications/{id}', [FinanceController::class, 'updateLegacyPlanification'])->name('finances.planifications.update');

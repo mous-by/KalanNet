@@ -89,10 +89,49 @@ class PlanificationGroupeTest extends IntegrationTestCase
         $this->assertSame(0, Planification::where('id_classe', $c)->where('id_annee', $this->annee)->count(), 'rien de créé');
     }
 
+    public function test_changer_la_formule_des_eleves_deja_inscrits(): void
+    {
+        [$a] = $this->classes;
+        $this->post('/finances/planifications', $this->formules([$a], [
+            ['mensuelle', '2026-10-01', '2026-10-31', 10000],
+            ['par_tranche', '2026-10-01', '2027-05-31', 100000, ['montant' => [40000, 30000, 30000], 'date_limite' => ['2026-10-31', '2027-01-31', '2027-05-31']]],
+        ]))->assertSessionHas('success');
+        $mensuelle = $this->formule($a, 'mensuelle');
+        $tranches = $this->formule($a, '3 tranches');
+
+        $eleves = DB::table('eleve')->where('id_ecole', 1)->limit(3)->pluck('id_eleve')->map(fn ($id) => (int) $id)->all();
+        DB::table('eleve')->where('id_classe', $a)->whereNotIn('id_eleve', $eleves)->update(['etat_dossier' => 1]);
+        DB::table('eleve')->whereIn('id_eleve', $eleves)->update(['id_classe' => $a, 'id_annee' => $this->annee, 'etat_dossier' => 0]);
+        DB::table('ligne_inscription')->whereIn('id_eleve', $eleves)->where('id_annee', $this->annee)->delete();
+        DB::table('subvention_etat_eleve')->whereIn('id_eleve', $eleves)->delete();
+        foreach (array_slice($eleves, 0, 2) as $e) {
+            DB::table('ligne_inscription')->insert(['id_eleve' => $e, 'id_classe' => $a, 'id_annee' => $this->annee, 'id_planification' => $mensuelle->id_planification, 'date_inscription' => '2026-10-01']);
+        }
+        // Le 2e a déjà payé sur la mensuelle : il garde sa formule.
+        DB::table('paiement')->insert(['id_classe' => $a, 'id_annee' => $this->annee, 'id_trimestre' => 1, 'reference' => 'TEST-CHG', 'idEcole' => 1,
+            'nom_payeur' => 'x', 'telephone' => '0', 'id_planification' => $mensuelle->id_planification, 'id_eleve' => $eleves[1], 'montant_paye' => 5000]);
+
+        $this->get("/finances/planifications/eleves?id_classe={$a}&id_annee={$this->annee}")->assertOk()
+            ->assertSee('Changer la formule des élèves')->assertSee('3 tranches')->assertSee('Aucune formule')->assertSee('5 000 F');
+
+        $this->put('/finances/planifications/eleves', ['id_classe' => $a, 'id_annee' => $this->annee, 'id_planification' => $tranches->id_planification, 'eleves' => $eleves])
+            ->assertRedirect()->assertSessionHas('success', '2 élève(s) passé(s) à la formule « 3 tranches ».');
+        $this->assertStringContainsString('a déjà payé', implode(' ', session('planification_errors')));
+
+        $formuleDe = fn ($e) => (int) DB::table('ligne_inscription')->where('id_eleve', $e)->where('id_annee', $this->annee)->value('id_planification');
+        $this->assertSame((int) $tranches->id_planification, $formuleDe($eleves[0]));
+        $this->assertSame((int) $mensuelle->id_planification, $formuleDe($eleves[1]));
+        $this->assertSame((int) $tranches->id_planification, $formuleDe($eleves[2]), 'élève sans formule : inscription créée');
+
+        // Une formule d'une autre classe est refusée.
+        $this->put('/finances/planifications/eleves', ['id_classe' => $this->classes[1], 'id_annee' => $this->annee, 'id_planification' => $tranches->id_planification, 'eleves' => $eleves])->assertNotFound();
+    }
+
     public function test_droits(): void
     {
         $this->actingAs($this->compte('parent', 1))->withSession(['idEcole' => 1]);
         $this->get('/finances/planifications/modifier')->assertForbidden();
         $this->put('/finances/planifications/modifier', $this->formules([$this->classes[0]], [['mensuelle', '2026-10-01', '2026-10-31', 1]]))->assertForbidden();
+        $this->get('/finances/planifications/eleves')->assertForbidden();
     }
 }

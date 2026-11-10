@@ -631,6 +631,106 @@ class FinanceController extends Controller
             ->with('planification_errors', $errors);
     }
 
+    /**
+     * Changer la formule d'élèves déjà inscrits (classe et année) : leur inscription pointe vers la nouvelle formule.
+     * Un élève qui a déjà payé sur son ancienne formule n'est pas changé (ses versements y restent attachés).
+     */
+    public function formuleEleves(Request $request)
+    {
+        $this->ensureAnyPermission(['finances_planifications_modification', 'paiements_faire']);
+        $idEcole = (int) session('idEcole');
+        $classes = Classe::where('idEcole', $idEcole)->orderBy('nom_classe')->get();
+        $annees = AnneeScolaire::orderByDesc('date_debut')->orderByDesc('id_anneeScolaire')->get();
+        $idClasse = (int) $request->query('id_classe');
+        $idAnnee = (int) ($request->query('id_annee') ?: AnneeScolaire::enCours($idEcole)?->id_anneeScolaire);
+        $isPublicSchool = $this->isPublicSchool(Ecole::find($idEcole));
+
+        $formules = collect();
+        $eleves = collect();
+        if ($idClasse && $idAnnee) {
+            Classe::where('idEcole', $idEcole)->findOrFail($idClasse);
+            $formules = Planification::where('id_classe', $idClasse)->where('id_annee', $idAnnee)->orderBy('motif')->get()->keyBy('id_planification');
+            $eleves = $this->elevesEtFormules($idEcole, $idClasse, $idAnnee);
+        }
+
+        return view('finances.planifications.eleves', compact('classes', 'annees', 'idClasse', 'idAnnee', 'formules', 'eleves', 'isPublicSchool'));
+    }
+
+    public function changerFormuleEleves(Request $request)
+    {
+        $this->ensureAnyPermission(['finances_planifications_modification', 'paiements_faire']);
+        $idEcole = (int) session('idEcole');
+        $data = $request->validate([
+            'id_classe' => 'required|integer',
+            'id_annee' => 'required|integer|exists:anneescolaire,id_anneeScolaire',
+            'id_planification' => 'required|integer',
+            'eleves' => 'required|array|min:1',
+            'eleves.*' => 'integer',
+        ], ['eleves.required' => 'Cochez au moins un élève.', 'id_planification.required' => 'Choisissez la nouvelle formule.']);
+
+        Classe::where('idEcole', $idEcole)->findOrFail($data['id_classe']);
+        $formule = Planification::where('id_classe', $data['id_classe'])->where('id_annee', $data['id_annee'])->findOrFail($data['id_planification']);
+        $lignes = $this->elevesEtFormules($idEcole, (int) $data['id_classe'], (int) $data['id_annee'])->keyBy(fn ($l) => (int) $l->eleve->id_eleve);
+
+        $changes = 0;
+        $refus = [];
+        DB::transaction(function () use ($data, $formule, $lignes, &$changes, &$refus) {
+            foreach (array_unique(array_map('intval', $data['eleves'])) as $idEleve) {
+                $ligne = $lignes->get($idEleve);
+                if (!$ligne || $ligne->pris_en_charge) {
+                    continue; // autre classe, autre école, ou élève pris en charge par l'État
+                }
+                $nom = trim($ligne->eleve->prenom_eleve.' '.$ligne->eleve->nom_eleve);
+                if ((int) $ligne->id_planification === (int) $formule->id_planification) {
+                    continue;
+                }
+                if ($ligne->deja_paye > 0) {
+                    $refus[] = "{$nom} : a déjà payé ".number_format($ligne->deja_paye, 0, ',', ' ')." F sur sa formule actuelle, elle n'a pas été changée.";
+                    continue;
+                }
+                $existe = DB::table('ligne_inscription')->where('id_eleve', $idEleve)->where('id_annee', $data['id_annee'])->exists();
+                if ($existe) {
+                    DB::table('ligne_inscription')->where('id_eleve', $idEleve)->where('id_annee', $data['id_annee'])
+                        ->update(['id_classe' => $data['id_classe'], 'id_planification' => $formule->id_planification]);
+                } else {
+                    DB::table('ligne_inscription')->insert(['id_eleve' => $idEleve, 'id_classe' => $data['id_classe'], 'id_annee' => $data['id_annee'],
+                        'id_planification' => $formule->id_planification, 'date_inscription' => now()->toDateString()]);
+                }
+                $changes++;
+            }
+        });
+
+        return redirect()->route('finances.planifications.eleves', ['id_classe' => $data['id_classe'], 'id_annee' => $data['id_annee']])
+            ->with($changes > 0 ? 'success' : 'error', $changes > 0 ? "{$changes} élève(s) passé(s) à la formule « {$formule->motif} »." : 'Aucun élève changé.')
+            ->with('planification_errors', $refus);
+    }
+
+    /** Élèves de la classe et de l'année, avec leur formule actuelle et ce qu'ils ont déjà payé dessus. */
+    private function elevesEtFormules(int $idEcole, int $idClasse, int $idAnnee)
+    {
+        $eleves = Eleve::where('id_ecole', $idEcole)->where('id_classe', $idClasse)->where('id_annee', $idAnnee)->where('etat_dossier', 0)
+            ->orderBy('nom_eleve')->orderBy('prenom_eleve')->get();
+        $ids = $eleves->pluck('id_eleve')->map(fn ($id) => (int) $id)->all();
+        $inscriptions = DB::table('ligne_inscription')->where('id_annee', $idAnnee)->whereIn('id_eleve', $ids)->pluck('id_planification', 'id_eleve');
+        $payes = DB::table('paiement')->where('id_annee', $idAnnee)->whereIn('id_eleve', $ids)
+            ->where(fn ($q) => $q->whereNull('statut')->orWhere('statut', 'valide'))
+            ->selectRaw('id_eleve, id_planification, SUM(COALESCE(montant_paye, montant, 0)) as total')
+            ->groupBy('id_eleve', 'id_planification')->get()
+            ->groupBy('id_eleve');
+        $prisEnCharge = \App\Support\SubventionEtat::elevesPrisEnCharge($idAnnee, $ids);
+
+        return $eleves->map(function ($eleve) use ($inscriptions, $payes, $prisEnCharge) {
+            $idPlanification = $inscriptions[$eleve->id_eleve] ?? null;
+
+            return (object) [
+                'eleve' => $eleve,
+                'id_planification' => $idPlanification ? (int) $idPlanification : null,
+                'deja_paye' => (float) optional($payes->get($eleve->id_eleve)?->firstWhere('id_planification', $idPlanification))->total,
+                'pris_en_charge' => isset($prisEnCharge[(int) $eleve->id_eleve]),
+            ];
+        });
+    }
+
     public function deleteLegacyPlanification($id)
     {
         $this->ensureAnyPermission(['finances_planifications_supprimer', 'paiements_faire']);

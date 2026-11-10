@@ -20,6 +20,9 @@
         <a href="{{ route('finances.planifications.groupe.edit') }}" class="btn border-0 border-warning border-4 bg-light-warning text-warning ms-2">
             <i class="bi bi-pencil-square"></i> Modifier en groupe
         </a>
+        <a href="{{ route('finances.planifications.eleves', array_filter(['id_classe' => $filters['id_classe'] ?? null, 'id_annee' => $filters['id_annee'] ?? null])) }}" class="btn border-0 border-info border-4 bg-light-info text-info ms-2">
+            <i class="bi bi-people"></i> Changer la formule des élèves
+        </a>
     @endif
 </div>
 
