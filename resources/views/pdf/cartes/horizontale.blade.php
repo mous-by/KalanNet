@@ -18,7 +18,7 @@
     <div class="abs infos">
         <div class="nom">{{ \App\Support\ArabePdf::texte($eleve->nom_eleve) }}</div>
         <div class="prenom">{{ \App\Support\ArabePdf::texte($eleve->prenom_eleve) }}</div>
-        @if($naissance)<div><span class="lib">Né(e) le :</span> {{ $naissance }}</div>@endif
+        @if($naissance || ($lieuNaissance ?? null))<div><span class="lib">Date et lieu de naissance :</span> {{ $naissance }}{{ $naissance && ($lieuNaissance ?? null) ? ' à ' : '' }}{{ ($lieuNaissance ?? null) ? \App\Support\ArabePdf::texte($lieuNaissance) : '' }}</div>@endif
         @if($modele === 'sante')
             @if($filiere)<div><span class="lib">Filière :</span> {{ $filiere }}</div>@endif
             <div><span class="lib">Niveau :</span> {{ $classe->nom_classe }}</div>

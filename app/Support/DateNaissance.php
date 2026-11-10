@@ -108,6 +108,15 @@ class DateNaissance
         return str_starts_with((string) $valeur, self::PREFIXE_VERS);
     }
 
+    /** Lieu de naissance à afficher, ou null (vide ou « Non renseigné » enregistré par défaut). */
+    public static function lieu(?string $lieu): ?string
+    {
+        $lieu = trim((string) $lieu);
+        $normalise = \Illuminate\Support\Str::lower(\Illuminate\Support\Str::ascii($lieu));
+
+        return $lieu === '' || in_array($normalise, ['non renseigne', 'non renseignee', '-', 'neant'], true) ? null : $lieu;
+    }
+
     /** Affichage : 22/04/2009, ou « Vers 2009 ». */
     public static function afficher(?string $valeur, ?string $vide = ''): ?string
     {

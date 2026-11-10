@@ -168,6 +168,7 @@
                         $hasPhoto = $photoPath && is_file($photoPath);
                         $qrCode = $qrCodes[$eleve->id_eleve] ?? null;
                         $naissance = \App\Support\DateNaissance::afficher($eleve->date_naissance, null);
+                        $lieuNaissance = \App\Support\DateNaissance::lieu($eleve->lieu_naiss);
                         $matricule = $eleve->matricule ?: null;
                         $parent = $eleve->relationLoaded('parents') ? $eleve->parents->first() : null;
                         // Feuille retournée sur le bord long : la colonne d'un verso est l'inverse de celle de son recto.
@@ -194,6 +195,7 @@
                             $hasPhoto = $photoPath && is_file($photoPath);
                             $qrCode = $qrCodes[$eleve->id_eleve] ?? null;
                             $naissance = \App\Support\DateNaissance::afficher($eleve->date_naissance, null);
+                        $lieuNaissance = \App\Support\DateNaissance::lieu($eleve->lieu_naiss);
                             $matricule = $eleve->matricule ?: null;
                             $parent = $eleve->relationLoaded('parents') ? $eleve->parents->first() : null;
                             $espace = $loop->first ? '' : 'padding-left:4mm';

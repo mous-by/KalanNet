@@ -53,4 +53,12 @@ class DateNaissanceTest extends TestCase
         $this->assertSame('—', DateNaissance::afficher(null, '—'));
         $this->assertNull(DateNaissance::afficher('', null));
     }
+
+    public function test_lieu_de_naissance_pour_la_carte(): void
+    {
+        $this->assertSame('Bamako', \App\Support\DateNaissance::lieu(' Bamako '));
+        $this->assertNull(\App\Support\DateNaissance::lieu('Non renseigné'));
+        $this->assertNull(\App\Support\DateNaissance::lieu(''));
+        $this->assertNull(\App\Support\DateNaissance::lieu(null));
+    }
 }

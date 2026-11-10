@@ -525,11 +525,11 @@ class EleveController extends Controller
             $classe = isset($classe) ? $classe : (new Classe())->forceFill(['nom_classe' => '7ème année A', 'ordreEnseignement' => 'fondamentale2']);
             $annee = isset($annee) ? $annee : (AnneeScolaire::enCours() ?? (new AnneeScolaire())->forceFill(['annee' => date('Y') . '-' . (date('Y') + 1)]));
             $eleves = collect([
-                ['Aminata', 'Diallo', 'Féminin', '2013-03-14'],
-                ['Ibrahim', 'Koné', 'Masculin', '2012-11-02'],
+                ['Aminata', 'Diallo', 'Féminin', '2013-03-14', 'Bamako'],
+                ['Ibrahim', 'Koné', 'Masculin', '2012-11-02', 'Ségou'],
             ])->map(fn ($e, $i) => (new Eleve())->forceFill([
                 'id_eleve' => -1 - $i, 'prenom_eleve' => $e[0], 'nom_eleve' => $e[1], 'genre_eleve' => $e[2],
-                'date_naissance' => $e[3], 'matricule' => 'EX-000' . ($i + 1),
+                'date_naissance' => $e[3], 'lieu_naiss' => $e[4], 'matricule' => 'EX-000' . ($i + 1),
             ]));
         }
 
