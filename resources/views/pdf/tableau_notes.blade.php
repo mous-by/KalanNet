@@ -46,19 +46,19 @@
 
     <table class="entete">
         <tr>
-            <td style="width: 32%;">
+            <td style="width: 26%;">
                 @if($p['enteteGauche'])<div>{!! nl2br(e($p['enteteGauche'])) !!}</div>@endif
                 @if($p['academie'])<div>{{ $p['academie'] }}</div>@endif
                 @if($p['capLabel'])<div>{{ $p['capLabel'] }}</div>@endif
                 <div><b>{{ $p['nomEcole'] }}</b></div>
                 @if($p['sousTitre'])<div>{{ $p['sousTitre'] }}</div>@endif
             </td>
-            <td class="centre" style="width: 36%;">
+            <td class="centre" style="width: 48%;">
                 @if($p['logo'])<img class="logo" src="{{ $p['logo'] }}" alt=""><br>@endif
                 <h1>Tableau des notes</h1>
                 <div class="sous">{{ $classe->nom_classe }} — {{ $periode }} — {{ $p['anneeScolaire'] }}</div>
             </td>
-            <td style="width: 32%; text-align: right;">
+            <td style="width: 26%; text-align: right;">
                 @if($p['enteteDroite'])<div>{!! nl2br(e($p['enteteDroite'])) !!}</div>@endif
             </td>
         </tr>
