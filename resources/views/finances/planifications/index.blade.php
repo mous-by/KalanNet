@@ -1,8 +1,8 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div class="me-auto">
         <h1 class="h3 mb-1">{{ $isPublicSchool ? __('finances.menu_planifications_public') : __('finances.menu_planifications_private') }}</h1>
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-0">
@@ -14,6 +14,11 @@
     @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('finances_planifications_creation'))
         <a href="{{ route('finances.planifications.create') }}" class="btn border-0 border-primary border-4 bg-light-primary text-primary">
             <i class="bi bi-plus-lg"></i> {{ __('finances.add_generic') }}
+        </a>
+    @endif
+    @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('finances_planifications_modification'))
+        <a href="{{ route('finances.planifications.groupe.edit') }}" class="btn border-0 border-warning border-4 bg-light-warning text-warning ms-2">
+            <i class="bi bi-pencil-square"></i> Modifier en groupe
         </a>
     @endif
 </div>

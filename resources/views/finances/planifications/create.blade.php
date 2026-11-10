@@ -1,6 +1,9 @@
 @extends('layouts.app')
 
 @section('content')
+@php
+    $modification = ($mode ?? 'creation') === 'modification';
+@endphp
 @push('styles')
 <style>
     .classe-choice-list {
@@ -15,12 +18,12 @@
 </a>
 
 <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-    <div class="breadcrumb-title pe-3">{{ __('finances.add_breadcrumb') }}</div>
+    <div class="breadcrumb-title pe-3">{{ $modification ? __('finances.edit_button') : __('finances.add_breadcrumb') }}</div>
     <div class="ps-3">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-0 p-0">
                 <li class="breadcrumb-item"><a href="{{ route('finances.index') }}"><i class="bi bi-house"></i></a></li>
-                <li class="breadcrumb-item active" aria-current="page">{{ __('finances.add_paiements_breadcrumb') }}</li>
+                <li class="breadcrumb-item active" aria-current="page">{{ $modification ? ($isPublicSchool ? 'Modifier les coopératives en groupe' : 'Modifier les formules en groupe') : __('finances.add_paiements_breadcrumb') }}</li>
             </ol>
         </nav>
     </div>
@@ -47,8 +50,11 @@
     </div>
 @endif
 
-<form action="{{ route('finances.planifications.store') }}" method="POST">
+<form action="{{ $modification ? route('finances.planifications.groupe.update') : route('finances.planifications.store') }}" method="POST">
     @csrf
+    @if($modification)
+        @method('PUT')
+    @endif
     <div class="row g-0">
         <div class="col-12 col-md-3">
             @include('finances.partials.menu', ['active' => 'planifications'])
@@ -59,8 +65,16 @@
                 <div class="card-header theme-header">
                     <i class="bi bi-table me-1"></i>
                     {{ $isPublicSchool ? __('finances.cooperative_scolaire') : __('finances.menu_planifications_private') }}
+                    @if($modification) — modification en groupe @endif
                 </div>
                 <div class="card-body">
+                    @if($modification)
+                        <div class="alert alert-info small py-2">
+                            Cochez les classes et l'année, puis indiquez les nouvelles valeurs de chaque formule. La formule du même type est modifiée dans
+                            <strong>toutes les classes cochées</strong>. Les champs se remplissent avec les valeurs actuelles de la première classe cochée.
+                            Un montant ne peut jamais descendre sous ce qu'un élève a déjà versé : cette classe est alors laissée telle quelle et signalée.
+                        </div>
+                    @endif
                     <div class="row">
                         <div class="col-md-6">
                             <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
@@ -140,7 +154,7 @@
                     </div>
 
                     <div>
-                        <button type="submit" name="envoie_re" class="btn btn-primary" style="float: right;">{{ __('finances.send_button') }}</button>
+                        <button type="submit" name="envoie_re" class="btn btn-primary" style="float: right;">{{ $modification ? __('finances.save_button') : __('finances.send_button') }}</button>
                     </div>
                 </div>
             </div>
@@ -171,6 +185,7 @@
 @endphp
 <script>
 const createPlanifI18n = @json($createPlanifI18n);
+const formulesExistantes = @json($existantes ?? null);
 let rowKeyCounter = 1;
 $('#form-fields').attr('data-row-key', 1);
 
@@ -629,5 +644,64 @@ $(document).on('change', '#id_annee', function() {
 $('.planification-motif').each(function() {
     $(this).data('previous-motif', $(this).val());
 });
+
+// ---------- Modification en groupe : valeurs actuelles de la première classe cochée ----------
+if (formulesExistantes) {
+    function formuleActuelle(motif) {
+        const annee = formulesExistantes[$('#id_annee').val()] || {};
+        const classe = $('.classe-checkbox:checked').toArray().map((c) => annee[c.value]).find(Boolean);
+        if (!classe) {
+            return null;
+        }
+        if (motif !== 'par_tranche') {
+            return classe[motif] || null;
+        }
+        const cle = Object.keys(classe).find((m) => /^\d+ tranches$/.test(m));
+        return cle ? classe[cle] : null;
+    }
+
+    function preRemplir(row) {
+        if (row.data('touched')) {
+            return;
+        }
+        const motif = row.find('.planification-motif').val();
+        const actuelle = formuleActuelle(motif);
+        if (!actuelle) {
+            return;
+        }
+        row.find('.planification-date-debut').val(actuelle.date_debut);
+        if (motif !== 'par_tranche') {
+            row.find('.planification-date-fin').val(actuelle.date_fin);
+            row.find('.planification-montant').val(actuelle.montant);
+            updateMonthlyReference(row);
+            return;
+        }
+        const editor = row.next('.tranche-editor-row');
+        const n = actuelle.tranches.length;
+        editor.find('.tranche-count').val(n);
+        renderTrancheLines(row, n, actuelle.tranches.map((t) => t.montant), actuelle.tranches.map((t) => t.date_limite));
+        editor.find('.tranche-shares').text(trancheShares(n).join(' % / ') + ' %');
+        editor.find('.tranche-total').val(refreshTrancheTotals(row) || '');
+    }
+
+    const toutPreRemplir = () => $('#tableListe_FormulePaiement > tr.form-row').each(function() { preRemplir($(this)); });
+
+    // Une valeur saisie à la main n'est plus remplacée.
+    $(document).on('input', '#tableListe_FormulePaiement input', function() {
+        const row = $(this).closest('tr.tranche-editor-row').length ? trancheRowOf(this) : $(this).closest('tr.form-row');
+        row.data('touched', true);
+    });
+    $(document).on('change', '.planification-motif', function() {
+        const row = $(this).closest('tr');
+        row.data('touched', false);
+        preRemplir(row);
+    });
+    $(document).on('change', '.classe-checkbox, #id_annee', toutPreRemplir);
+    $(document).on('click', '#toggle-classes', toutPreRemplir);
+    $(document).on('click', '#add-more', function() {
+        preRemplir($('#tableListe_FormulePaiement > tr.form-row').last());
+    });
+    toutPreRemplir();
+}
 </script>
 @endpush

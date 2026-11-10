@@ -484,7 +484,16 @@ class FinanceController extends Controller
             ];
         }
 
-        $data = $request->validate($rules);
+        $this->appliquerModificationPlanification($planification, $request->validate($rules));
+    }
+
+    /** Cœur de la modification (une formule seule ou en groupe), données déjà validées. */
+    protected function appliquerModificationPlanification(Planification $planification, array $data): void
+    {
+        $isTranche = $planification->tranches->isNotEmpty();
+        if (!$isTranche && strtotime((string) $data['date_fin']) <= strtotime((string) $data['date_debut'])) {
+            throw ValidationException::withMessages(['date_fin' => 'La date de fin doit être postérieure à la date de début.']);
+        }
 
         $tranches = [];
         if ($isTranche) {
@@ -534,6 +543,92 @@ class FinanceController extends Controller
                 }
             }
         });
+    }
+
+    /** Modification en groupe : les mêmes formules changées d'un coup dans plusieurs classes (comme la création). */
+    public function editGroupePlanifications(Request $request)
+    {
+        $this->ensureAnyPermission(['finances_planifications_modification', 'paiements_faire']);
+        $idEcole = (int) session('idEcole');
+
+        $classes = Classe::where('idEcole', $idEcole)->orderBy('nom_classe')->get();
+        $isPublicSchool = $this->isPublicSchool(Ecole::find($idEcole));
+        $annees = AnneeScolaire::query()->orderByDesc('date_debut')->orderByDesc('id_anneeScolaire')->get();
+
+        // Formules existantes, pour pré-remplir les lignes avec les valeurs actuelles.
+        $existantes = [];
+        Planification::with('tranches')->whereIn('id_classe', $classes->pluck('id_classe'))->get()
+            ->each(function (Planification $p) use (&$existantes) {
+                $existantes[$p->id_annee][$p->id_classe][strtolower(trim((string) $p->motif))] = [
+                    'date_debut' => substr((string) $p->date_debut, 0, 10),
+                    'date_fin' => substr((string) $p->date_fin, 0, 10),
+                    'montant' => (float) $p->montant_planification,
+                    'tranches' => $p->tranches->map(fn ($t) => ['montant' => (float) $t->montant, 'date_limite' => $t->date_limite->format('Y-m-d')])->values()->all(),
+                ];
+            });
+
+        $mode = 'modification';
+
+        return view('finances.planifications.create', compact('classes', 'annees', 'isPublicSchool', 'existantes', 'mode'));
+    }
+
+    public function updateGroupePlanifications(Request $request)
+    {
+        $this->ensureAnyPermission(['finances_planifications_modification', 'paiements_faire']);
+        $idEcole = (int) session('idEcole');
+        $isPublicSchool = $this->isPublicSchool(Ecole::find($idEcole));
+        $data = $request->validate($this->reglesCreationPlanification());
+
+        $classes = Classe::where('idEcole', $idEcole)->whereIn('id_classe', $data['id_classes'])->pluck('nom_classe', 'id_classe');
+        if ($classes->count() !== collect($data['id_classes'])->unique()->count()) {
+            throw ValidationException::withMessages(['id_classes' => 'Une ou plusieurs classes sélectionnées n’appartiennent pas à votre école.']);
+        }
+
+        $errors = [];
+        $modifiees = 0;
+        foreach ($data['motif'] as $index => $rawMotif) {
+            $ligne = $index + 1;
+            $motif = $isPublicSchool ? 'cooperative' : strtolower(trim((string) $rawMotif));
+            $valeurs = ['date_debut' => $data['date_debut'][$index] ?? null];
+
+            if (!$isPublicSchool && $motif === 'par_tranche') {
+                $parsed = $this->parseTrancheRow($data, (int) $index);
+                if (isset($parsed['error'])) {
+                    $errors[] = $parsed['error'];
+                    continue;
+                }
+                $motif = count($parsed['lignes']).' tranches';
+                $valeurs['tranche_montant'] = array_column($parsed['lignes'], 'montant');
+                $valeurs['tranche_date'] = array_column($parsed['lignes'], 'date_limite');
+            } else {
+                $valeurs['date_fin'] = $data['date_fin'][$index] ?? null;
+                $valeurs['montant_planification'] = $data['montant'][$index] ?? null;
+            }
+
+            foreach ($classes as $idClasse => $nomClasse) {
+                $planification = Planification::with('tranches')->where('id_classe', $idClasse)->where('id_annee', $data['id_annee'])
+                    ->get()->first(fn ($p) => strtolower(trim((string) $p->motif)) === $motif);
+                if (!$planification) {
+                    $errors[] = "{$nomClasse} : pas de formule « {$motif} » cette année (ligne {$ligne}), rien n’a été changé. Créez-la avec « Ajouter ».";
+                    continue;
+                }
+                try {
+                    $this->appliquerModificationPlanification($planification, $valeurs);
+                    $modifiees++;
+                } catch (ValidationException $e) {
+                    $errors[] = "{$nomClasse} ({$motif}) : ".collect($e->errors())->flatten()->first();
+                }
+            }
+        }
+
+        $message = $modifiees > 0
+            ? ($isPublicSchool ? "{$modifiees} coopérative(s) modifiée(s)." : "{$modifiees} formule(s) de paiement modifiée(s).")
+            : 'Aucune formule modifiée.';
+
+        return redirect()->route('finances.planifications.groupe.edit')
+            ->withInput($request->only('id_annee', 'id_classes'))
+            ->with($modifiees > 0 ? 'success' : 'error', $message)
+            ->with('planification_errors', $errors);
     }
 
     public function deleteLegacyPlanification($id)
