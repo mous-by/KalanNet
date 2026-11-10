@@ -101,6 +101,24 @@ class CompositionMensuelleTest extends IntegrationTestCase
         $this->get('/evaluations')->assertOk()->assertDontSee('Plusieurs compositions dans un même trimestre');
     }
 
+    public function test_liste_par_defaut_en_cours_et_filtre_par_mois(): void
+    {
+        $recente = $this->programmer(['mois' => 11, 'id_trimestre' => $this->trimestre], 'Compo novembre test');
+        $ancienne = $this->programmer(['id_trimestre' => $this->trimestre], 'Devoir ancien test');
+        DB::table('evaluation')->where('id_evaluation', $recente)->update(['date_evaluation' => now()->subDays(3)->toDateString()]);
+        DB::table('evaluation')->where('id_evaluation', $ancienne)->update(['date_evaluation' => now()->subDays(120)->toDateString()]);
+
+        // Par défaut : l'année en cours et ce qui est récent ou à venir.
+        $this->get('/evaluations')->assertOk()->assertSee('Compo novembre test')->assertDontSee('Devoir ancien test')
+            ->assertSee('Composition mensuelle')->assertSee('En cours (récentes et à venir)')->assertSee('Tout afficher pour l');
+
+        $this->get('/evaluations?periode=tout')->assertOk()->assertSee('Devoir ancien test')->assertSee('Compo novembre test');
+        $this->get('/evaluations?periode=m11')->assertOk()->assertSee('Compo novembre test')->assertDontSee('Devoir ancien test');
+        $this->get('/evaluations?periode=t'.$this->trimestre)->assertOk()->assertSee('Devoir ancien test')->assertDontSee('Compo novembre test');
+        // Anciens liens avec « mois » encore compris.
+        $this->get('/evaluations?mois=11')->assertOk()->assertSee('Compo novembre test')->assertDontSee('Devoir ancien test');
+    }
+
     public function test_fondamental_i_et_lycee_inchanges(): void
     {
         $f1 = DB::table('classe')->where('idEcole', 1)->where('ordreEnseignement', 'fondamentale1')->first();

@@ -53,28 +53,29 @@
                 <div class="col-md-3">
                     <label class="form-label">Année scolaire</label>
                     <select class="form-select" name="id_annee_scolaire">
-                        <option value="">Choisir une année</option>
+                        <option value="">Toutes les années</option>
                         @foreach($annees as $annee)
                             <option value="{{ $annee->id_anneeScolaire }}" @selected(($filters['id_annee_scolaire'] ?? null) == $annee->id_anneeScolaire)>{{ $annee->annee }}</option>
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-3 trimestre-field">
+                <div class="col-md-3">
                     <label class="form-label">Période</label>
-                    <select class="form-select" name="id_trimestre">
-                        <option value="">Choisir une période</option>
-                        @foreach($trimestres as $trimestre)
-                            <option value="{{ $trimestre->id_trimestre }}" @selected(($filters['id_trimestre'] ?? null) == $trimestre->id_trimestre)>{{ $trimestre->nom_trimestre }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-md-3 mois-field">
-                    <label class="form-label">Mois</label>
-                    <select class="form-select" name="mois">
-                        <option value="">Sélectionner un mois</option>
-                        @foreach($moisOptions as $value => $label)
-                            <option value="{{ $value }}" @selected(($filters['mois'] ?? null) == $value)>{{ $label }}</option>
-                        @endforeach
+                    <select class="form-select" name="periode">
+                        <option value="en_cours" @selected($filters['periode'] === 'en_cours')>En cours (récentes et à venir)</option>
+                        <option value="tout" @selected($filters['periode'] === 'tout')>Toute l'année</option>
+                        <optgroup label="Trimestres">
+                            @foreach($trimestres as $trimestre)
+                                <option value="t{{ $trimestre->id_trimestre }}" @selected($filters['periode'] === 't'.$trimestre->id_trimestre)>{{ $trimestre->nom_trimestre }}</option>
+                            @endforeach
+                        </optgroup>
+                        <optgroup label="Mois (Fondamental I, compositions mensuelles du Fondamental II)">
+                            @foreach([9, 10, 11, 12, 1, 2, 3, 4, 5, 6] as $m)
+                                @if(isset($moisOptions[$m]))
+                                    <option value="m{{ $m }}" @selected($filters['periode'] === 'm'.$m)>{{ $moisOptions[$m] }}</option>
+                                @endif
+                            @endforeach
+                        </optgroup>
                     </select>
                 </div>
                 <div class="col-md-3 d-flex align-items-end">
@@ -82,6 +83,22 @@
                 </div>
             </form>
         </div>
+    </div>
+
+    @php
+        $periodeLibelle = match (true) {
+            $filters['periode'] === 'en_cours' => 'en cours : depuis le '.\Carbon\Carbon::parse($depuis)->format('d/m/Y').' et à venir',
+            $filters['periode'] === 'tout' => 'toute la période',
+            str_starts_with($filters['periode'], 't') => optional($trimestres->firstWhere('id_trimestre', (int) substr($filters['periode'], 1)))->nom_trimestre ?? 'trimestre',
+            default => 'mois de '.mb_strtolower($moisOptions[(int) substr($filters['periode'], 1)] ?? ''),
+        };
+        $anneeLibelle = optional($annees->firstWhere('id_anneeScolaire', (int) ($filters['id_annee_scolaire'] ?? 0)))->annee ?? 'toutes les années';
+    @endphp
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-2 small">
+        <span><i class="bi bi-funnel me-1"></i><strong>{{ $evaluations->total() }}</strong> évaluation(s) affichée(s) — {{ $anneeLibelle }}, {{ $periodeLibelle }}.</span>
+        @if($filters['periode'] !== 'tout')
+            <a href="{{ route('evaluations.index', array_filter(['id_classe' => $filters['id_classe'] ?? null, 'id_matiere' => $filters['id_matiere'] ?? null]) + ['id_annee_scolaire' => $filters['id_annee_scolaire'] ?? '', 'periode' => 'tout']) }}">Tout afficher pour l'année</a>
+        @endif
     </div>
 
     @if(auth()->user()->userHasPermission('evaluation_création'))
@@ -103,6 +120,7 @@
                             <th>Libellé</th>
                             <th>Classe</th>
                             <th>Matière</th>
+                            <th>Type</th>
                             <th>Période</th>
                             <th>Validation</th>
                             <th>Heure début</th>
@@ -117,6 +135,21 @@
                                 <td class="fw-bold">{{ $ligne->evaluation->libeller }}</td>
                                 <td>{{ $ligne->classe->nom_classe ?? '' }}</td>
                                 <td>{{ $ligne->matiere->nom_matiere ?? '' }}</td>
+                                @php
+                                    $estCompo = $ligne->type_note === 'composition';
+                                    $mensuelle = $estCompo && $ligne->mois && ($ligne->classe->ordreEnseignement ?? null) !== 'fondamentale1';
+                                @endphp
+                                <td>
+                                    @if($mensuelle)
+                                        <span class="badge bg-info text-dark">Composition mensuelle</span>
+                                    @elseif($estCompo)
+                                        <span class="badge bg-primary">Composition</span>
+                                    @elseif($ligne->type_note === 'devoir')
+                                        <span class="badge bg-secondary">Devoir</span>
+                                    @elseif($ligne->type_note === 'nt10')
+                                        <span class="badge bg-secondary">Note sur 10</span>
+                                    @endif
+                                </td>
                                 <td>{{ $ligne->mois ? ($moisOptions[(int) $ligne->mois] ?? $ligne->mois) : ($ligne->trimestre->nom_trimestre ?? '') }}</td>
                                 <td>
                                     @if(($ligne->validation_status ?? 'valide') === 'en_attente')
@@ -160,7 +193,12 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="9" class="text-center py-4 text-muted">Aucune évaluation trouvée.</td></tr>
+                            <tr><td colspan="10" class="text-center py-4 text-muted">
+                                Aucune évaluation pour cette recherche.
+                                @if($filters['periode'] === 'en_cours')
+                                    <div class="mt-1">Seules les évaluations récentes et à venir sont affichées : choisissez « Toute l'année », un trimestre ou un mois dans « Période ».</div>
+                                @endif
+                            </td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -178,23 +216,8 @@
             const classeSelect = document.getElementById('id_classe');
             const matiereSelect = document.getElementById('id_matiere');
             const selectedMatiere = matiereSelect.dataset.selected;
-            const trimestreField = document.querySelector('.trimestre-field');
-            const moisField = document.querySelector('.mois-field');
             const form = document.getElementById('evaluation-filter-form');
             let readyToSubmit = false;
-
-            function syncPeriodMode() {
-                const ordre = classeSelect.options[classeSelect.selectedIndex]?.dataset.ordre || '';
-                const isFondamentale1 = ordre === 'fondamentale1';
-                // Fondamental II : trimestre, ou mois pour une composition mensuelle (bulletin du mois, hors trimestre).
-                const avecMois = isFondamentale1 || ordre === 'fondamentale2';
-                trimestreField.style.display = isFondamentale1 ? 'none' : '';
-                moisField.style.display = avecMois ? '' : 'none';
-                trimestreField.querySelectorAll('select').forEach(select => select.disabled = isFondamentale1);
-                moisField.querySelectorAll('select').forEach(select => select.disabled = !avecMois);
-                const aide = moisField.querySelector('[data-aide-mensuelle]');
-                if (aide) aide.hidden = ordre !== 'fondamentale2';
-            }
 
             function loadMatieres() {
                 const idClasse = classeSelect.value;
@@ -215,7 +238,6 @@
             }
 
             classeSelect.addEventListener('change', function () {
-                syncPeriodMode();
                 loadMatieres();
                 submitFilters();
             });
@@ -227,7 +249,6 @@
             function submitFilters() {
                 if (readyToSubmit) form.requestSubmit();
             }
-            syncPeriodMode();
             loadMatieres();
             readyToSubmit = true;
         });

@@ -29,19 +29,27 @@ class EvaluationController extends Controller
     {
         $this->authorizePermission('evaluation_apercu');
         $context = $this->evaluationContext();
-        $filters = $request->only(['id_classe', 'id_matiere', 'id_annee_scolaire', 'id_trimestre', 'mois']);
+        $filters = $request->only(['id_classe', 'id_matiere', 'id_annee_scolaire']);
+        $user = Auth::user();
+        $idEcole = session('idEcole') ?: $user->idEcole;
+
+        // Par défaut : l'année en cours et les évaluations récentes ou à venir (« Toutes les années » reste possible).
+        if (!$request->has('id_annee_scolaire')) {
+            $filters['id_annee_scolaire'] = AnneeScolaire::enCours($idEcole ? (int) $idEcole : null)?->id_anneeScolaire;
+        }
+        $filters['periode'] = $this->periodeDemandee($request);
+        $depuis = now()->subDays(self::JOURS_EN_COURS)->toDateString();
+        [$periodeType, $periodeValeur] = [substr($filters['periode'], 0, 1), (int) substr($filters['periode'], 1)];
 
         $validationSelect = SchemaExiste::colonne('ligne_evaluation', 'validation_status')
             ? "MIN(COALESCE(ligne_evaluation.validation_status, 'valide')) as validation_status"
             : "'valide' as validation_status";
 
-        $user = Auth::user();
-        $idEcole = session('idEcole') ?: $user->idEcole;
-
         $evaluations = LigneEvaluation::query()
             ->with(['evaluation', 'classe', 'matiere', 'trimestre'])
-            ->selectRaw("MIN(ligne_evaluation.id_ligneEvaluation) as id_ligneEvaluation, ligne_evaluation.id_evaluation, ligne_evaluation.id_classe, ligne_evaluation.id_matiere, ligne_evaluation.id_annee_scolaire, ligne_evaluation.id_trimestre, ligne_evaluation.mois, {$validationSelect}")
+            ->selectRaw("MIN(ligne_evaluation.id_ligneEvaluation) as id_ligneEvaluation, ligne_evaluation.id_evaluation, ligne_evaluation.id_classe, ligne_evaluation.id_matiere, ligne_evaluation.id_annee_scolaire, ligne_evaluation.id_trimestre, ligne_evaluation.mois, MAX(LOWER(n.typeNote)) as type_note, {$validationSelect}")
             ->join('evaluation as e', 'e.id_evaluation', '=', 'ligne_evaluation.id_evaluation')
+            ->leftJoin('note as n', 'n.id_note', '=', 'ligne_evaluation.id_note')
             ->when($user->droit !== 'SupAdmin', fn ($q) => $q->whereIn(
                 'ligne_evaluation.id_classe',
                 Classe::withoutGlobalScopes()->where('idEcole', $idEcole)->select('id_classe')
@@ -50,8 +58,9 @@ class EvaluationController extends Controller
             ->when($filters['id_classe'] ?? null, fn ($q, $value) => $q->where('ligne_evaluation.id_classe', $value))
             ->when($filters['id_matiere'] ?? null, fn ($q, $value) => $q->where('ligne_evaluation.id_matiere', $value))
             ->when($filters['id_annee_scolaire'] ?? null, fn ($q, $value) => $q->where('ligne_evaluation.id_annee_scolaire', $value))
-            ->when($filters['mois'] ?? null, fn ($q, $value) => $q->where('ligne_evaluation.mois', $value))
-            ->when(empty($filters['mois']) && !empty($filters['id_trimestre']), fn ($q) => $q->where('ligne_evaluation.id_trimestre', $filters['id_trimestre']))
+            ->when($filters['periode'] === 'en_cours', fn ($q) => $q->where('e.date_evaluation', '>=', $depuis))
+            ->when($periodeType === 't' && $periodeValeur, fn ($q) => $q->where('ligne_evaluation.id_trimestre', $periodeValeur))
+            ->when($periodeType === 'm' && $periodeValeur, fn ($q) => $q->where('ligne_evaluation.mois', $periodeValeur))
             ->groupBy('ligne_evaluation.id_evaluation', 'ligne_evaluation.id_classe', 'ligne_evaluation.id_matiere', 'ligne_evaluation.id_annee_scolaire', 'ligne_evaluation.id_trimestre', 'ligne_evaluation.mois')
             ->orderByDesc('e.date_evaluation')
             ->paginate(20)
@@ -59,7 +68,31 @@ class EvaluationController extends Controller
 
         $compositionsEnDouble = $this->compositionsEnDouble($user->droit === 'SupAdmin' ? null : (int) $idEcole, $user->id_enseignant ?: null);
 
-        return view('evaluations.index', $context + compact('evaluations', 'filters', 'compositionsEnDouble'));
+        return view('evaluations.index', $context + compact('evaluations', 'filters', 'compositionsEnDouble', 'depuis'));
+    }
+
+    /** « En cours » : évaluations des derniers jours et à venir. */
+    private const JOURS_EN_COURS = 45;
+
+    /**
+     * Période choisie : « en_cours » (défaut), « tout », « t{id} » (trimestre) ou « m{n} » (mois). Les anciens liens
+     * avec id_trimestre ou mois restent compris.
+     */
+    private function periodeDemandee(Request $request): string
+    {
+        $periode = (string) $request->query('periode', '');
+        if ($periode === 'en_cours' || $periode === 'tout' || preg_match('/^[tm]\d{1,2}$/', $periode)) {
+            return $periode;
+        }
+        if ($request->filled('mois')) {
+            return 'm'.(int) $request->query('mois');
+        }
+        if ($request->filled('id_trimestre')) {
+            return 't'.(int) $request->query('id_trimestre');
+        }
+
+        // Une recherche précise (classe ou matière) montre toute la période ; sinon, ce qui est en cours.
+        return $request->filled('id_classe') || $request->filled('id_matiere') ? 'tout' : 'en_cours';
     }
 
     /**
