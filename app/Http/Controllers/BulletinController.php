@@ -117,6 +117,57 @@ class BulletinController extends Controller
         return response()->json($ranked)->header('X-Notes-En-Attente', $ranked->isEmpty() ? $calcul->notesEnAttente() : 0);
     }
 
+    /**
+     * Tableau des notes de la classe pour une période : une feuille A4 en paysage, élèves par ordre de mérite,
+     * moyenne de chaque matière, moyenne et rang. À afficher ou imprimer au lieu de tous les bulletins.
+     */
+    public function tableauNotes(int $idClasse, Request $request)
+    {
+        set_time_limit(180);
+        $this->authorizeBulletinGeneration();
+        $classe = Classe::findOrFail($idClasse);
+        $this->authorizeClasse($classe);
+
+        $data = $request->validate([
+            'id_annee' => 'required|integer|exists:anneescolaire,id_anneeScolaire',
+            'id_trimestre' => 'nullable|integer|exists:trimestre,id_trimestre',
+            'mois' => 'nullable|integer|between:1,12',
+        ]);
+        $mois = !empty($data['mois']) ? (int) $data['mois'] : null;
+        $idTrimestre = $mois ? null : (int) ($data['id_trimestre'] ?? 0);
+        if (!$mois && !$idTrimestre) {
+            return back()->with('error', "Sélectionnez l'année scolaire et la période.");
+        }
+
+        $calcul = CalculBulletin::pour($classe, (int) $data['id_annee'], $idTrimestre ?: null, $mois, ModelesBulletin::calcul(ModelesBulletin::pourClasse($classe)));
+        $resultats = $calcul->resultats()->filter(fn ($r) => $r['moyenne_periode'] > 0)
+            ->sortBy([fn ($a, $b) => $a['rang'] <=> $b['rang'], fn ($a, $b) => strcmp($a['apercu']->nom_eleve.$a['apercu']->prenom_eleve, $b['apercu']->nom_eleve.$b['apercu']->prenom_eleve)])
+            ->values();
+        if ($resultats->isEmpty()) {
+            return back()->with('error', 'Aucune note pour cette période.');
+        }
+
+        // Colonnes : les matières de la classe dans l'ordre du bulletin.
+        $matieres = $resultats->flatMap(fn ($r) => $r['matieres'])->unique('id_matiere')->values();
+        $exaequo = $resultats->countBy('rang');
+        $presentation = \App\Support\PresentationBulletin::variables($resultats->first());
+
+        $pdf = Pdf::loadView('pdf.tableau_notes', [
+            'classe' => $classe,
+            'resultats' => $resultats,
+            'matieres' => $matieres,
+            'exaequo' => $exaequo,
+            'stats' => $calcul->statistiques(),
+            'p' => $presentation,
+            'periode' => $mois ? 'Composition du mois de '.($this->moisOptions()[$mois] ?? $mois) : (Trimestre::find($idTrimestre)->nom_trimestre ?? ''),
+            'surDix' => \App\Support\Ordres::surDix($classe->ordreEnseignement),
+        ])->setPaper('a4', 'landscape');
+
+        $nom = 'Tableau_notes_'.str_replace(' ', '_', $classe->nom_classe).'.pdf';
+
+        return $request->boolean('telecharger') ? $pdf->download($nom) : $pdf->stream($nom);
+    }
+
     public function generatorPage(int $idClasse, Request $request)
     {
         $this->authorizeBulletinGeneration();

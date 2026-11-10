@@ -119,6 +119,41 @@ class CompositionMensuelleTest extends IntegrationTestCase
         $this->get('/evaluations?mois=11')->assertOk()->assertSee('Compo novembre test')->assertDontSee('Devoir ancien test');
     }
 
+    public function test_tableau_des_notes_une_feuille_par_ordre_de_merite(): void
+    {
+        $trim = $this->programmer(['id_trimestre' => $this->trimestre], 'Compo T1 test');
+        $mois = $this->programmer(['mois' => 11, 'id_trimestre' => $this->trimestre], 'Compo novembre test');
+        $eleves = DB::table('ligne_evaluation')->where('id_evaluation', $trim)->orderBy('id_eleve')->pluck('id_eleve')->all();
+        DB::table('ligne_evaluation')->where('id_evaluation', $trim)->where('id_eleve', $eleves[0])->update(['note' => 9]);
+        DB::table('ligne_evaluation')->where('id_evaluation', $trim)->where('id_eleve', $eleves[1])->update(['note' => 15]);
+        $this->noter($mois, 14);
+        CalculBulletin::oublier();
+
+        $url = "/pedagogie/classes/{$this->classe->id_classe}/bulletins/tableau?id_annee={$this->annee}";
+        $pdf = $this->get($url.'&id_trimestre='.$this->trimestre)->assertOk()->assertHeader('content-type', 'application/pdf')->getContent();
+        $texte = $this->texteDuPdf($pdf);
+        $this->assertStringContainsString('TABLEAU DES NOTES', $texte);
+        $nom = fn ($id) => DB::table('eleve')->where('id_eleve', $id)->value('nom_eleve');
+        $this->assertLessThan(strpos($texte, (string) $nom($eleves[0])), strpos($texte, (string) $nom($eleves[1])), 'le meilleur en premier');
+        $this->assertStringContainsString('10,00', $texte, '(0 + 2×15)/3');
+
+        $mensuel = $this->texteDuPdf($this->get($url.'&mois=11')->assertOk()->getContent());
+        $this->assertStringContainsString('Composition du mois de Novembre', $mensuel);
+        $this->assertStringContainsString('14,00', $mensuel);
+
+        $this->get($url)->assertRedirect();
+    }
+
+    private function texteDuPdf(string $pdf): string
+    {
+        $fichier = tempnam(sys_get_temp_dir(), 'tn');
+        file_put_contents($fichier, $pdf);
+        $texte = (string) shell_exec('pdftotext -layout '.escapeshellarg($fichier).' -');
+        unlink($fichier);
+
+        return $texte;
+    }
+
     public function test_fondamental_i_et_lycee_inchanges(): void
     {
         $f1 = DB::table('classe')->where('idEcole', 1)->where('ordreEnseignement', 'fondamentale1')->first();

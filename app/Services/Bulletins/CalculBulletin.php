@@ -242,6 +242,7 @@ class CalculBulletin
             $matiere->M_Gle = ($matiere->M_Class + $matiere->M_Compo) / 3;
             $matiere->M_Coef = $matiere->M_Gle * $matiere->coef;
         }
+        $matiere->a_des_notes = $notes->contains(fn ($n) => $n->note !== null);
         $matiere->appreciation = self::appreciation($matiere->M_Gle, $this->ordre);
         [$matiere->nom_fr, $matiere->nom_ar] = Domaines::separerNom($matiere->nom_matiere);
 

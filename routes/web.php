@@ -226,6 +226,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/abonnements/paiements/{reference}', [AbonnementController::class, 'paiement'])->name('abonnements.paiements.show');
     Route::get('/pedagogie/bulletins', [BulletinController::class, 'classes'])->name('pedagogie.bulletins.classes');
     Route::get('/pedagogie/classes/{idClasse}/bulletins', [BulletinController::class, 'index'])->name('pedagogie.bulletins.index');
+    Route::get('/pedagogie/classes/{idClasse}/bulletins/tableau', [BulletinController::class, 'tableauNotes'])->name('pedagogie.bulletins.tableau');
     Route::get('/pedagogie/classes/{idClasse}/bulletins/data', [BulletinController::class, 'data'])->name('pedagogie.bulletins.data');
     Route::post('/pedagogie/classes/{idClasse}/bulletins/publish', [BulletinController::class, 'publishClassBulletins'])->name('pedagogie.bulletins.publish');
     Route::delete('/pedagogie/classes/{idClasse}/bulletins/publish', [BulletinController::class, 'unpublishClassBulletins'])->name('pedagogie.bulletins.unpublish');

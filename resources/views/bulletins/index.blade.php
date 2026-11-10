@@ -152,6 +152,9 @@
                     <span class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true"></span>
                     <i class="bi bi-files me-2"></i><span class="btn-label">{{ __('bulletins.print_all_button') }}</span>
                 </button>
+                <button type="button" class="btn theme-outline-btn px-4" id="tableau-notes" disabled title="Toute la classe sur une feuille A4 en paysage, par ordre de mérite">
+                    <i class="bi bi-table me-2"></i>Tableau des notes (1 feuille)
+                </button>
                 @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('bulletins_publication'))
                     <button type="button" class="btn btn-success px-4" id="publish-bulletins" disabled>
                         <i class="bi bi-check2-circle me-2"></i>{{ __('bulletins.publish_button') }}
@@ -233,6 +236,7 @@
             const selectAll = document.getElementById('select-all-bulletins');
             const printSelected = document.getElementById('print-selected-bulletins');
             const printAll = document.getElementById('print-all-bulletins');
+            const tableauNotes = document.getElementById('tableau-notes');
             const selectedCount = document.getElementById('selected-bulletins-count');
             const publishButton = document.getElementById('publish-bulletins');
             const unpublishButton = document.getElementById('unpublish-bulletins');
@@ -380,6 +384,7 @@
                         }).join('') || '<tr><td colspan="7" class="text-center py-4 text-muted">' + (enAttente > 0 ? i18n.notesEnAttente.replace(':n', enAttente) : i18n.emptyBulletinsPeriod) + '</td></tr>';
                         messageVide = enAttente > 0 ? i18n.notesEnAttente.replace(':n', enAttente) : i18n.apercuAucunEleve;
                         printAll.disabled = rows.length === 0;
+                        tableauNotes.disabled = rows.length === 0;
                         selectAll.disabled = rows.length === 0;
                         syncPublicationButtons(rows.length > 0);
                         bindSelection();
@@ -417,6 +422,7 @@
                 selectAll.disabled = true;
                 printSelected.disabled = true;
                 printAll.disabled = true;
+                tableauNotes.disabled = true;
                 selectedCount.textContent = i18n.selectionCount.replace(':count', 0);
             }
 
@@ -463,6 +469,12 @@
             });
             printSelected.addEventListener('click', () => submitBulk(selectedIds()));
             printAll.addEventListener('click', () => submitBulk([]));
+            tableauNotes.addEventListener('click', () => {
+                const params = new URLSearchParams({ id_annee: annee.value });
+                if (periodeMode.value === 'mois') params.set('mois', mois.value);
+                else params.set('id_trimestre', trimestre.value);
+                window.open("{{ route('pedagogie.bulletins.tableau', $classe->id_classe) }}?" + params.toString(), '_blank');
+            });
             if (publishButton && publishForm) {
                 publishButton.addEventListener('click', () => {
                     fillPublicationForm(publishForm);
