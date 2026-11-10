@@ -153,7 +153,7 @@
                     <i class="bi bi-files me-2"></i><span class="btn-label">{{ __('bulletins.print_all_button') }}</span>
                 </button>
                 <button type="button" class="btn theme-outline-btn px-4" id="tableau-notes" disabled title="Toute la classe sur une feuille A4 en paysage, par ordre de mérite">
-                    <i class="bi bi-table me-2"></i>Tableau des notes (1 feuille)
+                    <i class="bi bi-table me-2"></i><span class="btn-label">Tableau des notes (1 feuille)</span>
                 </button>
                 @if(auth()->user()->droit === 'SupAdmin' || auth()->user()->userHasPermission('bulletins_publication'))
                     <button type="button" class="btn btn-success px-4" id="publish-bulletins" disabled>
