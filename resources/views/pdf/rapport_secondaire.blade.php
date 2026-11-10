@@ -83,7 +83,16 @@
                     @foreach($colonnes as $libelle)<th>{{ $libelle }}</th>@endforeach
                     @if(!$groupee && $avecTotalLigne)<th>Total</th>@endif
                 </tr>
-                @foreach($tableau['lignes'] as $ligne => $libelle)
+                @php
+                    // Listes (salles, personnel…) : seulement les lignes remplies, renumérotées.
+                    $lignesAffichees = !empty($tableau['liste'])
+                        ? collect($tableau['lignes'])->filter(fn ($l, $cle) => !empty($valeurs[$cle]))->keys()->values()->mapWithKeys(fn ($cle, $i) => [$cle => (string) ($i + 1)])->all()
+                        : $tableau['lignes'];
+                @endphp
+                @if(!empty($tableau['liste']) && $lignesAffichees === [])
+                    <tr><td class="l" colspan="{{ count($colonnes) + 1 }}">Néant</td></tr>
+                @endif
+                @foreach($lignesAffichees as $ligne => $libelle)
                     <tr>
                         <td class="l">{{ $libelle }}</td>
                         @foreach($colonnes as $colonne => $l)<td class="{{ ($tableau['type'] ?? '') === 'texte' ? 'l' : '' }}">{{ $n($valeurs[$ligne][$colonne] ?? null) }}</td>@endforeach

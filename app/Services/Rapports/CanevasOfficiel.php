@@ -61,6 +61,12 @@ class CanevasOfficiel
         return $this->f = $c->getSheetByName($nom) ?? $this->f;
     }
 
+    /** Feuille du canevas, ou une feuille hors classeur si elle manque : rien n'est alors écrit au mauvais endroit. */
+    private function feuilleOuRien(Spreadsheet $c, string $nom): Worksheet
+    {
+        return $this->f = $c->getSheetByName($nom) ?? new Worksheet();
+    }
+
     private static function cle(?string $texte): string
     {
         // « Mathématiques Générales » (tableau 2) et « Mathématiques » (autres tableaux) : la même discipline.
@@ -232,7 +238,14 @@ class CanevasOfficiel
             $this->feuille($c, 'T24');
             $this->administration($v, 'T24', 4, 'A20', $i['email'] ?? null);
             $this->feuille($c, 'T21');
-            $this->listeEnseignants($enseignants);
+            if (!empty($t['T21'])) {
+                $this->liste($t['T21'], 5, 53, ['prenoms' => 'B', 'nom' => 'C', 'sexe' => 'D', 'naissance' => 'E', 'matricule' => 'F', 'integration' => 'G', 'titularisation' => 'H',
+                    'arrivee' => 'I', 'specialite' => 'J', 'apc' => 'K', 'fonction' => 'L', 'heures' => 'M', 'heures_sup' => 'N', 'cat' => 'O', 'classe' => 'P', 'echelon' => 'Q',
+                    'situation' => 'R', 'enfants' => 'S', 'observations' => 'T']);
+            } else {
+                $this->listeEnseignants($enseignants);
+            }
+            $this->rentreeComplements($c, $t);
 
             return;
         }
@@ -307,6 +320,112 @@ class CanevasOfficiel
             }
         }
         $this->administration($v, 'T22', 14, 'A28', $i['email'] ?? null);
+        $this->finComplements($c, $t);
+    }
+
+    /** Lignes d'une liste du rapport (n1, n2…) écrites à partir de la ligne $premiere du canevas. */
+    private function liste(array $lignes, int $premiere, int $max, array $colonnes): void
+    {
+        $n = 0;
+        foreach ($lignes as $valeurs) {
+            if (!$valeurs || $n >= $max) {
+                continue;
+            }
+            foreach ($colonnes as $cle => $lettre) {
+                $valeur = $valeurs[$cle] ?? null;
+                $this->e($lettre.($premiere + $n), is_string($valeur) && ctype_digit($valeur) && strlen($valeur) < 12 ? (int) $valeur : $valeur);
+            }
+            $n++;
+        }
+    }
+
+    /** Tableau à lignes et colonnes fixes : [clé de ligne => n° de ligne], [clé de colonne => lettre]. */
+    private function grille(array $t, string $code, array $lignes, array $colonnes): void
+    {
+        foreach ($lignes as $cle => $ligne) {
+            foreach ($colonnes as $colonne => $lettre) {
+                $valeur = $t[$code][$cle][$colonne] ?? null;
+                $this->e($lettre.$ligne, is_numeric($valeur) && ctype_digit((string) $valeur) ? (int) $valeur : $valeur);
+            }
+        }
+    }
+
+    /** Rentrée : tableaux 3, 4, 18 à 20, 22, 23, 25 à 31. */
+    private function rentreeComplements(Spreadsheet $c, array $t): void
+    {
+        $salle = ['dimension', 'etat', 'capacite', 'occupees', 'disponibles', 'heures'];
+        $numeros = fn (int $de, int $n) => collect(range(1, $n))->mapWithKeys(fn ($i) => ['n'.$i => $de + $i - 1])->all();
+        $libelles = fn (int $de, int $n) => collect(range(0, $n - 1))->mapWithKeys(fn ($i) => ['l'.$i => $de + $i])->all();
+
+        $this->feuilleOuRien($c, 'T3');
+        $this->liste($t['T3'] ?? [], 5, 30, array_combine(['numero', ...$salle], ['B', 'C', 'D', 'E', 'F', 'G', 'H']));
+        $this->feuilleOuRien($c, 'T4');
+        $this->grille($t, 'T4', $libelles(5, 12), array_combine($salle, ['B', 'C', 'D', 'E', 'F', 'G']));
+        $this->feuilleOuRien($c, 'T18');
+        $this->liste($t['T18'] ?? [], 5, 15, ['nom' => 'B', 'naissance' => 'C', 'specialite' => 'D', 'arrivee_mali' => 'E', 'mutation' => 'F', 'situation' => 'G']);
+
+        $ages = ['moins20', 'a20', 'a30', 'a40', 'a50'];
+        $parAge = fn (int $premiere) => collect($ages)->flatMap(fn ($a, $i) => [$a.'_f' => $premiere + 3 * $i, $a.'_h' => $premiere + 3 * $i + 1])->all();
+        $statuts = ['fetat', 'fct', 'contetat', 'contct', 'perm', 'vact', 'volontaire'];
+        $this->feuilleOuRien($c, 'T19');
+        $this->grille($t, 'T19', $parAge(6), array_combine(array_map(fn ($s) => 'a_'.$s, $statuts), ['C', 'D', 'E', 'F', 'G', 'H', 'I'])
+            + array_combine(array_map(fn ($s) => 'b_'.$s, $statuts), ['K', 'L', 'M', 'N', 'O', 'P', 'Q'])
+            + ['c_fetat' => 'S', 'c_fct' => 'T', 'c_perm' => 'U', 'c_vact' => 'V']);
+        $this->feuilleOuRien($c, 'T20');
+        $this->grille($t, 'T20', $parAge(7), ['a' => 'C', 'b' => 'D', 'c' => 'E', 'd' => 'F', 'conventionnaire' => 'G']);
+
+        $personnel = ['prenoms' => 'B', 'nom' => 'C', 'sexe' => 'D', 'naissance' => 'E', 'matricule' => 'F', 'integration' => 'G', 'titularisation' => 'H', 'arrivee' => 'I',
+            'specialite' => 'J', 'fonction' => 'K', 'cat' => 'L', 'classe' => 'M', 'echelon' => 'N', 'situation' => 'O', 'enfants' => 'P', 'observations' => 'Q'];
+        $this->feuilleOuRien($c, 'T22');
+        $this->liste($t['T22'] ?? [], 5, 26, $personnel);
+        $this->feuilleOuRien($c, 'T23');
+        $this->liste($t['T23'] ?? [], 5, 14, $personnel);
+
+        $montants = ['du' => 'B', 'paye_anterieur' => 'C', 'paye_octobre' => 'D', 'reliquat' => 'E'];
+        $this->feuilleOuRien($c, 'T25-26-27');
+        $this->grille($t, 'T25', $libelles(4, 3), ['montant' => 'B', 'analyse' => 'C']);
+        $this->grille($t, 'T26', $libelles(12, 12), $montants);
+        $this->grille($t, 'T27', $libelles(32, 5), $montants);
+        $this->feuilleOuRien($c, 'T28');
+        $this->liste($t['T28'] ?? [], 4, 20, ['marque' => 'A', 'immatriculation' => 'B', 'acquisition' => 'C', 'etat' => 'D', 'observations' => 'E']);
+        $this->feuilleOuRien($c, 'T29');
+        $this->liste(collect($t['T29'] ?? [])->filter()->values()->map(fn ($l, $i) => ['numero' => (string) ($i + 1)] + $l)->all(), 4, 14,
+            ['numero' => 'A', 'libelle' => 'B', 'nature' => 'C', 'montant' => 'D', 'source' => 'E', 'delai' => 'F', 'realisation' => 'G', 'observations' => 'H']);
+
+        $this->feuilleOuRien($c, 'T30');
+        $series = ['10CG' => 'C', '11L' => 'E', '11S' => 'G', '11SES' => 'I', 'TAL' => 'K', 'TLL' => 'M', 'TSE' => 'O', 'TSECO' => 'Q', 'TSEXP' => 'S', 'TSS' => 'U'];
+        $types = ['vue', 'ouie', 'motricite', 'motricite_fine', 'intellect', 'communication', 'comportement', 'multiples'];
+        $lignes = collect($types)->flatMap(fn ($type, $i) => [$type.'_1' => 6 + 3 * $i, $type.'_2' => 7 + 3 * $i, $type.'_3' => 8 + 3 * $i])->all();
+        $colonnes = collect($series)->flatMap(fn ($lettre, $serie) => [$serie.'_f' => $lettre, $serie.'_g' => chr(ord($lettre) + 1)])->all();
+        $this->grille($t, 'T30', $lignes, $colonnes);
+        $this->feuilleOuRien($c, 'T31');
+        $this->liste(collect($t['T31'] ?? [])->filter()->values()->map(fn ($l, $i) => ['numero' => (string) ($i + 1)] + $l)->all(), 4, 15,
+            ['numero' => 'A', 'partenaire' => 'B', 'zones' => 'C', 'domaines' => 'D', 'realisations' => 'E', 'periode' => 'F', 'observations' => 'G']);
+    }
+
+    /** Fin d'année : tableaux 10, 14, 16, 17 et 23. */
+    private function finComplements(Spreadsheet $c, array $t): void
+    {
+        $sorties = ['effectif' => 'B', 'p1' => 'E', 'p2' => 'I', 'red' => 'M', 'insuffisance' => 'Q', 'epuisement' => 'U', 'abandon' => 'Y'];
+        $this->feuilleOuRien($c, 'T10 ');
+        $this->grille($t, 'T10', ['11L' => 6, '11S' => 9, '11SES' => 12],
+            collect($sorties)->flatMap(fn ($lettre, $cle) => [$cle.'_f' => $lettre, $cle.'_g' => chr(ord($lettre) + 1)])->all());
+        $this->feuilleOuRien($c, 'T 13 14');
+        $this->grille($t, 'T14', ['n10' => 21, 'n11' => 22, 'n12' => 23], ['effectif' => 'B', 'passage' => 'C', 'redoublement' => 'E', 'exclusion' => 'G']);
+        $this->feuilleOuRien($c, 'T16');
+        $this->grille($t, 'T16', ['TLL' => 6, 'TAL' => 7, 'TSS' => 9, 'TSECO' => 10, 'TSE' => 12, 'TSEXP' => 13],
+            ['total_admis' => 'B', 'sup_total' => 'C', 'sup_admis' => 'D', 'inf_total' => 'F', 'inf_admis' => 'G']);
+        $this->feuilleOuRien($c, 'T 17');
+        $this->grille($t, 'T17', ['TLL' => 6, 'TAL' => 7, 'TSS' => 8, 'TSECO' => 9, 'TSE' => 10, 'TSEXP' => 11, '11L' => 13, '11S' => 14, '11SES' => 15, '10CG' => 17],
+            ['passants_f' => 'B', 'passants_g' => 'C', 'redoublants_f' => 'E', 'redoublants_g' => 'F']);
+
+        // Admis au Bac : un bloc de six lignes par série, dans l'ordre du canevas.
+        $this->feuilleOuRien($c, 'T 23-24');
+        $admis = collect($t['T23'] ?? [])->filter()->groupBy(fn ($l) => $l['serie'] ?? '');
+        foreach (['TAL' => 8, 'TLL' => 17, 'TSS' => 26, 'TSECO' => 35, 'TSEXP' => 44, 'TSE' => 53] as $serie => $premiere) {
+            $this->liste(($admis[$serie] ?? collect())->values()->map(fn ($l, $i) => ['numero' => (string) ($i + 1)] + $l)->all(), $premiere, 6,
+                ['numero' => 'A', 'prenoms' => 'B', 'nom' => 'C', 'matricule' => 'D', 'moy_ann' => 'E', 'moy_admission' => 'F', 'mention' => 'G', 'serie' => 'H']);
+        }
     }
 
     /** Disciplines × statut, hommes (B à H) puis femmes (J à P). */

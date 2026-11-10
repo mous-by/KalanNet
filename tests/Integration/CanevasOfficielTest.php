@@ -105,6 +105,35 @@ class CanevasOfficielTest extends IntegrationTestCase
         $this->assertStringStartsWith('=SUM(', (string) $v('T1.1', 'E5'));
     }
 
+    public function test_les_tableaux_ajoutes_du_canevas_sont_recopies(): void
+    {
+        $this->enregistrer('rentree', [
+            'T3' => ['n1' => ['numero' => 'S1', 'capacite' => '60', 'etat' => 'a'], 'n2' => ['numero' => 'S2']],
+            'T4' => ['l6' => ['capacite' => '30']],
+            'T19' => ['a30_f' => ['a_fetat' => 2], 'a50_h' => ['c_vact' => 1]],
+            'T20' => ['a20_h' => ['b' => 3]],
+            'T21' => ['n1' => ['prenoms' => 'Awa', 'nom' => 'KONE', 'fonction' => 'Professeur', 'cat' => 'A']],
+            'T22' => ['n1' => ['prenoms' => 'Ali', 'nom' => 'SIDIBE', 'fonction' => 'Gardien']],
+            'T26' => ['l0' => ['du' => '1250000']],
+            'T29' => ['n3' => ['libelle' => 'Clôture']],
+            'T30' => ['vue_2' => ['10CG_f' => 1]],
+            'T31' => ['n1' => ['partenaire' => 'UNICEF']],
+        ]);
+        $c = $this->canevas('rentree', 'esg');
+        $v = fn (string $feuille, string $cellule) => $c->getSheetByName($feuille)->getCell($cellule)->getValue();
+
+        $this->assertSame(['S1', 'a', 60, 'S2'], [$v('T3', 'B5'), $v('T3', 'D5'), $v('T3', 'E5'), $v('T3', 'B6')]);
+        $this->assertSame(30, $v('T4', 'D11'), 'salle informatique 1');
+        $this->assertSame([2, 1], [$v('T19', 'C12'), $v('T19', 'V19')], '30-39 ans F, cat. A F/ÉTAT ; 50 ans et plus H, cat. C vacataires');
+        $this->assertSame(3, $v('T20', 'D11'), '20-29 ans H, cat. B');
+        $this->assertSame(['Awa', 'KONE', 'Professeur', 'A'], [$v('T21', 'B5'), $v('T21', 'C5'), $v('T21', 'L5'), $v('T21', 'O5')], 'saisie de l\'établissement');
+        $this->assertSame(['Ali', 'Gardien'], [$v('T22', 'B5'), $v('T22', 'K5')]);
+        $this->assertSame(1250000, $v('T25-26-27', 'B12'), 'salaires d\'octobre');
+        $this->assertSame(['1', 'Clôture'], [(string) $v('T29', 'A4'), $v('T29', 'B4')], 'liste renumérotée sans trou');
+        $this->assertSame(1, $v('T30', 'C7'), 'vue, beaucoup de difficultés, filles de 10e');
+        $this->assertSame('UNICEF', $v('T31', 'B4'));
+    }
+
     public function test_sans_rien_enregistrer_le_canevas_porte_les_chiffres_de_kalannet(): void
     {
         $c = $this->canevas('rentree', 'esg');

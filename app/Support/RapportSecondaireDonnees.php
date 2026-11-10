@@ -48,11 +48,16 @@ class RapportSecondaireDonnees
     }
 
     /** @return list<array<string, mixed>> */
-    public static function tableaux(string $type, int $idEcole): array
+    public static function tableaux(string $type, int $idEcole, ?object $annee = null): array
     {
         $l = self::lignes($idEcole);
+        // Taille des listes nominatives : une ligne par enseignant (rentrée) ou par admis au Bac (fin d'année), plus quelques lignes libres.
+        $tailles = ['enseignants' => self::enseignants($idEcole, $l['classes'])->count(), 'admis' => 0];
+        if ($type === 'fin' && $annee) {
+            $tailles['admis'] = self::bac($idEcole, (string) $annee->annee, $l['classes'])->where('decision', 'admis')->count();
+        }
 
-        return Def::tableaux($type, $l['series'], $l['terminales'], $l['techniques']);
+        return Def::tableaux($type, $l['series'], $l['terminales'], $l['techniques'], $tailles);
     }
 
     /** Années de lycée attendues sans redoublement : 1 en 10e (ou 1re année), 2 en 11e, 3 en terminale. */
@@ -98,7 +103,7 @@ class RapportSecondaireDonnees
             $requete->whereIn('id_enseignant', $ids);
         }
 
-        return $requete->get(['id_enseignant', 'genre_enseignant']);
+        return $requete->orderBy('nom_prenom_enseignant')->get(['id_enseignant', 'genre_enseignant', 'nom_prenom_enseignant', 'date_naissance_enseignant', 'matricule', 'specialite', 'statut_matrimonial', 'nombre_enfants']);
     }
 
     /** Résultats du Bac d'une année, par ligne de terminale. */
@@ -106,7 +111,7 @@ class RapportSecondaireDonnees
     {
         return DB::table('resultats_def_terminal as r')->join('eleve as e', 'e.id_eleve', '=', 'r.id_eleve')
             ->where('e.id_ecole', $idEcole)->whereIn('r.id_annee', DB::table('anneescolaire')->where('annee', $annee)->pluck('id_anneeScolaire'))
-            ->where('r.niveau_examen', 'BAC')->whereIn('r.id_classe', array_keys($classes))->get(['r.id_eleve', 'r.id_classe', 'r.decision', 'e.genre_eleve'])
+            ->where('r.niveau_examen', 'BAC')->whereIn('r.id_classe', array_keys($classes))->orderBy('e.nom_eleve')->orderBy('e.prenom_eleve')->get(['r.id_eleve', 'r.id_classe', 'r.decision', 'e.genre_eleve', 'e.prenom_eleve', 'e.nom_eleve', 'e.matricule'])
             ->map(function ($r) use ($classes) {
                 $r->cle = $classes[$r->id_classe];
                 $r->sexe = PropositionPassageDonnees::fille($r->genre_eleve) ? 'f' : 'g';
@@ -158,6 +163,12 @@ class RapportSecondaireDonnees
             foreach ($lignes['series'] as $cle => $libelle) {
                 $t['T2']['classes'][$cle] = $actifs->where('cle', $cle)->pluck('id_classe')->unique()->count();
             }
+            foreach ($enseignants->values() as $n => $e) {
+                [$prenom, $nom] = PropositionPassageDonnees::decouperNom($e->nom_prenom_enseignant);
+                $t['T21']['n'.($n + 1)] = array_filter(['prenoms' => $prenom, 'nom' => $nom, 'sexe' => PropositionPassageDonnees::fille($e->genre_enseignant) ? 'F' : 'H',
+                    'naissance' => $e->date_naissance_enseignant ? substr((string) $e->date_naissance_enseignant, 0, 4) : null, 'matricule' => $e->matricule,
+                    'specialite' => $e->specialite, 'situation' => $e->statut_matrimonial, 'enfants' => $e->nombre_enfants !== null ? (string) $e->nombre_enfants : null], fn ($v) => filled($v));
+            }
             $precedente = DB::table('anneescolaire')->where('date_debut', '<', $annee->date_debut)->orderByDesc('date_debut')->value('annee');
             if ($precedente) {
                 foreach (self::bac($idEcole, $precedente, $classes)->where('decision', 'admis') as $r) {
@@ -204,9 +215,67 @@ class RapportSecondaireDonnees
             foreach (self::tranches($membres->where('actif', true), (int) $annee->id_anneeScolaire) as [$cle, $colonne]) {
                 self::ajouter($t, 'T15', $cle, $colonne);
             }
+            self::recapitulatifs($t, $lignes);
+            $n = 0;
+            foreach (self::bac($idEcole, (string) $annee->annee, $classes)->where('decision', 'admis') as $r) {
+                if (isset($lignes['terminales'][$r->cle])) {
+                    $t['T23']['n'.(++$n)] = array_filter(['prenoms' => $r->prenom_eleve, 'nom' => $r->nom_eleve, 'matricule' => $r->matricule, 'serie' => $r->cle], fn ($v) => filled($v));
+                }
+            }
         }
 
         return self::reprendre(['type' => $type, 'infos' => $infos, 't' => $t], $idEcole, $annee, $type);
+    }
+
+    /**
+     * Tableaux récapitulatifs de fin d'année, tirés des résultats par classe (T6 à T9, T11) : T10 (classes de 11e), T14 (par année
+     * d'études) et T17 (passants et redoublants par série).
+     */
+    private static function recapitulatifs(array &$t, array $lignes): void
+    {
+        $cibles = ['11L' => ['TLL', 'TAL'], '11S' => ['TSE', 'TSEXP'], '11SES' => ['TSECO', 'TSS']];
+        $codes = ['10CG' => 'T6', '11L' => 'T7', '11S' => 'T8', '11SES' => 'T9'];
+        $somme = fn (array $l, string $prefixe) => collect($l)->filter(fn ($v, $k) => str_starts_with($k, $prefixe))->sum();
+        foreach ($cibles as $cle => [$p1, $p2]) {
+            foreach ($t[$codes[$cle]][$cle] ?? [] as $colonne => $nombre) {
+                $nouvelle = str_replace(['p'.$p1.'_', 'p'.$p2.'_'], ['p1_', 'p2_'], $colonne);
+                $t['T10'][$cle][$nouvelle] = ($t['T10'][$cle][$nouvelle] ?? 0) + $nombre;
+            }
+        }
+        foreach ($codes as $cle => $code) {
+            $l = $t[$code][$cle] ?? [];
+            if ($l === []) {
+                continue;
+            }
+            $niveau = $cle === '10CG' ? 'n10' : 'n11';
+            $passage = collect($l)->filter(fn ($v, $k) => str_starts_with($k, 'p'))->sum();
+            foreach (['effectif' => $somme($l, 'effectif_'), 'passage' => $passage, 'redoublement' => $somme($l, 'red_'),
+                'exclusion' => $somme($l, 'insuffisance_') + $somme($l, 'epuisement_')] as $colonne => $nombre) {
+                $t['T14'][$niveau][$colonne] = ($t['T14'][$niveau][$colonne] ?? 0) + $nombre;
+            }
+            foreach (['f', 'g'] as $sexe) {
+                $t['T17'][$cle]['passants_'.$sexe] = collect($l)->filter(fn ($v, $k) => str_starts_with($k, 'p') && str_ends_with($k, '_'.$sexe))->sum();
+                $t['T17'][$cle]['redoublants_'.$sexe] = (int) ($l['red_'.$sexe] ?? 0);
+            }
+        }
+        foreach ($lignes['terminales'] as $cle => $libelle) {
+            $l = $t['T11'][$cle] ?? [];
+            if ($l === []) {
+                continue;
+            }
+            foreach (['effectif' => $somme($l, 'effectif_'), 'redoublement' => $somme($l, 'red_'), 'exclusion' => $somme($l, 'exclu_')] as $colonne => $nombre) {
+                $t['T14']['n12'][$colonne] = ($t['T14']['n12'][$colonne] ?? 0) + $nombre;
+            }
+            foreach (['f', 'g'] as $sexe) {
+                $t['T17'][$cle]['redoublants_'.$sexe] = (int) ($l['red_'.$sexe] ?? 0);
+            }
+        }
+        foreach ($t as $code => $tableau) {
+            foreach ($tableau as $ligne => $valeurs) {
+                $t[$code][$ligne] = array_filter($valeurs, fn ($v) => $v !== 0 && $v !== null);
+            }
+            $t[$code] = array_filter($t[$code]);
+        }
     }
 
     /** Colonne du rapport de fin d'année pour une décision de réinscription (le passage dépend de la classe d'arrivée). */

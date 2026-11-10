@@ -9,6 +9,7 @@
 <div class="card theme-card shadow-sm mb-3">
     <div class="card-header theme-header"><h6 class="mb-0 fw-bold">{{ $tableau['code'] }} : {{ $tableau['titre'] }}</h6></div>
     <div class="card-body">
+        @if(!empty($tableau['liste']))<p class="small text-muted mb-2">Une ligne par élément ; laissez vides les lignes inutiles, elles ne sont pas imprimées.</p>@endif
         @if(!empty($tableau['note']))<p class="small text-muted">{{ $tableau['note'] }}</p>@endif
         <div class="table-responsive">
             <table class="table table-sm table-bordered align-middle text-center mb-0" data-tableau @if($totaux) data-totaux="{{ $totaux }}" @endif style="font-size: .85rem;">

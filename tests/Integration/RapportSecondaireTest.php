@@ -96,7 +96,7 @@ class RapportSecondaireTest extends IntegrationTestCase
         $this->assertSame([2, 3], [$d['infos']['effectif_f'], $d['infos']['effectif_g']]);
 
         $codes = array_column(Donnees::tableaux('rentree', 1), 'code');
-        $this->assertSame(['T1.1', 'T1.2', 'T2', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12', 'T13', 'T14', 'T15', 'T16', 'T17', 'T24'], $codes);
+        $this->assertSame(['T1.1', 'T1.2', ...array_map(fn ($n) => 'T'.$n, range(2, 31))], $codes, 'les 32 tableaux du canevas officiel de rentrée');
         $lignes = Donnees::lignes(1);
         $this->assertSame(['TSE' => 'TSE'], $lignes['terminales']);
     }
@@ -119,6 +119,40 @@ class RapportSecondaireTest extends IntegrationTestCase
         $this->assertSame(['Ségou', 'Décision 0992'], [$d['infos']['region'], $d['infos']['arrete_creation']]);
         $this->assertNotContains('T7', array_column(Donnees::tableaux('fin', 1), 'code'));
         $this->assertContains('T9b', array_column(Donnees::tableaux('fin', 1), 'code'));
+    }
+
+    public function test_tableaux_ajoutes_pre_remplis_et_completes_dans_un_rapport_deja_enregistre(): void
+    {
+        $enseignant = (int) DB::table('enseignants')->where('id_ecole', 1)->value('id_enseignant');
+        if (!$enseignant) {
+            $this->markTestSkipped('Aucun enseignant dans l\'école 1.');
+        }
+        DB::table('enseignants')->where('id_enseignant', $enseignant)->update(['nom_prenom_enseignant' => 'Awa KONE', 'genre_enseignant' => 'Féminin', 'is_deleted' => 0, 'matricule' => 'M-77', 'specialite' => 'Mathématiques']);
+        DB::table('ligneclasse')->insert(['id_classe' => $this->classes['10']->id_classe, 'id_matiere' => DB::table('matiere')->value('id_matiere'), 'id_enseignants' => $enseignant, 'coefficient' => 1]);
+        $rentree = Donnees::calculer(Ecole::withoutGlobalScopes()->find(1), $this->annee, 'rentree')['t'];
+        $ligne = collect($rentree['T21'])->firstWhere('matricule', 'M-77');
+        $this->assertSame(['Awa', 'KONE', 'F', 'Mathématiques'], [$ligne['prenoms'], $ligne['nom'], $ligne['sexe'], $ligne['specialite']]);
+
+        // Rapport enregistré avant ces tableaux : la liste des enseignants est complétée à l'ouverture, la saisie est gardée.
+        RapportSecondaire::withoutGlobalScopes()->create(['id_ecole' => 1, 'id_annee' => $this->annee->id_anneeScolaire, 'type' => 'rentree', 'statut' => 'brouillon',
+            'donnees' => ['infos' => ['region' => 'Ségou'], 't' => ['T5' => ['10CG' => ['f' => 9]]]]]);
+        $this->actingAs($this->adminComplet(1))->withSession(['idEcole' => 1]);
+        $this->get($this->url('rentree', 'rapport-secondaire.index'))->assertOk()->assertSee('T31 : Interventions des partenaires')->assertSee('value="M-77"', false)->assertSee('value="9"', false);
+
+        // Fin d'année : récapitulatifs et admis au Bac.
+        $fin = Donnees::calculer(Ecole::withoutGlobalScopes()->find(1), $this->annee, 'fin')['t'];
+        $this->assertSame(['effectif' => 2], array_intersect_key($fin['T14']['n10'], ['effectif' => 1]));
+        $this->assertSame(1, $fin['T14']['n12']['effectif']);
+        $this->assertSame(['prenoms', 'nom', 'serie'], array_keys(array_intersect_key($fin['T23']['n1'], array_flip(['prenoms', 'nom', 'serie']))));
+        $this->assertSame('TSE', $fin['T23']['n1']['serie']);
+        $codes = array_column(Donnees::tableaux('fin', 1, $this->annee), 'code');
+        foreach (['T14', 'T16', 'T17', 'T23'] as $code) {
+            $this->assertContains($code, $codes);
+        }
+
+        // PDF : seules les lignes remplies d'une liste sont imprimées.
+        $this->post($this->url('rentree'), $this->envoi('rentree', ['T31' => ['n4' => ['partenaire' => 'UNICEF']]], ['action' => 'enregistrer']))->assertSessionHasNoErrors();
+        $this->get(route('rapport-secondaire.pdf', ['type' => 'rentree', 'annee' => $this->annee->id_anneeScolaire], false))->assertOk()->assertHeader('content-type', 'application/pdf');
     }
 
     public function test_saisie_controlee_et_remise_sur_papier(): void

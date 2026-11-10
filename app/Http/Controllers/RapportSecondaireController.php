@@ -77,11 +77,25 @@ class RapportSecondaireController extends Controller
         $annee = $this->annee($request, $ecole, $type);
         $rapport = $this->rapport($ecole, $annee, $type);
         $donnees = $rapport?->donnees ?? Donnees::calculer($ecole, $annee, $type);
+        // Rapport enregistré avant l'ajout d'un tableau pré-rempli : ce tableau est complété avec KalanNet, le reste est gardé.
+        if ($rapport && !$request->boolean('recalculer') && array_diff(Def::PRE_REMPLIS_AJOUTES[$type], array_keys($donnees['t'] ?? [])) !== []) {
+            $calcul = Donnees::calculer($ecole, $annee, $type)['t'];
+            foreach (Def::PRE_REMPLIS_AJOUTES[$type] as $code) {
+                if (!isset($donnees['t'][$code]) && isset($calcul[$code])) {
+                    $donnees['t'][$code] = $calcul[$code];
+                }
+            }
+        }
 
         // « Reprendre les chiffres de KalanNet » : tableaux pré-remplis recalculés, le reste est gardé.
         if ($request->boolean('recalculer')) {
             $calcul = Donnees::calculer($ecole, $annee, $type);
-            $donnees['t'] = array_replace($donnees['t'] ?? [], $calcul['t']);
+            // Listes nominatives : les colonnes saisies par l'établissement (fonction, grade…) sont gardées.
+            $listes = array_flip(Def::LISTES_PRE_REMPLIES);
+            $donnees['t'] = array_replace($donnees['t'] ?? [], array_diff_key($calcul['t'], $listes));
+            foreach (array_intersect_key($calcul['t'], $listes) as $code => $lignes) {
+                $donnees['t'][$code] = array_replace_recursive($donnees['t'][$code] ?? [], $lignes);
+            }
             foreach (['effectif_f', 'effectif_g', 'groupes', 'enseignants_f', 'enseignants_h'] as $champ) {
                 $donnees['infos'][$champ] = $calcul['infos'][$champ];
             }
@@ -89,7 +103,7 @@ class RapportSecondaireController extends Controller
 
         return view('rapports-secondaire.index', [
             'ecole' => $ecole, 'annee' => $annee, 'annees' => $this->annees(), 'rapport' => $rapport, 'donnees' => $donnees, 'type' => $type,
-            'tableaux' => Donnees::tableaux($type, (int) $ecole->idEcole), 'infos' => Def::infos($type), 'redaction' => Def::redaction($type),
+            'tableaux' => Donnees::tableaux($type, (int) $ecole->idEcole, $annee), 'infos' => Def::infos($type), 'redaction' => Def::redaction($type),
             'avecGeneral' => DB::table('classe')->where('idEcole', $ecole->idEcole)->where('ordreEnseignement', 'secondairegenerale')->exists(),
             'avecTechnique' => DB::table('classe')->where('idEcole', $ecole->idEcole)->where('ordreEnseignement', 'secondairetechniqueetprofessionnel')->exists(),
             'maquette' => $this->modeleChoisi($ecole),
@@ -111,7 +125,7 @@ class RapportSecondaireController extends Controller
         $infos = collect(Def::infos($type))->map(fn ($l, $champ) => filled($request->input("infos.$champ")) ? trim((string) $request->input("infos.$champ")) : null)->all();
         // Tous les tableaux arrivent dans un seul champ : la limite de champs de PHP ne peut pas tronquer la saisie.
         $saisie = json_decode((string) $request->input('tableaux_json', '{}'), true);
-        $donnees = ['type' => $type, 'infos' => $infos, 'redaction' => $redaction, 't' => Donnees::assainir(is_array($saisie) ? $saisie : [], Donnees::tableaux($type, (int) $ecole->idEcole))];
+        $donnees = ['type' => $type, 'infos' => $infos, 'redaction' => $redaction, 't' => Donnees::assainir(is_array($saisie) ? $saisie : [], Donnees::tableaux($type, (int) $ecole->idEcole, $annee))];
 
         $rapport = RapportSecondaire::firstOrNew(['id_ecole' => $ecole->idEcole, 'id_annee' => $annee->id_anneeScolaire, 'type' => $type]);
         $rapport->donnees = $donnees;
@@ -167,12 +181,12 @@ class RapportSecondaireController extends Controller
     {
         $annexes = Donnees::annexes($type, $idEcole, $annee);
         if ($excel) {
-            return \App\Services\Rapports\ExportExcel::rapportSecondaire($donnees, $type, (string) $annee->annee, Donnees::tableaux($type, $idEcole), $annexes)
+            return \App\Services\Rapports\ExportExcel::rapportSecondaire($donnees, $type, (string) $annee->annee, Donnees::tableaux($type, $idEcole, $annee), $annexes)
                 ->telecharger('rapport-'.$type.'-'.Str::slug($donnees['infos']['nom'] ?? 'etablissement').'-'.$annee->annee);
         }
         $pdf = Pdf::loadView('pdf.rapport_secondaire', [
             'd' => $donnees, 'type' => $type, 'annee' => (string) $annee->annee, 'academie' => $this->academie($idEcole),
-            'tableaux' => Donnees::tableaux($type, $idEcole), 'infos' => Def::infos($type), 'redaction' => Def::redaction($type), 'annexes' => $annexes,
+            'tableaux' => Donnees::tableaux($type, $idEcole, $annee), 'infos' => Def::infos($type), 'redaction' => Def::redaction($type), 'annexes' => $annexes,
         ])->setPaper('a4', 'landscape');
         $nom = 'rapport-'.$type.'-'.Str::slug($donnees['infos']['nom'] ?? 'etablissement').'-'.$annee->annee.'.pdf';
 

@@ -276,7 +276,14 @@ class ExportExcel
                 [['', 1], ...array_map(fn ($l) => [$l, 1], array_values($colonnes)), ...($totalLigne ? [['', 1]] : [])],
             ] : self::simple(['', ...array_values($colonnes), ...($totalLigne ? ['Total'] : [])]);
             $lignes = [];
+            $numero = 0;
             foreach ($tableau['lignes'] as $cle => $libelle) {
+                if (!empty($tableau['liste'])) {
+                    if (empty($valeurs[$cle])) {
+                        continue; // liste : seulement les lignes remplies, renumérotées
+                    }
+                    $libelle = (string) ++$numero;
+                }
                 $cases = array_map(fn ($c) => $valeurs[$cle][$c] ?? null, array_keys($colonnes));
                 $lignes[] = [$libelle, ...$cases, ...($totalLigne ? [array_sum(array_map('intval', array_filter($cases, 'is_numeric')))] : [])];
             }

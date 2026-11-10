@@ -72,6 +72,15 @@ class RapportSecondaireDefinitions
     public const INFOS_STABLES = ['region', 'cercle', 'arrondissement', 'commune', 'bp', 'gps', 'date_creation', 'arrete_creation', 'arrete_ouverture', 'date_ouverture', 'capacite',
         'salles_ordinaires', 'salles_specialisees', 'laboratoires', 'superficie', 'titre_foncier', 'electricite', 'ordre', 'mission', 'diplome'];
 
+    /** Tableaux dans l'ordre de leur numéro (T1.1, T1.2, T2… T9, T9b, T10…), comme dans le canevas. */
+    private static function trier(array $tableaux): array
+    {
+        $rang = fn (array $t) => (float) preg_replace('/^T(\d+(?:\.\d+)?)b$/', '$1.5', preg_replace('/^T/', '', $t['code'])) ?: (float) substr($t['code'], 1);
+        usort($tableaux, fn ($a, $b) => $rang($a) <=> $rang($b));
+
+        return array_values($tableaux);
+    }
+
     private static function simple(array $colonnes): array
     {
         return [['libelle' => null, 'cols' => $colonnes]];
@@ -94,8 +103,19 @@ class RapportSecondaireDefinitions
      * @param  array<string, string>  $techniques  classes du technique
      * @return list<array<string, mixed>>
      */
-    public static function tableaux(string $type, array $series, array $terminales, array $techniques): array
+    public static function tableaux(string $type, array $series, array $terminales, array $techniques, array $tailles = []): array
     {
+        // Listes du canevas (salles, personnel, véhicules…) : des lignes numérotées, remplies en texte ; le PDF n'imprime que les lignes remplies.
+        $liste = fn (string $code, string $titre, int $n, array $colonnes, ?string $note = null) => ['code' => $code, 'titre' => $titre, 'type' => 'texte', 'liste' => true,
+            'lignes' => collect(range(1, max(1, $n)))->mapWithKeys(fn ($i) => ['n'.$i => (string) $i])->all(), 'colonnes' => self::simple($colonnes)] + ($note ? ['note' => $note] : []);
+        $personnel = ['prenoms' => 'Prénoms', 'nom' => 'Nom', 'sexe' => 'Sexe', 'naissance' => 'Année de naissance', 'matricule' => 'N° Mle',
+            'integration' => "Date d'intégration / recrutement", 'titularisation' => 'Titularisation', 'arrivee' => "Arrivée dans l'établissement", 'specialite' => 'Spécialité'];
+        $grade = ['cat' => 'Cat.', 'classe' => 'Clas.', 'echelon' => 'Éch.', 'situation' => 'Situation matrimoniale', 'enfants' => "Nbre d'enfants", 'observations' => 'Observations'];
+        $ages = ['moins20' => 'Moins de 20 ans', 'a20' => '20 à 29 ans', 'a30' => '30 à 39 ans', 'a40' => '40 à 49 ans', 'a50' => '50 ans et plus'];
+        $agesSexe = collect($ages)->flatMap(fn ($l, $c) => [$c.'_f' => $l.' — F', $c.'_h' => $l.' — H'])->all();
+        $etatSalle = 'État de la salle : a = bon état, b = état peu satisfaisant, c = mauvais état.';
+        $salle = ['dimension' => 'Dimensions (L × l)', 'etat' => 'État (a, b, c)', 'capacite' => "Capacité d'accueil", 'occupees' => 'Places occupées', 'disponibles' => 'Places disponibles', 'heures' => "Heures d'utilisation / semaine"];
+        $montants = ['du' => 'Montant dû', 'paye_anterieur' => 'Payé (antérieur)', 'paye_octobre' => 'Payé (octobre)', 'reliquat' => 'Reliquat'];
         $niveaux = ['n1' => '10e / 1re année', 'n2' => '11e / 2e année', 'n3' => 'Terminale / 3e année'];
         $statuts = collect(self::STATUTS);
         $professeurs = fn (string $code, string $titre) => ['code' => $code, 'titre' => $titre, 'lignes' => self::liste(self::DISCIPLINES),
@@ -108,7 +128,7 @@ class RapportSecondaireDefinitions
         $administration = fn (string $code) => ['code' => $code, 'titre' => 'Administration', 'type' => 'texte', 'lignes' => self::liste(self::POSTES), 'colonnes' => self::simple(['prenom' => 'Prénom', 'nom' => 'Nom', 'telephone' => 'Téléphone', 'email' => 'Email'])];
 
         if ($type === 'rentree') {
-            return array_values(array_filter([
+            return self::trier(array_filter([
                 ['code' => 'T1.1', 'titre' => 'Situation des classes et du matériel par niveau', 'lignes' => self::liste(['Salles de classe utilisées', 'Bureaux professeurs', 'Chaises professeurs', 'Tableaux muraux', 'Tableaux à chevalet', 'Ventilateurs', 'Tables-bancs', 'Tabourets', 'Fontaines à eau', 'Dispositifs de lavage de mains']), 'colonnes' => self::simple($niveaux), 'totaux' => 'colonne'],
                 ['code' => 'T1.2', 'titre' => 'Situation des équipements collectifs', 'lignes' => self::liste(['Paillasses (tables pour labo)', 'Armoires', 'Machines à écrire', 'Machines ronéo', 'Photocopieuses', 'Machines à calculer', "Ordinateurs pour l'administration", 'Ordinateurs pour salle informatique', 'Climatiseurs', 'Fontaines à eau', 'Dispositifs de lavage de mains', 'Blocs latrines']), 'colonnes' => self::simple(['nombre' => 'Nombre'])],
                 ['code' => 'T2', 'titre' => 'Volume horaire hebdomadaire par discipline et par série', 'lignes' => ['classes' => 'Nombre de classes (cours)'] + self::liste(self::DISCIPLINES), 'colonnes' => self::simple($series), 'totaux' => 'colonne'],
@@ -125,6 +145,37 @@ class RapportSecondaireDefinitions
                 ['code' => 'T15', 'titre' => 'Répartition du corps professoral par école de formation', 'lignes' => self::liste(['ENSUP', 'ENETP', 'INJS', 'INA', 'Conservatoire Balla Fasséké', 'Autres (extérieur)']), 'colonnes' => self::simple(['f' => 'F', 'h' => 'H']), 'totaux' => 'les deux'],
                 ['code' => 'T16', 'titre' => 'Répartition du corps professoral par diplôme', 'lignes' => self::liste(['Doctorat', 'DEA', 'Master', 'Maîtrise', 'Licence', 'DEUG/DUT', 'Autres']), 'colonnes' => self::simple(['f' => 'F', 'h' => 'H']), 'totaux' => 'les deux'],
                 $maliens('T17'),
+                $liste('T3', "Recensement des locaux d'enseignement : salles non spécialisées", 30, ['numero' => 'N° de la salle'] + $salle, $etatSalle),
+                ['code' => 'T4', 'titre' => "Recensement des locaux d'enseignement : salles spécialisées", 'type' => 'texte', 'note' => $etatSalle.' CDI : centre de documentation et d\'information.',
+                    'lignes' => self::liste(['Labo de physique chimie 1', 'Labo de physique chimie 2', 'Labo de physique chimie 3', 'Labo de SVT 1', 'Labo de SVT 2', 'Labo de SVT 3',
+                        'Salle informatique 1', 'Salle informatique 2', 'Salle informatique 3', 'Infirmerie', 'Bibliothèque', 'CDI']), 'colonnes' => self::simple($salle)],
+                $liste('T18', "Personnel de l'assistance technique", 10, ['nom' => 'Prénoms et nom', 'naissance' => 'Date de naissance', 'specialite' => 'Spécialité',
+                    'arrivee_mali' => "Date d'arrivée au Mali", 'mutation' => "Date de mutation dans l'établissement", 'situation' => 'Situation matrimoniale']),
+                ['code' => 'T19', 'titre' => "Répartition du personnel enseignant tenant des classes par tranche d'âge, par catégorie, par sexe et par statut", 'lignes' => $agesSexe, 'totaux' => 'ligne',
+                    'colonnes' => [['libelle' => 'Catégorie A', 'cols' => $statuts->mapWithKeys(fn ($l, $c) => ['a_'.$c => $l])->all()],
+                        ['libelle' => 'Catégorie B', 'cols' => $statuts->mapWithKeys(fn ($l, $c) => ['b_'.$c => $l])->all()],
+                        ['libelle' => 'Catégorie C', 'cols' => $statuts->only(['fetat', 'fct', 'perm', 'vact'])->mapWithKeys(fn ($l, $c) => ['c_'.$c => $l])->all()]]],
+                ['code' => 'T20', 'titre' => "Personnel ne tenant pas de classe (enseignant ou non) par tranche d'âge et par catégorie", 'lignes' => $agesSexe, 'totaux' => 'les deux',
+                    'colonnes' => self::simple(['a' => 'Catégorie A', 'b' => 'Catégorie B', 'c' => 'Catégorie C', 'd' => 'Catégorie D', 'conventionnaire' => 'Conventionnaire'])],
+                $liste('T21', 'Situation du personnel enseignant', ($tailles['enseignants'] ?? 0) + 5, $personnel + ['apc' => 'Formé en APC (oui / non)', 'fonction' => 'Fonction',
+                    'heures' => 'Heures / semaine', 'heures_sup' => 'Heures sup. / semaine'] + $grade, 'Pré-rempli avec les enseignants de KalanNet ; complétez les autres colonnes.'),
+                $liste('T22', 'Situation du personnel non enseignant', 20, $personnel + ['fonction' => 'Fonction'] + $grade, 'Situation matrimoniale : M = marié(e), C = célibataire, D = divorcé(e), V = veuf / veuve.'),
+                $liste('T23', 'Situation du personnel partant à la retraite en janvier', 10, $personnel + ['fonction' => 'Fonction'] + $grade),
+                ['code' => 'T25', 'titre' => 'Situation du crédit de fonctionnement', 'type' => 'texte', 'lignes' => self::liste(['Crédit délégué', 'Crédit engagé', 'Crédit disponible']),
+                    'colonnes' => self::simple(['montant' => 'À la date du 01/01 au 30/09', 'analyse' => "Analyse de l'exécution du crédit"])],
+                ['code' => 'T26', 'titre' => 'Situation des salaires du personnel', 'type' => 'texte', 'note' => 'Période : du mois d\'octobre de l\'année écoulée au mois de septembre de la nouvelle année scolaire (montants en francs).',
+                    'lignes' => self::liste(['Octobre', 'Novembre', 'Décembre', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre']), 'colonnes' => self::simple($montants)],
+                ['code' => 'T27', 'titre' => 'Situation des accessoires de salaires et des heures supplémentaires (octobre à septembre)', 'type' => 'texte',
+                    'lignes' => self::liste(['Allocation', 'Heures supplémentaires', 'Avancement', "Frais d'examens", 'Total']), 'colonnes' => self::simple($montants)],
+                $liste('T28', 'Situation du parc auto et moto', 8, ['marque' => 'Marque et type', 'immatriculation' => "N° d'immatriculation", 'acquisition' => "Date d'acquisition", 'etat' => 'État', 'observations' => 'Observations']),
+                $liste('T29', 'Liste des activités du Comité de gestion scolaire (CGS)', 10, ['libelle' => "Libellé de l'activité", 'nature' => 'Nature', 'montant' => 'Montant',
+                    'source' => 'Source de financement', 'delai' => "Délai d'exécution", 'realisation' => 'Réalisation', 'observations' => 'Observations']),
+                ['code' => 'T30', 'titre' => 'Répartition des élèves handicapés par série et par sexe selon le type et le degré de handicap', 'totaux' => 'les deux', 'colonnes' => self::paires($series),
+                    'lignes' => collect(['vue' => 'Vue', 'ouie' => 'Ouïe', 'motricite' => 'Motricité globale (marcher, monter)', 'motricite_fine' => 'Motricité fine (écrire, saisir)', 'intellect' => 'Intellect',
+                        'communication' => 'Communication (comprendre, se faire comprendre)', 'comportement' => 'Comportement, socialisation', 'multiples' => 'Multiples handicaps'])
+                        ->flatMap(fn ($l, $c) => [$c.'_1' => $l.' — quelques difficultés', $c.'_2' => $l.' — beaucoup de difficultés', $c.'_3' => $l.' — n\'y parvient pas'])->all()],
+                $liste('T31', 'Interventions des partenaires', 10, ['partenaire' => 'Partenaire', 'zones' => "Zones d'intervention", 'domaines' => "Domaines d'intervention",
+                    'realisations' => 'Réalisations (nombre)', 'periode' => "Période d'intervention", 'observations' => 'Observations']),
                 $administration('T24'),
             ]));
         }
@@ -139,7 +190,7 @@ class RapportSecondaireDefinitions
                 'colonnes' => self::paires(['effectif' => 'Effectif'] + collect($passages)->mapWithKeys(fn ($c) => ['p'.$c => 'Passage en '.(RapportSuccinctDonnees::SERIES[$c] ?? $c)])->all() + $sorties)];
         };
 
-        return array_values(array_filter([
+        return self::trier(array_filter([
             $professeurs('T1', 'Répartition du corps professoral par sexe et statut selon la discipline'),
             $nationalites('T2'),
             $categories('T3'),
@@ -153,6 +204,17 @@ class RapportSecondaireDefinitions
             $terminales ? ['code' => 'T12', 'titre' => "Résultats de l'examen du baccalauréat (réguliers et candidats libres)", 'lignes' => $terminales,
                 'colonnes' => collect(['inscrits' => 'Inscrits', 'presents' => 'Présents', 'admis' => 'Admis'])->map(fn ($l, $c) => ['libelle' => $l, 'cols' => [$c.'_reg' => 'Rég.', $c.'_cl' => 'Libres']])->values()->all(), 'totaux' => 'ligne'] : null,
             $terminales ? ['code' => 'T13', 'titre' => 'Admis au baccalauréat par scolarité', 'lignes' => $terminales, 'colonnes' => self::paires(['a3' => '3 ans', 'a4' => '4 ans', 'a5' => '5 ans']), 'totaux' => 'les deux'] : null,
+            ($onze = array_intersect_key($series, array_flip(['11L', '11S', '11SES']))) ? ['code' => 'T10', 'titre' => "Récapitulatif par série et par sexe des résultats de fin d'année des classes de 11e",
+                'note' => 'Passage : 11e L → TLL puis TAL ; 11e S → TSE puis TSEXP ; 11e SES → TSECO puis TSS.', 'lignes' => $onze,
+                'colonnes' => self::paires(['effectif' => 'Effectif', 'p1' => 'Passage (1re série)', 'p2' => 'Passage (2e série)'] + $sorties), 'totaux' => 'ligne'] : null,
+            ['code' => 'T14', 'titre' => "Récapitulatif des résultats de fin d'année par année d'études", 'totaux' => 'ligne',
+                'lignes' => ['n10' => '10e CG', 'n11' => '11e', 'n12' => 'Terminales'], 'colonnes' => self::simple(['effectif' => 'Effectif', 'passage' => 'Proposés au passage', 'redoublement' => 'Proposés au redoublement', 'exclusion' => "Proposés à l'exclusion"])],
+            $terminales ? ['code' => 'T16', 'titre' => 'Résultats du baccalauréat par rapport à la moyenne annuelle', 'lignes' => $terminales, 'totaux' => 'ligne',
+                'colonnes' => [['libelle' => null, 'cols' => ['total_admis' => 'Total des admis']], ['libelle' => 'Présentés avec une moyenne ≥ 10', 'cols' => ['sup_total' => 'Total', 'sup_admis' => 'Admis']],
+                    ['libelle' => 'Présentés avec une moyenne < 10', 'cols' => ['inf_total' => 'Total', 'inf_admis' => 'Admis']]]] : null,
+            ['code' => 'T17', 'titre' => 'Effectifs restants : passants et redoublants par série', 'lignes' => $series, 'totaux' => 'les deux', 'colonnes' => self::paires(['passants' => 'Passants', 'redoublants' => 'Redoublants'])],
+            $terminales ? $liste('T23', 'Liste des élèves admis au baccalauréat', ($tailles['admis'] ?? 0) + 3, ['prenoms' => 'Prénoms', 'nom' => 'Nom', 'matricule' => 'N° Mle',
+                'moy_ann' => 'Moy. annuelle', 'moy_admission' => "Moy. d'admission", 'mention' => 'Mention', 'serie' => 'Série'], 'Pré-rempli avec les admis enregistrés dans KalanNet.') : null,
             ['code' => 'T15', 'titre' => 'Répartition des élèves par tranche de moyenne annuelle', 'lignes' => $series, 'colonnes' => self::paires(['m7' => 'M.A < 7', 'm10' => '7 ≤ M.A < 10', 'm12' => '10 ≤ M.A < 12', 'm14' => '12 ≤ M.A < 14', 'm16' => '14 ≤ M.A < 16', 'm20' => 'M.A ≥ 16']), 'totaux' => 'les deux'],
             ['code' => 'T18', 'titre' => 'Capacité d\'accueil pour la rentrée scolaire prochaine', 'lignes' => $series, 'colonnes' => self::simple(['capacite' => 'Capacité par salle', 'salles' => 'Nombre de salles', 'disponibles' => 'Places disponibles', 'a_pourvoir' => 'Places à pourvoir']), 'totaux' => 'ligne'],
             ['code' => 'T19', 'titre' => 'Perspectives pour la nouvelle rentrée (effectifs probables)', 'lignes' => $series, 'colonnes' => self::simple(['passants' => 'Passants', 'redoublants' => 'Redoublants', 'effectifs' => 'Effectifs', 'classes' => 'Nombre de classes', 'salles' => 'Nombre de salles']), 'totaux' => 'ligne'],
@@ -166,5 +228,11 @@ class RapportSecondaireDefinitions
     public const REPRISE_DE_LA_RENTREE = ['T1' => 'T12', 'T2' => 'T13', 'T3' => 'T14', 'T5' => 'T17', 'T22' => 'T24'];
 
     /** Tableaux qui changent peu : repris du rapport du même type de l'année précédente. */
-    public const REPRISE_ANNEE_PRECEDENTE = ['rentree' => ['T1.1', 'T1.2', 'T12', 'T13', 'T14', 'T15', 'T16', 'T17', 'T24'], 'fin' => ['T21']];
+    /** Listes nominatives pré-remplies : « Reprendre les chiffres de KalanNet » garde les colonnes saisies. */
+    public const LISTES_PRE_REMPLIES = ['T21', 'T23'];
+
+    /** Tableaux pré-remplis ajoutés en novembre 2026 : complétés dans les rapports déjà enregistrés. */
+    public const PRE_REMPLIS_AJOUTES = ['rentree' => ['T21'], 'fin' => ['T10', 'T14', 'T17', 'T23']];
+
+    public const REPRISE_ANNEE_PRECEDENTE = ['rentree' => ['T1.1', 'T1.2', 'T12', 'T13', 'T14', 'T15', 'T16', 'T17', 'T24', 'T3', 'T4', 'T18', 'T22', 'T28', 'T31'], 'fin' => ['T21']];
 }
