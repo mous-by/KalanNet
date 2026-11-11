@@ -164,14 +164,18 @@
                             </select>
                         </div>
                         <div class="col-md-6" id="serie-champ" style="display:none">
-                            <label class="form-label" for="serie">{{ __('classes.serie_label') }}</label>
+                            <label class="form-label" for="serie">{{ __('classes.serie_label') }} <span class="text-danger">*</span></label>
                             <select class="form-select" id="serie" name="serie">
-                                <option value="">{{ __('classes.serie_aucune') }}</option>
-                                @foreach(\App\Support\Series::pourNiveau(11) as $code => [$libelleSerie, $niveauSerie])
-                                    <option value="{{ $code }}" data-niveau="{{ $niveauSerie }}" @selected(old('serie', $classe->serie) === $code)>{{ $libelleSerie }}</option>
+                                <option value="">— Choisir la série de la classe —</option>
+                                @foreach([10 => '10ème', 11 => '11ème', 12 => 'Terminales'] as $niveauGroupe => $libelleGroupe)
+                                    <optgroup label="{{ $libelleGroupe }}">
+                                        @foreach(array_filter(\App\Support\Series::RAPPORTS, fn ($s) => $s[1] === $niveauGroupe) as $code => [$libelleSerie])
+                                            <option value="{{ $code }}" @selected(old('serie', $classe->serie) === $code)>{{ $libelleSerie }}</option>
+                                        @endforeach
+                                    </optgroup>
                                 @endforeach
                             </select>
-                            <small class="text-muted">{{ __('classes.serie_aide') }} <a href="{{ route('pedagogie.series') }}" target="_blank">{{ __('classes.serie_lien') }}</a></small>
+                            <small class="text-muted">Obligatoire au secondaire général : les rapports (succinct, rentrée, fin d'année) classent la classe d'après ce choix, quel que soit son nom. En 11ème, elle oriente aussi les élèves vers une série de 12ème. <a href="{{ route('pedagogie.series') }}" target="_blank">{{ __('classes.serie_lien') }}</a></small>
                         </div>
                         @if($francoArabe)
                             @php $deuxMaitres = (bool) old('deux_maitres', $classe->deux_maitres); @endphp
@@ -404,14 +408,10 @@
             const serieSelect = document.getElementById('serie');
             function afficherSerie() {
                 if (!serieChamp || !ordreSelect) return;
-                const niveau = parseInt((nomClasse.value.match(/^\s*(\d{1,2})/) || [])[1] || '0', 10);
-                // 11ème seulement : la 10ème est orientée automatiquement, la 12ème est la dernière année.
-                const visible = ordreSelect.value === 'secondairegenerale' && niveau === 11;
+                // Toutes les classes du secondaire général : la série est obligatoire.
+                const visible = ordreSelect.value === 'secondairegenerale';
                 serieChamp.style.display = visible ? '' : 'none';
-                serieSelect.querySelectorAll('option[data-niveau]').forEach(option => {
-                    option.hidden = Number(option.dataset.niveau) !== niveau;
-                    if (option.hidden && option.selected) serieSelect.value = '';
-                });
+                serieSelect.required = visible;
             }
             if (ordreSelect) ordreSelect.addEventListener('change', afficherSerie);
 

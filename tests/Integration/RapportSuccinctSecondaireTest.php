@@ -72,7 +72,8 @@ class RapportSuccinctSecondaireTest extends IntegrationTestCase
         $groupes = collect($donnees['groupes'])->keyBy('cle')->map(fn ($l) => collect($l)->only(['groupes', 'g', 'f', 'rg', 'rf'])->all())->all();
         $maitres = collect($donnees['maitres'])->map(fn ($m) => ['salles' => 6] + $m)->all();
 
-        return $autres + ['quartier' => 'Badalabougou', 'commune' => 'V', 'cercle' => 'Bamako', 'academie' => 'Rive droite', 'cycle' => 3, 'statut' => 3, 'groupes' => $groupes, 'maitres' => $maitres];
+        return $autres + ['academie' => 'Rive droite', 'telephone' => '20 22 00 00', 'cycle' => 3, 'statut' => 3, 'groupes' => $groupes, 'maitres' => $maitres,
+            'enseignants' => ['ph' => 4, 'pf' => 2, 'vh' => 3, 'vf' => 1], 'salles_niveaux' => ['n1' => 4, 'n2' => 3, 'n3' => 2]];
     }
 
     private function url(string $route = 'rapport-succinct.store'): string
@@ -114,14 +115,26 @@ class RapportSuccinctSecondaireTest extends IntegrationTestCase
         $this->dae(null);
         $this->actingAs($this->adminComplet(1))->withSession(['idEcole' => 1]);
 
-        $this->get($this->url('rapport-succinct.index'))->assertOk()->assertSee('Marquer comme remis à l\'académie')->assertSee('Tableau 2')->assertDontSee('CAP de')->assertDontSee('name="enseignement"', false);
+        $this->get($this->url('rapport-succinct.index'))->assertOk()->assertSee('Marquer comme remis à l\'académie')->assertSee('Tableau 1 : Répartition des enseignants par genre et par statut')
+            ->assertSee('Tableau 5 : Répartition des salles de classe par niveau')->assertDontSee('CAP de')->assertDontSee('name="enseignement"', false);
         $this->get($this->url('rapport-succinct.pdf'))->assertOk()->assertHeader('content-type', 'application/pdf');
 
-        $this->post($this->url(), $this->formulaire(['action' => 'remettre', 'commune' => '']))->assertSessionHasErrors('rapport');
+        $this->post($this->url(), $this->formulaire(['action' => 'remettre', 'academie' => '']))->assertSessionHasErrors('rapport');
         $this->post($this->url(), $this->formulaire(['action' => 'remettre']))->assertSessionHas('success');
         $rapport = RapportSuccinct::withoutGlobalScopes()->where('id_ecole', 1)->where('portee', 'secondaire')->firstOrFail();
         $this->assertSame('remis', $rapport->statut);
         $this->assertSame('secondaire', $rapport->donnees_envoyees['portee']);
+        // Modèle de l'académie : enseignants par genre et par statut, salles par niveau ; totaux par cycle gardés pour l'académie.
+        $this->assertSame(['ph' => 4, 'pf' => 2, 'vh' => 3, 'vf' => 1], $rapport->donnees_envoyees['enseignants']);
+        $this->assertSame(['n1' => 4, 'n2' => 3, 'n3' => 2], $rapport->donnees_envoyees['salles_niveaux']);
+        $this->assertSame(['permanents' => 6, 'contractuels' => 4, 'salles' => 9], $rapport->donnees_envoyees['maitres']['general']);
+        $fichier = tempnam(sys_get_temp_dir(), 'rs');
+        file_put_contents($fichier, $this->get($this->url('rapport-succinct.pdf'))->getContent());
+        $texte = (string) shell_exec('pdftotext -layout '.escapeshellarg($fichier).' -');
+        unlink($fichier);
+        foreach (['RAPPORT SUCCINCT DE RENTRÉE', 'Tableau n°1 : Répartition des enseignants par genre et par statut', 'Tableau n°3', 'Passants', 'Tableau n°5', 'LE PROVISEUR'] as $attendu) {
+            $this->assertStringContainsString($attendu, $texte);
+        }
     }
 
     public function test_academie_sur_kalannet_envoi_et_cloisonnement(): void

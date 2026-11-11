@@ -56,6 +56,36 @@ class Series
         'arts' => ['arts', 'musique', 'dessin'],
     ];
 
+    /**
+     * Série d'une classe du secondaire général pour les rapports (succinct, rentrée, fin d'année) : un choix obligatoire
+     * dans cette liste, au lieu de deviner d'après le nom de la classe. Codes compatibles avec SERIES (orientation).
+     * code => [libellé, niveau, clé des rapports]
+     */
+    public const RAPPORTS = [
+        '10cg' => ['10ème CG (année commune générale)', 10, '10CG'],
+        'll' => ['11ème L (Langues et Lettres)', 11, '11L'],
+        'sciences' => ['11ème S (Sciences)', 11, '11S'],
+        'ses' => ['11ème SES (Sciences économiques et sociales)', 11, '11SES'],
+        'tll' => ['Terminale TLL (Langues et Littérature)', 12, 'TLL'],
+        'lat' => ['Terminale TAL (Arts et Lettres)', 12, 'TAL'],
+        'tss' => ['Terminale TSS (Sciences sociales)', 12, 'TSS'],
+        'tseco' => ['Terminale TSECO (Sciences économiques)', 12, 'TSECO'],
+        'tse' => ['Terminale TSE (Sciences exactes)', 12, 'TSE'],
+        'texp' => ['Terminale TSEXP (Sciences expérimentales)', 12, 'TSEXP'],
+    ];
+
+    /** Code du choix correspondant à une clé des rapports (10CG → 10cg, TAL → lat…). */
+    public static function codePourCle(?string $cle): ?string
+    {
+        foreach (self::RAPPORTS as $code => [, , $c]) {
+            if ($c === $cle) {
+                return $code;
+            }
+        }
+
+        return null;
+    }
+
     public static function libelle(?string $code): ?string
     {
         return self::SERIES[$code][0] ?? null;

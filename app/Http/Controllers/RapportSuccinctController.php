@@ -85,6 +85,15 @@ class RapportSuccinctController extends Controller
             $salles = collect($donnees['maitres'] ?? [])->map(fn ($m) => $m['salles'] ?? null);
             $donnees['groupes'] = $calcul['groupes'];
             $donnees['maitres'] = collect($calcul['maitres'])->map(fn ($m, $cycle) => ['salles' => $salles[$cycle] ?? null] + $m)->all();
+            if ($portee === 'secondaire') {
+                $donnees['enseignants'] = $calcul['enseignants'];
+            }
+        }
+        // Fiche du secondaire enregistrée avant le modèle de l'académie : les nouveaux tableaux sont complétés par KalanNet.
+        if ($portee === 'secondaire' && !isset($donnees['enseignants'])) {
+            $calcul ??= Donnees::calculer($ecole, (int) $annee->id_anneeScolaire, $portee);
+            $donnees += array_intersect_key($calcul, array_flip(['enseignants', 'salles_niveaux', 'telephone']));
+            $donnees['groupes'] = collect($donnees['groupes'] ?? [])->map(fn ($l) => $l + ['niveau' => collect($calcul['groupes'])->firstWhere('cle', $l['cle'])['niveau'] ?? 'n1'])->all();
         }
 
         return view('rapports-succincts.index', [
@@ -168,6 +177,9 @@ class RapportSuccinctController extends Controller
             'groupes.*.rg' => $entier, 'groupes.*.rf' => $entier,
             'maitres' => 'nullable|array', 'maitres.*.permanents' => $entier, 'maitres.*.contractuels' => $entier,
             'maitres.*.salles' => ['nullable', 'integer', 'min:0', 'max:9999'],
+            'telephone' => 'nullable|string|max:60',
+            'enseignants' => 'nullable|array', 'enseignants.*' => ['nullable', 'integer', 'min:0', 'max:9999'],
+            'salles_niveaux' => 'nullable|array', 'salles_niveaux.*' => ['nullable', 'integer', 'min:0', 'max:9999'],
         ], [], ['quartier' => 'village / quartier', 'statut' => 'statut administratif', 'recrutement' => 'mode de recrutement']);
 
         // Lignes et cycles de référence : les libellés ne viennent jamais du formulaire.
@@ -188,6 +200,20 @@ class RapportSuccinctController extends Controller
             'contractuels' => (int) ($data['maitres'][$cycle]['contractuels'] ?? 0),
             'salles' => isset($data['maitres'][$cycle]['salles']) ? (int) $data['maitres'][$cycle]['salles'] : null,
         ])->all();
+
+        if ($secondaire) {
+            // Modèle de l'académie : enseignants par genre et par statut, salles par niveau ; les totaux par cycle en découlent.
+            $enseignants = collect(['ph', 'pf', 'vh', 'vf'])->mapWithKeys(fn ($c) => [$c => (int) ($data['enseignants'][$c] ?? 0)])->all();
+            $salles = collect(['n1', 'n2', 'n3'])->mapWithKeys(fn ($n) => [$n => isset($data['salles_niveaux'][$n]) ? (int) $data['salles_niveaux'][$n] : null])->all();
+            $maitres = ['general' => ['permanents' => $enseignants['ph'] + $enseignants['pf'], 'contractuels' => $enseignants['vh'] + $enseignants['vf'],
+                'salles' => collect($salles)->filter(fn ($n) => $n !== null)->sum() ?: null]];
+
+            return ['portee' => $portee, 'ecole' => (string) $ecole->nomEcole, 'groupes' => $groupes, 'maitres' => $maitres, 'enseignants' => $enseignants,
+                'salles_niveaux' => $salles, 'telephone' => $data['telephone'] ?? null]
+                + collect($data)->only(['quartier', 'commune', 'cercle', 'academie', 'cycle', 'statut'])
+                    ->map(fn ($v, $k) => in_array($k, ['cycle', 'statut'], true) && $v !== null ? (int) $v : $v)->all()
+                + ['statut' => null];
+        }
 
         return ['portee' => $portee, 'ecole' => (string) $ecole->nomEcole, 'groupes' => $groupes, 'maitres' => $maitres]
             + collect($data)->only(['quartier', 'commune', 'cap', 'cercle', 'academie', 'langue', 'cycle', 'statut', 'enseignement', 'recrutement'])
@@ -212,7 +238,10 @@ class RapportSuccinctController extends Controller
         if ($excel) {
             return \App\Services\Rapports\ExportExcel::rapportSuccinct($donnees, $annee)->telecharger('rapport-succinct-'.Str::slug($nomEcole).'-'.$annee);
         }
-        $pdf = Pdf::loadView('pdf.rapport_succinct', ['d' => $donnees, 'annee' => $annee, 'totaux' => Donnees::totaux($donnees)])->setPaper('a4', 'portrait');
+        // Secondaire : modèle de l'académie (rapport succinct de rentrée ESG, cinq tableaux), en paysage pour les colonnes par série.
+        $pdf = ($donnees['portee'] ?? '') === 'secondaire'
+            ? Pdf::loadView('pdf.rapport_succinct_secondaire', ['d' => $donnees, 'annee' => $annee])->setPaper('a4', 'landscape')
+            : Pdf::loadView('pdf.rapport_succinct', ['d' => $donnees, 'annee' => $annee, 'totaux' => Donnees::totaux($donnees)])->setPaper('a4', 'portrait');
         $nom = 'rapport-succinct-'.Str::slug($nomEcole).'-'.$annee.'.pdf';
 
         return $telecharger ? $pdf->download($nom) : $pdf->stream($nom);

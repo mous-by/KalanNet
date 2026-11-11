@@ -162,6 +162,9 @@ class ExportExcel
     {
         $C = RapportSuccinctDonnees::class;
         $secondaire = ($d['portee'] ?? 'fondamental') === 'secondaire';
+        if ($secondaire) {
+            return self::rapportSuccinctSecondaire($d, $annee);
+        }
         $x = new self('Rapport succinct de rentrée '.$annee);
         $infos = [($secondaire ? 'Établissement' : 'École') => $d['ecole'] ?? null, 'Village / quartier' => $d['quartier'] ?? null, 'Commune' => $d['commune'] ?? null];
         if (!$secondaire) {
@@ -185,6 +188,54 @@ class ExportExcel
         $cycles = ['prescolaire' => 'Préscolaire', 'premier' => 'Premier cycle', 'second' => 'Second cycle', 'general' => 'Secondaire général', 'technique' => 'Technique et professionnel'];
         $x->tableau('Tableau 3 : '.($secondaire ? 'Enseignants' : 'Maîtres en classe').' et salles de classe', self::simple(['Cycle', 'Permanents', 'Contractuels', 'Total', 'Salles de classe']),
             collect($d['maitres'] ?? [])->map(fn ($m, $c) => [$cycles[$c] ?? $c, (int) $m['permanents'], (int) $m['contractuels'], (int) $m['permanents'] + (int) $m['contractuels'], $m['salles'] ?? null])->values()->all());
+
+        return $x;
+    }
+
+    /** Secondaire : modèle de l'académie (rapport succinct de rentrée ESG), cinq tableaux. */
+    private static function rapportSuccinctSecondaire(array $d, string $annee): self
+    {
+        $x = new self('Rapport succinct de rentrée '.$annee);
+        $sigle = (string) ($d['ecole'] ?? '');
+        $x->paires(['Académie' => $d['academie'] ?? null, 'Lycée' => $sigle, 'Téléphone' => $d['telephone'] ?? null]);
+
+        $e = $d['enseignants'] ?? ['ph' => 0, 'pf' => 0, 'vh' => 0, 'vf' => 0];
+        $x->tableau('Tableau n°1 : Répartition des enseignants par genre et par statut', [
+            [['Établissement', 1], ['Permanents', 3], ['Vacataires', 3], ['Total', 3]],
+            [['', 1], ['H', 1], ['F', 1], ['T', 1], ['H', 1], ['F', 1], ['T', 1], ['H', 1], ['F', 1], ['T', 1]],
+        ], [[$sigle, $e['ph'], $e['pf'], $e['ph'] + $e['pf'], $e['vh'], $e['vf'], $e['vh'] + $e['vf'], $e['ph'] + $e['vh'], $e['pf'] + $e['vf'], array_sum($e)]]);
+
+        $lignes = collect($d['groupes'] ?? []);
+        $niveaux = ['n1' => '10ème', 'n2' => '11ème', 'n3' => '12ème'];
+        $colonnes = collect($niveaux)->keys()->flatMap(fn ($n) => $lignes->where('niveau', $n))->values();
+        $entetes = [
+            [['Établissement', 1], ['Élèves', 1], ...$colonnes->map(fn ($l) => [$niveaux[$l['niveau'] ?? 'n1'].' '.$l['libelle'], 3])->all(), ['Total', 3]],
+            [['', 1], ['', 1], ...$colonnes->flatMap(fn () => [['G', 1], ['F', 1], ['T', 1]])->all(), ['G', 1], ['F', 1], ['T', 1]],
+        ];
+        $ligne = function (string $libelle, callable $g, callable $f) use ($colonnes, $sigle) {
+            $cases = $colonnes->flatMap(fn ($l) => [$g($l), $f($l), $g($l) + $f($l)])->all();
+            $tg = $colonnes->sum($g);
+            $tf = $colonnes->sum($f);
+
+            return [$sigle, $libelle, ...$cases, $tg, $tf, $tg + $tf];
+        };
+        $public = (int) ($d['statut'] ?? 0) === 1;
+        $zero = fn () => 0;
+        $x->tableau("Tableau n°2 : Répartition des élèves par année d'étude et par série", $entetes, [
+            $ligne('Public', $public ? fn ($l) => (int) $l['g'] : $zero, $public ? fn ($l) => (int) $l['f'] : $zero),
+            $ligne('Privé', $public ? $zero : fn ($l) => (int) $l['g'], $public ? $zero : fn ($l) => (int) $l['f']),
+            $ligne('Eff. total', fn ($l) => (int) $l['g'], fn ($l) => (int) $l['f']),
+        ]);
+        $x->tableau("Tableau n°3 : Répartition des effectifs par série / année d'étude", $entetes, [
+            $ligne('Eff. total', fn ($l) => (int) $l['g'], fn ($l) => (int) $l['f']),
+            $ligne('Passants', fn ($l) => (int) $l['g'] - (int) $l['rg'], fn ($l) => (int) $l['f'] - (int) $l['rf']),
+            $ligne('Redoublants', fn ($l) => (int) $l['rg'], fn ($l) => (int) $l['rf']),
+        ]);
+        $x->tableau('Tableau n°4 : Répartition des groupes pédagogiques par niveau', self::simple(['', ...array_values($niveaux), 'Total']),
+            [['GP', ...collect($niveaux)->keys()->map(fn ($n) => (int) $lignes->where('niveau', $n)->sum('groupes'))->all(), (int) $lignes->sum('groupes')]]);
+        $salles = $d['salles_niveaux'] ?? [];
+        $x->tableau('Tableau n°5 : Répartition des salles de classe par niveau', self::simple(['', ...array_values($niveaux), 'Total']),
+            [['SDC', ...collect($niveaux)->keys()->map(fn ($n) => $salles[$n] ?? null)->all(), collect($salles)->sum() ?: null]]);
 
         return $x;
     }

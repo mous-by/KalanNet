@@ -251,6 +251,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/cahier-bord/pdf', [\App\Http\Controllers\CahierBordController::class, 'pdf'])->name('cahier-bord.pdf');
     Route::get('/territoire/cahiers-bord', [\App\Http\Controllers\CahierBordController::class, 'territoire'])->name('territoire.cahiers-bord');
     Route::get('/territoire/cahiers-bord/{id}/pdf', [\App\Http\Controllers\CahierBordController::class, 'pdfTerritoire'])->whereNumber('id')->name('territoire.cahiers-bord.pdf');
+    // SupAdmin : séries des classes du général de tous les établissements, réglées en une fois.
+    Route::get('/series-lycees', [\App\Http\Controllers\SeriesLyceesController::class, 'index'])->name('series-lycees.index');
+    Route::post('/series-lycees', [\App\Http\Controllers\SeriesLyceesController::class, 'enregistrer'])->name('series-lycees.enregistrer');
+    Route::post('/series-lycees/propositions', [\App\Http\Controllers\SeriesLyceesController::class, 'appliquerPropositions'])->name('series-lycees.propositions');
+    Route::get('/rapport-secondaire-series', [\App\Http\Controllers\RapportSecondaireController::class, 'seriesClasses'])->name('rapport-secondaire.series');
+    Route::post('/rapport-secondaire-series', [\App\Http\Controllers\RapportSecondaireController::class, 'enregistrerSeries'])->name('rapport-secondaire.series.store');
     Route::get('/rapport-secondaire-def', [\App\Http\Controllers\RapportSecondaireController::class, 'anneesDef'])->name('rapport-secondaire.def');
     Route::post('/rapport-secondaire-def', [\App\Http\Controllers\RapportSecondaireController::class, 'enregistrerAnneesDef'])->name('rapport-secondaire.def.store');
     Route::get('/rapport-secondaire/{type}', [\App\Http\Controllers\RapportSecondaireController::class, 'index'])->whereIn('type', ['rentree', 'fin'])->name('rapport-secondaire.index');

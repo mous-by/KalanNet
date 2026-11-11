@@ -268,6 +268,7 @@
                 <li><a href="{{ route('classes.index') }}"><i class="bi bi-circle"></i>{{ __('messages.menu.classes') }}</a></li>
                 @if ($user->droit === 'SupAdmin')
                 <li><a href="{{ route('classes.associations') }}"><i class="bi bi-circle"></i>{{ __('messages.menu.associate_classes') }}</a></li>
+                <li><a href="{{ route('series-lycees.index') }}"><i class="bi bi-circle"></i>Séries des lycées</a></li>
                 @endif
                 @endif
                 @if ($user->userHasPermission('matieres_apercu'))

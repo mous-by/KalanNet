@@ -17,6 +17,15 @@
 
     @include('rapports-succincts._onglets', ['actif' => $type])
 
+    @php $sansSerie = true ? \App\Http\Controllers\RapportSecondaireController::classesSansSerie((int) (session('idEcole') ?: auth()->user()->idEcole)) : 0; @endphp
+    @if($sansSerie > 0)
+        <div class="alert alert-danger border-0 border-start border-danger border-4 d-flex flex-wrap align-items-center gap-2">
+            <i class="bi bi-exclamation-octagon me-1"></i>
+            <span>{{ $sansSerie }} classe(s) du secondaire général sans série choisie : elles risquent de manquer dans les tableaux par série. Vérifiez les séries de vos classes (deux minutes, une seule fois).</span>
+            <a class="btn btn-sm btn-danger ms-auto" href="{{ route('rapport-secondaire.series', ['retour' => $type]) }}"><i class="bi bi-list-check me-1"></i>Vérifier les séries de mes classes</a>
+        </div>
+    @endif
+
     @if(session('success'))
         <div class="alert alert-success border-0 border-start border-success border-4">{{ session('success') }}</div>
     @endif

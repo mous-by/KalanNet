@@ -418,7 +418,7 @@ class ClasseController extends Controller
             'id_enseignants.*' => 'nullable|integer|exists:enseignants,id_enseignant',
             'coefficient' => 'exclude_if:ordre_enseignement,jardin|required|array|min:1',
             'coefficient.*' => 'required|numeric|min:0|max:10',
-            'serie' => ['nullable', Rule::in(array_keys(\App\Support\Series::SERIES))],
+            'serie' => ['nullable', 'required_if:ordre_enseignement,secondairegenerale', Rule::in(array_keys(\App\Support\Series::RAPPORTS))],
             'groupe' => 'nullable|array',
             'groupe.*' => 'nullable|in:principale,secondaire',
             'id_domaine' => 'nullable|array',
@@ -516,10 +516,8 @@ class ClasseController extends Controller
         if (!$serie || !str_starts_with((string) ($data['ordre_enseignement'] ?? ''), 'secondairegenerale')) {
             return null;
         }
-        $niveau = \App\Support\ClasseSuivante::niveau($data['nom_classe'] ?? '');
-
-        // Série des classes de 11ème seulement (elle oriente vers les séries de 12ème).
-        return $niveau === 11 && (\App\Support\Series::SERIES[$serie][1] ?? null) === 11 ? $serie : null;
+        // Toutes les classes du général : la série sert aux rapports ; en 11ème, elle oriente aussi vers la 12ème.
+        return isset(\App\Support\Series::RAPPORTS[$serie]) ? $serie : null;
     }
 
     protected function champsDeuxMaitres(array $data): array

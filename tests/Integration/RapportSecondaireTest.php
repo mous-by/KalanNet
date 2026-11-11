@@ -232,6 +232,26 @@ class RapportSecondaireTest extends IntegrationTestCase
         $this->postJson($url, ['rubrique' => 'inconnue'])->assertStatus(503)->assertJson(['ok' => false, 'message' => 'Rubrique inconnue.']);
     }
 
+    public function test_series_des_classes_choisies_dans_une_liste(): void
+    {
+        $this->actingAs($this->adminComplet(1))->withSession(['idEcole' => 1]);
+        // Bandeau : aucune série encore choisie.
+        $this->get($this->url('rentree', 'rapport-secondaire.index'))->assertOk()->assertSee('sans série choisie')->assertSee('Vérifier les séries de mes classes');
+        $this->get(route('rapport-secondaire.series', ['retour' => 'rentree'], false))->assertOk()
+            ->assertSee('10ème année commune')->assertSee('Proposée d\'après le nom : à vérifier', false)
+            ->assertSee('<option value="10cg" selected', false)->assertSee('<option value="tse" selected', false);
+
+        // Une classe au nom quelconque : classée d'après sa série, plus d'après son nom.
+        $this->classes['tse']->update(['nom_classe' => 'Classe B']);
+        $series = [$this->classes['10']->id_classe => '10cg', $this->classes['ses']->id_classe => 'ses', $this->classes['tse']->id_classe => 'tss'];
+        $this->post(route('rapport-secondaire.series.store', [], false), ['serie' => $series, 'retour' => 'rentree'])->assertRedirect()->assertSessionHas('success');
+        $this->assertSame('tss', DB::table('classe')->where('id_classe', $this->classes['tse']->id_classe)->value('serie'));
+        $this->assertSame('TSS', Donnees::lignes(1)['classes'][$this->classes['tse']->id_classe]);
+        $this->get($this->url('rentree', 'rapport-secondaire.index'))->assertOk()->assertDontSee('sans série choisie');
+
+        $this->post(route('rapport-secondaire.series.store', [], false), ['serie' => [$this->classes['10']->id_classe => 'inconnue']])->assertSessionHasErrors();
+    }
+
     public function test_saisie_controlee_et_remise_sur_papier(): void
     {
         DB::table('utilisateurs')->where('droit', 'DAE')->update(['statut' => 0]);

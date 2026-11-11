@@ -86,6 +86,12 @@ class RapportSuccinctDonnees
     {
         $texte = Str::lower(Str::ascii(trim($nom.' '.$serie)));
         $niveau = ExamenNational::extractClasseLevel($nom);
+        // Série choisie dans la liste (fiche de la classe ou « Vérifier les séries de mes classes ») : elle fait foi, sauf si
+        // le niveau écrit dans le nom la contredit (une 11e à qui l'on a donné une série de terminale reste une 11e).
+        $choisie = \App\Support\Series::RAPPORTS[Str::lower(trim((string) $serie))] ?? null;
+        if ($choisie && (!in_array($niveau, [10, 11, 12], true) || $niveau === $choisie[1])) {
+            return $choisie[2];
+        }
         if ($niveau === 10) {
             return '10CG';
         }
@@ -156,9 +162,13 @@ class RapportSuccinctDonnees
                 'cercle' => null,
                 'academie' => DB::table('academie')->where('id_academie', $ecole->id_academie)->value('nom_academie') ?: $ecole->academie,
                 'cycle' => $technique ? ($general ? 3 : 2) : 1,
-                'statut' => strtolower(trim((string) $ecole->statut)) === 'public' ? 1 : null,
+                'statut' => strtolower(trim((string) $ecole->statut)) === 'public' ? 1 : (strtolower(trim((string) $ecole->statut)) === 'prive' ? 3 : null),
+                'telephone' => $ecole->telephone,
                 'groupes' => self::groupesSecondaire($idEcole, $idAnnee, $classes),
                 'maitres' => self::maitresSecondaire($idEcole, $classes),
+                // Modèle de l'académie (rapport succinct de rentrée ESG) : enseignants par genre et par statut, salles par niveau.
+                'enseignants' => self::enseignantsParGenre($idEcole, $classes),
+                'salles_niveaux' => ['n1' => null, 'n2' => null, 'n3' => null],
             ];
         }
         $ordres = $classes->pluck('ordreEnseignement')->unique();
@@ -221,7 +231,39 @@ class RapportSuccinctDonnees
             }
         }
 
-        return self::compter($idEcole, $idAnnee, $classes, $lignes + $autres, collect($cles));
+        $lignes = self::compter($idEcole, $idAnnee, $classes, $lignes + $autres, collect($cles));
+        // Niveau de chaque ligne (tableaux 4 et 5 : 10e / 1re année, 11e / 2e année, 12e / 3e année).
+        $niveauClasse = $classes->mapWithKeys(fn ($c) => ['c'.$c->id_classe => max(1, min(3, (int) (ExamenNational::extractClasseLevel($c->nom_classe) ?? 1)))]);
+
+        return array_map(fn ($l) => $l + ['niveau' => 'n'.match (true) {
+            $l['cle'] === '10CG' => 1,
+            str_starts_with($l['cle'], '11') => 2,
+            in_array($l['cle'], ['TLL', 'TAL', 'TSS', 'TSECO', 'TSE', 'TSEXP'], true) => 3,
+            default => $niveauClasse[$l['cle']] ?? 1,
+        }], $lignes);
+    }
+
+    /**
+     * Enseignants du secondaire par genre et par statut (modèle de l'académie) : permanents (fonctionnaires, CDI…) et
+     * vacataires (tous les autres).
+     *
+     * @return array{ph: int, pf: int, vh: int, vf: int}
+     */
+    private static function enseignantsParGenre(int $idEcole, Collection $classes): array
+    {
+        $ids = $classes->pluck('id_classe');
+        $requete = DB::table('enseignants')->where('id_ecole', $idEcole)->where(fn ($q) => $q->where('is_deleted', 0)->orWhereNull('is_deleted'));
+        if (DB::table('classe')->where('idEcole', $idEcole)->count() !== $classes->count()) {
+            $requete->whereIn('id_enseignant', DB::table('ligneclasse')->whereIn('id_classe', $ids)->whereNotNull('id_enseignants')->pluck('id_enseignants')
+                ->merge(DB::table('classe_maitres')->whereIn('id_classe', $ids)->pluck('id_enseignant'))->unique());
+        }
+        $resultat = ['ph' => 0, 'pf' => 0, 'vh' => 0, 'vf' => 0];
+        foreach ($requete->get(['genre_enseignant', 'type_contrat_enseignant']) as $e) {
+            $statut = in_array(strtoupper((string) $e->type_contrat_enseignant), self::PERMANENTS, true) ? 'p' : 'v';
+            $resultat[$statut.(in_array(mb_strtolower(trim((string) $e->genre_enseignant)), self::FILLES, true) ? 'f' : 'h')]++;
+        }
+
+        return $resultat;
     }
 
     /** @param array<int|string, array{cle: string, libelle: string}> $lignes */
@@ -331,15 +373,22 @@ class RapportSuccinctDonnees
     {
         $secondaire = ($donnees['portee'] ?? 'fondamental') === 'secondaire';
         $libelles = $secondaire
-            ? ['quartier' => 'Village / quartier', 'commune' => 'Commune', 'cercle' => 'Cercle', 'academie' => 'AE', 'statut' => 'Statut administratif']
+            ? ['academie' => "Académie d'enseignement", 'statut' => 'Statut (public ou privé)']
             : ['quartier' => 'Village / quartier', 'commune' => 'Commune', 'cap' => 'CAP', 'cercle' => 'Cercle', 'academie' => 'AE',
                 'statut' => 'Statut administratif', 'recrutement' => 'Mode de recrutement'];
         $manquants = collect($libelles)->filter(fn ($libelle, $champ) => blank($donnees[$champ] ?? null))->values()->all();
 
-        foreach ($donnees['maitres'] ?? [] as $maitres) {
-            if (($maitres['salles'] ?? null) === null || $maitres['salles'] === '') {
-                $manquants[] = 'Nombre de salles de classe';
-                break;
+        if ($secondaire && isset($donnees['salles_niveaux'])) {
+            // Modèle de l'académie : salles de classe par niveau (tableau 5).
+            if (collect($donnees['salles_niveaux'])->filter(fn ($n) => $n !== null && $n !== '')->isEmpty()) {
+                $manquants[] = 'Salles de classe par niveau (tableau 5)';
+            }
+        } else {
+            foreach ($donnees['maitres'] ?? [] as $maitres) {
+                if (($maitres['salles'] ?? null) === null || $maitres['salles'] === '') {
+                    $manquants[] = 'Nombre de salles de classe';
+                    break;
+                }
             }
         }
 

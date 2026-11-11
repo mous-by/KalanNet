@@ -8,7 +8,7 @@
         $vers = $secondaire ? ["votre académie", "à l'académie", "Votre académie", "Envoyé à l'académie", "Remis à l'académie"] : ['votre CAP', 'au CAP', 'Votre CAP', 'Envoyé au CAP', 'Remis au CAP'];
         $libellesCycles = ['prescolaire' => 'Préscolaire', 'premier' => 'Premier cycle', 'second' => 'Second cycle', 'general' => 'Secondaire général', 'technique' => 'Technique et professionnel'];
         $selects = $secondaire
-            ? ["cycle" => ["Enseignement", $C::CYCLES_SECONDAIRE, true], 'statut' => ["Statut administratif", $C::STATUTS, false]]
+            ? ['statut' => ["Statut de l'établissement", [1 => 'Public', 3 => 'Privé'], false]]
             : [
                 'cycle' => ["Cycles d'enseignement", $C::CYCLES, true],
                 'statut' => ["Statut administratif de l'école", $C::STATUTS, false],
@@ -16,7 +16,7 @@
                 'recrutement' => ['Mode de recrutement', $C::RECRUTEMENTS, false],
             ];
         $champsTexte = $secondaire
-            ? ['quartier' => 'Village / quartier', 'commune' => 'Commune de', 'cercle' => 'Cercle de', 'academie' => 'AE de']
+            ? ['academie' => "Académie d'enseignement de", 'telephone' => 'Téléphone']
             : ['quartier' => 'Village / quartier', 'commune' => 'Commune de', 'cap' => 'CAP de', 'cercle' => 'Cercle de', 'academie' => 'AE de'];
     @endphp
 
@@ -33,6 +33,15 @@
     </div>
 
     @include('rapports-succincts._onglets', ['actif' => $portee])
+
+    @php $sansSerie = $secondaire ? \App\Http\Controllers\RapportSecondaireController::classesSansSerie((int) (session('idEcole') ?: auth()->user()->idEcole)) : 0; @endphp
+    @if($sansSerie > 0)
+        <div class="alert alert-danger border-0 border-start border-danger border-4 d-flex flex-wrap align-items-center gap-2">
+            <i class="bi bi-exclamation-octagon me-1"></i>
+            <span>{{ $sansSerie }} classe(s) du secondaire général sans série choisie : elles risquent de manquer dans les tableaux par série. Vérifiez les séries de vos classes (deux minutes, une seule fois).</span>
+            <a class="btn btn-sm btn-danger ms-auto" href="{{ route('rapport-secondaire.series', ['retour' => 'succinct']) }}"><i class="bi bi-list-check me-1"></i>Vérifier les séries de mes classes</a>
+        </div>
+    @endif
 
     @if(session('success'))
         <div class="alert alert-success border-0 border-start border-success border-4">{{ session('success') }}</div>
@@ -84,8 +93,9 @@
         </div>
 
         <div class="card theme-card shadow-sm mb-3">
-            <div class="card-header theme-header"><h6 class="mb-0 fw-bold">Tableau 1 : Renseignements généraux</h6></div>
+            <div class="card-header theme-header"><h6 class="mb-0 fw-bold">{{ $secondaire ? 'En-tête du rapport' : 'Tableau 1 : Renseignements généraux' }}</h6></div>
             <div class="card-body">
+                @if($secondaire)<input type="hidden" name="cycle" value="{{ $val('cycle') ?: 1 }}">@endif
                 <div class="row g-3">
                     <div class="col-md-4">
                         <label class="form-label small fw-bold">{{ $secondaire ? 'Établissement' : 'École de' }}</label>
@@ -120,7 +130,7 @@
 
         <div class="card theme-card shadow-sm mb-3">
             <div class="card-header theme-header d-flex flex-wrap justify-content-between align-items-center gap-2">
-                <h6 class="mb-0 fw-bold">Tableau 2 : Groupes pédagogiques et effectifs scolaires</h6>
+                <h6 class="mb-0 fw-bold">{{ $secondaire ? 'Tableaux 2, 3 et 4 : élèves par série, passants et redoublants, groupes pédagogiques' : 'Tableau 2 : Groupes pédagogiques et effectifs scolaires' }}</h6>
                 <a href="{{ route('rapport-succinct.index', ['annee' => $annee->id_anneeScolaire, 'portee' => $portee, 'recalculer' => 1]) }}" class="btn btn-sm btn-light"><i class="bi bi-arrow-repeat me-1"></i>Reprendre les chiffres de KalanNet</a>
             </div>
             <div class="card-body">
@@ -162,6 +172,49 @@
             </div>
         </div>
 
+        @if($secondaire)
+            @php
+                $ens = old('enseignants', $donnees['enseignants'] ?? ['ph' => 0, 'pf' => 0, 'vh' => 0, 'vf' => 0]);
+                $salles = old('salles_niveaux', $donnees['salles_niveaux'] ?? []);
+            @endphp
+            <div class="card theme-card shadow-sm mb-3">
+                <div class="card-header theme-header"><h6 class="mb-0 fw-bold">Tableau 1 : Répartition des enseignants par genre et par statut</h6></div>
+                <div class="card-body">
+                    <p class="small text-muted">Pré-rempli d'après le contrat des enseignants : fonctionnaires et CDI en « permanents », tous les autres en « vacataires ». Corrigez au besoin.</p>
+                    <div class="table-responsive">
+                        <table class="table table-bordered align-middle text-center mb-0" data-enseignants>
+                            <thead>
+                                <tr><th colspan="3">Permanents</th><th colspan="3">Vacataires</th><th colspan="3">Total</th></tr>
+                                <tr><th>H</th><th>F</th><th>T</th><th>H</th><th>F</th><th>T</th><th>H</th><th>F</th><th>T</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    @foreach([['ph', 'pf'], ['vh', 'vf']] as [$h, $f])
+                                        <td><input type="number" min="0" max="9999" required class="form-control form-control-sm text-center" name="enseignants[{{ $h }}]" data-e="{{ $h }}" value="{{ $ens[$h] ?? 0 }}" aria-label="{{ $h === 'ph' ? 'Permanents' : 'Vacataires' }} hommes"></td>
+                                        <td><input type="number" min="0" max="9999" required class="form-control form-control-sm text-center" name="enseignants[{{ $f }}]" data-e="{{ $f }}" value="{{ $ens[$f] ?? 0 }}" aria-label="{{ $h === 'ph' ? 'Permanents' : 'Vacataires' }} femmes"></td>
+                                        <td class="fw-bold" data-et="{{ $h[0] }}"></td>
+                                    @endforeach
+                                    <td class="fw-bold" data-et="h"></td><td class="fw-bold" data-et="f"></td><td class="fw-bold" data-et="t"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="card theme-card shadow-sm mb-3">
+                <div class="card-header theme-header"><h6 class="mb-0 fw-bold">Tableau 5 : Répartition des salles de classe par niveau</h6></div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        @foreach(['n1' => '10ème (1re année)', 'n2' => '11ème (2e année)', 'n3' => '12ème (3e année)'] as $n => $libelle)
+                            <div class="col-sm-4">
+                                <label class="form-label small fw-bold" for="salles-{{ $n }}">{{ $libelle }}</label>
+                                <input type="number" min="0" max="9999" class="form-control" id="salles-{{ $n }}" name="salles_niveaux[{{ $n }}]" value="{{ $salles[$n] ?? '' }}">
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        @else
         <div class="card theme-card shadow-sm mb-3">
             <div class="card-header theme-header"><h6 class="mb-0 fw-bold">Tableau 3 : {{ $secondaire ? 'Enseignants' : 'Maîtres en classe' }} et salles de classe utilisées</h6></div>
             <div class="card-body">
@@ -185,6 +238,8 @@
                 </div>
             </div>
         </div>
+
+        @endif
 
         <div class="card shadow-sm form-actions-sticky d-flex flex-row flex-wrap justify-content-between align-items-center gap-2">
             <div class="small text-muted">
@@ -225,6 +280,13 @@
                     sommes.rtotal += v('rg') + v('rf');
                 });
                 Object.entries(sommes).forEach(([c, n]) => { table.querySelector(`[data-somme="${c}"]`).textContent = n; });
+                const ens = document.querySelector('[data-enseignants]');
+                if (ens) {
+                    const e = (c) => nombre(ens.querySelector(`[data-e="${c}"]`));
+                    const t = { p: e('ph') + e('pf'), v: e('vh') + e('vf'), h: e('ph') + e('vh'), f: e('pf') + e('vf') };
+                    t.t = t.h + t.f;
+                    Object.entries(t).forEach(([c, n]) => { const cell = ens.querySelector(`[data-et="${c}"]`); if (cell) cell.textContent = n; });
+                }
                 document.querySelectorAll('[data-maitres]').forEach((ligne) => {
                     const [a, b] = ligne.querySelectorAll('[data-m]');
                     ligne.querySelector('[data-mtotal]').textContent = nombre(a) + nombre(b);

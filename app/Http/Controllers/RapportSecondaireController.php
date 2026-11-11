@@ -184,6 +184,47 @@ class RapportSecondaireController extends Controller
         return response()->json($resultat, $resultat['ok'] ? 200 : 503);
     }
 
+    /**
+     * Série de chaque classe du général, choisie dans une liste : les rapports se fient à ce choix, plus au nom de la classe.
+     * Chaque classe arrive avec la série reconnue d'après son nom ; l'établissement vérifie et enregistre.
+     */
+    public function seriesClasses(Request $request)
+    {
+        $ecole = $this->ecole();
+        $classes = DB::table('classe')->where('idEcole', $ecole->idEcole)->where('ordreEnseignement', 'secondairegenerale')
+            ->orderBy('nom_classe')->get(['id_classe', 'nom_classe', 'serie'])
+            ->map(function ($c) {
+                $c->choisie = isset(\App\Support\Series::RAPPORTS[$c->serie]) && \App\Support\RapportSuccinctDonnees::serie($c->nom_classe, $c->serie) === \App\Support\Series::RAPPORTS[$c->serie][2];
+                $c->proposee = \App\Support\Series::codePourCle(\App\Support\RapportSuccinctDonnees::serie($c->nom_classe, $c->serie));
+
+                return $c;
+            });
+
+        return view('rapports-secondaire.series', ['ecole' => $ecole, 'classes' => $classes, 'retour' => $request->query('retour')]);
+    }
+
+    public function enregistrerSeries(Request $request)
+    {
+        $ecole = $this->ecole();
+        $data = $request->validate(['serie' => 'required|array', 'serie.*' => ['required', \Illuminate\Validation\Rule::in(array_keys(\App\Support\Series::RAPPORTS))]],
+            ['serie.*.required' => 'Choisissez la série de chaque classe.', 'serie.*.in' => 'Série inconnue.']);
+        $n = 0;
+        foreach ($data['serie'] as $idClasse => $code) {
+            $n += DB::table('classe')->where('id_classe', (int) $idClasse)->where('idEcole', $ecole->idEcole)->where('ordreEnseignement', 'secondairegenerale')->update(['serie' => $code]);
+        }
+        $retour = $request->input('retour');
+
+        return redirect()->route('rapport-secondaire.series', $retour ? ['retour' => $retour] : [])
+            ->with('success', "Séries enregistrées ({$n} classe(s) modifiée(s)). Les rapports classent désormais vos classes d'après ces séries. Pensez à « Reprendre les chiffres de KalanNet » dans vos rapports.");
+    }
+
+    /** Classes du général dont la série n'a pas été choisie dans la liste (bandeau des rapports). */
+    public static function classesSansSerie(int $idEcole): int
+    {
+        return DB::table('classe')->where('idEcole', $idEcole)->where('ordreEnseignement', 'secondairegenerale')
+            ->where(fn ($q) => $q->whereNull('serie')->orWhereNotIn('serie', array_keys(\App\Support\Series::RAPPORTS)))->count();
+    }
+
     /** Année du DEF (CG) des élèves du général, classe par classe : la scolarité des tableaux T9 et T11 en dépend. */
     public function anneesDef(Request $request)
     {
