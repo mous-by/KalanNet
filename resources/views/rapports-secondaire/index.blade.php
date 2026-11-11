@@ -106,11 +106,18 @@
         <div class="card theme-card shadow-sm mb-3">
             <div class="card-header theme-header"><h6 class="mb-0 fw-bold">Partie administrative</h6></div>
             <div class="card-body d-grid gap-3">
+                <div class="alert alert-light border small mb-0"><i class="bi bi-stars me-1"></i><strong>Kalanbot</strong> peut proposer un brouillon de chaque rubrique à partir des chiffres de votre rapport (aucun nom de personne ne lui est envoyé). Il laisse « [à compléter] » ce que les chiffres ne disent pas : relisez, corrigez et complétez avant d'enregistrer.</div>
                 <p class="small text-muted mb-0">À rédiger par l'établissement. Les annexes nominatives (élèves par classe{{ $type === 'fin' ? ', décisions de passage, de redoublement et d\'exclusion' : ' et par commune' }}) sont ajoutées automatiquement au PDF et à l'Excel.</p>
                 @foreach($redaction as $cle => [$titre, $aide])
                     <div>
-                        <label class="form-label small fw-bold mb-1" for="redaction-{{ $cle }}">{{ $titre }}</label>
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                            <label class="form-label small fw-bold mb-0 me-auto" for="redaction-{{ $cle }}">{{ $titre }}</label>
+                            <button type="button" class="btn btn-sm btn-outline-primary" data-kalanbot="{{ $cle }}" title="Kalanbot rédige un brouillon à partir des chiffres du rapport ; relisez-le et complétez-le.">
+                                <span class="spinner-border spinner-border-sm me-1 d-none" role="status" aria-hidden="true"></span><i class="bi bi-stars me-1"></i>Proposer avec Kalanbot
+                            </button>
+                        </div>
                         @if($aide)<div class="form-text mt-0 mb-1">{{ $aide }}</div>@endif
+                        <div class="small mb-1 d-none" data-kalanbot-retour="{{ $cle }}"></div>
                         <textarea class="form-control" rows="4" maxlength="20000" name="redaction[{{ $cle }}]" id="redaction-{{ $cle }}">{{ old("redaction.$cle", $donnees['redaction'][$cle] ?? '') }}</textarea>
                     </div>
                 @endforeach
@@ -179,6 +186,49 @@
             });
             form.addEventListener('input', totaux);
             totaux();
+
+            // Kalanbot : brouillon d'une rubrique, à partir de ce qui est à l'écran (même non enregistré).
+            const saisieTableaux = () => {
+                const t = {};
+                form.querySelectorAll('[data-t]').forEach((champ) => {
+                    if (champ.value === '') return;
+                    const [code, ligne, colonne] = champ.dataset.t.split('|');
+                    ((t[code] ??= {})[ligne] ??= {})[colonne] = champ.value;
+                });
+                return JSON.stringify(t);
+            };
+            form.querySelectorAll('[data-kalanbot]').forEach((bouton) => bouton.addEventListener('click', async () => {
+                const cle = bouton.dataset.kalanbot;
+                const zone = document.getElementById('redaction-' + cle);
+                const retour = form.querySelector('[data-kalanbot-retour="' + cle + '"]');
+                if (zone.value.trim() !== '' && !confirm('Cette rubrique contient déjà du texte. Le remplacer par la proposition de Kalanbot ?')) return;
+                const donnees = new FormData(form);
+                donnees.set('rubrique', cle);
+                donnees.set('tableaux_json', saisieTableaux());
+                bouton.disabled = true;
+                bouton.querySelector('.spinner-border').classList.remove('d-none');
+                retour.className = 'small mb-1 text-muted';
+                retour.textContent = 'Kalanbot rédige… (quelques secondes)';
+                try {
+                    const reponse = await fetch(@json(route('rapport-secondaire.kalanbot', [$type, 'annee' => $annee->id_anneeScolaire])), { method: 'POST', body: donnees, headers: { 'Accept': 'application/json' } });
+                    const json = await reponse.json().catch(() => ({}));
+                    if (reponse.ok && json.ok) {
+                        zone.value = json.texte;
+                        zone.rows = Math.max(6, Math.min(18, json.texte.split('\n').length + 4));
+                        retour.className = 'small mb-1 text-success fw-semibold';
+                        retour.textContent = 'Brouillon de Kalanbot : relisez-le, remplacez les « [à compléter] », puis enregistrez le rapport.';
+                    } else {
+                        retour.className = 'small mb-1 text-danger';
+                        retour.textContent = reponse.status === 429 ? 'Trop de demandes : patientez une minute.' : (json.message || 'Kalanbot est momentanément indisponible. Votre texte n\'a pas été modifié.');
+                    }
+                } catch (e) {
+                    retour.className = 'small mb-1 text-danger';
+                    retour.textContent = 'Connexion impossible. Votre texte n\'a pas été modifié.';
+                } finally {
+                    bouton.disabled = false;
+                    bouton.querySelector('.spinner-border').classList.add('d-none');
+                }
+            }));
 
             // Tous les tableaux partent dans un seul champ : la limite de champs de PHP ne peut rien tronquer.
             form.addEventListener('submit', () => {

@@ -255,6 +255,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/rapport-secondaire-def', [\App\Http\Controllers\RapportSecondaireController::class, 'enregistrerAnneesDef'])->name('rapport-secondaire.def.store');
     Route::get('/rapport-secondaire/{type}', [\App\Http\Controllers\RapportSecondaireController::class, 'index'])->whereIn('type', ['rentree', 'fin'])->name('rapport-secondaire.index');
     Route::post('/rapport-secondaire/{type}', [\App\Http\Controllers\RapportSecondaireController::class, 'store'])->whereIn('type', ['rentree', 'fin'])->name('rapport-secondaire.store');
+    Route::post('/rapport-secondaire/{type}/kalanbot', [\App\Http\Controllers\RapportSecondaireController::class, 'kalanbot'])->whereIn('type', ['rentree', 'fin'])->middleware('throttle:10,1')->name('rapport-secondaire.kalanbot');
     Route::get('/rapport-secondaire/{type}/canevas', [\App\Http\Controllers\RapportSecondaireController::class, 'canevas'])->whereIn('type', ['rentree', 'fin'])->name('rapport-secondaire.canevas');
     Route::post('/rapport-secondaire-maquette', [\App\Http\Controllers\RapportSecondaireController::class, 'maquette'])->name('rapport-secondaire.maquette');
     Route::get('/territoire/rapports-secondaire/{id}/canevas', [\App\Http\Controllers\RapportSecondaireController::class, 'canevasTerritoire'])->whereNumber('id')->name('territoire.rapports-secondaire.canevas');

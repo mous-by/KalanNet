@@ -163,6 +163,27 @@ class RapportSecondaireController extends Controller
         return redirect()->route('rapport-secondaire.index', $retour)->with('success', 'Rapport envoyé à votre académie.');
     }
 
+    /**
+     * Brouillon de Kalanbot pour une rubrique de la partie administrative, à partir de ce qui est à l'écran (même non
+     * enregistré). Rien n'est enregistré ici : l'établissement relit, corrige, puis enregistre son rapport.
+     */
+    public function kalanbot(Request $request, string $type, \App\Services\Rapports\RedactionKalanbot $redaction)
+    {
+        $type = $this->type($type);
+        $ecole = $this->ecole();
+        $annee = $this->annee($request, $ecole, $type);
+        $request->validate(['rubrique' => 'required|string|max:40', 'infos' => 'nullable|array', 'infos.*' => 'nullable|string|max:255',
+            'redaction' => 'nullable|array', 'redaction.*' => 'nullable|string|max:20000', 'tableaux_json' => 'nullable|string']);
+
+        $tableaux = Donnees::tableaux($type, (int) $ecole->idEcole, $annee);
+        $saisie = json_decode((string) $request->input('tableaux_json', '{}'), true);
+        $donnees = ['type' => $type, 'infos' => (array) $request->input('infos', []), 'redaction' => (array) $request->input('redaction', []),
+            't' => Donnees::assainir(is_array($saisie) ? $saisie : [], $tableaux)];
+        $resultat = $redaction->proposer($type, (string) $request->input('rubrique'), $donnees, $tableaux, (string) $ecole->nomEcole, (string) $annee->annee);
+
+        return response()->json($resultat, $resultat['ok'] ? 200 : 503);
+    }
+
     /** Année du DEF (CG) des élèves du général, classe par classe : la scolarité des tableaux T9 et T11 en dépend. */
     public function anneesDef(Request $request)
     {

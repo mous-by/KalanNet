@@ -197,6 +197,41 @@ class RapportSecondaireTest extends IntegrationTestCase
         $this->get($this->url('rentree', 'rapport-secondaire.index'))->assertOk()->assertSee('élève(s) sans année du DEF')->assertSee('T7 suite');
     }
 
+    public function test_kalanbot_propose_un_brouillon_sans_aucun_nom(): void
+    {
+        config(['services.assistant.provider' => 'gemini', 'services.assistant.gemini.key' => 'cle-de-test', 'services.assistant.gemini.endpoint' => 'https://gemini.test/v1beta']);
+        $envoye = null;
+        $panne = false;
+        \Illuminate\Support\Facades\Http::fake(['gemini.test/*' => function ($requete) use (&$envoye, &$panne) {
+            if ($panne) {
+                return \Illuminate\Support\Facades\Http::response('erreur', 500);
+            }
+            $envoye = $requete->data();
+
+            return \Illuminate\Support\Facades\Http::response(['candidates' => [['content' => ['parts' => [['text' => "## Présentation\n**Notre établissement** compte 5 élèves. [à compléter : historique]"]]]]]]);
+        }]);
+        $this->actingAs($this->adminComplet(1))->withSession(['idEcole' => 1]);
+        $url = route('rapport-secondaire.kalanbot', ['type' => 'rentree', 'annee' => $this->annee->id_anneeScolaire], false);
+        $champs = ['rubrique' => 'presentation', 'infos' => ['region' => 'Ségou', 'telephone' => '76000000'],
+            'tableaux_json' => json_encode(['T5' => ['10CG' => ['f' => 7]], 'T24' => ['l0' => ['nom' => 'TRAORE Moussa']], 'T21' => ['n1' => ['prenoms' => 'Awa', 'nom' => 'KONE']]])];
+
+        $reponse = $this->postJson($url, $champs)->assertOk()->json();
+        $this->assertTrue($reponse['ok']);
+        $this->assertSame("Présentation\nNotre établissement compte 5 élèves. [à compléter : historique]", $reponse['texte'], 'sans Markdown');
+        $demande = json_encode($envoye, JSON_UNESCAPED_UNICODE);
+        $this->assertStringContainsString('Ségou', $demande);
+        $this->assertStringContainsString('= 7', $demande, 'chiffres du rapport');
+        foreach (['TRAORE', 'KONE', '76000000'] as $interdit) {
+            $this->assertStringNotContainsString($interdit, $demande, 'aucun nom ni coordonnée envoyés');
+        }
+        $this->assertNull(RapportSecondaire::withoutGlobalScopes()->where('id_ecole', 1)->first(), 'rien n\'est enregistré');
+
+        // Panne de Gemini : message clair, aucune réponse prise pour du texte.
+        $panne = true;
+        $this->postJson($url, $champs)->assertStatus(503)->assertJson(['ok' => false]);
+        $this->postJson($url, ['rubrique' => 'inconnue'])->assertStatus(503)->assertJson(['ok' => false, 'message' => 'Rubrique inconnue.']);
+    }
+
     public function test_saisie_controlee_et_remise_sur_papier(): void
     {
         DB::table('utilisateurs')->where('droit', 'DAE')->update(['statut' => 0]);
