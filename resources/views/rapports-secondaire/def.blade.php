@@ -49,13 +49,14 @@
             <div class="card theme-card shadow-sm mb-3">
                 <div class="card-header theme-header d-flex flex-wrap align-items-center gap-2">
                     <h6 class="mb-0 fw-bold me-auto">{{ $classe }} <span class="fw-normal small">({{ $eleves->count() }} élève(s), {{ $eleves->whereNull('annee_def')->count() }} sans année)</span></h6>
-                    <div class="input-group input-group-sm" style="width: 260px;">
-                        <span class="input-group-text">Toute la classe</span>
-                        <input type="number" class="form-control" min="1980" max="{{ date('Y') + 1 }}" placeholder="{{ $debut }}" data-remplir aria-label="Année du DEF pour toute la classe {{ $classe }}">
-                        <button type="button" class="btn btn-light" data-remplir-bouton title="Remplir les cases vides de la classe">Remplir</button>
-                    </div>
                 </div>
                 <div class="card-body">
+                    {{-- Même année pour toute la classe (cases vides seulement) : sur fond clair, bien visible. --}}
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-3 p-2 rounded border bg-light-subtle">
+                        <label class="fw-semibold mb-0" for="remplir-{{ $loop->index }}">Toute la classe :</label>
+                        <input type="number" id="remplir-{{ $loop->index }}" class="form-control" style="width: 120px;" min="1980" max="{{ date('Y') + 1 }}" placeholder="{{ $debut }}" data-remplir aria-label="Année du DEF pour toute la classe {{ $classe }}">
+                        <button type="button" class="btn btn-primary" data-remplir-bouton><i class="bi bi-magic me-1"></i>Remplir les cases vides de la classe</button>
+                    </div>
                     <div class="table-responsive">
                         <table class="table table-sm table-striped align-middle mb-0">
                             <thead><tr><th>Élève</th><th>Matricule</th><th style="width: 180px;">Année du DEF</th><th>Scolarité</th></tr></thead>
