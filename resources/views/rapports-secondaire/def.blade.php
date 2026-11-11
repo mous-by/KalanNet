@@ -28,22 +28,27 @@
         Elle est déjà remplie quand l'élève a eu son DEF dans votre établissement (résultats nationaux).
     </div>
 
-    @if($parClasse->isNotEmpty())
-        <div class="card theme-card shadow-sm mb-3">
-            <div class="card-body d-flex flex-wrap align-items-center gap-3">
-                <div class="me-auto">
-                    <div class="fw-bold">Aller vite : tout remplir d'un coup</div>
-                    <div class="small text-muted">Propose pour chaque case vide l'année attendue : 10e = CG{{ substr((string) $debut, -2) }}, 11e = CG{{ substr((string) ($debut - 1), -2) }},
-                        terminale = CG{{ substr((string) ($debut - 2), -2) }}, un an plus tôt par redoublement connu dans KalanNet. Corrigez ensuite les exceptions (élèves venus d'ailleurs, redoublements non enregistrés), puis enregistrez.</div>
-                </div>
-                <button type="button" class="btn btn-primary" id="tout-proposer"><i class="bi bi-magic me-1"></i>Remplir toutes les cases vides</button>
-            </div>
-        </div>
-    @endif
-
-    <form method="POST" action="{{ route('rapport-secondaire.def.store') }}">
+    <form method="POST" action="{{ route('rapport-secondaire.def.store') }}" id="form-def">
         @csrf
         <input type="hidden" name="annee" value="{{ $annee->id_anneeScolaire }}">
+        {{-- Toutes les années partent dans un seul champ : la limite de champs de PHP ne peut rien tronquer (grands lycées). --}}
+        <input type="hidden" name="def_json" id="def_json">
+
+        @if($parClasse->isNotEmpty())
+            {{-- Barre d'actions, toujours visible en faisant défiler. --}}
+            <div class="card theme-card shadow-sm mb-3 sticky-top" style="top: 70px; z-index: 5;">
+                <div class="card-body d-flex flex-wrap align-items-center gap-3">
+                    <div class="me-auto">
+                        <div class="fw-bold">Aller vite : tout remplir d'un coup, puis enregistrer</div>
+                        <div class="small text-muted">Propose pour chaque case vide l'année attendue : 10e = CG{{ substr((string) $debut, -2) }}, 11e = CG{{ substr((string) ($debut - 1), -2) }},
+                            terminale = CG{{ substr((string) ($debut - 2), -2) }}, un an plus tôt par redoublement connu dans KalanNet. Corrigez les exceptions, puis enregistrez.</div>
+                        <div class="small fw-semibold text-success mt-1" id="retour-remplissage" hidden></div>
+                    </div>
+                    <button type="button" class="btn btn-primary" id="tout-proposer"><i class="bi bi-magic me-1"></i>Remplir toutes les cases vides</button>
+                    <button type="submit" class="btn btn-success"><i class="bi bi-check2 me-1"></i>Enregistrer</button>
+                </div>
+            </div>
+        @endif
 
         @forelse($parClasse as $classe => $eleves)
             <div class="card theme-card shadow-sm mb-3">
@@ -51,12 +56,6 @@
                     <h6 class="mb-0 fw-bold me-auto">{{ $classe }} <span class="fw-normal small">({{ $eleves->count() }} élève(s), {{ $eleves->whereNull('annee_def')->count() }} sans année)</span></h6>
                 </div>
                 <div class="card-body">
-                    {{-- Même année pour toute la classe (cases vides seulement) : sur fond clair, bien visible. --}}
-                    <div class="d-flex flex-wrap align-items-center gap-2 mb-3 p-2 rounded border bg-light-subtle">
-                        <label class="fw-semibold mb-0" for="remplir-{{ $loop->index }}">Toute la classe :</label>
-                        <input type="number" id="remplir-{{ $loop->index }}" class="form-control" style="width: 120px;" min="1980" max="{{ date('Y') + 1 }}" placeholder="{{ $debut }}" data-remplir aria-label="Année du DEF pour toute la classe {{ $classe }}">
-                        <button type="button" class="btn btn-primary" data-remplir-bouton><i class="bi bi-magic me-1"></i>Remplir les cases vides de la classe</button>
-                    </div>
                     <div class="table-responsive">
                         <table class="table table-sm table-striped align-middle mb-0">
                             <thead><tr><th>Élève</th><th>Matricule</th><th style="width: 180px;">Année du DEF</th><th>Scolarité</th></tr></thead>
@@ -65,7 +64,7 @@
                                     <tr>
                                         <td>{{ $e->prenom_eleve }} {{ $e->nom_eleve }}</td>
                                         <td>{{ $e->matricule }}</td>
-                                        <td><input type="number" name="def[{{ $e->id_eleve }}]" class="form-control form-control-sm" min="1980" max="{{ date('Y') + 1 }}" value="{{ old('def.'.$e->id_eleve, $e->annee_def) }}" data-propose="{{ $proposees[$e->id_eleve] ?? '' }}" placeholder="{{ $proposees[$e->id_eleve] ?? '' }}" data-def aria-label="Année du DEF de {{ $e->prenom_eleve }} {{ $e->nom_eleve }}"></td>
+                                        <td><input type="number" name="def[{{ $e->id_eleve }}]" data-eleve="{{ $e->id_eleve }}" class="form-control form-control-sm" min="1980" max="{{ date('Y') + 1 }}" value="{{ old('def.'.$e->id_eleve, $e->annee_def) }}" data-propose="{{ $proposees[$e->id_eleve] ?? '' }}" placeholder="{{ $proposees[$e->id_eleve] ?? '' }}" data-def aria-label="Année du DEF de {{ $e->prenom_eleve }} {{ $e->nom_eleve }}"></td>
                                         <td class="small text-muted" data-scolarite>{{ $e->annee_def ? ($debut - $e->annee_def + 1).' an(s)' : '—' }}</td>
                                     </tr>
                                 @endforeach
@@ -79,7 +78,7 @@
         @endforelse
 
         @if($parClasse->isNotEmpty())
-            <div class="text-end mb-4"><button type="submit" class="btn btn-primary px-4"><i class="bi bi-check2 me-1"></i>Enregistrer</button></div>
+            <div class="text-end mb-4"><button type="submit" class="btn btn-success px-4"><i class="bi bi-check2 me-1"></i>Enregistrer</button></div>
         @endif
     </form>
 @endsection
@@ -94,19 +93,21 @@
                 cellule.textContent = annee ? (debut - annee + 1) + ' an(s)' : '—';
             };
             document.querySelectorAll('[data-def]').forEach((input) => input.addEventListener('input', () => scolarite(input)));
+            const retour = document.getElementById('retour-remplissage');
             document.getElementById('tout-proposer')?.addEventListener('click', () => {
                 let n = 0;
                 document.querySelectorAll('[data-def]').forEach((input) => {
-                    if (input.value === '' && input.dataset.propose) { input.value = input.dataset.propose; input.classList.add('bg-warning-subtle'); scolarite(input); n++; }
+                    if (input.value === '' && input.dataset.propose) { input.value = input.dataset.propose; input.style.setProperty('background-color', '#fff3cd', 'important'); scolarite(input); n++; }
                 });
-                if (n === 0) alert('Aucune case vide à remplir.');
+                retour.hidden = false;
+                retour.textContent = n > 0 ? n + ' case(s) remplie(s), surlignée(s) en jaune. Vérifiez les exceptions puis cliquez sur « Enregistrer ».' : 'Aucune case vide à remplir.';
             });
-            document.querySelectorAll('[data-remplir-bouton]').forEach((bouton) => bouton.addEventListener('click', () => {
-                const carte = bouton.closest('.card');
-                const valeur = carte.querySelector('[data-remplir]').value;
-                if (!valeur) return;
-                carte.querySelectorAll('[data-def]').forEach((input) => { if (input.value === '') { input.value = valeur; scolarite(input); } });
-            }));
+            document.getElementById('form-def')?.addEventListener('submit', () => {
+                const valeurs = {};
+                document.querySelectorAll('[data-def]').forEach((input) => { valeurs[input.dataset.eleve] = input.value; });
+                document.getElementById('def_json').value = JSON.stringify(valeurs);
+                document.querySelectorAll('[data-def]').forEach((input) => input.removeAttribute('name'));
+            });
         })();
     </script>
 @endpush

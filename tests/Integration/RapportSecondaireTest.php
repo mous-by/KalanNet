@@ -188,6 +188,11 @@ class RapportSecondaireTest extends IntegrationTestCase
         $this->post(route('rapport-secondaire.def.store', [], false), ['annee' => $this->annee->id_anneeScolaire, 'def' => [$this->eleves[0] => $debut, $this->eleves[1] => '']])
             ->assertRedirect()->assertSessionHas('success');
         $this->assertSame($debut, (int) DB::table('eleve')->where('id_eleve', $this->eleves[0])->value('annee_def'));
+        // Envoi de l'écran : un seul champ JSON.
+        $this->post(route('rapport-secondaire.def.store', [], false), ['annee' => $this->annee->id_anneeScolaire, 'def_json' => json_encode([$this->eleves[1] => (string) ($debut - 1)])])
+            ->assertSessionHas('success', fn ($m) => str_contains($m, '1 élève(s) ont leur année du DEF'));
+        $this->assertSame($debut - 1, (int) DB::table('eleve')->where('id_eleve', $this->eleves[1])->value('annee_def'));
+        $this->get(route('rapport-secondaire.def', ['annee' => $this->annee->id_anneeScolaire], false))->assertSee('Enregistré :')->assertSee('id="def_json"', false);
         $this->post(route('rapport-secondaire.def.store', [], false), ['annee' => $this->annee->id_anneeScolaire, 'def' => [$this->eleves[0] => 1800]])->assertSessionHasErrors();
         $this->get($this->url('rentree', 'rapport-secondaire.index'))->assertOk()->assertSee('élève(s) sans année du DEF')->assertSee('T7 suite');
     }

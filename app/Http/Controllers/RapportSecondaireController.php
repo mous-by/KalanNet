@@ -183,16 +183,23 @@ class RapportSecondaireController extends Controller
     {
         $ecole = $this->ecole();
         $annee = $this->annee($request, $ecole);
+        // Les années arrivent dans un seul champ JSON (grands lycées : la limite de champs de PHP ne tronque rien) ; def[] reste accepté.
+        $json = json_decode((string) $request->input('def_json', ''), true);
+        if (is_array($json)) {
+            $request->merge(['def' => $json]);
+        }
         $data = $request->validate(['def' => 'nullable|array', 'def.*' => 'nullable|integer|between:1980,'.(date('Y') + 1)],
             ['def.*.between' => "Une année du DEF doit être comprise entre 1980 et l'an prochain.", 'def.*.integer' => 'Une année du DEF doit être une année (ex. 2026).']);
         $n = 0;
+        $remplies = 0;
         foreach ($data['def'] ?? [] as $idEleve => $valeur) {
-            $n += DB::table('eleve')->where('id_eleve', (int) $idEleve)->where('id_ecole', $ecole->idEcole)
-                ->update(['annee_def' => $valeur !== null && $valeur !== '' ? (int) $valeur : null]);
+            $valeur = $valeur !== null && $valeur !== '' ? (int) $valeur : null;
+            $remplies += $valeur ? 1 : 0;
+            $n += DB::table('eleve')->where('id_eleve', (int) $idEleve)->where('id_ecole', $ecole->idEcole)->update(['annee_def' => $valeur]);
         }
 
         return redirect()->route('rapport-secondaire.def', ['annee' => $annee->id_anneeScolaire])
-            ->with('success', "Années du DEF enregistrées ({$n} élève(s) modifié(s)). Reprenez les chiffres de KalanNet dans le rapport de rentrée pour mettre à jour T9.");
+            ->with('success', "Enregistré : {$remplies} élève(s) ont leur année du DEF ({$n} modification(s)). Dans le rapport de rentrée, cliquez sur « Reprendre les chiffres de KalanNet » pour mettre à jour T9.");
     }
 
     public function pdf(Request $request, string $type)
