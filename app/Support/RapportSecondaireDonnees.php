@@ -91,6 +91,24 @@ class RapportSecondaireDonnees
         return max($niveau, min($niveau === 1 ? 3 : $niveau + 3, $ans));
     }
 
+    /**
+     * Année du DEF proposée pour chaque élève du général : celle des résultats nationaux, sinon déduite de la classe et des
+     * redoublements connus (10e : DEF de l'année, 11e : de l'année d'avant, terminale : deux ans avant ; un an de plus par
+     * redoublement). L'établissement ne corrige que les exceptions.
+     *
+     * @return array<int, int> id_eleve => année
+     */
+    public static function anneesDefProposees(int $idEcole, object $annee): array
+    {
+        $lignes = self::lignes($idEcole);
+        $generales = array_filter($lignes['classes'], fn ($cle) => !str_starts_with($cle, 'c'));
+        $debut = (int) substr((string) $annee->date_debut, 0, 4);
+
+        return self::eleves($idEcole, (int) $annee->id_anneeScolaire, $generales)->where('actif', true)
+            ->mapWithKeys(fn ($e) => [(int) $e->id_eleve => $e->annee_def ? (int) $e->annee_def : $debut - (self::niveau($e->cle, $lignes['series']) + $e->redoublements) + 1])
+            ->all();
+    }
+
     /** Élèves du général sans année du DEF (ni sur la fiche, ni dans les résultats nationaux). */
     public static function sansAnneeDuDef(int $idEcole, object $annee): int
     {

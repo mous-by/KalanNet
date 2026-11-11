@@ -175,6 +175,7 @@ class RapportSecondaireController extends Controller
             ->get(['e.id_eleve', 'e.prenom_eleve', 'e.nom_eleve', 'e.matricule', 'e.annee_def', 'c.nom_classe', 'c.id_classe']);
 
         return view('rapports-secondaire.def', ['ecole' => $ecole, 'annee' => $annee, 'parClasse' => $eleves->groupBy('nom_classe'),
+            'proposees' => Donnees::anneesDefProposees((int) $ecole->idEcole, $annee),
             'debut' => (int) substr((string) $annee->date_debut, 0, 4)]);
     }
 

@@ -182,7 +182,9 @@ class RapportSecondaireTest extends IntegrationTestCase
         $this->actingAs($this->adminComplet(1))->withSession(['idEcole' => 1]);
         $debut = (int) substr((string) $this->annee->date_debut, 0, 4);
         $this->get(route('rapport-secondaire.def', ['annee' => $this->annee->id_anneeScolaire], false))->assertOk()
-            ->assertSee('Année du DEF des élèves')->assertSee('10ème année commune')->assertDontSee('1ère année Génie civil');
+            ->assertSee('Année du DEF des élèves')->assertSee('10ème année commune')->assertDontSee('1ère année Génie civil')
+            ->assertSee('Remplir toutes les cases vides')->assertSee('data-propose="'.$debut.'"', false)
+            ->assertSee('data-propose="'.($debut - 3).'"', false);
         $this->post(route('rapport-secondaire.def.store', [], false), ['annee' => $this->annee->id_anneeScolaire, 'def' => [$this->eleves[0] => $debut, $this->eleves[1] => '']])
             ->assertRedirect()->assertSessionHas('success');
         $this->assertSame($debut, (int) DB::table('eleve')->where('id_eleve', $this->eleves[0])->value('annee_def'));

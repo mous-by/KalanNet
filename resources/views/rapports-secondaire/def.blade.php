@@ -28,6 +28,19 @@
         Elle est déjà remplie quand l'élève a eu son DEF dans votre établissement (résultats nationaux).
     </div>
 
+    @if($parClasse->isNotEmpty())
+        <div class="card theme-card shadow-sm mb-3">
+            <div class="card-body d-flex flex-wrap align-items-center gap-3">
+                <div class="me-auto">
+                    <div class="fw-bold">Aller vite : tout remplir d'un coup</div>
+                    <div class="small text-muted">Propose pour chaque case vide l'année attendue : 10e = CG{{ substr((string) $debut, -2) }}, 11e = CG{{ substr((string) ($debut - 1), -2) }},
+                        terminale = CG{{ substr((string) ($debut - 2), -2) }}, un an plus tôt par redoublement connu dans KalanNet. Corrigez ensuite les exceptions (élèves venus d'ailleurs, redoublements non enregistrés), puis enregistrez.</div>
+                </div>
+                <button type="button" class="btn btn-primary" id="tout-proposer"><i class="bi bi-magic me-1"></i>Remplir toutes les cases vides</button>
+            </div>
+        </div>
+    @endif
+
     <form method="POST" action="{{ route('rapport-secondaire.def.store') }}">
         @csrf
         <input type="hidden" name="annee" value="{{ $annee->id_anneeScolaire }}">
@@ -51,7 +64,7 @@
                                     <tr>
                                         <td>{{ $e->prenom_eleve }} {{ $e->nom_eleve }}</td>
                                         <td>{{ $e->matricule }}</td>
-                                        <td><input type="number" name="def[{{ $e->id_eleve }}]" class="form-control form-control-sm" min="1980" max="{{ date('Y') + 1 }}" value="{{ old('def.'.$e->id_eleve, $e->annee_def) }}" data-def aria-label="Année du DEF de {{ $e->prenom_eleve }} {{ $e->nom_eleve }}"></td>
+                                        <td><input type="number" name="def[{{ $e->id_eleve }}]" class="form-control form-control-sm" min="1980" max="{{ date('Y') + 1 }}" value="{{ old('def.'.$e->id_eleve, $e->annee_def) }}" data-propose="{{ $proposees[$e->id_eleve] ?? '' }}" placeholder="{{ $proposees[$e->id_eleve] ?? '' }}" data-def aria-label="Année du DEF de {{ $e->prenom_eleve }} {{ $e->nom_eleve }}"></td>
                                         <td class="small text-muted" data-scolarite>{{ $e->annee_def ? ($debut - $e->annee_def + 1).' an(s)' : '—' }}</td>
                                     </tr>
                                 @endforeach
@@ -80,6 +93,13 @@
                 cellule.textContent = annee ? (debut - annee + 1) + ' an(s)' : '—';
             };
             document.querySelectorAll('[data-def]').forEach((input) => input.addEventListener('input', () => scolarite(input)));
+            document.getElementById('tout-proposer')?.addEventListener('click', () => {
+                let n = 0;
+                document.querySelectorAll('[data-def]').forEach((input) => {
+                    if (input.value === '' && input.dataset.propose) { input.value = input.dataset.propose; input.classList.add('bg-warning-subtle'); scolarite(input); n++; }
+                });
+                if (n === 0) alert('Aucune case vide à remplir.');
+            });
             document.querySelectorAll('[data-remplir-bouton]').forEach((bouton) => bouton.addEventListener('click', () => {
                 const carte = bouton.closest('.card');
                 const valeur = carte.querySelector('[data-remplir]').value;

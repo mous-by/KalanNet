@@ -77,23 +77,50 @@ class RapportSuccinctDonnees
     }
 
     /** Série d'une classe de secondaire général, d'après son nom et sa série ; null si elle n'est pas reconnue. */
+    /**
+     * Série d'une classe du général, d'après son nom et la série choisie à sa création. Le niveau écrit dans le nom
+     * (10e, 11e) l'emporte : une 11e dont la série vaut « LL (Langues et Littérature) », c'est-à-dire la terminale TLL,
+     * reste une 11e Lettres (et non une terminale).
+     */
     public static function serie(?string $nom, ?string $serie = null): ?string
     {
         $texte = Str::lower(Str::ascii(trim($nom.' '.$serie)));
-        foreach (['TSEXP' => 't\s*s?\s*\.?exp', 'TSECO' => 't\s*s?\s*\.?eco', 'TSS' => 'tss', 'TSE' => 'tse', 'TAL' => 'tal', 'TLL' => 'tll'] as $code => $motif) {
-            if (preg_match('/\b'.$motif.'/', $texte)) {
-                return $code;
-            }
-        }
         $niveau = ExamenNational::extractClasseLevel($nom);
         if ($niveau === 10) {
             return '10CG';
         }
         if ($niveau === 11) {
+            // Série choisie à la création : la série de 11e elle-même, ou une série de terminale ramenée à sa 11e d'origine.
+            $code = Str::lower(trim((string) $serie));
+            $depuisSerie = match (true) {
+                in_array($code, ['ll', 'tll', 'lat', 'tal'], true) => '11L',
+                in_array($code, ['sciences', 'tse', 'texp', 'tsexp'], true) => '11S',
+                in_array($code, ['ses', 'tss', 'tseco'], true) => '11SES',
+                default => null,
+            };
+
+            return $depuisSerie ?? match (true) {
+                (bool) preg_match('/\bses\b|economi|\btss\b|\btseco\b/', $texte) => '11SES',
+                (bool) preg_match('/lettre|litter|langue|\bl\b|\bll\b|\btll\b|\btal\b|\blat\b/', $texte) => '11L',
+                (bool) preg_match('/science|\bs\b|\btse\b|\bexp/', $texte) => '11S',
+                default => null,
+            };
+        }
+        // Terminales : série choisie à la création (codes de App\Support\Series), puis le nom.
+        $terminale = ['tll' => 'TLL', 'lat' => 'TAL', 'tss' => 'TSS', 'tseco' => 'TSECO', 'tse' => 'TSE', 'texp' => 'TSEXP'][Str::lower(trim((string) $serie))] ?? null;
+        if ($terminale) {
+            return $terminale;
+        }
+        foreach (['TSEXP' => 't\s*s?\s*\.?exp', 'TSECO' => 't\s*s?\s*\.?eco', 'TSS' => 'tss', 'TSE' => 'tse', 'TAL' => 'tal', 'TLL' => 'tll'] as $code => $motif) {
+            if (preg_match('/\b'.$motif.'/', $texte)) {
+                return $code;
+            }
+        }
+
+        if ($niveau === 12 || str_contains($texte, 'terminale')) {
             return match (true) {
-                (bool) preg_match('/\bses\b|economi/', $texte) => '11SES',
-                (bool) preg_match('/lettre|litter|\bl\b/', $texte) => '11L',
-                (bool) preg_match('/science|\bs\b/', $texte) => '11S',
+                (bool) preg_match('/\blat\b|\bal\b/', $texte) => 'TAL',
+                (bool) preg_match('/\bll\b/', $texte) => 'TLL',
                 default => null,
             };
         }
