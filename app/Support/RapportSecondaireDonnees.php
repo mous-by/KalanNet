@@ -284,10 +284,22 @@ class RapportSecondaireDonnees
                 self::ajouter($t, 'T15', $cle, $colonne);
             }
             self::recapitulatifs($t, $lignes);
+            // Bac de la session : présentés et admis par tranche de moyenne annuelle (T16), liste des admis avec leur moyenne (T23).
+            $bacSession = self::bac($idEcole, (string) $annee->annee, $classes)->filter(fn ($r) => in_array($r->cle, self::TERMINALES, true));
+            $moyennes = self::moyennesAnnuelles($bacSession, (int) $annee->id_anneeScolaire);
             $n = 0;
-            foreach (self::bac($idEcole, (string) $annee->annee, $classes)->where('decision', 'admis') as $r) {
-                if (isset($lignes['terminales'][$r->cle])) {
-                    $t['T23']['n'.(++$n)] = array_filter(['prenoms' => $r->prenom_eleve, 'nom' => $r->nom_eleve, 'matricule' => $r->matricule, 'serie' => $r->cle], fn ($v) => filled($v));
+            foreach ($bacSession as $r) {
+                $m = $moyennes[$r->id_eleve] ?? null;
+                if ($m !== null) {
+                    $tranche = match (true) { $m < 10 => 'm10', $m < 12 => 'm12', $m < 14 => 'm14', $m < 16 => 'm16', default => 'm20' };
+                    self::ajouter($t, 'T16', $r->cle, $tranche.'_total');
+                    if ($r->decision === 'admis') {
+                        self::ajouter($t, 'T16', $r->cle, $tranche.'_admis');
+                    }
+                }
+                if ($r->decision === 'admis') {
+                    $t['T23']['n'.(++$n)] = array_filter(['prenoms' => $r->prenom_eleve, 'nom' => $r->nom_eleve, 'matricule' => $r->matricule, 'serie' => $r->cle,
+                        'moy_ann' => $m !== null ? number_format($m, 2, ',', '') : null], fn ($v) => filled($v));
                 }
             }
         }
@@ -427,6 +439,32 @@ class RapportSecondaireDonnees
     }
 
     /** @return list<array{0: string, 1: string}> ligne et colonne du tableau des moyennes, par élève qui a une moyenne */
+    /**
+     * Moyenne annuelle de chaque élève (bulletin de sa classe), null si l'élève n'en a pas.
+     *
+     * @param  Collection<int, object>  $eleves  objets avec id_eleve et id_classe
+     * @return array<int, float>
+     */
+    public static function moyennesAnnuelles(Collection $eleves, int $idAnnee): array
+    {
+        $resultat = [];
+        foreach ($eleves->groupBy('id_classe') as $idClasse => $groupe) {
+            $classe = Classe::withoutGlobalScopes()->find($idClasse);
+            if (!$classe) {
+                continue;
+            }
+            $moyennes = MoyennesAnnuelles::pour($classe, $idAnnee, ModelesBulletin::calcul(ModelesBulletin::pourClasse($classe)));
+            foreach ($groupe as $e) {
+                $m = $moyennes->pourEleve($e->id_eleve)['moyenne'] ?? null;
+                if ($m !== null) {
+                    $resultat[(int) $e->id_eleve] = (float) $m;
+                }
+            }
+        }
+
+        return $resultat;
+    }
+
     private static function tranches(Collection $eleves, int $idAnnee): array
     {
         $cases = [];
@@ -544,20 +582,85 @@ class RapportSecondaireDonnees
             return $annexes;
         }
 
-        $libelles = ['passant' => 'Passe', 'passage_force' => 'Passe', 'redoublant' => 'Redouble', 'ajourne' => 'Redouble', 'exclu_insuffisance' => 'Exclu : insuffisance de travail',
-            'exclu_epuisement' => 'Exclu : épuisement de scolarité', 'exclu' => 'Exclu', 'abandon' => 'Abandon', 'admis_sortant' => 'Admis au Bac', 'diplome_sortant' => 'Diplômé'];
-        $membres = self::membresDeLAnnee($idEcole, $annee, $lignes['classes']);
+        return self::listesT24($lignes, self::membresDeLAnnee($idEcole, $annee, $lignes['classes']), (int) $annee->id_anneeScolaire, (string) $annee->annee);
+    }
+
+    /** Ordre du canevas (T24) : passages de 10e CG, puis de chaque 11e vers ses deux terminales. */
+    private const PASSAGES_T24 = [['10CG', '11L'], ['10CG', '11S'], ['10CG', '11SES'], ['11L', 'TLL'], ['11L', 'TAL'], ['11SES', 'TSECO'], ['11SES', 'TSS'], ['11S', 'TSEXP'], ['11S', 'TSE']];
+
+    private const CLASSES_T24 = ['10CG', '11L', '11SES', '11S', 'TLL', 'TAL', 'TSECO', 'TSS', 'TSEXP', 'TSE'];
+
+    /**
+     * Tableau 24 du rapport de fin d'année, tiré des décisions de réinscription : A – passage en classe supérieure (par
+     * classe de départ et classe d'arrivée), B – redoublement, C – exclusion (insuffisance de travail, épuisement de
+     * scolarité, abandon), classe par classe. Seules les listes qui ont des élèves sont imprimées.
+     *
+     * @return list<array{titre: string, entetes: list<string>, lignes: list<list<mixed>>}>
+     */
+    public static function listesT24(array $lignes, Collection $membres, int $idAnnee, string $annee): array
+    {
         $identites = DB::table('eleve')->whereIn('id_eleve', $membres->pluck('id_eleve'))->get(['id_eleve', 'prenom_eleve', 'nom_eleve', 'matricule'])->keyBy('id_eleve');
-        foreach ($noms->sort() as $idClasse => $nom) {
+        $moyennes = self::moyennesAnnuelles($membres, $idAnnee);
+        $noms = DB::table('classe')->whereIn('id_classe', array_keys($lignes['classes']))->pluck('nom_classe', 'id_classe');
+        $libelle = fn (string $cle) => $lignes['series'][$cle] ?? RapportSuccinctDonnees::SERIES[$cle] ?? $cle;
+        $entetes = ['N°', 'Prénoms', 'Nom', 'N° Mle', 'Moy. ann.', 'Observations', 'Série'];
+        $liste = function (Collection $eleves, string $serie) use ($identites, $moyennes) {
             $n = 0;
-            $annexes[] = ['titre' => 'Propositions de passage, de redoublement et d\'exclusion : '.$nom, 'entetes' => ['N°', 'Prénom', 'Nom', 'Sexe', 'N° Mle', 'Décision', 'Classe d\'arrivée'],
-                'lignes' => $membres->where('id_classe', $idClasse)->sortBy(fn ($m) => [$identites[$m->id_eleve]->nom_eleve ?? '', $identites[$m->id_eleve]->prenom_eleve ?? ''])
-                    ->map(fn ($m) => [++$n, $identites[$m->id_eleve]->prenom_eleve ?? '', $identites[$m->id_eleve]->nom_eleve ?? '', $m->sexe === 'f' ? 'F' : 'G', $identites[$m->id_eleve]->matricule ?? '',
-                        $m->decision ? ($libelles[$m->decision] ?? $m->decision) : ($m->actif ? 'Réinscription non encore faite' : 'Abandon'),
-                        in_array($m->decision, ['passant', 'passage_force'], true) ? ($noms[$m->id_classe_cible] ?? DB::table('classe')->where('id_classe', $m->id_classe_cible)->value('nom_classe')) : null])->values()->all()];
+
+            return $eleves->sortBy(fn ($m) => [$identites[$m->id_eleve]->nom_eleve ?? '', $identites[$m->id_eleve]->prenom_eleve ?? ''])
+                ->map(fn ($m) => [++$n, $identites[$m->id_eleve]->prenom_eleve ?? '', $identites[$m->id_eleve]->nom_eleve ?? '', $identites[$m->id_eleve]->matricule ?? '',
+                    isset($moyennes[$m->id_eleve]) ? number_format($moyennes[$m->id_eleve], 2, ',', '') : '', $m->decision === 'passage_force' ? 'Passage accordé' : '', $serie])
+                ->values()->all();
+        };
+        $sortie = fn ($m) => match (true) {
+            in_array($m->decision, ['passant', 'passage_force'], true) => 'passage',
+            in_array($m->decision, ['redoublant', 'ajourne'], true) => 'redoublement',
+            $m->decision === 'exclu_insuffisance' || $m->decision === 'exclu' => 'insuffisance',
+            $m->decision === 'exclu_epuisement' => 'epuisement',
+            $m->decision === 'abandon' || ($m->decision === null && !$m->actif) => 'abandon',
+            default => null,
+        };
+        $membres = $membres->map(function ($m) use ($sortie, $lignes) {
+            $m->sortie = $sortie($m);
+            $m->cible = $lignes['classes'][$m->id_classe_cible ?? 0] ?? null;
+
+            return $m;
+        });
+        $ordre = array_merge(self::CLASSES_T24, array_keys(array_diff_key($lignes['series'], array_flip(self::CLASSES_T24))));
+        $listes = [];
+        $ajouter = function (string $titre, Collection $eleves, string $serie, string $bloc = '') use (&$listes, $liste, $entetes, $annee) {
+            if ($eleves->isNotEmpty()) {
+                $listes[] = ['titre' => "T24 – {$titre} au titre de l'année scolaire {$annee}", 'entetes' => $entetes, 'lignes' => $liste($eleves, $serie), 'bloc' => $bloc];
+            }
+        };
+
+        // A – Passage en classe supérieure.
+        $passants = $membres->where('sortie', 'passage');
+        $faits = [];
+        foreach (self::PASSAGES_T24 as [$de, $vers]) {
+            $ajouter('A. Passage : élèves de '.$libelle($de).' proposés au passage en '.$libelle($vers), $passants->where('cle', $de)->where('cible', $vers), $vers, "A:{$de}>{$vers}");
+            $faits[$de.'>'.$vers] = true;
+        }
+        foreach ($passants->groupBy(fn ($m) => $m->cle.'>'.($m->cible ?? '')) as $cle => $groupe) {
+            if (!isset($faits[$cle])) {
+                $premier = $groupe->first();
+                $vers = $premier->cible ? $libelle($premier->cible) : ($noms[$premier->id_classe_cible ?? 0] ?? 'la classe supérieure');
+                $ajouter('A. Passage : élèves de '.$libelle($premier->cle).' proposés au passage en '.$vers, $groupe, (string) ($premier->cible ?? ''));
+            }
+        }
+        // B – Redoublement.
+        foreach ($ordre as $cle) {
+            $ajouter('B. Redoublement : élèves de '.$libelle($cle).' proposés au redoublement', $membres->where('sortie', 'redoublement')->where('cle', $cle), $cle, "B:{$cle}");
+        }
+        // C – Exclusion, par motif.
+        $motifs = ['insuffisance' => 'insuffisance de travail', 'epuisement' => 'épuisement de scolarité', 'abandon' => 'abandon'];
+        foreach ($ordre as $cle) {
+            foreach ($motifs as $motif => $texte) {
+                $ajouter('C. Exclusion : élèves de '.$libelle($cle).' proposés à l\'exclusion ('.$texte.')', $membres->where('sortie', $motif)->where('cle', $cle), $cle, "C:{$cle}:{$motif}");
+            }
         }
 
-        return $annexes;
+        return $listes;
     }
 
     /** Ce qui manque avant de remettre le rapport à l'académie. @return list<string> */

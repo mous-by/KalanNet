@@ -152,6 +152,7 @@ class CanevasOfficielTest extends IntegrationTestCase
             'T1' => ['l0' => ['perm_h' => 2]], 'T6' => ['10CG' => ['p11S_f' => 1, 'red_f' => 1, 'insuffisance_g' => 2]],
             'T15' => ['10CG' => ['m12_f' => 2]], 'T18' => ['10CG' => ['capacite' => 60]], 'T19' => ['10CG' => ['passants' => 40]],
             'T20' => ['l0' => ['besoins' => 1]], 'T21' => ['l2' => ['departs' => 1]], 'T22' => ['l1' => ['nom' => 'HAIDARA']],
+            'T16' => ['TSE' => ['m12_total' => 3, 'm12_admis' => 2, 'm20_total' => 1, 'm20_admis' => 1]],
         ], ['redaction' => ['difficultes' => 'Manque de tables-bancs.']]);
         $c = $this->canevas('fin', 'esg');
         $v = fn (string $feuille, string $cellule) => $c->getSheetByName($feuille)->getCell($cellule)->getValue();
@@ -159,6 +160,10 @@ class CanevasOfficielTest extends IntegrationTestCase
         $this->assertSame(2, $v('T1', 'F5'), 'Mathématiques, permanents hommes');
         $this->assertSame([1, 1, 2], [$v('T6', 'G11'), $v('T6', 'M11'), $v('T6', 'Q11')], 'passage en 11e S, redoublement, exclusion pour insuffisance');
         $this->assertSame(2, $v('T15', 'F6'));
+        // T16 : le canevas calcule les présentés depuis T15 (formule gardée) ; KalanNet écrit les admis.
+        $this->assertStringStartsWith('=', (string) $v('T16', 'C28'));
+        $this->assertSame(2, $v('T16', 'D28'), 'TSE, 10 ≤ M.A < 12 : admis');
+        $this->assertSame(1, $v('T16', 'G44'), 'TSE, M.A ≥ 16 : admis');
         $this->assertSame(60, $v('T 18 19', 'B5'));
         // Les perspectives (T19) sont calculées par le canevas à partir des tableaux 6 à 9 : sa formule est gardée.
         $this->assertSame("=+'T6'!N11", $v('T 18 19', 'B22'));
@@ -207,8 +212,27 @@ class CanevasOfficielTest extends IntegrationTestCase
         $this->assertCount(2, $dixieme['lignes']);
         $this->assertSame('Sansanding', $dixieme['lignes'][0][1]);
 
-        $fin = collect(\App\Support\RapportSecondaireDonnees::annexes('fin', 1, $this->annee))->firstWhere('titre', 'Propositions de passage, de redoublement et d\'exclusion : 10ème année commune');
-        $this->assertSame('Réinscription non encore faite', $fin['lignes'][0][5]);
+        // T24 : listes du canevas tirées des décisions (passage par classe d'arrivée, redoublement, exclusion par motif).
+        $eleves = DB::table('eleve')->where('id_ecole', 1)->limit(10)->get(['id_eleve', 'nom_eleve']);
+        $lignes = ['classes' => [900001 => '10CG', 900002 => '11L', 900003 => 'TSE'], 'series' => ['10CG' => '10ème CG', '11L' => '11ème L', 'TSE' => 'TSE']];
+        $membre = fn ($e, $cle, $decision, $cible = null, $actif = true) => (object) ['id_eleve' => $e->id_eleve, 'id_classe' => array_search($cle, $lignes['classes']), 'cle' => $cle,
+            'decision' => $decision, 'actif' => $actif, 'id_classe_cible' => $cible ? array_search($cible, $lignes['classes']) : null, 'sexe' => 'g'];
+        $membres = collect([
+            ...$eleves->take(7)->map(fn ($e) => $membre($e, '10CG', 'passant', '11L')),
+            $membre($eleves[7], '11L', 'redoublant'), $membre($eleves[8], 'TSE', 'exclu_epuisement'), $membre($eleves[9], '10CG', null, null, false),
+        ]);
+        $listes = collect(\App\Support\RapportSecondaireDonnees::listesT24($lignes, $membres, (int) $this->annee->id_anneeScolaire, (string) $this->annee->annee))->keyBy('bloc');
+        $this->assertSame(['A:10CG>11L', 'B:11L', 'C:10CG:abandon', 'C:TSE:epuisement'], $listes->keys()->sort()->values()->all());
+        $this->assertCount(7, $listes['A:10CG>11L']['lignes']);
+        $this->assertStringContainsString('proposés au passage en 11ème L', $listes['A:10CG>11L']['titre']);
+        $this->assertSame(['N°', 'Prénoms', 'Nom', 'N° Mle', 'Moy. ann.', 'Observations', 'Série'], $listes['B:11L']['entetes']);
+
+        // Canevas : la liste de 7 passants reçoit deux lignes de plus ; la liste suivante est décalée d'autant.
+        $classeur = (new \App\Services\Rapports\CanevasOfficiel)->remplir('esg', 'fin', ['infos' => [], 't' => []], \App\Models\Ecole::withoutGlobalScopes()->find(1), (string) $this->annee->annee, 'Kayes', collect(), $listes->values()->all());
+        $f = $classeur->getSheetByName('T 23-24');
+        $this->assertSame($eleves[6]->nom_eleve, $f->getCell('C73')->getValue(), '7e passant, sur une ligne ajoutée');
+        $this->assertSame('N°', $f->getCell('A78')->getValue(), 'liste suivante décalée de deux lignes');
+        $classeur->disconnectWorksheets();
 
         $this->get(route('rapport-secondaire.pdf', ['type' => 'fin', 'annee' => $this->annee->id_anneeScolaire], false))->assertOk()->assertHeader('content-type', 'application/pdf');
     }

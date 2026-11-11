@@ -117,10 +117,15 @@ class RapportSuccinctDonnees
             }
         }
 
-        if ($niveau === 12 || str_contains($texte, 'terminale')) {
+        // Terminale écrite en toutes lettres : « Terminale Sciences Sociales », « 12ème SS », « Tle SE »…
+        if ($niveau === 12 || preg_match('/terminale|\btle\b/', $texte)) {
             return match (true) {
-                (bool) preg_match('/\blat\b|\bal\b/', $texte) => 'TAL',
-                (bool) preg_match('/\bll\b/', $texte) => 'TLL',
+                (bool) preg_match('/experiment|\bs\.?\s*exp|\bexp\b/', $texte) => 'TSEXP',
+                (bool) preg_match('/econom|\bseco\b|\bsc\.?\s*eco/', $texte) => 'TSECO',
+                (bool) preg_match('/social|\bss\b|\bsc\.?\s*soc/', $texte) => 'TSS',
+                (bool) preg_match('/exacte|\bse\b/', $texte) => 'TSE',
+                (bool) preg_match('/\barts?\b|\blat\b|\bal\b/', $texte) => 'TAL',
+                (bool) preg_match('/litter|langue|\bll\b/', $texte) => 'TLL',
                 default => null,
             };
         }

@@ -278,7 +278,8 @@ class RapportSecondaireController extends Controller
             @ini_set('memory_limit', '512M');
         }
         $classes = Donnees::lignes((int) $ecole->idEcole)['classes'];
-        $classeur = (new CanevasOfficiel)->remplir($modele, $type, $donnees, $ecole, (string) $annee->annee, $this->academie((int) $ecole->idEcole), CanevasOfficiel::enseignants((int) $ecole->idEcole, $classes));
+        $classeur = (new CanevasOfficiel)->remplir($modele, $type, $donnees, $ecole, (string) $annee->annee, $this->academie((int) $ecole->idEcole), CanevasOfficiel::enseignants((int) $ecole->idEcole, $classes),
+            $type === 'fin' ? Donnees::annexes('fin', (int) $ecole->idEcole, $annee) : []);
         $ecrivain = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($classeur, 'Xlsx');
         $ecrivain->setPreCalculateFormulas(false); // Excel recalcule les formules du canevas à l'ouverture
         $chemin = tempnam(sys_get_temp_dir(), 'canevas');

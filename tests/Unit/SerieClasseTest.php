@@ -27,6 +27,10 @@ class SerieClasseTest extends TestCase
         }
         $this->assertSame('TLL', Donnees::serie('Terminale', 'tll'));
         $this->assertSame('TSEXP', Donnees::serie('12ème Sciences', 'texp'));
+        foreach (['Terminale Sciences Sociales' => 'TSS', '12ème SS' => 'TSS', 'Terminale sciences économiques' => 'TSECO', '12ème SE' => 'TSE',
+            'Terminale Sciences Expérimentales' => 'TSEXP', 'Terminale Arts et Lettres' => 'TAL', 'Terminale Langues et Littérature' => 'TLL', 'Tle LL' => 'TLL'] as $nom => $serie) {
+            $this->assertSame($serie, Donnees::serie($nom), $nom);
+        }
         $this->assertNull(Donnees::serie('12ème année'));
     }
 }

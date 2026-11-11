@@ -100,8 +100,12 @@ class CanevasOfficiel
     }
 
     /** @param Collection<int, object> $enseignants */
-    public function remplir(string $modele, string $type, array $d, object $ecole, string $annee, string $academie, Collection $enseignants): Spreadsheet
+    /** @var list<array<string, mixed>> listes nominatives du tableau 24 (fin d'année) */
+    private array $listesT24 = [];
+
+    public function remplir(string $modele, string $type, array $d, object $ecole, string $annee, string $academie, Collection $enseignants, array $listesT24 = []): Spreadsheet
     {
+        $this->listesT24 = $listesT24;
         $classeur = IOFactory::load(self::fichier($modele, $type));
         $this->f = $classeur->getActiveSheet();
         if ($modele === 'esg') {
@@ -412,19 +416,91 @@ class CanevasOfficiel
             collect($sorties)->flatMap(fn ($lettre, $cle) => [$cle.'_f' => $lettre, $cle.'_g' => chr(ord($lettre) + 1)])->all());
         $this->feuilleOuRien($c, 'T 13 14');
         $this->grille($t, 'T14', ['n10' => 21, 'n11' => 22, 'n12' => 23], ['effectif' => 'B', 'passage' => 'C', 'redoublement' => 'E', 'exclusion' => 'G']);
+        // T16 : cinq tranches de moyenne annuelle, en trois blocs de deux (lignes des séries décalées dans chaque bloc).
         $this->feuilleOuRien($c, 'T16');
-        $this->grille($t, 'T16', ['TLL' => 6, 'TAL' => 7, 'TSS' => 9, 'TSECO' => 10, 'TSE' => 12, 'TSEXP' => 13],
-            ['total_admis' => 'B', 'sup_total' => 'C', 'sup_admis' => 'D', 'inf_total' => 'F', 'inf_admis' => 'G']);
+        $series = ['TLL' => 0, 'TAL' => 1, 'TSS' => 3, 'TSECO' => 4, 'TSE' => 6, 'TSEXP' => 7];
+        foreach ([[6, ['m10' => 'C']], [22, ['m12' => 'C', 'm14' => 'F']], [38, ['m16' => 'C', 'm20' => 'F']]] as [$premiere, $tranches]) {
+            foreach ($series as $serie => $decalage) {
+                foreach ($tranches as $tranche => $lettre) {
+                    $this->e($lettre.($premiere + $decalage), $t['T16'][$serie][$tranche.'_total'] ?? null);
+                    $this->e(chr(ord($lettre) + 1).($premiere + $decalage), $t['T16'][$serie][$tranche.'_admis'] ?? null);
+                }
+            }
+        }
+        // Premier bloc : « ≥ 10 » = toutes les tranches à partir de 10.
+        foreach ($series as $serie => $decalage) {
+            $somme = fn (string $suffixe) => collect(['m12', 'm14', 'm16', 'm20'])->sum(fn ($m) => (int) ($t['T16'][$serie][$m.$suffixe] ?? 0));
+            $this->e('F'.(6 + $decalage), $somme('_total') ?: null);
+            $this->e('G'.(6 + $decalage), $somme('_admis') ?: null);
+        }
         $this->feuilleOuRien($c, 'T 17');
         $this->grille($t, 'T17', ['TLL' => 6, 'TAL' => 7, 'TSS' => 8, 'TSECO' => 9, 'TSE' => 10, 'TSEXP' => 11, '11L' => 13, '11S' => 14, '11SES' => 15, '10CG' => 17],
             ['passants_f' => 'B', 'passants_g' => 'C', 'redoublants_f' => 'E', 'redoublants_g' => 'F']);
 
-        // Admis au Bac : un bloc de six lignes par série, dans l'ordre du canevas.
-        $this->feuilleOuRien($c, 'T 23-24');
-        $admis = collect($t['T23'] ?? [])->filter()->groupBy(fn ($l) => $l['serie'] ?? '');
-        foreach (['TAL' => 8, 'TLL' => 17, 'TSS' => 26, 'TSECO' => 35, 'TSEXP' => 44, 'TSE' => 53] as $serie => $premiere) {
-            $this->liste(($admis[$serie] ?? collect())->values()->map(fn ($l, $i) => ['numero' => (string) ($i + 1)] + $l)->all(), $premiere, 6,
-                ['numero' => 'A', 'prenoms' => 'B', 'nom' => 'C', 'matricule' => 'D', 'moy_ann' => 'E', 'moy_admission' => 'F', 'mention' => 'G', 'serie' => 'H']);
+        $this->listesNominatives($c, $t);
+    }
+
+    /** Ordre des listes de la feuille « T 23-24 » : chaque liste a une ligne d'en-tête « N° » puis cinq lignes numérotées. */
+    private const BLOCS_23_24 = [
+        'T23:TAL', 'T23:TLL', 'T23:TSS', 'T23:TSECO', 'T23:TSEXP', 'T23:TSE',
+        'A:10CG>11L', 'A:10CG>11S', 'A:10CG>11SES', 'A:11L>TLL', 'A:11L>TAL', 'A:11SES>TSECO', 'A:11SES>TSS', 'A:11S>TSEXP', 'A:11S>TSE',
+        'B:10CG', 'B:11L', 'B:11SES', 'B:11S', 'B:TLL', 'B:TAL', 'B:TSECO', 'B:TSS', 'B:TSEXP', 'B:TSE',
+    ];
+
+    /**
+     * T23 (admis au Bac par série) et T24 (passage, redoublement, exclusion) : chaque liste est écrite sous son en-tête ; une
+     * liste plus longue que les cinq lignes du canevas reçoit des lignes en plus. On remplit du bas vers le haut pour que
+     * les lignes ajoutées ne décalent pas les listes qui restent à écrire.
+     */
+    private function listesNominatives(Spreadsheet $c, array $t): void
+    {
+        $feuille = $c->getSheetByName('T 23-24');
+        if (!$feuille) {
+            return;
+        }
+        $entetes = [];
+        foreach ($feuille->getRowIterator(1, $feuille->getHighestDataRow()) as $ligne) {
+            if (trim((string) $feuille->getCell('A'.$ligne->getRowIndex())->getValue()) === 'N°') {
+                $entetes[] = $ligne->getRowIndex();
+            }
+        }
+        $blocs = self::BLOCS_23_24;
+        foreach (['10CG', '11L', '11SES', '11S', 'TLL', 'TAL', 'TSECO', 'TSS', 'TSEXP', 'TSE'] as $classe) {
+            foreach (['insuffisance', 'epuisement', 'abandon'] as $motif) {
+                $blocs[] = "C:{$classe}:{$motif}";
+            }
+        }
+
+        // Ce qu'il faut écrire dans chaque liste : [N°, Prénoms, Nom, N° Mle, Moy. ann., Observations / Moy. admission, Série…].
+        $contenu = [];
+        foreach (collect($t['T23'] ?? [])->filter()->groupBy(fn ($l) => $l['serie'] ?? '') as $serie => $admis) {
+            $contenu['T23:'.$serie] = $admis->values()->map(fn ($l, $i) => [$i + 1, $l['prenoms'] ?? '', $l['nom'] ?? '', $l['matricule'] ?? '', $l['moy_ann'] ?? '', $l['moy_admission'] ?? '', $l['mention'] ?? '', $serie])->all();
+        }
+        foreach ($this->listesT24 as $liste) {
+            if (!empty($liste['bloc'])) {
+                $contenu[$liste['bloc']] = $liste['lignes'];
+            }
+        }
+
+        $places = array_slice(array_combine(array_slice($blocs, 0, min(count($blocs), count($entetes))), array_slice($entetes, 0, min(count($blocs), count($entetes)))), 0);
+        arsort($places);
+        foreach ($places as $bloc => $entete) {
+            $lignes = $contenu[$bloc] ?? [];
+            if ($lignes === []) {
+                continue;
+            }
+            if (count($lignes) > 5) {
+                $feuille->insertNewRowBefore($entete + 6, count($lignes) - 5);
+            }
+            foreach (array_values($lignes) as $i => $valeurs) {
+                foreach (array_values($valeurs) as $j => $valeur) {
+                    $cellule = chr(ord('A') + $j).($entete + 1 + $i);
+                    if ($valeur === '' || $valeur === null) {
+                        continue;
+                    }
+                    is_int($valeur) ? $feuille->setCellValue($cellule, $valeur) : $feuille->setCellValueExplicit($cellule, (string) $valeur, DataType::TYPE_STRING);
+                }
+            }
         }
     }
 
