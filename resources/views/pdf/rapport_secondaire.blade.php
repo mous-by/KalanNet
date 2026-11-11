@@ -21,6 +21,10 @@
         .infos { width: 100%; }
         .infos td { padding: 2px 4px; border-bottom: 1px dotted #888; width: 25%; }
         .note { font-size: 8.5px; margin-top: 2px; }
+        /* Partie administrative : présentation d'un rapport officiel (Times New Roman 12, interligne 1,5). */
+        .redaction { font-family: Times, 'Times New Roman', serif; font-size: 12pt; line-height: 1.5; }
+        .redaction .rubrique { font-weight: bold; font-size: 12pt; margin: 8pt 0 2pt; }
+        .redaction p { text-align: justify; margin: 0 0 6pt; }
     </style>
 </head>
 <body>
@@ -37,13 +41,16 @@
     <h1>{{ \App\Support\RapportSecondaireDefinitions::TYPES[$type] }}</h1>
     <div class="sous">{{ $i['nom'] ?? '' }} : année scolaire {{ $annee }}</div>
 
-    <div class="titre" style="font-size: 12px;">PARTIE ADMINISTRATIVE</div>
-    @foreach($redaction as $cle => [$titre])
-        <div style="margin-bottom: 8px;">
-            <div class="titre">{{ $titre }}</div>
-            <div style="white-space: pre-line; text-align: justify;">{{ $d['redaction'][$cle] ?? '' }}</div>
-        </div>
-    @endforeach
+    <div class="redaction">
+        <div class="rubrique" style="font-size: 13pt;">PARTIE ADMINISTRATIVE</div>
+        @foreach($redaction as $cle => [$titre])
+            <div class="rubrique">{{ $titre }}</div>
+            {{-- Un paragraphe par bloc de texte : la dernière ligne d'un paragraphe justifié n'est pas étirée. --}}
+            @foreach(preg_split("/\R+/u", trim((string) ($d['redaction'][$cle] ?? ''))) as $paragraphe)
+                @if(trim($paragraphe) !== '')<p>{{ trim($paragraphe) }}</p>@endif
+            @endforeach
+        @endforeach
+    </div>
 
     <div class="titre" style="font-size: 12px; margin-top: 10px;">DONNÉES STATISTIQUES</div>
     <div class="bloc">
