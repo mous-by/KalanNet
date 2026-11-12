@@ -24,7 +24,7 @@
             @if($filiere)<div><span class="lib">Filière :</span> {{ $filiere }}</div>@endif
             <div><span class="lib">Niveau :</span> {{ $classe->nom_classe }}</div>
         @else
-            <div><span class="lib">Classe :</span> {{ $classe->nom_classe }}@if($serie) &nbsp;<span class="lib">Série :</span> {{ $serie }}@endif</div>
+            <div><span class="lib">Classe :</span> {{ $classe->nom_classe }}</div>
         @endif
         <div class="annee-scolaire"><span class="lib">Année scolaire :</span> <span style="white-space: nowrap;">{{ $annee->annee }}</span></div>
     </div>
