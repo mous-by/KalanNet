@@ -32,7 +32,8 @@
         .notes .moy { font-weight: bold; background: #eef3ff !important; }
         .notes .rang { font-weight: bold; }
         .notes tfoot td { background: #e8e8e8; font-weight: bold; font-size: {{ $t - 1 }}pt; }
-        .indicateurs { width: 70%; margin-top: 8pt; border-collapse: collapse; page-break-inside: avoid; }
+        .indicateurs { width: 75%; margin-top: 8pt; border-collapse: collapse; }
+        .indicateurs .section { text-align: left; font-weight: bold; background: #f4f4f4; font-style: italic; }
         .indicateurs th, .indicateurs td { border: 0.6pt solid #333; padding: 3pt 4pt; text-align: center; font-size: {{ max(8, $t - 0.5) }}pt; }
         .indicateurs th { background: #e8e8e8; }
         .indicateurs .titre-ind { text-align: left; font-size: {{ max(9, $t) }}pt; background: #d9e2f3; }
@@ -108,69 +109,54 @@
                 </tr>
             @endforeach
         </tbody>
-        <tfoot>
-            @php
-                // Notes de chaque matière (élèves qui ont une note) : moyenne, nombre et pourcentage d'élèves qui ont la moyenne.
-                $parMatiere = $matieres->mapWithKeys(fn ($m) => [$m->id_matiere => $resultats->map(fn ($r) => collect($r['matieres'])->firstWhere('id_matiere', $m->id_matiere))
-                    ->filter(fn ($n) => $n && ($n->a_des_notes ?? true))->pluck('M_Gle')]);
-                $pct = fn (int $n, int $total) => $total ? number_format(100 * $n / $total, 1, ',', '').' %' : '—';
-                $moyennes = $resultats->pluck('moyenne_periode');
-            @endphp
-            <tr>
-                <td colspan="2" style="text-align: right;">Moyenne de la matière</td>
-                @foreach($matieres as $m)
-                    <td>{{ $parMatiere[$m->id_matiere]->isNotEmpty() ? $fmt($parMatiere[$m->id_matiere]->avg()) : '—' }}</td>
-                @endforeach
-                <td>{{ $fmt($stats['classe']) }}</td>
-                <td></td>
-            </tr>
-            <tr>
-                <td colspan="2" style="text-align: right;">Ayant la moyenne (≥ {{ $seuil }})</td>
-                @foreach($matieres as $m)
-                    @php $v = $parMatiere[$m->id_matiere]; @endphp
-                    <td>{{ $v->isNotEmpty() ? $v->filter(fn ($x) => $x >= $seuil)->count() : '—' }}</td>
-                @endforeach
-                <td>{{ $moyennes->filter(fn ($x) => $x >= $seuil)->count() }}</td>
-                <td></td>
-            </tr>
-            <tr>
-                <td colspan="2" style="text-align: right;">% ayant la moyenne</td>
-                @foreach($matieres as $m)
-                    @php $v = $parMatiere[$m->id_matiere]; @endphp
-                    <td>{{ $v->isNotEmpty() ? $pct($v->filter(fn ($x) => $x >= $seuil)->count(), $v->count()) : '—' }}</td>
-                @endforeach
-                <td>{{ $pct($moyennes->filter(fn ($x) => $x >= $seuil)->count(), $moyennes->count()) }}</td>
-                <td></td>
-            </tr>
-        </tfoot>
     </table>
 
     @php
-        // Indicateurs de la classe par sexe : effectif classé, ayant / n'ayant pas la moyenne, moyenne, plus forte, plus faible.
+        $pct = fn (int $n, int $total) => $total ? number_format(100 * $n / $total, 1, ',', '').' %' : '—';
         $fille = fn ($r) => \App\Support\PropositionPassageDonnees::fille($r['apercu']->genre_eleve ?? null);
-        $groupes = ['Garçons' => $resultats->reject($fille), 'Filles' => $resultats->filter($fille), 'Ensemble' => $resultats];
+        // Une ligne d'indicateurs : effectif, ayant / n'ayant pas la moyenne (nombre et %), moyenne, plus forte, plus faible.
+        $ligne = function ($valeurs) use ($seuil, $pct, $fmt) {
+            $valeurs = collect($valeurs)->values();
+            $ont = $valeurs->filter(fn ($x) => $x >= $seuil)->count();
+            $n = $valeurs->count();
+
+            return [$n, $ont, $pct($ont, $n), $n - $ont, $pct($n - $ont, $n),
+                $n ? $fmt($valeurs->avg()) : '—', $n ? $fmt($valeurs->max()) : '—', $n ? $fmt($valeurs->min()) : '—'];
+        };
+        $parSexe = [
+            'Garçons' => $resultats->reject($fille)->pluck('moyenne_periode'),
+            'Filles' => $resultats->filter($fille)->pluck('moyenne_periode'),
+            'Ensemble de la classe' => $resultats->pluck('moyenne_periode'),
+        ];
+        $parMatiere = $matieres->mapWithKeys(fn ($m) => [($m->nom_fr ?? $m->nom_matiere) => $resultats->map(fn ($r) => collect($r['matieres'])->firstWhere('id_matiere', $m->id_matiere))
+            ->filter(fn ($n) => $n && ($n->a_des_notes ?? true))->pluck('M_Gle')]);
     @endphp
+
+    {{-- Tous les indicateurs de la classe dans un seul tableau : par sexe (moyenne générale), puis par matière. --}}
     <table class="indicateurs">
         <tr><th colspan="9" class="titre-ind">Indicateurs de la classe — {{ $periode }}</th></tr>
         <tr>
-            <th rowspan="2"></th><th rowspan="2">Élèves classés</th>
+            <th rowspan="2"></th><th rowspan="2">Élèves</th>
             <th colspan="2">Ayant la moyenne (≥ {{ $seuil }})</th><th colspan="2">N'ayant pas la moyenne (&lt; {{ $seuil }})</th>
             <th rowspan="2">Moyenne</th><th rowspan="2">Plus forte</th><th rowspan="2">Plus faible</th>
         </tr>
         <tr><th>Nombre</th><th>%</th><th>Nombre</th><th>%</th></tr>
-        @foreach($groupes as $libelle => $g)
-            @php
-                $m = $g->pluck('moyenne_periode');
-                $ont = $m->filter(fn ($x) => $x >= $seuil)->count();
-            @endphp
-            <tr class="{{ $libelle === 'Ensemble' ? 'ensemble' : '' }}">
+        <tr><td colspan="9" class="section">Moyenne générale, par sexe</td></tr>
+        @foreach($parSexe as $libelle => $valeurs)
+            <tr class="{{ str_starts_with($libelle, 'Ensemble') ? 'ensemble' : '' }}">
                 <td class="l">{{ $libelle }}</td>
-                <td>{{ $m->count() }}</td>
-                <td>{{ $ont }}</td><td>{{ $pct($ont, $m->count()) }}</td>
-                <td>{{ $m->count() - $ont }}</td><td>{{ $pct($m->count() - $ont, $m->count()) }}</td>
-                <td>{{ $m->isNotEmpty() ? $fmt($m->avg()) : '—' }}</td>
-                <td>{{ $m->isNotEmpty() ? $fmt($m->max()) : '—' }}</td>
-                <td>{{ $m->isNotEmpty() ? $fmt($m->min()) : '—' }}</td>
+                @foreach($ligne($valeurs) as $case)<td>{{ $case }}</td>@endforeach
+            </tr>
+        @endforeach
+        <tr><td colspan="9" class="section">Par matière (élèves qui ont une note)</td></tr>
+        @foreach($parMatiere as $libelle => $valeurs)
+            <tr>
+                <td class="l">{{ $libelle }}</td>
+                @if($valeurs->isEmpty())
+                    <td colspan="8" style="color: #666;">Pas de note pour cette période</td>
+                @else
+                    @foreach($ligne($valeurs) as $case)<td>{{ $case }}</td>@endforeach
+                @endif
             </tr>
         @endforeach
     </table>
