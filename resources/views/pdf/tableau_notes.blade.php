@@ -32,13 +32,20 @@
         .notes .moy { font-weight: bold; background: #eef3ff !important; }
         .notes .rang { font-weight: bold; }
         .notes tfoot td { background: #e8e8e8; font-weight: bold; font-size: {{ $t - 1 }}pt; }
-        .indicateurs { width: 75%; margin-top: 8pt; border-collapse: collapse; }
-        .indicateurs .section { text-align: left; font-weight: bold; background: #f4f4f4; font-style: italic; }
-        .indicateurs th, .indicateurs td { border: 0.6pt solid #333; padding: 3pt 4pt; text-align: center; font-size: {{ max(8, $t - 0.5) }}pt; }
-        .indicateurs th { background: #e8e8e8; }
-        .indicateurs .titre-ind { text-align: left; font-size: {{ max(9, $t) }}pt; background: #d9e2f3; }
+        /* Page des indicateurs : seule sur sa page, grande écriture, facile à lire. */
+        .page-indicateurs { page-break-before: always; }
+        .page-indicateurs h2 { text-align: center; font-size: 15pt; margin: 4pt 0 2pt; text-transform: uppercase; }
+        .page-indicateurs .sous-titre { text-align: center; font-size: 11.5pt; font-weight: bold; margin-bottom: 6pt; }
+        .indicateurs { width: 100%; border-collapse: collapse; }
+        .indicateurs th, .indicateurs td { border: 0.7pt solid #444; padding: 2.4pt 6pt; text-align: center; font-size: 10pt; }
+        .indicateurs th { background: #dde3ea; font-size: 10pt; }
         .indicateurs td.l { text-align: left; font-weight: bold; }
-        .indicateurs .ensemble td { font-weight: bold; background: #eef3ff; }
+        .indicateurs tr.impair td { background: #f5f7fa; }
+        .indicateurs .section td { text-align: left; font-weight: bold; font-size: 10.5pt; background: #c9d6ea; color: #10203a; }
+        .indicateurs .ensemble td { font-weight: bold; background: #e7eefb; }
+        .indicateurs .ok { color: #11743a; font-weight: bold; }
+        .indicateurs .ko { color: #b00020; font-weight: bold; }
+        .indicateurs .vide { color: #777; font-style: italic; }
         .bas { width: 100%; margin-top: 6pt; border-collapse: collapse; }
         .bas td { font-size: 9pt; vertical-align: top; }
     </style>
@@ -110,6 +117,7 @@
             @endforeach
         </tbody>
     </table>
+    <div style="margin-top: 3pt; font-size: 8pt; color: #555;">En rouge : note sous la moyenne ({{ $seuil }}). « — » : pas de note dans la matière pour cette période. Les indicateurs de la classe sont sur la page suivante.</div>
 
     @php
         $pct = fn (int $n, int $total) => $total ? number_format(100 * $n / $total, 1, ',', '').' %' : '—';
@@ -132,46 +140,60 @@
             ->filter(fn ($n) => $n && ($n->a_des_notes ?? true))->pluck('M_Gle')]);
     @endphp
 
-    {{-- Tous les indicateurs de la classe dans un seul tableau : par sexe (moyenne générale), puis par matière. --}}
-    <table class="indicateurs">
-        <tr><th colspan="9" class="titre-ind">Indicateurs de la classe — {{ $periode }}</th></tr>
-        <tr>
-            <th rowspan="2"></th><th rowspan="2">Élèves</th>
-            <th colspan="2">Ayant la moyenne (≥ {{ $seuil }})</th><th colspan="2">N'ayant pas la moyenne (&lt; {{ $seuil }})</th>
-            <th rowspan="2">Moyenne</th><th rowspan="2">Plus forte</th><th rowspan="2">Plus faible</th>
-        </tr>
-        <tr><th>Nombre</th><th>%</th><th>Nombre</th><th>%</th></tr>
-        <tr><td colspan="9" class="section">Moyenne générale, par sexe</td></tr>
-        @foreach($parSexe as $libelle => $valeurs)
-            <tr class="{{ str_starts_with($libelle, 'Ensemble') ? 'ensemble' : '' }}">
-                <td class="l">{{ $libelle }}</td>
-                @foreach($ligne($valeurs) as $case)<td>{{ $case }}</td>@endforeach
-            </tr>
-        @endforeach
-        <tr><td colspan="9" class="section">Par matière (élèves qui ont une note)</td></tr>
-        @foreach($parMatiere as $libelle => $valeurs)
+    {{-- Page à part : tous les indicateurs de la classe, faciles à lire. --}}
+    <div class="page-indicateurs">
+        <table class="entete">
             <tr>
-                <td class="l">{{ $libelle }}</td>
-                @if($valeurs->isEmpty())
-                    <td colspan="8" style="color: #666;">Pas de note pour cette période</td>
-                @else
-                    @foreach($ligne($valeurs) as $case)<td>{{ $case }}</td>@endforeach
-                @endif
+                <td style="width: 26%;">
+                    @if($p['academie'])<div>{{ $p['academie'] }}</div>@endif
+                    @if($p['capLabel'])<div>{{ $p['capLabel'] }}</div>@endif
+                    <div><b>{{ $p['nomEcole'] }}</b></div>
+                </td>
+                <td class="centre" style="width: 48%;">
+                    <h2>Indicateurs de la classe</h2>
+                    <div class="sous-titre">{{ $classe->nom_classe }} — {{ $periode }} — {{ $p['anneeScolaire'] }}</div>
+                </td>
+                <td style="width: 26%; text-align: right; font-size: 7.5pt; color: #444;">
+                    % en <b style="color: #11743a;">vert</b> : au moins la moitié a la moyenne ;<br>en <b style="color: #b00020;">rouge</b> : moins de la moitié.<br>
+                    Calculés sur les élèves classés (par matière : ceux qui ont une note).
+                </td>
             </tr>
-        @endforeach
-    </table>
+        </table>
 
-    <table class="bas">
-        <tr>
-            <td class="stat" style="width: 60%; color: #555;">
-                En rouge : note sous la moyenne ({{ $seuil }}). « — » : pas de note dans la matière pour cette période.
-                Pourcentages calculés sur les élèves classés (et, par matière, sur ceux qui ont une note).
-            </td>
-            <td style="width: 40%; text-align: right;">
-                Fait le {{ now()->format('d/m/Y') }}<br>
-                {{ $p['signataire'] ?? 'Le Directeur' }}
-            </td>
-        </tr>
-    </table>
+        <table class="indicateurs">
+            <tr>
+                <th rowspan="2" style="width: 22%;"></th><th rowspan="2">Élèves</th>
+                <th colspan="2">Ayant la moyenne (≥ {{ $seuil }})</th><th colspan="2">N'ayant pas la moyenne (&lt; {{ $seuil }})</th>
+                <th rowspan="2">Moyenne</th><th rowspan="2">Plus forte</th><th rowspan="2">Plus faible</th>
+            </tr>
+            <tr><th>Nombre</th><th>%</th><th>Nombre</th><th>%</th></tr>
+            <tr class="section"><td colspan="9">Moyenne générale, par sexe</td></tr>
+            @foreach($parSexe as $libelle => $valeurs)
+                @php $c = $ligne($valeurs); $taux = $c[0] ? $c[1] / $c[0] : null; @endphp
+                <tr class="{{ str_starts_with($libelle, 'Ensemble') ? 'ensemble' : ($loop->odd ? 'impair' : '') }}">
+                    <td class="l">{{ $libelle }}</td>
+                    <td>{{ $c[0] }}</td><td>{{ $c[1] }}</td>
+                    <td class="{{ $taux === null ? '' : ($taux >= 0.5 ? 'ok' : 'ko') }}">{{ $c[2] }}</td>
+                    <td>{{ $c[3] }}</td><td>{{ $c[4] }}</td><td><b>{{ $c[5] }}</b></td><td>{{ $c[6] }}</td><td>{{ $c[7] }}</td>
+                </tr>
+            @endforeach
+            <tr class="section"><td colspan="9">Par matière (élèves qui ont une note)</td></tr>
+            @foreach($parMatiere as $libelle => $valeurs)
+                <tr class="{{ $loop->odd ? 'impair' : '' }}">
+                    <td class="l">{{ $libelle }}</td>
+                    @if($valeurs->isEmpty())
+                        <td colspan="8" class="vide">Pas de note pour cette période</td>
+                    @else
+                        @php $c = $ligne($valeurs); $taux = $c[0] ? $c[1] / $c[0] : null; @endphp
+                        <td>{{ $c[0] }}</td><td>{{ $c[1] }}</td>
+                        <td class="{{ $taux === null ? '' : ($taux >= 0.5 ? 'ok' : 'ko') }}">{{ $c[2] }}</td>
+                        <td>{{ $c[3] }}</td><td>{{ $c[4] }}</td><td><b>{{ $c[5] }}</b></td><td>{{ $c[6] }}</td><td>{{ $c[7] }}</td>
+                    @endif
+                </tr>
+            @endforeach
+        </table>
+
+        <div style="text-align: right; margin-top: 4pt; font-size: 9pt;">Fait le {{ now()->format('d/m/Y') }} — {{ $p['signataire'] ?? 'Le Directeur' }}</div>
+    </div>
 </body>
 </html>
