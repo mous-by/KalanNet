@@ -27,7 +27,10 @@
     $titre = $config['card_title'];
     $logo = $config['show_school_logo'] ? $schoolLogoPath : null;
     $filiere = $classe->filiere?->nom_filiere ?? null;
-    $serie = $classe->serie ?? null;
+    // Série en clair et en majuscules (ll → LL, ses → SES, lat → TAL…).
+    $serie = filled($classe->serie ?? null)
+        ? (['10cg' => 'CG', 'll' => 'LL', 'sciences' => 'S', 'ses' => 'SES', 'tll' => 'TLL', 'lat' => 'TAL', 'tss' => 'TSS', 'tseco' => 'TSECO', 'tse' => 'TSE', 'texp' => 'TSEXP'][strtolower(trim((string) $classe->serie))] ?? mb_strtoupper(trim((string) $classe->serie)))
+        : null;
     $telephoneEcole = $adminPhone ?: ($ecole?->telephone ?: null);
 
     // Pages : 10 cartes (2 × 5) en A4 portrait. Recto / verso : 9 cartes (3 × 3) par page,
@@ -78,8 +81,8 @@
         .photo img { width: 100%; height: 100%; }
         .photo .vide { font-size: 5pt; color: #6b7280; padding-top: 8.5mm; }
         .infos { left: 24mm; top: 16.6mm; width: 43mm; height: 24mm; overflow: hidden; font-size: 5.7pt; line-height: 1.3; }
-        .infos .nom { font-size: 8.5pt; font-weight: bold; text-transform: uppercase; line-height: 1.1; }
-        .infos .prenom { font-size: 7.5pt; font-weight: bold; line-height: 1.15; margin-bottom: 0.5mm; }
+        .infos .prenom { font-size: 7.5pt; font-weight: bold; line-height: 1.15; }
+        .infos .nom { font-size: 8.5pt; font-weight: bold; text-transform: uppercase; line-height: 1.1; margin-bottom: 0.5mm; }
         .infos .lib { color: #4b5563; }
         .qr { right: 3.5mm; top: 17mm; width: 14mm; height: 14mm; background: #fff; padding: 0.5mm; border-radius: 1mm; }
         .qr img { width: 13mm; height: 13mm; }
@@ -136,7 +139,7 @@
         .v .nom-ecole { color: #ffffff; font-size: 6pt; }
         .verso .tete { top: 3mm; }
         .v .photo { left: 4mm; top: 24.5mm; width: 18mm; height: 22mm; border-color: {{ $c1 }}; }
-        .v .infos { left: 24mm; top: 25mm; width: 27mm; height: 22mm; font-size: 5.6pt; }
+        .v .infos { left: 24mm; top: 25mm; width: 27mm; height: 25.5mm; font-size: 5.6pt; }
         .v .infos .nom { font-size: 7.5pt; }
         .v .infos .prenom { font-size: 6.8pt; }
         .v .qr { right: 4mm; left: auto; top: 49.5mm; }

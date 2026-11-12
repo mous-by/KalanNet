@@ -16,17 +16,18 @@
     </div>
 
     <div class="abs infos">
-        <div class="nom">{{ \App\Support\ArabePdf::texte($eleve->nom_eleve) }}</div>
+        {{-- Prénom, puis NOM. --}}
         <div class="prenom">{{ \App\Support\ArabePdf::texte($eleve->prenom_eleve) }}</div>
+        <div class="nom">{{ \App\Support\ArabePdf::texte($eleve->nom_eleve) }}</div>
         @if($naissance || ($lieuNaissance ?? null))<div><span class="lib">Date et lieu de naissance :</span> {{ $naissance }}{{ $naissance && ($lieuNaissance ?? null) ? ' à ' : '' }}{{ ($lieuNaissance ?? null) ? \App\Support\ArabePdf::texte($lieuNaissance) : '' }}</div>@endif
         @if($modele === 'sante')
             @if($filiere)<div><span class="lib">Filière :</span> {{ $filiere }}</div>@endif
             <div><span class="lib">Niveau :</span> {{ $classe->nom_classe }}</div>
         @else
             <div><span class="lib">Classe :</span> {{ $classe->nom_classe }}</div>
-            @if($serie)<div><span class="lib">Série :</span> {{ $serie }}</div>@endif
+
         @endif
-        <div><span class="lib">Année :</span> {{ $annee->annee }}</div>
+        <div>@if($serie && $modele !== 'sante')<span class="lib">Série :</span> {{ $serie }} &nbsp; @endif<span class="lib">Année :</span> {{ $annee->annee }}</div>
     </div>
 
     @if($qrCode)
