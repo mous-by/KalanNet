@@ -34,7 +34,7 @@
             @if($naissance || ($lieuNaissance ?? null))<div><span class="lib">Date et lieu de naissance :</span> {{ $naissance }}{{ $naissance && ($lieuNaissance ?? null) ? ' à ' : '' }}{{ ($lieuNaissance ?? null) ? \App\Support\ArabePdf::texte($lieuNaissance) : '' }}</div>@endif
             <div><span class="lib">Classe :</span> {{ $classe->nom_classe }}</div>
             @if($serie)<div><span class="lib">Série :</span> {{ $serie }}</div>@endif
-            <div><span class="lib">Année :</span> {{ $annee->annee }}</div>
+            <div class="annee-scolaire"><span class="lib">Année scolaire :</span> <span style="white-space: nowrap;">{{ $annee->annee }}</span></div>
         </div>
         <div class="abs signature">
             @if(!empty($cachetPath))<img class="cachet" src="{{ $cachetPath }}" alt="">@endif

@@ -24,10 +24,9 @@
             @if($filiere)<div><span class="lib">Filière :</span> {{ $filiere }}</div>@endif
             <div><span class="lib">Niveau :</span> {{ $classe->nom_classe }}</div>
         @else
-            <div><span class="lib">Classe :</span> {{ $classe->nom_classe }}</div>
-
+            <div><span class="lib">Classe :</span> {{ $classe->nom_classe }}@if($serie) &nbsp;<span class="lib">Série :</span> {{ $serie }}@endif</div>
         @endif
-        <div>@if($serie && $modele !== 'sante')<span class="lib">Série :</span> {{ $serie }} &nbsp; @endif<span class="lib">Année :</span> {{ $annee->annee }}</div>
+        <div class="annee-scolaire"><span class="lib">Année scolaire :</span> <span style="white-space: nowrap;">{{ $annee->annee }}</span></div>
     </div>
 
     @if($qrCode)

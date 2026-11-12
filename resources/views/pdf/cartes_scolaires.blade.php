@@ -80,10 +80,13 @@
         .photo { left: 4mm; top: 17mm; width: 17.5mm; height: 21.5mm; border: 0.6mm solid #ffffff; border-radius: 1.5mm; background: #e5e7eb; overflow: hidden; text-align: center; }
         .photo img { width: 100%; height: 100%; }
         .photo .vide { font-size: 5pt; color: #6b7280; padding-top: 8.5mm; }
-        .infos { left: 24mm; top: 16.6mm; width: 43mm; height: 24mm; overflow: hidden; font-size: 5.7pt; line-height: 1.3; }
+        .infos { left: 24mm; top: 16.6mm; width: 43mm; height: 24mm; overflow: hidden; font-size: 5.7pt; line-height: 1.22; }
         .infos .prenom { font-size: 7.5pt; font-weight: bold; line-height: 1.15; }
         .infos .nom { font-size: 8.5pt; font-weight: bold; text-transform: uppercase; line-height: 1.1; margin-bottom: 0.5mm; }
         .infos .lib { color: #4b5563; }
+        /* Année scolaire : toujours sur sa ligne, bien visible. */
+        .infos .annee-scolaire { font-weight: bold; font-size: 6.3pt; margin-top: 0.3mm; }
+        .infos .annee-scolaire .lib { font-weight: bold; }
         .qr { right: 3.5mm; top: 17mm; width: 14mm; height: 14mm; background: #fff; padding: 0.5mm; border-radius: 1mm; }
         .qr img { width: 13mm; height: 13mm; }
         .codebarres { left: 4mm; top: 41.8mm; width: 36mm; background: #fff; border-radius: 1mm; padding: 0.6mm 0.8mm 0.3mm; text-align: center; }
@@ -110,7 +113,7 @@
         .m-franco_arabe .signature { color: #ffffff; }
         .m-franco_arabe .signature .encre { background: #fff; border-radius: 1mm; padding: 0.3mm; }
         .m-franco_arabe .photo { top: 19mm; height: 20.5mm; }
-        .m-franco_arabe .infos { top: 19mm; height: 21.5mm; }
+        .m-franco_arabe .infos { top: 18.8mm; height: 22.6mm; }
         .m-franco_arabe .qr { top: 19.5mm; }
         .m-franco_arabe .codebarres { top: 41.6mm; }
         .m-franco_arabe .signature { top: 41mm; }
@@ -139,7 +142,8 @@
         .v .nom-ecole { color: #ffffff; font-size: 6pt; }
         .verso .tete { top: 3mm; }
         .v .photo { left: 4mm; top: 24.5mm; width: 18mm; height: 22mm; border-color: {{ $c1 }}; }
-        .v .infos { left: 24mm; top: 25mm; width: 27mm; height: 25.5mm; font-size: 5.6pt; }
+        .v .infos { left: 24mm; top: 25mm; width: 27mm; height: 26mm; font-size: 5.6pt; }
+        .v .infos .annee-scolaire { font-size: 5.8pt; }
         .v .infos .nom { font-size: 7.5pt; }
         .v .infos .prenom { font-size: 6.8pt; }
         .v .qr { right: 4mm; left: auto; top: 49.5mm; }
