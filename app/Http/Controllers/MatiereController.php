@@ -146,7 +146,7 @@ class MatiereController extends Controller
             'ordre_enseignement' => 'required|array|min:1',
             'ordre_enseignement.*' => 'required|string|in:' . implode(',', array_keys($this->allOrdres())),
         ], [
-            'ordre_enseignement.required' => 'Veuillez sélectionner au moins un ordre d’enseignement.',
+            'ordre_enseignement.required' => 'Cochez au moins un ordre d’enseignement (Fondamental I, Fondamental II, Secondaire…) : la case « franco-arabe » indique seulement le type de la matière, pas les classes où elle est enseignée.',
         ]);
     }
 

@@ -25,8 +25,8 @@ class Matiere extends Model
     ];
 
     /**
-     * Une école franco-arabe ne voit que les matières franco-arabes (plus les
-     * siennes) ; les autres écoles ne les voient jamais.
+     * Une école franco-arabe voit les deux catalogues communs (franco-arabe et classique) et ses matières ; les autres
+     * écoles ne voient jamais les matières franco-arabes.
      */
     public function scopeVisiblesPourEcole($query, ?Ecole $ecole)
     {
@@ -34,9 +34,19 @@ class Matiere extends Model
             return $query;
         }
 
+        // École franco-arabe : elle enseigne les deux programmes, elle voit les deux catalogues communs (classique et
+        // franco-arabe) en plus de ses matières. École classique : le catalogue classique et ses matières.
+        if ($ecole->franco_arabe) {
+            return $query->where(function ($inner) use ($ecole) {
+                $inner->where('id_ecole', $ecole->idEcole)
+                    ->orWhereNull('id_ecole')
+                    ->orWhere('est_franco_arabe', true);
+            });
+        }
+
         return $query->where(function ($inner) use ($ecole) {
             $inner->where('id_ecole', $ecole->idEcole)
-                ->orWhere('est_franco_arabe', (bool) $ecole->franco_arabe);
+                ->orWhere('est_franco_arabe', false);
         });
     }
 
