@@ -163,6 +163,11 @@
     @include('partials.ui-translator-script')
     @include('partials.mot-de-passe-temporaire')
     @stack('scripts')
+    @auth
+        @if(\App\Support\Satisfaction::aProposer(Auth::user()))
+            @include('partials.satisfaction-modal')
+        @endif
+    @endauth
     <script>
         // Flèche retour : page parente du fil d'Ariane ; masquée si la page a déjà sa propre flèche (lien sans texte).
         (function () {

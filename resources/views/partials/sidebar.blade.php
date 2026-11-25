@@ -409,6 +409,15 @@
             </li>
         @endif
 
+        @if($user->droit === 'SupAdmin')
+            <li>
+                <a href="{{ route('satisfaction.index') }}">
+                    <div class="parent-icon"><i class="bi bi-emoji-smile-fill"></i></div>
+                    <div class="menu-title">Avis de satisfaction</div>
+                </a>
+            </li>
+        @endif
+
         @if($canOpenConfiguration)
             <li>
                 <a href="{{ route('configuration.index') }}">

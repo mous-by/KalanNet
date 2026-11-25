@@ -398,6 +398,12 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/assistance/{id}/repondre', [\App\Http\Controllers\AssistanceController::class, 'repondre'])->whereNumber('id')->name('assistance.repondre');
     Route::post('/assistance/terminer', [\App\Http\Controllers\AssistanceController::class, 'fermer'])->name('assistance.terminer');
     Route::get('/assistance/journal', [\App\Http\Controllers\AssistanceController::class, 'journal'])->name('assistance.journal');
+    // Avis de satisfaction : réponse au modal (tous les rôles concernés) ; rapport et publication sur le site de CSB (SupAdmin).
+    Route::post('/satisfaction', [\App\Http\Controllers\SatisfactionController::class, 'store'])->middleware('throttle:10,1')->name('satisfaction.store');
+    Route::get('/satisfaction', [\App\Http\Controllers\SatisfactionController::class, 'index'])->name('satisfaction.index');
+    Route::get('/satisfaction/rapport.pdf', [\App\Http\Controllers\SatisfactionController::class, 'pdf'])->name('satisfaction.pdf');
+    Route::post('/satisfaction/rapport/publier', [\App\Http\Controllers\SatisfactionController::class, 'publierRapport'])->name('satisfaction.rapport.publier');
+    Route::post('/satisfaction/{id}/publier', [\App\Http\Controllers\SatisfactionController::class, 'publierAvis'])->whereNumber('id')->name('satisfaction.avis.publier');
     Route::get('/configuration/permissions', [ConfigurationController::class, 'permissions'])->name('configuration.permissions');
     Route::post('/configuration/permissions', [ConfigurationController::class, 'storePermission'])->name('configuration.permissions.store');
 
