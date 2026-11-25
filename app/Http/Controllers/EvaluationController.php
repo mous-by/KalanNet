@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Support\SchemaExiste;
 use App\Models\Evaluation;
 use App\Models\AppNotification;
+use App\Models\LigneClasse;
 use App\Models\LigneEvaluation;
 use App\Models\Classe;
 use App\Models\Ecole;
@@ -70,6 +71,8 @@ class EvaluationController extends Controller
 
         return view('evaluations.index', $context + compact('evaluations', 'filters', 'compositionsEnDouble', 'depuis'));
     }
+
+    private const MOIS = [1 => 'Janvier', 2 => 'Février', 3 => 'Mars', 4 => 'Avril', 5 => 'Mai', 6 => 'Juin', 9 => 'Septembre', 10 => 'Octobre', 11 => 'Novembre', 12 => 'Décembre'];
 
     /** « En cours » : évaluations des derniers jours et à venir. */
     private const JOURS_EN_COURS = 45;
@@ -216,6 +219,143 @@ class EvaluationController extends Controller
             ->setPaper('a4', 'portrait');
 
         return $pdf->download('Notes_' . str_replace(' ', '_', $classe->nom_classe) . '_' . str_replace(' ', '_', $matiere->nom_matiere) . '.pdf');
+    }
+
+    /**
+     * Fiches de notes vierges : une par matière de la classe, à imprimer et
+     * remettre aux enseignants qui notent sur papier. L'administration saisit
+     * ensuite les notes dans KalanNet (élèves dans le même ordre qu'à l'écran).
+     */
+    public function fichesVierges(Request $request)
+    {
+        $this->authorizePermission('evaluation_apercu');
+        $context = $this->evaluationContext();
+        $user = Auth::user();
+        $idEcole = session('idEcole') ?: $user->idEcole;
+
+        $classe = $request->filled('id_classe')
+            ? $context['classes']->firstWhere('id_classe', (int) $request->query('id_classe'))
+            : null;
+        $lignes = $classe ? $this->matieresPourFiches($classe) : collect();
+
+        $choix = [
+            'id_annee_scolaire' => (int) ($request->query('id_annee_scolaire') ?: AnneeScolaire::enCours($idEcole ? (int) $idEcole : null)?->id_anneeScolaire),
+            'periode' => (string) $request->query('periode', ''),
+            'devoirs' => max(0, min(3, (int) $request->query('devoirs', 2))),
+            'composition' => !$request->has('devoirs') || $request->boolean('composition'),
+        ];
+
+        return view('evaluations.fiches-vierges', $context + compact('classe', 'lignes', 'choix'));
+    }
+
+    public function fichesViergesPdf(Request $request)
+    {
+        $this->authorizePermission('evaluation_apercu');
+        $data = $request->validate([
+            'id_classe' => 'required|integer',
+            'id_annee_scolaire' => 'required|integer|exists:anneescolaire,id_anneeScolaire',
+            'matieres' => 'required|array|min:1',
+            'matieres.*' => 'integer',
+            'devoirs' => 'required|integer|min:0|max:3',
+            'composition' => 'nullable|boolean',
+            'periode' => ['nullable', 'regex:/^[tm]\d{1,2}$/'],
+            'format' => 'nullable|in:pdf,zip',
+        ], [
+            'matieres.required' => 'Cochez au moins une matière.',
+        ]);
+        $avecComposition = $request->boolean('composition');
+        if ((int) $data['devoirs'] === 0 && !$avecComposition) {
+            return back()->withInput()->withErrors(['devoirs' => 'Choisissez au moins un devoir ou la composition.']);
+        }
+
+        $classe = Classe::with(['ligneClasses.matiere', 'ligneClasses.enseignant'])->find($data['id_classe']);
+        $this->authorizeClasse($classe);
+        $annee = AnneeScolaire::findOrFail($data['id_annee_scolaire']);
+
+        $fiches = $this->matieresPourFiches($classe)
+            ->whereIn('id_matiere', array_map('intval', $data['matieres']))
+            ->map(fn (LigneClasse $ligne) => [
+                'matiere' => $ligne->matiere,
+                'enseignant' => $ligne->enseignant?->nom_prenom_enseignant,
+                'eleves' => $this->studentsForEvaluation($classe->id_classe, $annee->id_anneeScolaire, $ligne->id_matiere),
+            ])
+            ->filter(fn (array $fiche) => $fiche['eleves']->isNotEmpty())
+            ->values();
+
+        if ($fiches->isEmpty()) {
+            return back()->withInput()->withErrors(['matieres' => 'Aucun élève inscrit dans cette classe pour cette année scolaire : il n\'y a rien à imprimer.']);
+        }
+
+        $periode = $data['periode'] ?? '';
+        $periodeLibelle = match (true) {
+            str_starts_with($periode, 't') => Trimestre::find((int) substr($periode, 1))?->nom_trimestre,
+            str_starts_with($periode, 'm') => self::MOIS[(int) substr($periode, 1)] ?? null,
+            default => null,
+        };
+
+        $vue = [
+            'classe' => $classe,
+            'annee' => $annee,
+            'colonnes' => $this->colonnesFiche((int) $data['devoirs'], $avecComposition),
+            'periodeLibelle' => $periodeLibelle,
+            'ecole' => Ecole::withoutGlobalScopes()->find($classe->idEcole ?: session('idEcole')),
+        ];
+        $nom = fn (string $texte) => trim(preg_replace('/[^A-Za-z0-9]+/', '_', \Illuminate\Support\Str::ascii($texte)), '_');
+        $base = 'Fiches_notes_' . $nom($classe->nom_classe);
+
+        // Un fichier PDF par matière, réunis dans un .zip (à envoyer séparément à chaque enseignant).
+        if (($data['format'] ?? 'pdf') === 'zip') {
+            $chemin = tempnam(sys_get_temp_dir(), 'fiches');
+            $zip = new \ZipArchive();
+            $zip->open($chemin, \ZipArchive::OVERWRITE);
+            foreach ($fiches as $i => $fiche) {
+                $contenu = Pdf::loadView('pdf.fiches_notes_vierges', $vue + ['fiches' => collect([$fiche])])->setPaper('a4', 'portrait')->output();
+                $zip->addFromString(sprintf('%02d_%s.pdf', $i + 1, $nom($fiche['matiere']->nom_matiere) ?: 'matiere'), $contenu);
+            }
+            $zip->close();
+
+            return response()->download($chemin, $base . '.zip', ['Content-Type' => 'application/zip'])->deleteFileAfterSend();
+        }
+
+        // Un seul PDF, une fiche par matière sur sa propre page : une impression sort toutes les fiches.
+        return Pdf::loadView('pdf.fiches_notes_vierges', $vue + ['fiches' => $fiches])->setPaper('a4', 'portrait')->stream($base . '.pdf');
+    }
+
+    /**
+     * Colonnes de notes d'une fiche : les devoirs puis la composition, chacun noté
+     * sur le barème de son type de note dans l'école (20 par défaut).
+     *
+     * @return array<int, array{libelle: string, sur: float}>
+     */
+    protected function colonnesFiche(int $devoirs, bool $composition): array
+    {
+        $types = Note::all();
+        $devoir = $types->first(fn (Note $note) => $this->estDevoir($note));
+        $compo = $types->first(fn (Note $note) => strtolower((string) $note->typeNote) === 'composition'
+            || in_array(strtolower((string) $note->codeNote), ['cp', 'composition'], true));
+
+        $colonnes = [];
+        for ($i = 1; $i <= $devoirs; $i++) {
+            $colonnes[] = ['libelle' => $devoirs > 1 ? 'Devoir '.$i : 'Devoir', 'sur' => $this->maxNoteFor($devoir)];
+        }
+        if ($composition) {
+            $colonnes[] = ['libelle' => 'Composition', 'sur' => $this->maxNoteFor($compo)];
+        }
+
+        return $colonnes;
+    }
+
+    /** Matières de la classe pour les fiches (celles de l'enseignant connecté seulement), une ligne par matière. */
+    protected function matieresPourFiches(Classe $classe)
+    {
+        $classe->loadMissing(['ligneClasses.matiere', 'ligneClasses.enseignant']);
+        $user = Auth::user();
+
+        return $classe->ligneClasses
+            ->when($user->id_enseignant, fn ($items) => $items->where('id_enseignants', $user->id_enseignant))
+            ->filter(fn ($ligne) => $ligne->matiere)
+            ->unique('id_matiere')
+            ->values();
     }
 
     public function edit(int $id)
@@ -469,7 +609,7 @@ class EvaluationController extends Controller
             'annees' => AnneeScolaire::orderByDesc('date_debut')->get(),
             'notes' => Note::orderBy('typeNote')->get(),
             'trimestres' => Trimestre::orderBy('id_trimestre')->get(),
-            'moisOptions' => [1 => 'Janvier', 2 => 'Février', 3 => 'Mars', 4 => 'Avril', 5 => 'Mai', 6 => 'Juin', 9 => 'Septembre', 10 => 'Octobre', 11 => 'Novembre', 12 => 'Décembre'],
+            'moisOptions' => self::MOIS,
         ];
     }
 

@@ -101,14 +101,18 @@
         @endif
     </div>
 
+    <div class="text-end mb-3">
+        <a href="{{ route('evaluations.fiches-vierges', array_filter(['id_classe' => $filters['id_classe'] ?? null])) }}" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 shadow-sm me-1" title="Fiches vierges à remettre aux enseignants qui notent sur papier">
+            <i class="bi bi-printer"></i>
+            <span>Fiches de notes à imprimer</span>
+        </a>
     @if(auth()->user()->userHasPermission('evaluation_création'))
-        <div class="text-end mb-3">
             <a href="{{ route('evaluations.create') }}" class="btn btn-sm d-inline-flex align-items-center gap-1 shadow-sm text-white" style="background-color: var(--theme-accent) !important; color: var(--text-on-accent) !important; border: none;">
                 <i class="bi bi-plus-lg"></i>
                 <span>Préparer une évaluation</span>
             </a>
-        </div>
     @endif
+    </div>
 
     <div class="card theme-card shadow-sm">
         <div class="card-body">

@@ -169,6 +169,8 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/evaluations/{id}/validate-notes', [EvaluationController::class, 'validateNotes'])->name('evaluations.validate-notes');
     Route::post('/evaluations/{id}/note-classe', [EvaluationController::class, 'noteClasse'])->name('evaluations.note-classe');
     Route::delete('/evaluations/{id}', [EvaluationController::class, 'destroy'])->name('evaluations.destroy');
+    Route::get('/evaluations/fiches-vierges', [EvaluationController::class, 'fichesVierges'])->name('evaluations.fiches-vierges');
+    Route::get('/evaluations/fiches-vierges/pdf', [EvaluationController::class, 'fichesViergesPdf'])->name('evaluations.fiches-vierges.pdf');
     Route::get('/evaluations/{id}/pdf', [EvaluationController::class, 'downloadNotesPdf'])->name('evaluations.pdf');
     Route::get('/evaluations/{id}', [EvaluationController::class, 'show'])->name('evaluations.show');
 
