@@ -40,7 +40,7 @@
             </div>
 
             <div class="table-responsive mt-3">
-                <table class="table table-striped table-bordered align-middle" style="width:100%">
+                <table class="table table-actions-fixes table-striped table-bordered align-middle" style="width:100%">
                     <thead class="bg-light">
                         <tr>
                             <th>{{ __('classes.th_nom') }}</th>

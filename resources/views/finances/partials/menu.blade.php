@@ -23,6 +23,14 @@
             color: var(--theme-accent);
             font-weight: 700;
         }
+        /* Sous 1200 px : le menu devient un bandeau horizontal au-dessus du contenu. */
+        @media (max-width: 1199.98px) {
+            .finance-menu { flex-direction: row !important; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+            .finance-menu::-webkit-scrollbar { display: none; }
+            .finance-menu .nav-item { flex: 0 0 auto; }
+            .finance-menu .nav-link { white-space: nowrap; min-height: 44px; }
+            .finance-menu .nav-link.active { border-left: 0; border-bottom: 3px solid var(--theme-accent); }
+        }
         .finance-menu .menu-icon {
             width: 28px;
             height: 28px;
@@ -34,7 +42,7 @@
 @endonce
 
 <div class="card theme-card h-100">
-    <div class="card-header theme-header d-flex align-items-center">
+    <div class="card-header theme-header d-none d-xl-flex align-items-center">
         <i class="bi bi-list me-2"></i> {{ __('finances.menu_title') }}
     </div>
     <div class="card-body p-2">

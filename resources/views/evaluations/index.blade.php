@@ -117,7 +117,7 @@
     <div class="card theme-card shadow-sm">
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-striped table-bordered align-middle">
+                <table class="table table-actions-fixes table-striped table-bordered align-middle">
                     <thead>
                         <tr>
                             <th>Date évaluation</th>

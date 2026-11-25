@@ -15,11 +15,11 @@
 </div>
 
 <div class="row g-0">
-<div class="col-12 col-md-3">
+<div class="col-12 col-xl-3 mb-3 mb-xl-0">
     @include('finances.partials.menu', ['active' => 'historique'])
 </div>
 
-<div class="col-12 col-md-9 pt-4 pt-md-0 p-md-3">
+<div class="col-12 col-xl-9 p-xl-3">
 @php
     // Accordée par le SupAdmin seulement (voir Permission::JAMAIS_PAR_DEFAUT).
     $peutAnnuler = auth()->user()->userHasPermission('paiements_annuler');

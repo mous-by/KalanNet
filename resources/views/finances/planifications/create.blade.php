@@ -56,11 +56,11 @@
         @method('PUT')
     @endif
     <div class="row g-0">
-        <div class="col-12 col-md-3">
+        <div class="col-12 col-xl-3 mb-3 mb-xl-0">
             @include('finances.partials.menu', ['active' => 'planifications'])
         </div>
 
-        <div class="col-12 col-lg-9 pt-4 pt-lg-0 p-md-3">
+        <div class="col-12 col-xl-9 p-xl-3">
             <div class="card theme-card w-100">
                 <div class="card-header theme-header">
                     <i class="bi bi-table me-1"></i>

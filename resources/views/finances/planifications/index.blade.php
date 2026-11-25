@@ -38,11 +38,11 @@
 @endif
 
 <div class="row g-4">
-    <div class="col-12 col-md-3">
+    <div class="col-12 col-xl-3 mb-3 mb-xl-0">
         @include('finances.partials.menu', ['active' => 'planifications'])
     </div>
 
-    <div class="col-12 col-lg-9">
+    <div class="col-12 col-xl-9">
         <div class="card theme-card w-100">
             <div class="card-header theme-header">
                 <i class="bi bi-cash-coin me-1"></i>

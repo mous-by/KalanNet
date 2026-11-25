@@ -77,35 +77,35 @@
             </div>
             <div class="card-body">
                 <div class="row g-3">
-                    <div class="col-md-2">
+                    <div class="col-sm-6 col-lg-3 col-xl-2">
                         <label class="form-label">Date</label>
                         <input type="date" class="form-control" value="{{ $evaluation->date_evaluation }}" disabled>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-sm-6 col-lg-5 col-xl-4">
                         <label class="form-label">Libellé</label>
                         <input type="text" class="form-control" value="{{ $evaluation->libeller }}" disabled>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-sm-6 col-lg-4 col-xl-3">
                         <label class="form-label">Classe</label>
                         <input type="text" class="form-control" value="{{ $first->classe->nom_classe ?? '' }}" disabled>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-sm-6 col-lg-4 col-xl-3">
                         <label class="form-label">Matière</label>
                         <input type="text" class="form-control" value="{{ $first->matiere->nom_matiere ?? '' }}" disabled>
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-6 col-lg-3 col-xl-2">
                         <label class="form-label">Heure début</label>
                         <input type="time" class="form-control" value="{{ $evaluation->heure_debut }}" disabled>
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-6 col-lg-3 col-xl-2">
                         <label class="form-label">Heure fin</label>
                         <input type="time" class="form-control" value="{{ $evaluation->heure_fin }}" disabled>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-sm-6 col-lg-3 col-xl-3">
                         <label class="form-label">Type note</label>
                         <input type="text" class="form-control" value="{{ $first->noteType->typeNote ?? '' }}" disabled>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-sm-6 col-lg-3 col-xl-3">
                         <label class="form-label">Période</label>
                         <input type="text" class="form-control" value="{{ $first->mois ? ($moisOptions[(int) $first->mois] ?? $first->mois) : ($first->trimestre->nom_trimestre ?? '') }}" disabled>
                     </div>

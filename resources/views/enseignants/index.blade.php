@@ -90,7 +90,7 @@
             </div>
 
             <div class="table-responsive mt-3">
-                <table class="table table-striped table-bordered align-middle">
+                <table class="table table-actions-fixes table-striped table-bordered align-middle">
                     <thead>
                         <tr>
                             <th class="text-center"><input type="checkbox" id="check_all"></th>

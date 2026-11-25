@@ -14,11 +14,11 @@
     </div>
 
     <div class="row g-0">
-    <div class="col-12 col-md-3">
+    <div class="col-12 col-xl-3 mb-3 mb-xl-0">
         @include('finances.partials.menu', ['active' => 'index'])
     </div>
 
-    <div class="col-12 col-md-9 pt-4 pt-md-0 p-md-3">
+    <div class="col-12 col-xl-9 p-xl-3">
     <div class="mb-3 d-flex justify-content-end gap-2">
         <button class="btn px-4 theme-pill-active">
             <i class="bi bi-file-earmark-bar-graph me-2"></i>{{ __('finances.report_button') }}
@@ -40,7 +40,7 @@
                             <h2 class="fw-bold mb-0 text-success">{{ number_format($totalRecettes, \App\Support\Devise::decimales(), ',', ' ') }} <small class="fs-6">{{ \App\Support\Devise::symbole() }}</small></h2>
                         </div>
                         <div class="widget-icon theme-icon-box rounded-3">
-                            <i class="bi bi-graph-up-arrow fs-4"></i>
+                            <i class="bi bi-graph-up fs-4"></i>
                         </div>
                     </div>
                 </div>
@@ -55,7 +55,7 @@
                             <h2 class="fw-bold mb-0 text-danger">{{ number_format($totalDepenses, \App\Support\Devise::decimales(), ',', ' ') }} <small class="fs-6">{{ \App\Support\Devise::symbole() }}</small></h2>
                         </div>
                         <div class="widget-icon theme-icon-box rounded-3">
-                            <i class="bi bi-graph-down-arrow fs-4"></i>
+                            <i class="bi bi-graph-down fs-4"></i>
                         </div>
                     </div>
                 </div>

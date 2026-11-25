@@ -81,10 +81,11 @@
         <div class="top-navbar-right ms-auto">
             <ul class="navbar-nav align-items-center">
                 <!-- Academic Year Badge -->
-                <li class="nav-item d-none d-sm-flex align-items-center me-3">
-                    <div class="d-flex align-items-center px-3 py-1 border rounded-pill shadow-sm" style="border-color: rgba(128, 128, 128, 0.3) !important;">
-                        <i class="bi bi-calendar3 me-2 opacity-75"></i> 
-                        <span class="fw-bold fs-6">{{ __('messages.navbar.school_year') }}: {{ $anneeEnCours ? $anneeEnCours->annee : 'N/A' }}</span>
+                <li class="nav-item d-none d-sm-flex align-items-center me-2 me-xl-3">
+                    <div class="d-flex align-items-center px-3 py-1 border rounded-pill shadow-sm text-nowrap" style="border-color: rgba(128, 128, 128, 0.3) !important;" title="{{ __('messages.navbar.school_year') }}">
+                        <i class="bi bi-calendar3 me-2 opacity-75"></i>
+                        {{-- Sur tablette, l'année seule : le libellé faisait passer la pastille sur trois lignes. --}}
+                        <span class="fw-bold fs-6"><span class="d-none d-xl-inline">{{ __('messages.navbar.school_year') }}: </span>{{ $anneeEnCours ? $anneeEnCours->annee : 'N/A' }}</span>
                     </div>
                 </li>
 
@@ -94,7 +95,7 @@
                 <li class="nav-item me-2">
                     <a class="nav-link d-flex align-items-center gap-2 px-2 py-1 border rounded-pill {{ request()->routeIs('support-csb.*') ? 'active' : '' }}" href="{{ route('support-csb.index') }}" title="{{ __('support_csb.sous_titre') }}" style="border-color: rgba(128, 128, 128, 0.3) !important;">
                         <i class="bi bi-headset"></i>
-                        <span class="d-none d-md-inline fw-semibold fs-6">{{ __('support_csb.menu') }}</span>
+                        <span class="d-none d-xl-inline fw-semibold fs-6 text-nowrap">{{ __('support_csb.menu') }}</span>
                     </a>
                 </li>
                 @endif
@@ -189,7 +190,7 @@
                     <a class="nav-link dropdown-toggle dropdown-toggle-nocaret" href="#" data-bs-toggle="dropdown">
                         <div class="user-setting d-flex align-items-center gap-3">
                             <img src="{{ asset($user->photo_path) }}" class="user-img" alt="">
-                            <div class="d-none d-sm-block">
+                            <div class="d-none d-lg-block">
                                 <p class="user-name mb-0">{{ $user->nomPrenom }}</p>
                                 <small class="mb-0 dropdown-user-designation text-secondary">{{ $user->fonction }}</small>
                             </div>

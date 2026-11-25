@@ -358,7 +358,11 @@ html[data-theme="light"] .theme-switcher-btn { border-color: var(--border-sideba
 /* Responsive Footer */
 .footer { position: fixed; left: 250px; right: 0; bottom: 0; height: 50px; display: flex; align-items: center; justify-content: center; z-index: 10; transition: left 0.3s ease; }
 .wrapper.toggled .footer { left: 70px; }
-@media screen and (max-width: 1024px) { .footer { left: 0 !important; } }
+/* Tablette et téléphone (menu replié, sous 1200 px) : le pied de page suit le contenu au lieu de
+   rester fixé en bas et de manger la hauteur de l'écran. */
+@media screen and (max-width: 1199.98px) {
+    .footer { position: static; left: 0 !important; height: auto; min-height: 44px; padding: 10px 16px; text-align: center; }
+}
 /* Le pied de page est fixe (50 px) : le bas du contenu (boutons Enregistrer, Retour…) ne doit pas passer dessous. */
 .page-content { padding-bottom: calc(50px + 1.5rem) !important; }
 /* Flèche retour de toutes les pages (layouts/app). */
@@ -366,6 +370,32 @@ html[data-theme="light"] .theme-switcher-btn { border-color: var(--border-sideba
 .page-retour-fleche:hover, .page-retour-fleche:focus-visible { background: var(--theme-accent, #0d6efd); color: var(--text-on-accent, #fff); border-color: var(--theme-accent, #0d6efd); }
 /* Barre d'actions d'un formulaire long : reste visible en bas de l'écran, au-dessus du pied de page. */
 .form-actions-sticky { position: sticky; bottom: 58px; z-index: 9; background: var(--bg-card, #fff); border: 1px solid var(--border-color, #dee2e6); border-radius: 12px; padding: 10px 14px; box-shadow: 0 -4px 16px rgba(15, 23, 42, .08); }
+@media screen and (max-width: 1199.98px) {
+    /* Pied de page non fixe : plus besoin de réserver sa hauteur. */
+    .page-content { padding-bottom: 1.5rem !important; }
+    .form-actions-sticky { bottom: 8px; }
+
+    /* Tablette : tableaux un peu plus serrés, pour voir plus de colonnes sans faire défiler. */
+    .table-responsive > .table { font-size: .875rem; }
+    .table-responsive > .table > :not(caption) > * > * { padding: .45rem .5rem; }
+
+    /* Tableau avec colonne d'actions (classe .table-actions-fixes) : la dernière colonne reste
+       visible à droite pendant le défilement horizontal du tableau. */
+    .table-actions-fixes > thead > tr > th:last-child,
+    .table-actions-fixes > tbody > tr > td:last-child {
+        position: sticky;
+        right: 0;
+        z-index: 2;
+        background-color: var(--bg-card, #fff);
+        box-shadow: -6px 0 8px -6px rgba(15, 23, 42, .25);
+    }
+    .table-actions-fixes > thead > tr > th:last-child { z-index: 3; }
+    /* Plusieurs boutons d'action : empilés, pour que la colonne collée reste étroite. */
+    .table-actions-fixes > tbody > tr > td:last-child { width: 1%; min-width: 150px; }
+    .table-actions-fixes > tbody > tr > td:last-child > .btn,
+    .table-actions-fixes > tbody > tr > td:last-child > form { display: block !important; width: 100%; }
+    .table-actions-fixes > tbody > tr > td:last-child > form > .btn { width: 100%; }
+}
 
 /* ============================================================
    KalanNet — Dynamic Icons & Harmonization Overrides
