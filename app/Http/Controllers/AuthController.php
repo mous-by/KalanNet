@@ -155,7 +155,9 @@ class AuthController extends Controller
             $user->theme_preference = $request->input('theme_preference');
         }
 
-        $locale = $request->session()->get('locale');
+        // La langue de la page de connexion ne remplace la préférence de l'utilisateur que s'il l'a choisie
+        // lui-même sur cette page (sinon la page, toujours en français, effacerait sa langue habituelle).
+        $locale = $request->session()->get('locale_selected') ? $request->session()->get('locale') : null;
         if ($locale && array_key_exists($locale, config('app.supported_locales', [])) && SchemaExiste::colonne($user->getTable(), 'locale_preference')) {
             $user->locale_preference = $locale;
         }
