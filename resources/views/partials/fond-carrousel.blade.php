@@ -148,6 +148,26 @@
             /* Points masqués : le balayage au doigt suffit */
             .bg-dots { display: none; }
         }
+        /* Tablette en portrait : la carte de connexion est centrée, la légende passe dessous, centrée. */
+        @media (min-width: 601px) and (max-width: 1199px) and (orientation: portrait) {
+            .bg-caption {
+                left: 50%;
+                transform: translateX(-50%);
+                bottom: 212px;
+                width: min(560px, 84vw);
+                max-width: none;
+                text-align: center;
+            }
+            .bg-dots { left: 50%; transform: translateX(-50%); bottom: 186px; }
+        }
+        /* Tablette en portrait peu haute : on allège la légende pour qu'elle ne passe pas sous la carte. */
+        @media (min-width: 601px) and (max-width: 1199px) and (orientation: portrait) and (max-height: 1100px) {
+            .bg-caption .bg-badge { display: none; }
+        }
+        @media (min-width: 601px) and (max-width: 1199px) and (orientation: portrait) and (max-height: 1000px) {
+            .bg-caption .bg-quote { display: none; }
+            .bg-caption { bottom: 200px; }
+        }
         @media (prefers-reduced-motion: reduce) {
             .bg-slide, .bg-slide img, .bg-progress-bar { transition: none !important; }
         }

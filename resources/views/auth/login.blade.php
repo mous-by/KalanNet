@@ -287,9 +287,42 @@
             .module-node i { font-size: .82rem; }
         }
 
-        @media (max-width: 900px) {
+        /* Petits écrans en paysage (téléphone couché) : icône et libellé côte à côte. */
+        @media (min-width: 601px) and (max-width: 900px) and (orientation: landscape) {
             .module-node { font-size: .48rem; flex-direction: row; gap: 3px; }
             .module-node i { font-size: .68rem; }
+        }
+
+        /* ── Tablette en portrait : carte centrée, cibles au doigt, modules sur 2 lignes ── */
+        @media (min-width: 601px) and (max-width: 1199px) and (orientation: portrait) {
+            .login-page,
+            [dir="rtl"] .login-page {
+                align-items: flex-start;
+                justify-content: center;
+                padding: clamp(28px, 6vh, 72px) 32px 300px;
+            }
+            .login-card { max-width: 480px; padding: 36px 36px 28px; }
+            .form-control { min-height: 52px; font-size: 1rem; }
+            .input-group-text, .password-toggle { width: 52px; }
+            .login-button { min-height: 54px; font-size: 1.02rem; }
+            .login-language-row .kalannet-language-btn { min-height: 42px; padding: 0 18px; }
+            .theme-row { gap: 8px; }
+            .theme-dot { width: 26px; height: 26px; }
+
+            .module-wave { height: 172px; }
+            .module-list {
+                grid-template-columns: repeat(6, minmax(0, 1fr));
+                row-gap: 8px;
+                bottom: 12px;
+            }
+            .module-node { font-size: .74rem; flex-direction: column; gap: 3px; }
+            .module-node i { font-size: 1.1rem; }
+        }
+
+        /* ── Tablette en paysage : libellés des modules un peu plus lisibles ── */
+        @media (min-width: 901px) and (max-width: 1199px) and (orientation: landscape) {
+            .module-node { font-size: .62rem; }
+            .module-node i { font-size: .9rem; }
         }
     </style>
 </head>
