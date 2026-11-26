@@ -1,0 +1,38 @@
+<?php
+
+// Avis de satisfaction : le petit modal proposé après une action réussie.
+return [
+    'titre' => 'C\'est fait ! Un petit avis ?',
+    'intro' => 'Comment trouvez-vous KalanNet en ce moment ? Cela nous aide à l\'améliorer pour votre école.',
+    'votre_note' => 'Votre note',
+    'notes' => [1 => 'Très déçu', 2 => 'Déçu', 3 => 'Correct', 4 => 'Satisfait', 5 => 'Très satisfait'],
+    'ne_plus_demander' => 'Ne plus me demander',
+    'plus_tard' => 'Plus tard',
+    'fermer' => 'Fermer',
+    'question_positive' => 'Qu\'appréciez-vous le plus ?',
+    'question_negative' => 'Qu\'est-ce qui vous gêne ?',
+    'points' => [
+        'facile' => 'Facile à utiliser',
+        'temps' => 'Me fait gagner du temps',
+        'bulletins' => 'Notes et bulletins',
+        'finances' => 'Paiements et finances',
+        'mobile' => 'Application mobile',
+        'assistance' => 'Assistance de CSB',
+        'lent' => 'Lenteur',
+        'difficile' => 'Difficile à comprendre',
+        'manque' => 'Il manque une fonction',
+        'erreurs' => 'Erreurs ou blocages',
+        'affichage' => 'Affichage sur téléphone ou tablette',
+        'assistance_lente' => 'Assistance trop lente',
+    ],
+    'commentaire' => 'Un mot de plus ? (facultatif)',
+    'commentaire_positif' => 'Un mot sur votre expérience ? (facultatif)',
+    'commentaire_negatif' => 'Dites-nous ce qu\'il faudrait améliorer (facultatif)',
+    'accord' => 'J\'accepte que cet avis soit publié sur le site de Computer Service Barry, avec mon nom, ma fonction et mon école.',
+    'changer_note' => 'Changer ma note',
+    'envoyer' => 'Envoyer mon avis',
+    'merci_titre' => 'Merci beaucoup !',
+    'merci' => 'Votre avis a bien été transmis à l\'équipe de KalanNet.',
+    'merci_positif' => 'Votre avis nous fait très plaisir. Il a bien été transmis à l\'équipe de KalanNet.',
+    'merci_negatif' => 'Merci de votre franchise : l\'équipe de KalanNet va étudier vos remarques.',
+];

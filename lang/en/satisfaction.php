@@ -1,0 +1,38 @@
+<?php
+
+// Satisfaction feedback: the small dialog shown after a successful action.
+return [
+    'titre' => 'Done! Quick feedback?',
+    'intro' => 'How do you find KalanNet right now? It helps us improve it for your school.',
+    'votre_note' => 'Your rating',
+    'notes' => [1 => 'Very unhappy', 2 => 'Unhappy', 3 => 'Okay', 4 => 'Happy', 5 => 'Very happy'],
+    'ne_plus_demander' => 'Don\'t ask me again',
+    'plus_tard' => 'Later',
+    'fermer' => 'Close',
+    'question_positive' => 'What do you like most?',
+    'question_negative' => 'What bothers you?',
+    'points' => [
+        'facile' => 'Easy to use',
+        'temps' => 'Saves me time',
+        'bulletins' => 'Grades and report cards',
+        'finances' => 'Payments and finances',
+        'mobile' => 'Mobile app',
+        'assistance' => 'CSB support',
+        'lent' => 'Slowness',
+        'difficile' => 'Hard to understand',
+        'manque' => 'A feature is missing',
+        'erreurs' => 'Errors or freezes',
+        'affichage' => 'Display on phone or tablet',
+        'assistance_lente' => 'Support too slow',
+    ],
+    'commentaire' => 'Anything else? (optional)',
+    'commentaire_positif' => 'A word about your experience? (optional)',
+    'commentaire_negatif' => 'Tell us what should be improved (optional)',
+    'accord' => 'I agree that this feedback may be published on the Computer Service Barry website, with my name, my role and my school.',
+    'changer_note' => 'Change my rating',
+    'envoyer' => 'Send my feedback',
+    'merci_titre' => 'Thank you very much!',
+    'merci' => 'Your feedback has been sent to the KalanNet team.',
+    'merci_positif' => 'We are delighted to read this. Your feedback has been sent to the KalanNet team.',
+    'merci_negatif' => 'Thank you for your honesty: the KalanNet team will look into your comments.',
+];

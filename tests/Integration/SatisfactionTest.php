@@ -38,6 +38,15 @@ class SatisfactionTest extends IntegrationTestCase
         $this->assertStringNotContainsString('satisfactionModal', $this->pageApresAction(), 'une seule fois par session');
     }
 
+    public function test_le_modal_suit_la_langue_choisie(): void
+    {
+        foreach (['fr' => 'C\'est fait ! Un petit avis ?', 'en' => 'Done! Quick feedback?', 'ar' => 'تمّ! هل تشاركنا رأيك؟'] as $langue => $titre) {
+            $this->admin->forceFill(['locale_preference' => $langue])->save();
+            $page = $this->withSession(['satisfaction_actions' => 5, 'satisfaction_proposee' => false])->pageApresAction();
+            $this->assertStringContainsString(e($titre), $page, "modal en « $langue »");
+        }
+    }
+
     public function test_pas_redemande_avant_le_delai(): void
     {
         DB::table('avis_satisfaction')->insert(['user_id' => $this->admin->idUtilisateur, 'statut' => 'plus_tard', 'created_at' => now()->subDays(3), 'updated_at' => now()]);
