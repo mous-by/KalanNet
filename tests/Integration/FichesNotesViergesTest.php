@@ -72,6 +72,45 @@ class FichesNotesViergesTest extends IntegrationTestCase
         $zip->close();
     }
 
+    public function test_un_classeur_excel_avec_une_feuille_par_matiere(): void
+    {
+        $reponse = $this->get('/evaluations/fiches-vierges/pdf?'.http_build_query($this->parametres(['format' => 'xlsx'])));
+
+        $reponse->assertOk();
+        $chemin = tempnam(sys_get_temp_dir(), 'fiches').'.xlsx';
+        file_put_contents($chemin, $reponse->streamedContent());
+        $classeur = \PhpOffice\PhpSpreadsheet\IOFactory::load($chemin);
+        unlink($chemin);
+
+        $this->assertSame(count($this->matieres), $classeur->getSheetCount());
+        $texte = collect($classeur->getSheet(0)->toArray())->flatten()->filter()->implode(' | ');
+        $this->assertStringContainsString('FICHE DE NOTES', $texte);
+        $this->assertStringContainsString('Composition', $texte);
+        $this->assertStringContainsString('Devoir 2', $texte);
+    }
+
+    /** @return array<string, array{0: string, 1: bool}> */
+    public static function cycles(): array
+    {
+        return [
+            'Fondamental I' => ['fondamentale1', true],
+            'Fondamental II' => ['fondamentale2', true],
+            'Secondaire général' => ['secondairegenerale', false],
+            'Secondaire technique et professionnel' => ['secondairetechniqueetprofessionnel', false],
+        ];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('cycles')]
+    public function test_le_cap_n_apparait_pas_au_secondaire(string $ordre, bool $avecCap): void
+    {
+        $ecole = \App\Models\Ecole::withoutGlobalScopes()->find(1);
+        $html = view('pdf.partials.entete_ecole', ['ecole' => $ecole, 'classe' => (object) ['ordreEnseignement' => $ordre]])->render();
+
+        $this->assertStringContainsString('Académie d\'Enseignement de', $html);
+        $avecCap ? $this->assertStringContainsString('CAP de', $html) : $this->assertStringNotContainsString('CAP de', $html);
+        $this->assertStringNotContainsString('CAP de CAP', $html, 'le nom du CAP enregistré commence parfois déjà par « CAP de »');
+    }
+
     public function test_sans_matiere_cochee_on_revient_avec_un_message(): void
     {
         $this->from('/evaluations/fiches-vierges')

@@ -259,7 +259,7 @@ class EvaluationController extends Controller
             'devoirs' => 'required|integer|min:0|max:3',
             'composition' => 'nullable|boolean',
             'periode' => ['nullable', 'regex:/^[tm]\d{1,2}$/'],
-            'format' => 'nullable|in:pdf,zip',
+            'format' => 'nullable|in:pdf,zip,xlsx',
         ], [
             'matieres.required' => 'Cochez au moins une matière.',
         ]);
@@ -302,6 +302,18 @@ class EvaluationController extends Controller
         ];
         $nom = fn (string $texte) => trim(preg_replace('/[^A-Za-z0-9]+/', '_', \Illuminate\Support\Str::ascii($texte)), '_');
         $base = 'Fiches_notes_' . $nom($classe->nom_classe);
+
+        // Excel : une feuille par matière, à imprimer ou à remplir à l'ordinateur.
+        if (($data['format'] ?? 'pdf') === 'xlsx') {
+            $classeur = app(\App\Services\Evaluations\FichesNotesExcel::class)
+                ->creer($fiches, $classe, $annee, $vue['colonnes'], $periodeLibelle, $vue['ecole']);
+
+            return response()->streamDownload(
+                fn () => \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($classeur, 'Xlsx')->save('php://output'),
+                $base . '.xlsx',
+                ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+            );
+        }
 
         // Un fichier PDF par matière, réunis dans un .zip (à envoyer séparément à chaque enseignant).
         if (($data['format'] ?? 'pdf') === 'zip') {

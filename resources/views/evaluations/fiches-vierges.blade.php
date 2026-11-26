@@ -106,6 +106,9 @@
 
                 <div class="col-12 text-end">
                     <a href="{{ route('evaluations.index') }}" class="btn btn-light">Retour</a>
+                    <button type="submit" name="format" value="xlsx" class="btn btn-outline-success" formaction="{{ route('evaluations.fiches-vierges.pdf') }}" @disabled(!$classe || $lignes->isEmpty()) title="Un classeur Excel : une feuille par matière, à imprimer ou à remplir à l'ordinateur">
+                        <i class="bi bi-file-earmark-excel me-1"></i>Excel
+                    </button>
                     <button type="submit" name="format" value="zip" class="btn btn-outline-primary" formaction="{{ route('evaluations.fiches-vierges.pdf') }}" @disabled(!$classe || $lignes->isEmpty()) title="Un fichier PDF séparé pour chaque matière, réunis dans un .zip">
                         <i class="bi bi-file-earmark-zip me-1"></i>Un fichier par matière (.zip)
                     </button>
