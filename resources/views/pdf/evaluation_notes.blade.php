@@ -116,7 +116,7 @@
 
     @include('pdf.partials.entete_ecole')
 
-    <div class="school-name">{{ $ecole?->nomEcole ?? '' }}</div>
+    @include('pdf.partials.nom_ecole_logo')
     <div class="title">Fiche de notes</div>
 
     <table class="context">

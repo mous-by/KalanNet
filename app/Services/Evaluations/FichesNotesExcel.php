@@ -67,6 +67,13 @@ class FichesNotesExcel
         $f->mergeCells("A{$ligne}:{$derniere}{$ligne}")->setCellValue("A{$ligne}", mb_strtoupper((string) ($ecole->nomEcole ?? '')));
         $f->getStyle("A{$ligne}")->getFont()->setBold(true)->setSize(13);
         $f->getStyle("A{$ligne}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        // Logo de l'école à gauche du nom (PNG, JPEG ou GIF seulement).
+        if (($logo = \App\Support\LogoEcole::chemin($ecole)) && \App\Support\LogoEcole::dataUri($ecole)) {
+            $f->getRowDimension($ligne)->setRowHeight(42);
+            $f->getStyle("A{$ligne}")->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
+            (new \PhpOffice\PhpSpreadsheet\Worksheet\Drawing)->setName('Logo')->setPath($logo)
+                ->setHeight(52)->setCoordinates("A{$ligne}")->setOffsetX(2)->setOffsetY(2)->setWorksheet($f);
+        }
         $ligne++;
         $f->mergeCells("A{$ligne}:{$derniere}{$ligne}")->setCellValue("A{$ligne}", 'FICHE DE NOTES');
         $f->getStyle("A{$ligne}")->getFont()->setBold(true)->setSize(15);
